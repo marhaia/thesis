@@ -1,0 +1,666 @@
+# ===========================================================================
+# cognitive/jokinen_model.py
+# ===========================================================================
+# Purpose:
+#   Python implementation of the Adaptive Feature Guidance model for
+#   predicting visual search time on graphical user interfaces.
+#
+# Reference:
+#   Jokinen, J.P.P., Wang, Z., Sarcar, S., Oulasvirta, A., & Ren, X. (2020).
+#   Adaptive feature guidance: Modelling visual search with graphical layouts.
+#   International Journal of Human-Computer Studies, 136, 102376.
+#
+# Architecture:
+#   The model simulates fixation-by-fixation visual search:
+#   1. Start with eyes at a default position (e.g., center of screen)
+#   2. Compute activation for each element (bottom-up saliency + noise)
+#   3. Attend element with highest activation (winner-take-all)
+#   4. Compute encoding time via EMMA model (Salvucci, 2001)
+#   5. If saccade needed, add saccade duration
+#   6. Mark attended element in VSTM (inhibition of return)
+#   7. Repeat until target found
+#
+# This implementation focuses on NOVICE search (no LTM, no utility learning)
+# because a static screenshot evaluation cannot assume prior user experience.
+# This gives our model the prediction: "how long would a first-time user
+# take to find element X?"
+#
+# Integration with UMSI++:
+#   Instead of computing bottom-up activation purely from feature dissimilarity
+#   (which requires the modeller to define discrete features), we ALSO
+#   incorporate the UMSI++ saliency map as a continuous bottom-up signal.
+#   This is the key contribution: deep-learning saliency replaces/augments
+#   hand-crafted feature heuristics from the legacy approach.
+#
+# Parameters:
+#   All parameters from Jokinen 2020 Table 1, with literature-based defaults.
+#   Fitted parameters use the values from the paper's grid search.
+#
+# ===========================================================================
+
+import numpy as np
+from typing import List, Dict, Tuple, Optional
+from dataclasses import dataclass, field
+
+
+# ===========================================================================
+# Model Parameters (from Jokinen 2020, Table 1)
+# ===========================================================================
+
+@dataclass
+class JokinenParams:
+    """
+    All parameters of the Adaptive Feature Guidance model.
+    Defaults are from Jokinen et al. (2020), Table 1.
+
+    Literature-based (fixed):
+        K           : EMMA encoding constant (Salvucci, 2001)
+        k           : EMMA encoding exponent
+        t_prep      : Saccade preparation time (s)
+        t_exec      : Saccade execution time per degree (s/deg)
+        t_sacc      : Additional saccade constant (s)
+        W_BA        : Bottom-up activation weight
+        W_TA        : Top-down activation weight
+        sigma_TA    : Noise SD for activation (logistic)
+        a_color     : Visual threshold param a for colour
+        b_color     : Visual threshold param b for colour
+        a_shape     : Visual threshold param a for shape
+        b_shape     : Visual threshold param b for shape
+        a_size      : Visual threshold param a for size
+        b_size      : Visual threshold param b for size
+        freq        : Element frequency (default 0.1)
+
+    Fitted (from grid search in paper):
+        B_bl        : Base-level activation constant
+        F_mem       : Memory retrieval scaling constant
+        f_mem       : Memory retrieval exponent
+        sigma_M     : Memory noise SD
+        alpha       : Utility learning rate
+        sigma_U     : Utility noise SD
+        B_sa        : Source activation for LTM
+        tau_vstm    : VSTM decay time (number of steps)
+    """
+    # === EMMA Eye Movement Model (Salvucci, 2001) ===
+    # Salvucci, D.D. (2001). An integrated model of eye movements and visual
+    # encoding. Cognitive Systems Research, 1(4), 201–220.
+    # Parameter values from Jokinen et al. (2020), Table 1 (literature-fixed).
+    K: float = 0.006            # Encoding time constant (s); EMMA Eq. 4
+    k: float = 0.4              # Eccentricity exponent; EMMA Eq. 4
+    t_prep: float = 0.135       # Saccade preparation time (s); EMMA Eq. 5
+    t_exec: float = 0.002       # Saccade execution per degree (s/deg); EMMA Eq. 5
+    t_sacc: float = 0.07        # Saccade constant overhead (s); EMMA Eq. 5
+    # Element frequency: proportion of elements of this type on a typical screen.
+    # Default 0.1 (≈1 in 10 elements); used in EMMA encoding: T_e = K·[-log(f)]·e^(k·ε)
+    freq: float = 0.1
+
+    # === Activation Weights (Jokinen 2020, Table 1 — fitted) ===
+    W_BA: float = 1.1           # Bottom-up (saliency) activation weight
+    W_TA: float = 0.45          # Top-down (task relevance) activation weight
+    sigma_TA: float = 0.376     # Logistic noise SD on activation (fitted)
+
+    # === Visual Threshold Parameters (Jokinen 2020, Table 1; Eq. 1) ===
+    # A feature at eccentricity ε (deg) is visible if its angular size exceeds:
+    #   threshold(ε) = a · ε² + b · ε
+    # Values from perceptual acuity literature, adapted in Jokinen 2020 Table 1.
+    a_color: float = 0.104      # Quadratic term — colour (deg⁻¹)
+    b_color: float = 0.85       # Linear term  — colour (dimensionless)
+    a_shape: float = 0.14       # Quadratic term — shape
+    b_shape: float = 0.96       # Linear term  — shape
+    a_size: float = 0.142       # Quadratic term — size
+    b_size: float = 0.96        # Linear term  — size
+
+    # === Memory (ACT-R) — used only in expert mode ===
+    # Based on Anderson et al. (2004). An integrated theory of the mind.
+    # Psychological Review, 111(4), 1036–1060.  Fitted in Jokinen 2020 grid search.
+    B_bl: float = 6.0           # Base-level activation constant (fitted)
+    F_mem: float = 0.65         # Retrieval time scaling factor (fitted)
+    f_mem: float = 1.0          # Retrieval time exponent (fitted)
+    sigma_M: float = 0.4        # Memory retrieval noise SD (fitted)
+
+    # === Utility Learning ===
+    # Reinforcement-learning component for expert users (Jokinen 2020, §3.3).
+    # Not used in novice mode (our pipeline assumes novice / first-time users).
+    alpha: float = 0.2          # Learning rate (fitted)
+    sigma_U: float = 0.4        # Utility noise SD (fitted)
+    B_sa: float = 2.0           # Source activation for LTM spreading (fitted)
+
+    # === Visual Short-Term Memory (Inhibition of Return) ===
+    # VSTM capacity ~4 items (Cowan, 2001; Luck & Vogel, 1997).
+    # tau_vstm controls how many fixation steps an attended element is suppressed
+    # before it can re-enter the search set (inhibition of return).
+    # Jokinen 2020 Table 1: tau = 20 fixation steps.
+    tau_vstm: int = 20
+
+    # === Saliency Integration (our contribution — not in Jokinen 2020) ===
+    # UMSI++ deep-saliency map replaces / augments the hand-crafted bottom-up
+    # feature dissimilarity signal.  W_saliency scales its contribution relative
+    # to W_BA.  saliency_exponent sharpens the contrast between high- and
+    # low-salience regions (power-law normalisation).
+    W_saliency: float = 0.8
+    saliency_exponent: float = 2.0
+
+    # === Simulation ===
+    max_fixations: int = 50     # Hard cap: abort search after this many fixations
+    n_simulations: int = 100    # Monte Carlo runs per target (reduces noise)
+    random_seed: Optional[int] = 42
+
+
+# ===========================================================================
+# Main Model Class
+# ===========================================================================
+
+class JokinenSearchModel:
+    """
+    Jokinen 2020 Adaptive Feature Guidance — Novice Visual Search.
+
+    Predicts per-element search time for a GUI layout, combining:
+      - Feature-based bottom-up saliency (Eq. 2, dissimilarity)
+      - Deep saliency from UMSI++ heatmap (our contribution)
+      - EMMA eye-movement timing (Eqs. 4-5, Salvucci 2001)
+      - Visual short-term memory (inhibition of return)
+      - Stochastic noise (logistic distribution)
+
+    Usage:
+        model = JokinenSearchModel(params=JokinenParams())
+        results = model.predict_search_times(elements, saliency_map, image_shape)
+    """
+
+    def __init__(self, params: Optional[JokinenParams] = None):
+        """
+        Initialize the Jokinen search model.
+
+        Parameters
+        ----------
+        params : JokinenParams, optional
+            Model parameters. Uses literature defaults if not provided.
+        """
+        self.params = params or JokinenParams()
+        self.rng = np.random.default_rng(self.params.random_seed)
+
+    # ===================================================================
+    # PUBLIC API
+    # ===================================================================
+
+    def predict_search_times(
+        self,
+        elements: List[Dict],
+        saliency_map: Optional[np.ndarray] = None,
+        image_shape: Optional[Tuple[int, int]] = None,
+        screen_width_cm: float = 37.0,
+        screen_height_cm: float = 23.0,
+        viewing_distance_cm: float = 60.0,
+    ) -> Dict:
+        """
+        Predict visual search time for each element in the layout.
+
+        This simulates a novice user searching for each element as a target,
+        starting from the center of the screen. The simulation runs
+        n_simulations Monte Carlo trials and returns the mean search time.
+
+        Parameters
+        ----------
+        elements : List[Dict]
+            List of detected UI elements, each with keys:
+            'id', 'bbox' (x,y,w,h), 'center' (cx,cy), 'area',
+            'dominant_color_hsv', 'color_category', 'angular_size'.
+        saliency_map : np.ndarray, optional
+            UMSI++ saliency heatmap (H, W), values in [0, 1].
+            If provided, used as continuous bottom-up signal.
+        image_shape : tuple (H, W), optional
+            Shape of the original image. Required if saliency_map given.
+        screen_width_cm : float
+            Physical screen width in cm.
+        screen_height_cm : float
+            Physical screen height in cm.
+        viewing_distance_cm : float
+            Viewing distance in cm.
+
+        Returns
+        -------
+        Dict with keys:
+            'per_element': List[Dict] — per-element results:
+                'id', 'search_time_s', 'fixation_count', 'bbox', 'center'
+            'mean_search_time_s': float — layout-wide average
+            'max_search_time_s': float — worst-case element
+            'min_search_time_s': float — best-case element
+            'search_time_std_s': float — standard deviation across elements
+            'predicted_difficulty': str — categorical rating
+        """
+        if len(elements) == 0:
+            return {
+                "per_element": [],
+                "mean_search_time_s": 0.0,
+                "max_search_time_s": 0.0,
+                "min_search_time_s": 0.0,
+                "search_time_std_s": 0.0,
+                "predicted_difficulty": "trivial",
+            }
+
+        # --- Precompute element saliency from UMSI++ map ---
+        element_saliency = self._compute_element_saliency(
+            elements, saliency_map, image_shape
+        )
+
+        # --- Precompute feature-based bottom-up activations (Eq. 2) ---
+        feature_activations = self._compute_feature_activations(elements)
+
+        # --- Combined activation per element ---
+        combined_activations = self._combine_activations(
+            feature_activations, element_saliency
+        )
+
+        # --- Image dimensions for pixel→degree conversion ---
+        if image_shape is not None:
+            img_h, img_w = image_shape
+        elif saliency_map is not None:
+            img_h, img_w = saliency_map.shape[:2]
+        else:
+            # Estimate from element bounding boxes
+            max_x = max(e["bbox"][0] + e["bbox"][2] for e in elements)
+            max_y = max(e["bbox"][1] + e["bbox"][3] for e in elements)
+            img_w, img_h = int(max_x * 1.1), int(max_y * 1.1)
+
+        # --- Pixel-to-degree conversion factor ---
+        px_per_cm = img_w / screen_width_cm
+        deg_per_px = np.degrees(np.arctan(1.0 / (px_per_cm * viewing_distance_cm)))
+
+        # --- Starting fixation: center of screen ---
+        start_fixation = (img_w / 2.0, img_h / 2.0)
+
+        # --- Run Monte Carlo simulation for each target ---
+        per_element_results = []
+
+        for target_idx, target_elem in enumerate(elements):
+            search_times = []
+            fixation_counts = []
+
+            for _ in range(self.params.n_simulations):
+                t, n_fix = self._simulate_single_search(
+                    target_idx=target_idx,
+                    elements=elements,
+                    combined_activations=combined_activations,
+                    start_fixation=start_fixation,
+                    deg_per_px=deg_per_px,
+                )
+                search_times.append(t)
+                fixation_counts.append(n_fix)
+
+            mean_time = float(np.mean(search_times))
+            mean_fix = float(np.mean(fixation_counts))
+
+            per_element_results.append({
+                "id": target_elem["id"],
+                "search_time_s": round(mean_time, 4),
+                "fixation_count": round(mean_fix, 2),
+                "bbox": target_elem["bbox"],
+                "center": target_elem["center"],
+                "color_category": target_elem.get("color_category", "unknown"),
+            })
+
+        # --- Aggregate statistics ---
+        all_times = [r["search_time_s"] for r in per_element_results]
+        mean_st = float(np.mean(all_times))
+        max_st = float(np.max(all_times))
+        min_st = float(np.min(all_times))
+        std_st = float(np.std(all_times))
+
+        # --- Difficulty rating (based on mean novice search time) ---
+        difficulty = self._rate_difficulty(mean_st)
+
+        return {
+            "per_element": per_element_results,
+            "mean_search_time_s": round(mean_st, 4),
+            "max_search_time_s": round(max_st, 4),
+            "min_search_time_s": round(min_st, 4),
+            "search_time_std_s": round(std_st, 4),
+            "predicted_difficulty": difficulty,
+            "n_elements": len(elements),
+            "n_simulations": self.params.n_simulations,
+        }
+
+    # ===================================================================
+    # SIMULATION CORE
+    # ===================================================================
+
+    def _simulate_single_search(
+        self,
+        target_idx: int,
+        elements: List[Dict],
+        combined_activations: np.ndarray,
+        start_fixation: Tuple[float, float],
+        deg_per_px: float,
+    ) -> Tuple[float, int]:
+        """
+        Simulate a single visual search trial.
+
+        The model starts at start_fixation and searches for elements[target_idx].
+        At each step:
+            1. Compute total activation = base_activation + noise - VSTM inhibition
+            2. Select element with highest total activation (winner-take-all)
+            3. If saccade needed (eccentricity > 2°): execute saccade, then encode
+               at residual eccentricity ≈ 0.5° (saccade landing noise)
+            4. If no saccade needed: encode at current eccentricity
+            5. If selected element == target → done
+            6. Else → add to VSTM, continue
+
+        IMPORTANT: The EMMA model (Salvucci, 2001) dictates that after a saccade,
+        the eye lands on/near the target. Encoding then occurs at the POST-saccade
+        eccentricity (near 0), NOT the pre-saccade distance. This is why search
+        times are typically 0.2-0.5s per fixation, not 10+ seconds.
+
+        Returns
+        -------
+        (total_time_s, n_fixations)
+        """
+        p = self.params
+        n_elements = len(elements)
+        current_fix = np.array(start_fixation, dtype=np.float64)
+        vstm = set()  # Indices of recently visited elements
+        vstm_order = []  # FIFO queue for VSTM decay
+
+        total_time = 0.0
+        n_fixations = 0
+
+        for step in range(p.max_fixations):
+            # --- Compute activation with noise ---
+            activations = combined_activations.copy()
+
+            # Add logistic noise (Jokinen 2020: σ_TA = 0.376)
+            noise = self.rng.logistic(0, p.sigma_TA, size=n_elements)
+            activations += noise
+
+            # VSTM inhibition: set visited elements to -∞
+            for visited_idx in vstm:
+                activations[visited_idx] = -np.inf
+
+            # --- Winner-take-all: select highest activation ---
+            selected_idx = int(np.argmax(activations))
+
+            # --- Compute timing (EMMA model) ---
+            selected_elem = elements[selected_idx]
+            sel_center = np.array(selected_elem["center"], dtype=np.float64)
+
+            # Pre-saccade eccentricity: distance from current fixation (degrees)
+            px_dist = np.linalg.norm(sel_center - current_fix)
+            eccentricity_deg = px_dist * deg_per_px
+
+            # --- EMMA timing logic (Salvucci, 2001) ---
+            # If target is within fovea (< 2°): encode without saccade
+            # If target is beyond fovea: saccade first, then encode at ~0°
+            saccade_time = 0.0
+            if eccentricity_deg > 2.0:
+                # Saccade needed (Eq. 5): T_s = t_prep + t_exec * D + t_sacc
+                saccade_time = p.t_prep + p.t_exec * eccentricity_deg + p.t_sacc
+
+                # After saccade, eye lands near target with small error
+                # Residual eccentricity ~ 0.5° (saccade landing noise)
+                residual_ecc = abs(self.rng.normal(0.0, 0.5))
+                encoding_ecc = residual_ecc
+            else:
+                # No saccade: encode at current eccentricity
+                encoding_ecc = eccentricity_deg
+
+            # EMMA encoding time (Eq. 4): T_e = K * [-log(f)] * e^(k*ε)
+            encoding_time = p.K * (-np.log(p.freq)) * np.exp(p.k * encoding_ecc)
+
+            # Total step time = saccade + encoding
+            step_time = encoding_time + saccade_time
+            total_time += step_time
+            n_fixations += 1
+
+            # --- Update fixation position (eye now on selected element) ---
+            current_fix = sel_center.copy()
+
+            # --- Check if target found ---
+            if selected_idx == target_idx:
+                return (total_time, n_fixations)
+
+            # --- Update VSTM (inhibition of return) ---
+            vstm.add(selected_idx)
+            vstm_order.append(selected_idx)
+
+            # VSTM decay: remove oldest if exceeds capacity
+            if len(vstm_order) > p.tau_vstm:
+                oldest = vstm_order.pop(0)
+                vstm.discard(oldest)
+
+        # If we reach max_fixations without finding target
+        return (total_time, n_fixations)
+
+    # ===================================================================
+    # ACTIVATION COMPUTATION
+    # ===================================================================
+
+    def _compute_element_saliency(
+        self,
+        elements: List[Dict],
+        saliency_map: Optional[np.ndarray],
+        image_shape: Optional[Tuple[int, int]],
+    ) -> np.ndarray:
+        """
+        Extract per-element saliency from the UMSI++ heatmap.
+
+        For each element, compute the mean saliency within its bounding box.
+        This replaces the purely feature-based bottom-up activation with
+        a data-driven, deep-learning-based saliency signal.
+
+        Returns
+        -------
+        np.ndarray of shape (n_elements,), values in [0, 1].
+        """
+        n = len(elements)
+        saliency_values = np.zeros(n, dtype=np.float64)
+
+        if saliency_map is None:
+            # No saliency map available → return zeros (feature-only mode)
+            return saliency_values
+
+        sal_h, sal_w = saliency_map.shape[:2]
+
+        # If image_shape differs from saliency_map shape, we need to scale
+        if image_shape is not None:
+            img_h, img_w = image_shape
+            scale_x = sal_w / img_w
+            scale_y = sal_h / img_h
+        else:
+            scale_x, scale_y = 1.0, 1.0
+
+        for i, elem in enumerate(elements):
+            x, y, w, h = elem["bbox"]
+
+            # Scale bbox to saliency map coordinates
+            sx = int(x * scale_x)
+            sy = int(y * scale_y)
+            sw = max(1, int(w * scale_x))
+            sh = max(1, int(h * scale_y))
+
+            # Clip to map bounds
+            sx = max(0, min(sx, sal_w - 1))
+            sy = max(0, min(sy, sal_h - 1))
+            ex = min(sx + sw, sal_w)
+            ey = min(sy + sh, sal_h)
+
+            # Mean saliency in the element's region
+            region = saliency_map[sy:ey, sx:ex]
+            if region.size > 0:
+                saliency_values[i] = float(np.mean(region))
+
+        # Normalize to [0, 1]
+        max_sal = saliency_values.max()
+        if max_sal > 0:
+            saliency_values /= max_sal
+
+        return saliency_values
+
+    def _compute_feature_activations(
+        self, elements: List[Dict]
+    ) -> np.ndarray:
+        """
+        Compute feature-based bottom-up activation (Eq. 2 from paper).
+
+        BA_i = Σ_j Σ_k dissim(v_ik, v_jk) / d_ij
+
+        dissim = 1 if features differ, 0 if same.
+        d_ij = sqrt(Euclidean distance between element centers).
+
+        For our purpose, we use 'color_category' as the primary feature
+        (following the legacy AIM approach and Jokinen's model).
+
+        Returns
+        -------
+        np.ndarray of shape (n_elements,), unnormalized activation values.
+        """
+        n = len(elements)
+        if n <= 1:
+            return np.ones(n, dtype=np.float64)
+
+        activations = np.zeros(n, dtype=np.float64)
+
+        # Extract centers and colours
+        centers = np.array([e["center"] for e in elements], dtype=np.float64)
+        colors = [e.get("color_category", "gray") for e in elements]
+
+        for i in range(n):
+            ba_i = 0.0
+            for j in range(n):
+                if i == j:
+                    continue
+
+                # Distance between elements (in pixels)
+                d_ij = np.linalg.norm(centers[i] - centers[j])
+                d_ij = max(d_ij, 1.0)  # Avoid division by zero
+
+                # Feature dissimilarity: colour
+                dissim_color = 0.0 if colors[i] == colors[j] else 1.0
+
+                # Accumulate (Eq. 2): dissimilarity / sqrt(distance)
+                ba_i += dissim_color / np.sqrt(d_ij)
+
+            activations[i] = ba_i
+
+        # Normalize to [0, 1]
+        max_act = activations.max()
+        if max_act > 0:
+            activations /= max_act
+
+        return activations
+
+    def _combine_activations(
+        self,
+        feature_activations: np.ndarray,
+        saliency_values: np.ndarray,
+    ) -> np.ndarray:
+        """
+        Combine feature-based and saliency-based activations.
+
+        Combined = W_BA * feature_activation + W_saliency * saliency^exponent
+
+        The saliency exponent sharpens the distribution, making high-saliency
+        elements stand out more (analogous to how bottom-up pop-out works).
+
+        Returns
+        -------
+        np.ndarray of shape (n_elements,), combined activation values.
+        """
+        p = self.params
+
+        # Apply exponent to sharpen saliency differences
+        sal_sharpened = np.power(saliency_values, p.saliency_exponent)
+
+        # Weighted combination
+        combined = (p.W_BA * feature_activations) + (p.W_saliency * sal_sharpened)
+
+        return combined
+
+    # ===================================================================
+    # UTILITY METHODS
+    # ===================================================================
+
+    def _rate_difficulty(self, mean_search_time_s: float) -> str:
+        """
+        Categorize layout difficulty based on mean novice search time.
+
+        Based on the empirical data in Jokinen 2020:
+        - BP layout (simple): mean ~1.5s in novice phase
+        - WIN10 (medium): mean ~2.5s in novice phase
+        - NYT (complex): mean ~5-8s in novice phase
+
+        Categories:
+            easy      : < 1.0s (simple layout, few salient elements)
+            moderate  : 1.0-2.5s (typical desktop UI)
+            difficult : 2.5-5.0s (complex web page)
+            very_hard : > 5.0s (information-dense, like NYT front page)
+        """
+        if mean_search_time_s < 1.0:
+            return "easy"
+        elif mean_search_time_s < 2.5:
+            return "moderate"
+        elif mean_search_time_s < 5.0:
+            return "difficult"
+        else:
+            return "very_hard"
+
+    def get_model_info(self) -> Dict:
+        """Return model metadata for documentation/API responses."""
+        return {
+            "model": "Jokinen 2020 Adaptive Feature Guidance",
+            "mode": "novice_search",
+            "reference": "Jokinen et al. (2020). IJHCS, 136, 102376.",
+            "parameters": {
+                "K": self.params.K,
+                "k": self.params.k,
+                "t_prep": self.params.t_prep,
+                "W_BA": self.params.W_BA,
+                "W_saliency": self.params.W_saliency,
+                "sigma_TA": self.params.sigma_TA,
+                "max_fixations": self.params.max_fixations,
+                "n_simulations": self.params.n_simulations,
+                "tau_vstm": self.params.tau_vstm,
+            },
+            "contribution": (
+                "Replaces legacy binary-based search simulation with "
+                "Python-native implementation. Integrates UMSI++ deep "
+                "saliency as continuous bottom-up signal instead of "
+                "hand-crafted colour/size heuristics."
+            ),
+        }
+
+
+# ===========================================================================
+# Convenience function for quick prediction
+# ===========================================================================
+
+def predict_search_time(
+    elements: List[Dict],
+    saliency_map: Optional[np.ndarray] = None,
+    image_shape: Optional[Tuple[int, int]] = None,
+    n_simulations: int = 100,
+    random_seed: int = 42,
+) -> Dict:
+    """
+    Quick convenience function to predict search times.
+
+    Parameters
+    ----------
+    elements : List[Dict]
+        Detected UI elements (from element_detector.detect_elements).
+    saliency_map : np.ndarray, optional
+        UMSI++ saliency heatmap (H, W), values in [0, 1].
+    image_shape : tuple (H, W), optional
+        Original image dimensions.
+    n_simulations : int
+        Number of Monte Carlo trials per element.
+    random_seed : int
+        Random seed for reproducibility.
+
+    Returns
+    -------
+    Dict with search time predictions per element and aggregate statistics.
+    """
+    params = JokinenParams(n_simulations=n_simulations, random_seed=random_seed)
+    model = JokinenSearchModel(params=params)
+    return model.predict_search_times(
+        elements=elements,
+        saliency_map=saliency_map,
+        image_shape=image_shape,
+    )

@@ -1,0 +1,65 @@
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# IDE
+.vscode/
+.idea/
+
+# Data & large files
+*.csv
+*.parquet
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+*.npy
+*.npz
+
+# Weights / models
+saliency/weights/
+*.pth
+*.pt
+*.onnx
+*.bin
+
+# Media (large files)
+*.mp4
+*.mov
+*.avi
+
+# Logs
+*.log
+logs/
+
+# Secrets
+.env
+*.env
+
+# PDFs (large)
+Literature/pdfs/
+
+# Build artefacts
+aim/frontend/build/
+aim/frontend/node_modules/
+
+# Embedded git repos (have own remotes)
+aim/
+ueyes/

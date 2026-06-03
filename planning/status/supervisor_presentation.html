@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pipeline — Supervisor Presentation · 03.06.2026</title>
+<style>
+  :root {
+    --bg: #0f0f11;
+    --surface: #18181c;
+    --surface2: #22222a;
+    --border: #2a2a34;
+    --text: #e8e8f0;
+    --text-dim: #888899;
+    --accent: #5b8af5;
+    --green: #34c87a;
+    --yellow: #f5c842;
+    --orange: #f5903b;
+    --red: #f54b4b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  /* Slide container */
+  .deck {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  /* Cover */
+  .cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 48px;
+    margin-bottom: 64px;
+  }
+  .cover-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+  .cover h1 {
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 16px;
+    letter-spacing: -0.03em;
+  }
+  .cover h1 span { color: var(--accent); }
+  .cover-sub {
+    font-size: 16px;
+    color: var(--text-dim);
+    max-width: 600px;
+    margin-bottom: 32px;
+  }
+  .cover-meta {
+    display: flex;
+    gap: 32px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .cover-meta strong { color: var(--text); }
+
+  /* Section */
+  .section {
+    margin-bottom: 72px;
+  }
+  .section-num {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .section h2 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: -0.02em;
+  }
+  .section-intro {
+    color: var(--text-dim);
+    font-size: 13px;
+    max-width: 680px;
+    margin-bottom: 28px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 18px;
+  }
+
+  /* Step cards */
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 24px;
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  .step-num {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .step-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .step-why {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+  .step-what {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .step-tech {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 3px 9px;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: monospace;
+  }
+  .tag-accent { border-color: var(--accent); color: var(--accent); }
+  .tag-green { border-color: var(--green); color: var(--green); }
+
+  /* Architecture diagram */
+  .arch {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 24px;
+    font-family: monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+    overflow-x: auto;
+  }
+  .arch .hi { color: var(--accent); font-weight: 700; }
+  .arch .ok { color: var(--green); }
+  .arch .warn { color: var(--yellow); }
+
+  /* Feature vector row */
+  .vector-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .vec-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .vec-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .vec-dim {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: monospace;
+    margin-bottom: 4px;
+  }
+  .vec-name {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+  .vec-box.total {
+    border-color: var(--accent);
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 16px;
+    align-items: center;
+  }
+  .vec-box.total .vec-dim { font-size: 24px; }
+
+  /* Status table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  th {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 2px solid var(--border);
+    color: var(--text-dim);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  .status-done { color: var(--green); font-weight: 600; font-size: 12px; }
+  .status-warn { color: var(--yellow); font-weight: 600; font-size: 12px; }
+  .status-open { color: var(--red); font-weight: 600; font-size: 12px; }
+  td code {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: monospace;
+    font-size: 12px;
+  }
+
+  /* Validation */
+  .val-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .val-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .val-card h4 {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .val-stat {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--green);
+    font-family: monospace;
+    margin-bottom: 2px;
+  }
+  .val-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .val-ref {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 8px;
+    border-top: 1px solid var(--border);
+    padding-top: 6px;
+  }
+
+  /* Open items */
+  .open-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .open-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: start;
+  }
+  .open-item.critical { border-left: 3px solid var(--red); }
+  .open-item.important { border-left: 3px solid var(--yellow); }
+  .open-item.nice { border-left: 3px solid var(--border); }
+  .open-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .open-why { font-size: 12px; color: var(--text-dim); }
+  .effort {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+
+  /* Timeline */
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+    padding-left: 24px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 8px;
+    bottom: 8px;
+    width: 1px;
+    background: var(--border);
+  }
+  .tl-item {
+    position: relative;
+    padding: 0 0 24px 24px;
+  }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 7px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 2px solid var(--accent);
+  }
+  .tl-date {
+    font-size: 11px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+  .tl-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .tl-body {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  /* Ref list */
+  .ref-list { display: flex; flex-direction: column; gap: 8px; }
+  .ref-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 11px 14px;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .ref-item strong { color: var(--text); display: block; font-size: 13px; margin-bottom: 2px; }
+
+  /* Footer */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+    margin-top: 48px;
+    font-size: 12px;
+    color: var(--text-dim);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  @media print {
+    body { background: white; color: black; }
+    .section { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <!-- ── Cover ────────────────────────────────── -->
+  <div class="cover">
+    <div class="cover-label">Supervisor Meeting · Master's Thesis · 03. Juni 2026</div>
+    <h1>Two-Stage <span>Multi-Output</span> Pipeline:<br>Computational Estimation of Interactional Complexity from GUI Screenshots</h1>
+    <p class="cover-sub">Übersicht: was implementiert wurde, warum, und was der aktuelle Stand ist — inklusive offener Punkte für die weitere Arbeit.</p>
+    <div class="cover-meta">
+      <div><strong>Kandidatin</strong><br>Hannah Maria M.</div>
+      <div><strong>Kontakt</strong><br>hannah.maria.m@web.de</div>
+      <div><strong>Stack</strong><br>Python 3.9 · Flask · TensorFlow 2 · Keras 3</div>
+      <div><strong>Plattform</strong><br>Apple M4 Mac, CPU-only</div>
+    </div>
+  </div>
+
+  <!-- ── 1. Forschungsfrage ─────────────────── -->
+  <div class="section">
+    <div class="section-num">01 · Ausgangslage</div>
+    <h2>Warum dieser Ansatz?</h2>
+    <p class="section-intro">Das Ziel ist es, die kognitive Komplexität einer GUI-Oberfläche automatisiert aus einem Screenshot zu schätzen — ohne User Study, ohne Eye-Tracker, vollständig computational.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">?</div>
+        <div>
+          <div class="step-title">Das Problem</div>
+          <div class="step-why">Warum ist das relevant?</div>
+          <div class="step-what">UX-Evaluierungen kosten Zeit und Ressourcen: Eye-Tracking-Studien brauchen Laborsetup und Probanden, heuristische Evaluierungen brauchen Experten. Gleichzeitig ist kognitive Komplexität eine zentrale Qualitätsdimension für GUIs. Es fehlt ein schnelles, skalierbares, wissenschaftlich begründetes Tool, das auch ohne Studie eine fundierte Schätzung liefert.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">→</div>
+        <div>
+          <div class="step-title">Die Hypothese</div>
+          <div class="step-why">Was wird modelliert?</div>
+          <div class="step-what">Kognitive Komplexität ist eine Funktion aus (1) visueller Struktur des Interfaces, (2) vorhergesagter Aufmerksamkeitsverteilung, (3) kognitiver Suchzeit, (4) Aufgabenkontext, (5) Nutzerprofil. Diese Faktoren lassen sich aus dem Screenshot und konfigurierten Parametern extrahieren und zu einem Score aggregieren — referenziert auf empirische Literatur (HCEye, UMSI++, Jokinen 2020).</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 2. Architektur ─────────────────────── -->
+  <div class="section">
+    <div class="section-num">02 · Architektur</div>
+    <h2>Der Feature-Vektor x ∈ ℝ³⁰</h2>
+    <p class="section-intro">Die Pipeline ist in zwei Stages unterteilt: Stage 1 extrahiert Merkmalsvektoren aus dem Screenshot, Stage 2 aggregiert sie zu einem kognitiven Lastscore.</p>
+
+    <div class="vector-row">
+      <div class="vec-box">
+        <div class="vec-label">Stage 1a · Visual</div>
+        <div class="vec-dim">v ∈ ℝ⁸</div>
+        <div class="vec-name">8 bildbasierte Komplexitätsmetriken</div>
+      </div>
+      <div class="vec-box">
+        <div class="vec-label">Stage 1b · Saliency</div>
+        <div class="vec-dim">s ∈ ℝ⁵</div>
+        <div class="vec-name">UMSI++ Saliency-Statistiken</div>
+      </div>
+      <div class="vec-box">
+        <div class="vec-label">Stage 2 · HCEye</div>
+        <div class="vec-dim">h ∈ ℝ⁶</div>
+        <div class="vec-name">Eye-Tracking-Sensitivitäts­gewichte (Das et al. 2024)</div>
+      </div>
+      <div class="vec-box">
+        <div class="vec-label">Stage 2 · Task</div>
+        <div class="vec-dim">t ∈ ℝ⁶</div>
+        <div class="vec-name">Aufgabenkontext­kodierung</div>
+      </div>
+      <div class="vec-box">
+        <div class="vec-label">Stage 2 · User</div>
+        <div class="vec-dim">p ∈ ℝ⁵</div>
+        <div class="vec-name">Big-Five Persönlichkeits­preset</div>
+      </div>
+      <div class="vec-box total">
+        <div>
+          <div class="vec-label">Gesamt-Featurevektor</div>
+          <div class="vec-dim">x ∈ ℝ³⁰</div>
+        </div>
+        <div class="vec-name" style="color: var(--text);">
+          x = [v, s, h, t, p] wird an Stage 2 übergeben. Drei simultane Outputs: <strong>Cognitive Load Score</strong> (0–100), <strong>Search Efficiency</strong> (0–1), <strong>Attention Demand</strong> (0–1). Ein Mutual Coherence Check flaggt implausible Kombinationen.
+        </div>
+      </div>
+    </div>
+
+    <div class="arch">
+Screenshot (PNG/JPG)<br>
+       │<br>
+       ▼<br>
+┌──────────────────────────────────────────────────────┐<br>
+│ <span class="hi">STAGE 1a — Visual Complexity</span>  <span class="ok">· v ∈ ℝ⁸ ✅</span>                  │<br>
+│  Shannon Entropy · Edge Density · Feature Congestion  │<br>
+│  Subband Entropy · Symmetry · Chromatic Coherence     │<br>
+│  Visual Hierarchy · Interactive Element Density       │<br>
+└───────────────────────┬──────────────────────────────┘<br>
+                        │<br>
+              ┌─────────┴──────────┐<br>
+              ▼                    ▼<br>
+┌─────────────────────┐  ┌─────────────────────────────┐<br>
+│ <span class="hi">STAGE 1b — UMSI++</span>  │  │ <span class="hi">STAGE 1c — Jokinen 2020</span>    │<br>
+│ <span class="ok">s ∈ ℝ⁵ ✅</span>           │  │ <span class="ok">Kognit. Suchzeit ✅</span>          │<br>
+│ Deep-Learning Sal.  │  │ Monte Carlo (EMMA+VSTM)     │<br>
+└──────────┬──────────┘  └────────────┬────────────────┘<br>
+           └───────────────┬──────────┘<br>
+                           ▼<br>
+              ┌────────────────────────┐<br>
+              │ <span class="hi">HCEye Sensitivity</span>      │  <span class="ok">h ∈ ℝ⁶ ✅</span><br>
+              │ Task Descriptor        │  <span class="ok">t ∈ ℝ⁶ ✅</span><br>
+              │ User Profile (Big 5)   │  <span class="ok">p ∈ ℝ⁵ ✅</span><br>
+              └────────────┬───────────┘<br>
+                           ▼<br>
+              ┌────────────────────────┐<br>
+              │ <span class="hi">STAGE 2 — Output</span>       │<br>
+              │ CL Score · SE · AD     │  <span class="ok">✅ (HCEye-Mode)</span><br>
+              │ Ridge/RF Regression    │  <span class="warn">⚠️  Kein Training</span><br>
+              │ Coherence Check        │  <span class="ok">✅</span><br>
+              └────────────────────────┘
+    </div>
+  </div>
+
+  <!-- ── 3. Implementierungsschritte ───────── -->
+  <div class="section">
+    <div class="section-num">03 · Chronologie</div>
+    <h2>Was wann implementiert wurde — und warum</h2>
+    <p class="section-intro">Die Entwicklung folgte einer inkrementellen Strategie: zuerst die wissenschaftliche Grundlage legen, dann validieren, dann UI und Export.</p>
+
+    <div class="timeline">
+
+      <div class="tl-item">
+        <div class="tl-date">Phase 1 · Grundlage</div>
+        <div class="tl-title">Stage 1a: Visual Complexity (v ∈ ℝ⁸)</div>
+        <div class="tl-body">
+          Implementierung von 8 bildbasierten Metriken in <code>visual_complexity.py</code>.<br>
+          <strong>Warum:</strong> Visuelle Struktur ist der direkteste und am besten validierte Prädiktor für wahrgenommene Komplexität (Rosenholtz et al. 2007, Tuch et al. 2009). Ohne diesen Vektor wäre der Rest der Pipeline nicht fundiert.<br><br>
+          Metriken: Shannon-Entropy (globale Bildkomplexität), Canny Edge Density (strukturelle Dichte), Feature Congestion (Rosenholtz), Subband Entropy (räumliche Frequenzverteilung), Layout-Symmetrie (Wahrnehmungsführung), Chromatische Kohärenz (Farbkonsistenz), Visual Hierarchy Score, Interactive Element Density.
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-date">Phase 2 · Saliency</div>
+        <div class="tl-title">Stage 1b: UMSI++ Saliency-Modell (s ∈ ℝ⁵)</div>
+        <div class="tl-body">
+          Integration von UMSI++ (Jiang et al. CHI 2023), einem Deep-Learning-Modell das vorhersagt, wohin Nutzer schauen.<br>
+          <strong>Warum:</strong> Saliency kodiert, wo Aufmerksamkeit tatsächlich landet — unabhängig davon, wie "komplex" das Bild optisch ist. Ein Button-überladenes Interface kann niedrige Saliency-Dispersion haben (Aufmerksamkeit fokussiert), was die Komplexität trotz hoher Edge Density senkt. Das ergänzt v ∈ ℝ⁸ entscheidend.<br><br>
+          5 statistische Aggregationen der Saliency-Map: räumliche Dispersion, Entropie der Verteilung, Coverage (wie viel Fläche activiert wird), Peak Count (wie viele Aufmerksamkeitszentren), Center Bias. Plus JET-colormap Overlay für visuelle Inspektion.
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-date">Phase 3 · Kognitionsmodell</div>
+        <div class="tl-title">Stage 1c: Jokinen 2020 — Kognitiver Suchzeit-Schätzer</div>
+        <div class="tl-body">
+          Implementierung des adaptiven Feature-Guidance-Modells aus Jokinen et al. (2020), kombiniert mit EMMA (Salvucci 2001) für Augenbewegungsparameter und ACT-R Memory Decay für Gedächtnisvergessenheit.<br>
+          <strong>Warum:</strong> Suchzeit ist ein direktes Maß für Aufgabenkomplexität — je länger die kognitive Suche dauert, desto höher die mentale Last. Das Modell schätzt die Zeit pro Element ohne User Study.
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-date">Phase 4 · Empirische Verankerung</div>
+        <div class="tl-title">HCEye-Sensitivitätsschicht (h ∈ ℝ⁶) — Das et al. ETRA 2024</div>
+        <div class="tl-body">
+          Integration des HCEye-Datensatzes (27 Probanden, 150 Webseiten, 3 kognitive Lastbedingungen via Dual-Task-Paradigma). Empirische Koeffizienten gewichten die Feature-Sensitivität.<br>
+          <strong>Warum:</strong> Dieser Schritt "erdet" die Pipeline in echten Eye-Tracking-Daten. Die HCEye-Gewichte sagen, welche Features unter welcher kognitiver Last wie stark reagieren. Ohne diese Schicht wäre Stage 2 pure Heuristik ohne empirische Basis.
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-date">Phase 4 · Kontext</div>
+        <div class="tl-title">Task Descriptor (t ∈ ℝ⁶) &amp; User Profile (p ∈ ℝ⁵)</div>
+        <div class="tl-body">
+          <strong>Task Descriptor:</strong> Kodiert Aufgabentyp (explorativ/zielgerichtet), Suchmode (Feature- vs. Konjunktionssuche nach Treisman &amp; Gelade 1980), Zielspezifität, Zeitdruck — basierend auf Kahneman (1973) und Wickens (2008) MRT.<br>
+          <strong>User Profile:</strong> Big-Five-Persönlichkeitspreset (Costa &amp; McCrae 1992) mit Neurotizismus/Gewissenhaftigkeit/Offenheit als kleiner Modifier. Optional deaktivierbar.<br>
+          <strong>Warum beide:</strong> Kognitive Komplexität ist kontextabhängig — dieselbe GUI fühlt sich anders an je nach Aufgabe und Nutzerpersönlichkeit. Das differenziert den Score realistisch.
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-date">Phase 5 · Ausgabe &amp; Qualitätssicherung</div>
+        <div class="tl-title">Stage 2: Aggregation, Coherence Check, Regression-Gerüst</div>
+        <div class="tl-body">
+          Stage 2 kombiniert x ∈ ℝ³⁰ zum finalen Score. Drei Outputs: CL Score (0–100), Search Efficiency (0–1), Attention Demand (0–1).<br>
+          <strong>Coherence Check:</strong> 3 wissenschaftlich referenzierte Regeln prüfen, ob die drei Outputs zueinander passen — z.B. hoher CL Score + sehr hohe SE ist physikalisch unplausibel. Flaggt als Warnung in der UI.<br>
+          <strong>Regression-Gerüst:</strong> <code>regression_model.py</code> enthält das Feature-Schema für Ridge/Random Forest. Trainingsphase noch offen (zu wenig Labeldaten).
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-date">Phase 6 · Validierung</div>
+        <div class="tl-title">Zwei Validierungsscripts — gegen externe Ground Truth</div>
+        <div class="tl-body">
+          <strong>hceye_condition_comparison.py:</strong> Testet die Kernannahme H1 ("unter hoher kognitiver Last haben Nutzer weniger Fixationen"). Ergebnis: p = 2.55×10⁻²⁸, Cohen's d = 1.47 (large effect). Modellabweichung vom beobachteten Ratio: 0.6%.<br>
+          <strong>ueyes_saliency_validation.py:</strong> Validiert UMSI++ gegen den UEyes Human-Fixation Ground Truth (Jiang et al. CHI 2023, 62 Probanden, 1.980 UI-Screenshots). CC = 0.896, SIM = 0.806 — beide über dem publizierten SOTA-Bereich (CC: 0.40–0.70).<br>
+          <strong>Warum wichtig:</strong> Diese Ergebnisse zeigen, dass die Pipeline nicht "frei erfunden" ist, sondern auf Modellen basiert, die empirisch reproduzierbar validiert wurden.
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-date">Phase 7 · Interface</div>
+        <div class="tl-title">Web-UI: Flask + HTML/JS Single-Page Tool</div>
+        <div class="tl-body">
+          Das Tool läuft lokal auf http://localhost:5001 und bietet:<br>
+          &bull; Screenshot-Upload (Step 1)<br>
+          &bull; Aufgabenkontext + User-Profil-Konfiguration (Step 2)<br>
+          &bull; CL Score Breakdown mit Feature-Beschreibungen + Literaturzitaten (Step 3)<br>
+          &bull; Saliency-Heatmap (JET-Overlay) zur visuellen Verifikation<br>
+          &bull; Radar-Chart für Profil-Vergleich über mehrere Analysen<br>
+          &bull; Coherence-Banner bei implausiblen Scores<br>
+          &bull; Verlaufshistorie: alle Analysen der Session mit vergleichender Darstellung<br>
+          &bull; PDF-Export (jsPDF + html2canvas): vollständiger Report mit allen Werten<br>
+          &bull; CSV-Export der Rohdaten<br>
+          &bull; Navbar mit "How it works"-Ansicht (Pipeline-Visualisierung) und Kontakt<br>
+          &bull; Fertigstellungs-Chime (Web Audio API, C5→E5) bei Abschluss
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── 4. Aktuelle Komponenten ────────────── -->
+  <div class="section">
+    <div class="section-num">04 · Status aller Komponenten</div>
+    <h2>Was fertig ist, was nicht</h2>
+    <p class="section-intro">Überblick über alle Module und ihren aktuellen Zustand.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Modul / Datei</th>
+          <th>Funktion</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>stage1/visual_complexity.py</code></td><td>8 visuelle Metriken aus Screenshot → v ∈ ℝ⁸</td><td class="status-done">✓ Fertig</td></tr>
+        <tr><td><code>saliency/umsi_model.py</code></td><td>UMSI++ Deep-Learning Saliency (TF2/Keras3, CPU)</td><td class="status-done">✓ Fertig</td></tr>
+        <tr><td><code>saliency/saliency_features.py</code></td><td>5 Saliency-Aggregationen → s ∈ ℝ⁵</td><td class="status-done">✓ Fertig</td></tr>
+        <tr><td><code>cognitive/jokinen_model.py</code></td><td>Monte-Carlo Suchzeit-Modell (EMMA + ACT-R)</td><td class="status-done">✓ Fertig</td></tr>
+        <tr><td><code>cognitive/element_detector.py</code></td><td>UI-Element-Detektor (regelbasiert, Grundlage für Jokinen)</td><td class="status-done">✓ Fertig (einfach)</td></tr>
+        <tr><td><code>hceye/hceye_features.py</code></td><td>HCEye Sensitivitätsgewichte → h ∈ ℝ⁶</td><td class="status-done">✓ Fertig</td></tr>
+        <tr><td><code>stage2/task_descriptor.py</code></td><td>Aufgabenkontext-Kodierung → t ∈ ℝ⁶</td><td class="status-done">✓ Fertig</td></tr>
+        <tr><td><code>stage2/user_profile.py</code></td><td>Big-Five Persönlichkeits-Preset → p ∈ ℝ⁵</td><td class="status-done">✓ Fertig</td></tr>
+        <tr><td><code>stage2/coherence_check.py</code></td><td>Mutual Coherence Check (3 Regeln, wissenschaftlich referenziert)</td><td class="status-done">✓ Fertig</td></tr>
+        <tr><td><code>stage2/regression_model.py</code></td><td>Ridge/RF Regressor — Feature-Schema korrekt, kein Training</td><td class="status-warn">⚠ Gerüst, kein Training</td></tr>
+        <tr><td><code>stage1/app.py</code></td><td>Flask API (Port 5001), 4 Endpoints, Saliency Overlay</td><td class="status-done">✓ Fertig</td></tr>
+        <tr><td><code>stage1/ui/index.html</code></td><td>Web-UI: Upload → Analyse → Score + Heatmap + PDF</td><td class="status-done">✓ Fertig</td></tr>
+        <tr><td><code>scripts/hceye_condition_comparison.py</code></td><td>H1 Validierung: p=2.55e-28, d=1.47</td><td class="status-done">✓ Fertig</td></tr>
+        <tr><td><code>scripts/ueyes_saliency_validation.py</code></td><td>UMSI++ vs UEyes GT: CC=0.896, SIM=0.806</td><td class="status-done">✓ Fertig</td></tr>
+        <tr><td><code>scripts/baseline_comparison.py</code></td><td>Konfigurationsvergleich A vs B vs C</td><td class="status-done">✓ Fertig</td></tr>
+        <tr><td><code>tests/test_pipeline.py</code></td><td>End-to-End Pipeline-Test</td><td class="status-done">✓ Vorhanden</td></tr>
+      </tbody>
+    </table>
+
+    <p style="font-size:12px; color:var(--text-dim);">API-Endpoints: <code>POST /api/analyze</code> · <code>POST /api/saliency</code> · <code>POST /api/search-time</code> · <code>POST /api/cognitive-load</code></p>
+  </div>
+
+  <!-- ── 5. Validierung ─────────────────────── -->
+  <div class="section">
+    <div class="section-num">05 · Validierungsergebnisse</div>
+    <h2>Empirische Absicherung</h2>
+    <p class="section-intro">Zwei externe Validierungen gegen Human Ground Truth belegen, dass die Pipeline auf Modellen mit messbarer Güte basiert.</p>
+
+    <div class="val-grid">
+      <div class="val-card">
+        <h4>HCEye — Behavioral Validation (H1)</h4>
+        <div class="val-stat">p = 2.55×10⁻²⁸</div>
+        <div class="val-desc">
+          <strong>Cohen's d = 1.47</strong> (large effect)<br>
+          H1: Nutzer haben unter hoher kognitiver Last weniger Fixationen.<br>
+          Modellabweichung vom empirischen Ratio: <strong>0.6%</strong>.<br>
+          Methode: Mann-Whitney-U, zweiseitig, n=27 Probanden, Dual-Task-Paradigma.
+        </div>
+        <div class="val-ref">Das et al. ETRA 2024 · Dual-Task-Paradigma</div>
+      </div>
+      <div class="val-card">
+        <h4>UMSI++ — Saliency vs. UEyes Ground Truth</h4>
+        <div class="val-stat">CC = 0.896</div>
+        <div class="val-desc">
+          <strong>SIM = 0.806</strong><br>
+          Validiert gegen UEyes Human-Fixation Ground Truth: 62 Probanden, 1.980 UI-Screenshots.<br>
+          SOTA-Bereich (publiziert): CC 0.40–0.70. Pipeline liegt deutlich darüber.
+        </div>
+        <div class="val-ref">Jiang et al. CHI 2023 · Bylinskii et al. 2018 (Saliency Metrics)</div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px 18px;">
+      <div style="font-size:12px; color:var(--text-dim); line-height:1.7;">
+        <strong style="color:var(--text); display:block; margin-bottom:6px;">Einschränkungen der Validierung</strong>
+        Die Validierung zeigt, dass die Basis-Modelle (UMSI++, HCEye-Koeffizienten) empirisch fundiert sind. 
+        Der <em>End-to-End-Score</em> der Pipeline selbst wurde noch nicht gegen externe Expert-Ratings validiert 
+        (Spearman-Korrelation mit 3–5 UX-Experten steht noch aus). Das ist der nächste kritische Schritt.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 6. Status Quo ─────────────────────── -->
+  <div class="section">
+    <div class="section-num">06 · Status Quo</div>
+    <h2>Was das Tool heute kann</h2>
+    <p class="section-intro">Live-Demo läuft auf http://localhost:5001. Die Pipeline verarbeitet ein GUI-Screenshot in unter 60 Sekunden (UMSI++ auf CPU, bei normalen Screenshots 10–30s).</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">Screenshot hochladen</div>
+          <div class="step-what">Beliebiges PNG/JPG. Drag &amp; Drop oder File-Picker. Vorschau direkt im Browser.</div>
+          <div class="step-tech">
+            <span class="tag tag-accent">multipart/form-data</span>
+            <span class="tag">max ~10 MB</span>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">Aufgabenkontext + Nutzerprofil konfigurieren</div>
+          <div class="step-what">Aufgabentyp (explorativ / zielgerichtet), Suchmode (Feature / Konjunktion), Zielspezifität, Zeitdruck, Expertise-Level. Optional: Big-Five-Preset (Durchschnitt, Expert, Neurotisch, ...).</div>
+          <div class="step-tech">
+            <span class="tag">t ∈ ℝ⁶</span>
+            <span class="tag">p ∈ ℝ⁵</span>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">Analyse starten → Ergebnisse</div>
+          <div class="step-what">
+            Output umfasst:<br>
+            &bull; <strong>CL Score 0–100</strong> mit farbigem Badge (Grün / Gelb / Orange / Rot)<br>
+            &bull; <strong>Search Efficiency</strong> und <strong>Attention Demand</strong><br>
+            &bull; Alle 8 Feature-Werte mit Beschreibung + Literaturzitat<br>
+            &bull; Saliency-Heatmap (JET-Overlay über Original)<br>
+            &bull; Radar-Chart + automatisch generierter Interpretationstext<br>
+            &bull; Coherence-Warning bei implausiblen Score-Kombinationen<br>
+            &bull; Session-Verlaufshistorie für Vergleiche<br>
+            &bull; PDF-Download + CSV-Export
+          </div>
+          <div class="step-tech">
+            <span class="tag tag-green">Live ✓</span>
+            <span class="tag">JSON API</span>
+            <span class="tag">jsPDF 2.5.1</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 6b. UI Screenshots ────────────────── -->
+  <div class="section">
+    <div class="section-num">06b · UI — Live Screenshots</div>
+    <h2>Das Tool im Browser</h2>
+    <p class="section-intro">Das Tool läuft als lokale Flask-App (http://localhost:5001) und ist vollständig browserbasiert — kein Deployment, keine Cloud.</p>
+
+    <!-- Navbar mockup -->
+    <div style="background:#0f0f11; border:1px solid #2a2a34; border-radius:12px; overflow:hidden; margin-bottom:20px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid #2a2a34;">
+        <div style="font-weight:700; font-size:15px;">Pipeline <span style="color:#5b8af5;">— GUI Complexity</span></div>
+        <div style="display:flex; gap:6px;">
+          <div style="background:#22222a; border:1px solid #2a2a34; border-radius:7px; padding:6px 14px; font-size:12px; color:#e8e8f0;">Analyzer</div>
+          <div style="border-radius:7px; padding:6px 14px; font-size:12px; color:#888899;">How it works</div>
+          <div style="border-radius:7px; padding:6px 14px; font-size:12px; color:#888899;">Contact</div>
+        </div>
+      </div>
+      <!-- Step 1 + 2 grid -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:20px;">
+        <!-- Step 1 -->
+        <div style="background:#18181c; border:1px solid #2a2a34; border-radius:10px; padding:18px;">
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+            <div style="background:#5b8af5; border-radius:50%; width:26px; height:26px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;">1</div>
+            <span style="font-size:15px; font-weight:600;">Upload Screenshot</span>
+            <span style="background:#ef4444; color:white; font-size:10px; padding:2px 7px; border-radius:4px; text-transform:uppercase; letter-spacing:.04em;">Required</span>
+          </div>
+          <div style="color:#888899; font-size:12px; margin-bottom:12px;">Upload a GUI screenshot (PNG, JPG, BMP, TIFF). The file is processed locally — nothing is stored permanently.</div>
+          <div style="border:2px dashed #2a2a34; border-radius:8px; padding:28px 16px; text-align:center; color:#888899; font-size:12px;">
+            <div style="font-size:28px; margin-bottom:8px;">🖼</div>
+            Drag &amp; drop your screenshot here<br>
+            or <span style="color:#5b8af5; font-weight:600;">browse files</span><br>
+            <div style="margin-top:8px; font-size:11px; color:#555568;">PNG · JPG · BMP · TIFF · WebP</div>
+          </div>
+          <div style="margin-top:12px; background:#22222a; border:1px solid #2a2a34; border-radius:7px; padding:11px; text-align:center; font-size:13px; color:#555568;">Analyze Screenshot</div>
+        </div>
+        <!-- Step 2 -->
+        <div style="background:#18181c; border:1px solid #2a2a34; border-radius:10px; padding:18px;">
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+            <div style="background:#22222a; border:1px solid #2a2a34; border-radius:50%; width:26px; height:26px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; color:#5b8af5;">2</div>
+            <span style="font-size:15px; font-weight:600;">Task Context</span>
+            <span style="background:#22222a; border:1px solid #2a2a34; color:#888899; font-size:10px; padding:2px 7px; border-radius:4px; text-transform:uppercase; letter-spacing:.04em;">Optional</span>
+          </div>
+          <div style="color:#888899; font-size:12px; margin-bottom:12px;">Adjust before clicking Analyze. These parameters shift the score to reflect how a user actually interacts with this screen.</div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="background:#22222a; border:1px solid #2a2a34; border-radius:6px; padding:8px 10px; font-size:12px;">
+              <div style="color:#888899; font-size:10px; margin-bottom:2px;">Task Type</div>
+              <div>Search ▾</div>
+              <div style="color:#555568; font-size:11px; margin-top:2px;">What is the user's primary activity on this screen?</div>
+            </div>
+            <div style="background:#22222a; border:1px solid #2a2a34; border-radius:6px; padding:8px 10px; font-size:12px;">
+              <div style="color:#888899; font-size:10px; margin-bottom:2px;">Search Mode</div>
+              <div>Known Item ▾</div>
+              <div style="color:#555568; font-size:11px; margin-top:2px;">Does the user know exactly what to look for?</div>
+            </div>
+            <div style="background:#22222a; border:1px solid #2a2a34; border-radius:6px; padding:8px 10px; font-size:12px;">
+              <div style="color:#888899; font-size:10px; margin-bottom:2px;">User Profile</div>
+              <div>Neutral — no adjustment ▾</div>
+              <div style="color:#555568; font-size:11px; margin-top:2px;">Big Five preset (Costa &amp; McCrae, 1992)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- "How it works" view mockup -->
+    <div style="background:#0f0f11; border:1px solid #2a2a34; border-radius:12px; overflow:hidden; margin-bottom:20px;">
+      <div style="padding:20px;">
+        <div style="font-size:18px; font-weight:700; margin-bottom:4px;">How the Pipeline Works</div>
+        <div style="font-size:12px; color:#888899; margin-bottom:20px;">Two-Stage Multi-Output architecture for computational estimation of interactional complexity from GUI screenshots.</div>
+        <div style="font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:#888899; margin-bottom:12px;">Stage 1 — Feature Extraction (Image → Vectors)</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:12px;">
+          <div style="background:#18181c; border:1px solid #2a2a34; border-radius:8px; padding:14px;">
+            <div style="font-size:10px; text-transform:uppercase; color:#888899; margin-bottom:4px;">Stage 1a</div>
+            <div style="font-weight:600; margin-bottom:4px;">Visual Complexity</div>
+            <div style="color:#5b8af5; font-family:monospace; font-size:12px; margin-bottom:6px;">v ∈ ℝ⁸</div>
+            <div style="font-size:11px; color:#888899;">Shannon entropy, edge density, feature congestion, subband entropy, symmetry…</div>
+          </div>
+          <div style="background:#18181c; border:1px solid #2a2a34; border-radius:8px; padding:14px;">
+            <div style="font-size:10px; text-transform:uppercase; color:#888899; margin-bottom:4px;">Stage 1b</div>
+            <div style="font-weight:600; margin-bottom:4px;">Saliency Features</div>
+            <div style="color:#5b8af5; font-family:monospace; font-size:12px; margin-bottom:6px;">s ∈ ℝ⁵</div>
+            <div style="font-size:11px; color:#888899;">UMSI++ deep-learning saliency model — dispersion, entropy, coverage, peaks…</div>
+          </div>
+          <div style="background:#18181c; border:1px solid #2a2a34; border-radius:8px; padding:14px;">
+            <div style="font-size:10px; text-transform:uppercase; color:#888899; margin-bottom:4px;">Stage 1c</div>
+            <div style="font-weight:600; margin-bottom:4px;">Search Time</div>
+            <div style="color:#5b8af5; font-family:monospace; font-size:12px; margin-bottom:6px;">Jokinen 2020</div>
+            <div style="font-size:11px; color:#888899;">EMMA eye-movement params + ACT-R memory decay → predicted search time</div>
+          </div>
+        </div>
+        <div style="text-align:center; color:#555568; margin-bottom:12px;">↓</div>
+        <div style="background:#18181c; border:1px solid #5b8af5; border-radius:8px; padding:14px;">
+          <div style="font-weight:600; margin-bottom:4px;">x = [v, s, h, t, p] ∈ ℝ³⁰  →  CL Score · Search Efficiency · Attention Demand</div>
+          <div style="font-size:11px; color:#888899;">Mutual Coherence Check · Optional Random Forest · HCEye rule-based default</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="font-size:12px; color:#888899; padding:10px 0 0;">
+      <strong style="color:#e8e8f0;">Navbar-Architektur:</strong> 3 Views — "Analyzer" (das Tool), "How it works" (Pipeline-Dokumentation), "Contact". Kein Routing, reines JS <code>showView()</code>. Keine externen Dependencies außer jsPDF + html2canvas (CDN).
+    </div>
+  </div>
+
+  <!-- ── 6c. CSV & PDF Export ──────────────── -->
+  <div class="section">
+    <div class="section-num">06c · Export-Formate</div>
+    <h2>CSV &amp; PDF — Was exportiert wird und warum</h2>
+    <p class="section-intro">Beide Exports sind darauf ausgelegt, die Pipeline-Ergebnisse in Thesis-Anhängen und Supervisor-Meetings reproduzierbar zu machen.</p>
+
+    <!-- CSV -->
+    <div style="margin-bottom:32px;">
+      <div style="font-size:13px; font-weight:600; margin-bottom:4px; color:#5b8af5;">CSV-Export  <span style="font-size:11px; font-weight:400; color:#888899;">— <code>complexity_vector.csv</code> (letzte Analyse) oder <code>complexity_vectors_all.csv</code> (alle Session-Einträge)</span></div>
+      <div style="font-size:12px; color:#888899; margin-bottom:12px;"><strong style="color:#e8e8f0;">Warum CSV?</strong> Der Rohdaten-Export erlaubt Weiterverarbeitung in R, Python oder SPSS — für statistische Auswertung in der Thesis oder als Anhang. Eine Zeile = eine Analyse.</div>
+      <div style="overflow-x:auto; margin-bottom:8px;">
+        <table style="width:100%; border-collapse:collapse; font-size:11px; font-family:monospace;">
+          <thead>
+            <tr style="border-bottom:2px solid #2a2a34;">
+              <th style="padding:7px 10px; text-align:left; color:#5b8af5; white-space:nowrap;">filename</th>
+              <th style="padding:7px 10px; text-align:left; color:#5b8af5; white-space:nowrap;">score</th>
+              <th style="padding:7px 10px; text-align:left; color:#5b8af5; white-space:nowrap;">search_efficiency</th>
+              <th style="padding:7px 10px; text-align:left; color:#5b8af5; white-space:nowrap;">attention_demand</th>
+              <th style="padding:7px 10px; text-align:left; color:#5b8af5; white-space:nowrap;">task_type</th>
+              <th style="padding:7px 10px; text-align:left; color:#5b8af5; white-space:nowrap;">profile</th>
+              <th style="padding:7px 10px; text-align:left; color:#5b8af5; white-space:nowrap;">task_modifier</th>
+              <th style="padding:7px 10px; text-align:left; color:#5b8af5; white-space:nowrap;">profile_modifier</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid #22222a;">
+              <td style="padding:7px 10px; color:#e8e8f0;">dashboard_v1.png</td>
+              <td style="padding:7px 10px; color:#f5c842;">51.97</td>
+              <td style="padding:7px 10px; color:#e8e8f0;">0.623</td>
+              <td style="padding:7px 10px; color:#e8e8f0;">0.731</td>
+              <td style="padding:7px 10px; color:#e8e8f0;">Search</td>
+              <td style="padding:7px 10px; color:#e8e8f0;">Neutral</td>
+              <td style="padding:7px 10px; color:#e8e8f0;">1.05</td>
+              <td style="padding:7px 10px; color:#e8e8f0;">0.00</td>
+            </tr>
+            <tr style="border-bottom:1px solid #22222a;">
+              <td style="padding:7px 10px; color:#e8e8f0;">login_screen.png</td>
+              <td style="padding:7px 10px; color:#34c87a;">22.10</td>
+              <td style="padding:7px 10px; color:#e8e8f0;">0.881</td>
+              <td style="padding:7px 10px; color:#e8e8f0;">0.312</td>
+              <td style="padding:7px 10px; color:#e8e8f0;">Navigation</td>
+              <td style="padding:7px 10px; color:#e8e8f0;">Focused / Conscientious</td>
+              <td style="padding:7px 10px; color:#e8e8f0;">0.95</td>
+              <td style="padding:7px 10px; color:#e8e8f0;">-0.03</td>
+            </tr>
+            <tr>
+              <td style="padding:7px 10px; color:#e8e8f0;">settings_page.png</td>
+              <td style="padding:7px 10px; color:#f5903b;">68.44</td>
+              <td style="padding:7px 10px; color:#e8e8f0;">0.441</td>
+              <td style="padding:7px 10px; color:#e8e8f0;">0.892</td>
+              <td style="padding:7px 10px; color:#e8e8f0;">Decision Making</td>
+              <td style="padding:7px 10px; color:#e8e8f0;">Stress-Sensitive</td>
+              <td style="padding:7px 10px; color:#e8e8f0;">1.12</td>
+              <td style="padding:7px 10px; color:#e8e8f0;">+0.06</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex; gap:16px; flex-wrap:wrap; font-size:11px; color:#888899;">
+        <div><span style="color:#5b8af5;">filename</span> — Dateiname des Uploads</div>
+        <div><span style="color:#5b8af5;">score</span> — CL Score nach Task/Profil-Adjustierung</div>
+        <div><span style="color:#5b8af5;">search_efficiency</span> — SE ∈ [0,1]</div>
+        <div><span style="color:#5b8af5;">attention_demand</span> — AD ∈ [0,1]</div>
+        <div><span style="color:#5b8af5;">task_modifier</span> — multiplikativer Faktor durch Task Descriptor</div>
+        <div><span style="color:#5b8af5;">profile_modifier</span> — additiver Offset durch Big-Five-Preset</div>
+      </div>
+    </div>
+
+    <!-- PDF -->
+    <div>
+      <div style="font-size:13px; font-weight:600; margin-bottom:4px; color:#5b8af5;">PDF-Report  <span style="font-size:11px; font-weight:400; color:#888899;">— <code>complexity_report_{filename}.pdf</code> · A4, Portrait, jsPDF 2.5.1</span></div>
+      <div style="font-size:12px; color:#888899; margin-bottom:16px;"><strong style="color:#e8e8f0;">Warum PDF?</strong> Ein standardisierter einseitiger Report für Supervisor-Meetings und Thesis-Anhänge. Enthält alle Scores, Einstellungen und Interpretation in maschinengenerierten Schritten, reproduzierbar aus jedem Analyse-Lauf.</div>
+
+      <!-- PDF mockup -->
+      <div style="background:#0f0f11; border:2px solid #2a2a34; border-radius:8px; max-width:520px; overflow:hidden; font-family:Helvetica, sans-serif;">
+        <!-- Blue top bar -->
+        <div style="background:#3b82f6; height:4px;"></div>
+        <div style="padding:20px 18px;">
+          <!-- Title -->
+          <div style="font-size:16px; font-weight:700; color:#e8e8f0; margin-bottom:4px;">GUI Complexity Analysis Report</div>
+          <div style="font-size:10px; color:#888899; margin-bottom:4px;">File: dashboard_v1.png · Generated: 03.06.2026, 15:42</div>
+          <div style="font-size:10px; color:#888899; margin-bottom:14px;">Pipeline: Two-Stage Multi-Output · HCEye rule-based scoring (Das et al., ETRA 2024)</div>
+          <div style="height:1px; background:#2e3347; margin-bottom:14px;"></div>
+
+          <!-- Score banner -->
+          <div style="background:#1a1d27; border-radius:4px; padding:10px 12px; display:flex; align-items:center; gap:20px; margin-bottom:14px;">
+            <div>
+              <div style="font-size:26px; font-weight:700; color:#f5c842; font-family:monospace; display:inline;">51.97</div>
+              <div style="font-size:11px; color:#888899; display:inline; margin-left:4px;">/ 100</div>
+            </div>
+            <div>
+              <div style="font-size:13px; font-weight:700; color:#f5c842;">MODERATE COGNITIVE LOAD</div>
+              <div style="font-size:10px; color:#888899;">Manageable, but worth watching</div>
+            </div>
+          </div>
+
+          <!-- Sections preview -->
+          <div style="display:flex; flex-direction:column; gap:10px; font-size:10px;">
+            <div>
+              <div style="background:#1e2332; padding:4px 6px; border-radius:2px; color:#3b82f6; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:5px;">Analysis Settings</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px 8px; color:#888899;">
+                <div>Task Type <span style="color:#e8e8f0; float:right;">Search</span></div>
+                <div>Time Pressure <span style="color:#e8e8f0; float:right;">Medium</span></div>
+                <div>Search Mode <span style="color:#e8e8f0; float:right;">Known Item</span></div>
+                <div>User Profile <span style="color:#e8e8f0; float:right;">Neutral</span></div>
+              </div>
+            </div>
+            <div style="height:1px; background:#2e3347;"></div>
+            <div>
+              <div style="background:#1e2332; padding:4px 6px; border-radius:2px; color:#3b82f6; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:5px;">Prediction Scores</div>
+              <div style="display:grid; grid-template-columns:1fr auto; gap:2px; color:#888899;">
+                <div>CL Score (adjusted)</div><div style="color:#f5c842; font-weight:700;">51.97</div>
+                <div>Search Efficiency</div><div style="color:#e8e8f0;">0.623</div>
+                <div>Attention Demand</div><div style="color:#e8e8f0;">0.731</div>
+                <div>Task Modifier</div><div style="color:#e8e8f0;">1.05</div>
+              </div>
+            </div>
+            <div style="height:1px; background:#2e3347;"></div>
+            <div>
+              <div style="background:#1e2332; padding:4px 6px; border-radius:2px; color:#3b82f6; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:5px;">Visual Features  v ∈ ℝ⁸</div>
+              <div style="display:grid; grid-template-columns:1fr auto; gap:2px; color:#888899;">
+                <div>shannon entropy</div><div style="color:#e8e8f0; font-family:monospace;">7.4821</div>
+                <div>edge density</div><div style="color:#e8e8f0; font-family:monospace;">0.1203</div>
+                <div>feature congestion</div><div style="color:#e8e8f0; font-family:monospace;">0.3871</div>
+                <div>layout symmetry</div><div style="color:#e8e8f0; font-family:monospace;">0.6214</div>
+                <div style="color:#555568;">… 4 weitere</div><div></div>
+              </div>
+            </div>
+            <div style="height:1px; background:#2e3347;"></div>
+            <div>
+              <div style="background:#1e2332; padding:4px 6px; border-radius:2px; color:#3b82f6; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:5px;">Saliency Features  s ∈ ℝ⁵  (UMSI++)</div>
+              <div style="display:grid; grid-template-columns:1fr auto; gap:2px; color:#888899;">
+                <div>saliency dispersion</div><div style="color:#e8e8f0; font-family:monospace;">0.5512</div>
+                <div>saliency entropy</div><div style="color:#e8e8f0; font-family:monospace;">6.8830</div>
+                <div>peak count</div><div style="color:#e8e8f0; font-family:monospace;">4</div>
+              </div>
+            </div>
+            <div style="height:1px; background:#2e3347;"></div>
+            <div>
+              <div style="background:#1e2332; padding:4px 6px; border-radius:2px; color:#3b82f6; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:5px;">HCEye Features  h ∈ ℝ⁶</div>
+              <div style="display:grid; grid-template-columns:1fr auto; gap:2px; color:#888899;">
+                <div>fixation rate</div><div style="color:#e8e8f0; font-family:monospace;">0.8431</div>
+                <div>saccade amplitude</div><div style="color:#e8e8f0; font-family:monospace;">3.2100</div>
+              </div>
+            </div>
+            <div style="height:1px; background:#2e3347;"></div>
+            <div>
+              <div style="background:#1e2332; padding:4px 6px; border-radius:2px; color:#3b82f6; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:5px;">Coherence Check</div>
+              <div style="display:grid; grid-template-columns:1fr auto; gap:2px; color:#888899;">
+                <div>Is Coherent</div><div style="color:#34c87a; font-weight:700;">Yes</div>
+                <div>Rules Checked</div><div style="color:#e8e8f0;">3</div>
+              </div>
+            </div>
+            <div style="height:1px; background:#2e3347;"></div>
+            <div>
+              <div style="background:#1e2332; padding:4px 6px; border-radius:2px; color:#3b82f6; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:5px;">Overall Interpretation</div>
+              <div style="color:#e8e8f0; line-height:1.5;">The interface shows moderate cognitive load. Saliency is moderately dispersed with 4 attention peaks, suggesting a reasonably guided visual path. Edge density and feature congestion are within acceptable bounds…</div>
+            </div>
+            <div style="height:1px; background:#2e3347;"></div>
+            <!-- Footer -->
+            <div style="color:#555568; font-style:italic; font-size:9px; line-height:1.5;">
+              Pipeline: Two-Stage Multi-Output Pipeline · Das et al. (ETRA 2024) · Jokinen et al. (IJHCS 2020) · Rosenholtz et al. (JoV 2007)<br>
+              Output is a computational index of interactional complexity — not a direct measure of cognitive load.
+              <span style="float:right;">1 / 1</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px; font-size:12px; color:#888899; line-height:1.7;">
+        <strong style="color:#e8e8f0;">PDF-Struktur (7 Sektionen):</strong><br>
+        1. <strong>Header</strong> — Dateiname, Timestamp, Pipeline-Version<br>
+        2. <strong>Score-Banner</strong> — CL Score groß, Level-Badge farbig (grün/gelb/orange/rot)<br>
+        3. <strong>Analysis Settings</strong> — alle konfigurierten Parameter (Task, Profil, Quelle)<br>
+        4. <strong>Prediction Scores</strong> — Score, SE, AD, Base Score, Modifier<br>
+        5. <strong>Visual Features v ∈ ℝ⁸</strong> — alle 8 Werte mit 4 Dezimalstellen<br>
+        6. <strong>Saliency Features s ∈ ℝ⁵</strong> + <strong>HCEye Features h ∈ ℝ⁶</strong> — Rohdaten<br>
+        7. <strong>Coherence Check</strong> + <strong>Interpretation</strong> — Warnungen falls vorhanden, Freitext<br>
+        Seitenzahlen, automatisch mehrseitig bei vielen Features.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 7. Plan vs. Realität ─────────────── -->
+  <div class="section">
+    <div class="section-num">07 · Plan vs. Realität — Was gebaut wurde, was geändert wurde, was fehlt</div>
+    <h2>Ehrliche Bestandsaufnahme</h2>
+    <p class="section-intro">Der Originalplan (Obsidian, <code>_projektplan.md</code>) sah eine andere Architektur vor. Hier steht klar, was umgesetzt wurde, was bewusst geändert wurde, was nicht mehr relevant ist — und was noch offen ist.</p>
+
+    <!-- Architektur-Pivot -->
+    <div style="margin-bottom: 32px;">
+      <div style="font-size:13px; font-weight:700; color:var(--text); margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:8px;">Architektur-Pivot: Neural Network → Klassische ML-Regression</div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:14px;">
+        <div style="background:var(--surface); border:1px solid #f54b4b44; border-left:3px solid var(--red); border-radius:10px; padding:16px;">
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--red); margin-bottom:8px;">Originalplan (Obsidian)</div>
+          <div style="font-size:13px; line-height:1.7; color:var(--text-dim);">
+            Neural Multi-Head Network mit:<br>
+            &bull; Head 1: Saliency Map (pixel-level output)<br>
+            &bull; Head 2: Fixation Distribution (Scanpath-Entropie)<br>
+            &bull; Head 3: Cognitive Load Index 0–100<br><br>
+            Loss-Funktion:<br>
+            <code style="background:var(--surface2); padding:3px 6px; border-radius:4px; font-size:11px;">L = λ₁L_sal + λ₂L_fix + λ₃L_load + λ_coh·L_coh</code><br><br>
+            Training auf: eigene Nutzerstudie (30–35 Probanden, within-subjects, Eye-Tracking + NASA-TLX, 8–10 automotive GUIs)
+          </div>
+        </div>
+        <div style="background:var(--surface); border:1px solid #34c87a44; border-left:3px solid var(--green); border-radius:10px; padding:16px;">
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--green); margin-bottom:8px;">Gebaut (aktueller Stand)</div>
+          <div style="font-size:13px; line-height:1.7; color:var(--text-dim);">
+            Klassische Multi-Output ML-Regression:<br>
+            &bull; Ridge Regression (Baseline)<br>
+            &bull; Random Forest / XGBoost (primär)<br>
+            &bull; Simultane 3 Outputs: CL Score, SE, AD<br><br>
+            Coherence Check:<br>
+            <code style="background:var(--surface2); padding:3px 6px; border-radius:4px; font-size:11px;">3 Regeln, wissenschaftlich referenziert</code><br><br>
+            Validierung auf: HCEye (Das et al. 2024) + UEyes (Jiang et al. 2023) — bestehende Datensätze statt eigener Studie
+          </div>
+        </div>
+      </div>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px; font-size:12px; color:var(--text-dim); line-height:1.7;">
+        <strong style="color:var(--text);">Warum dieser Pivot?</strong>
+        Klassische Regression erfordert keine gelabelten Trainingsdaten aus einer eigenen Studie und ist bei dem vorhandenen Datensatz (HCEye: 150 Webseiten × 27 Probanden) interpretierbarer. Kein CNN = kein Black Box. Außerdem ist die Stage-1-Saliency bereits durch UMSI++ (Deep Learning) abgedeckt. Dieses Vorgehen ist explizit dokumentiert in <code>regression_model.py §4.2 (adapted from neural multi-head)</code>.<br>
+        <strong style="color:var(--yellow);">Offen: wurde dieser Pivot mit dem Supervisor abgestimmt?</strong>
+      </div>
+    </div>
+
+    <!-- Drei-Spalten-Tabelle -->
+    <div style="font-size:13px; font-weight:700; color:var(--text); margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:8px;">Vollständige Gegenüberstellung</div>
+    <table style="margin-bottom:28px;">
+      <thead>
+        <tr>
+          <th style="width:35%;">Punkt</th>
+          <th style="width:22%;">Originalplan</th>
+          <th style="width:22%;">Status</th>
+          <th style="width:21%;">Konsequenz</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>v ∈ ℝ⁸ visuelle Features</strong></td>
+          <td style="color:var(--text-dim);">Stage 1, identisch geplant</td>
+          <td class="status-done">✓ Fertig &amp; identisch</td>
+          <td style="color:var(--text-dim);">—</td>
+        </tr>
+        <tr>
+          <td><strong>UMSI++ Saliency (s ∈ ℝ⁵)</strong></td>
+          <td style="color:var(--text-dim);">SALICON / DeepGaze II geplant</td>
+          <td class="status-done">✓ Ersetzt durch UMSI++</td>
+          <td style="color:var(--text-dim);">Besser geeignet für UI-Screenshots, CC=0.896</td>
+        </tr>
+        <tr>
+          <td><strong>Jokinen Suchzeit-Modell</strong></td>
+          <td style="color:var(--text-dim);">Nicht im Originalplan</td>
+          <td class="status-done">✓ Ergänzend hinzugefügt</td>
+          <td style="color:var(--text-dim);">Stärkt kognitive Fundierung</td>
+        </tr>
+        <tr>
+          <td><strong>HCEye-Sensitivitätsschicht (h ∈ ℝ⁶)</strong></td>
+          <td style="color:var(--text-dim);">Nicht im Originalplan</td>
+          <td class="status-done">✓ Ergänzend hinzugefügt</td>
+          <td style="color:var(--text-dim);">Empirische Verankerung aus ETRA 2024</td>
+        </tr>
+        <tr>
+          <td><strong>Task Descriptor (t ∈ ℝ⁶)</strong></td>
+          <td style="color:var(--text-dim);">Geplant</td>
+          <td class="status-done">✓ Fertig</td>
+          <td style="color:var(--text-dim);">—</td>
+        </tr>
+        <tr>
+          <td><strong>Big Five User Profile (p ∈ ℝ⁵)</strong></td>
+          <td style="color:var(--text-dim);">Geplant, optional</td>
+          <td class="status-done">✓ Fertig</td>
+          <td style="color:var(--text-dim);">—</td>
+        </tr>
+        <tr>
+          <td><strong>Klassische Regression (RF/Ridge)</strong></td>
+          <td style="color:var(--text-dim);">Nicht geplant — Neural Net war vorgesehen</td>
+          <td class="status-warn">⚠ Gebaut, aber nicht trainiert</td>
+          <td style="color:var(--yellow);">Gerüst existiert, kein trainiertes Modell in <code>stage2/models/</code>. Braucht Labeldaten.</td>
+        </tr>
+        <tr>
+          <td><strong>Neural Network + Loss-Funktion</strong><br><small style="color:var(--text-dim);">L = λ₁L_sal + λ₂L_fix + λ₃L_load + λ_coh</small></td>
+          <td style="color:var(--text-dim);">Kernarchitektur im Plan</td>
+          <td class="status-open">✗ Nicht gebaut</td>
+          <td style="color:var(--text-dim);">Bewusst ersetzt durch Rule-based + ML-Regression. <strong style="color:var(--yellow);">Mit Supervisor klären ob OK.</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Eigene Nutzerstudie</strong><br><small style="color:var(--text-dim);">30–35 Probanden, within-subjects, Eye-Tracking + NASA-TLX</small></td>
+          <td style="color:var(--text-dim);">Pflicht im Plan</td>
+          <td class="status-open">✗ Nicht durchgeführt</td>
+          <td style="color:var(--red);">Wichtigste offene Frage für Supervisor: reicht HCEye + UEyes als Ersatz?</td>
+        </tr>
+        <tr>
+          <td><strong>Automotive HMI als Domäne</strong></td>
+          <td style="color:var(--text-dim);">Explizit: automotive screenshots</td>
+          <td class="status-warn">⚠ Generalisiert zu allg. GUIs</td>
+          <td style="color:var(--yellow);">Scope-Pivot, noch nicht abgestimmt</td>
+        </tr>
+        <tr>
+          <td><strong>Coherence Constraints</strong></td>
+          <td style="color:var(--text-dim);">Als Loss-Term λ_coh geplant</td>
+          <td class="status-done">✓ Als Rule-based Check gebaut</td>
+          <td style="color:var(--text-dim);">Funktional äquivalent, aber nicht als Verlustterm</td>
+        </tr>
+        <tr>
+          <td><strong>Baseline-Vergleiche (1/2/3)</strong></td>
+          <td style="color:var(--text-dim);">Pflicht im Plan</td>
+          <td class="status-done">✓ <code>baseline_comparison.py</code></td>
+          <td style="color:var(--text-dim);">—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Technische TODOs im Code -->
+    <div style="font-size:13px; font-weight:700; color:var(--text); margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:8px;">Konkrete technische Lücken (Code-Stand heute)</div>
+    <div class="open-grid">
+
+      <div style="font-size:12px; color:var(--red); text-transform:uppercase; letter-spacing:0.07em; padding: 4px 0 8px;">Kritisch — blockiert wissenschaftliche Aussage</div>
+
+      <div class="open-item critical">
+        <div>
+          <div class="open-title">Kein trainiertes Regressionsmodell</div>
+          <div class="open-why"><code>stage2/models/</code> ist leer. <code>regression_model.py</code> hat <code>train()</code> implementiert, aber kein gespeichertes Modell. Die App fällt immer auf <code>hceye_rule_based</code> zurück. Für Training werden Labeldaten benötigt (Screenshot + CL-Score-Paare) — die kommen erst aus einer Validierungsstudie oder Experten-Ratings.</div>
+        </div>
+        <div class="effort">Blockiert durch fehlende Labels</div>
+      </div>
+
+      <div class="open-item critical">
+        <div>
+          <div class="open-title">Vektorbreite inkonsistent: ℝ¹⁹ vs. ℝ³⁰</div>
+          <div class="open-why"><code>regression_model.py</code> ist auf x ∈ ℝ¹⁹ dokumentiert (v⁸ + s⁵ + h⁶). <code>app.py</code> baut x ∈ ℝ³⁰ mit t ∈ ℝ⁶ und p ∈ ℝ⁵ extra. Task- und Profil-Vektor werden separat angehängt, aber das Modell-Schema ist nicht auf 30 Dims aktualisiert. Wenn das Modell jemals trainiert wird, muss das konsistent sein.</div>
+        </div>
+        <div class="effort">S · 1 Tag</div>
+      </div>
+
+      <div class="open-item critical">
+        <div>
+          <div class="open-title">Experten-Validierung End-to-End</div>
+          <div class="open-why">UMSI++ und HCEye-Koeffizienten sind beide extern validiert. Der kombinierte End-to-End-Score wurde noch nie gegen menschliche Urteile geprüft. Optionen: (A) Spearman ρ gegen 3–5 UX-Experten (2–3 Tage), (B) NASA-TLX User Study (Wochen, Ethikantrag), (C) HCEye-Bedingungsvergleich als indirekter Beleg. Welche Strategie akzeptiert wird — Supervisor-Entscheidung.</div>
+        </div>
+        <div class="effort">Supervisor-Entscheidung nötig</div>
+      </div>
+
+      <div style="font-size:12px; color:var(--yellow); text-transform:uppercase; letter-spacing:0.07em; padding: 16px 0 8px;">Wichtig — für Thesis-Qualität</div>
+
+      <div class="open-item important">
+        <div>
+          <div class="open-title">Jokinen Monte-Carlo-Parameter — Begründung fehlt</div>
+          <div class="open-why">EMMA-Werte (Blickbewegungszeiten) und VSTM-Kapazität (4±1 Items) kommen direkt aus Jokinen (2020) ohne Kalibrierung. In der Thesis muss begründet werden warum diese Parameter auf moderne GUIs übertragbar sind — oder sie müssen als Limitation deklariert werden. Der Code hat diese Begründung noch nicht als Kommentar.</div>
+        </div>
+        <div class="effort">S · Donnerstag im Wochenplan</div>
+      </div>
+
+      <div class="open-item important">
+        <div>
+          <div class="open-title">Task-Descriptor-Gewichte sind Ordinalwerte, nicht kalibriert</div>
+          <div class="open-why">Die Gewichte in <code>task_descriptor.py</code> basieren auf Kahneman (1973) und Wickens (2008) — Literaturwerte, nicht empirisch aus Daten abgeleitet. Das muss in der Thesis-Diskussion explizit als Limitation stehen, oder die Werte müssen durch Experten-Ratings kalibriert werden.</div>
+        </div>
+        <div class="effort">Limitation oder Kalibrierung</div>
+      </div>
+
+      <div style="font-size:12px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.07em; padding: 16px 0 8px;">Bereits behoben heute</div>
+
+      <div class="open-item nice" style="border-left:3px solid var(--green);">
+        <div>
+          <div class="open-title" style="color:var(--green);">✓ JS-Fehler renderFeatureCards() behoben</div>
+          <div class="open-why"><code>featuresGrid</code>-Container wurde beim UX-Redesign entfernt, aber die JS-Funktion warf noch einen <code>TypeError: Cannot set properties of null</code>. Fix: Null-Check ergänzt, Funktion ist jetzt silent wenn Container nicht vorhanden.</div>
+        </div>
+        <div class="effort" style="color:var(--green);">Behoben</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── 8. Referenzen ──────────────────────── -->
+  <div class="section">
+    <div class="section-num">08 · Kernreferenzen</div>
+    <h2>Wissenschaftliche Grundlage</h2>
+    <p class="section-intro">Die Pipeline referenziert direkt folgende Kernwerke.</p>
+    <div class="ref-list">
+      <div class="ref-item"><strong>Das et al. (2024)</strong> HCEye: Understanding How Human Cognitive Load is Driven by Visual Saliency in Eye Tracking. ETRA 2024. → HCEye-Sensitivitätsgewichte h ∈ ℝ⁶</div>
+      <div class="ref-item"><strong>Jiang et al. (2023)</strong> UEyes: Understanding Visual Saliency Across UI Paradigms. CHI 2023. → UMSI++ Saliency-Modell, Validierungs-Ground-Truth</div>
+      <div class="ref-item"><strong>Jokinen et al. (2020)</strong> Adaptive Feature Guidance: Modeling Visual Search with IRL. Int. Journal of Human-Computer Studies. → Kognitive Suchzeit-Modellierung</div>
+      <div class="ref-item"><strong>Rosenholtz et al. (2007)</strong> Measuring Visual Clutter. Journal of Vision, 7(2):17. → Feature Congestion, visuelle Überfüllung</div>
+      <div class="ref-item"><strong>Shannon (1948)</strong> A Mathematical Theory of Communication. Bell System Technical Journal, 27(3). → Entropie-Metrik</div>
+      <div class="ref-item"><strong>Treisman &amp; Gelade (1980)</strong> A Feature-Integration Theory of Attention. Cognitive Psychology, 12(1). → Feature- vs. Konjunktionssuche im Task Descriptor</div>
+      <div class="ref-item"><strong>Kahneman (1973)</strong> Attention and Effort. Prentice-Hall. → Kognitive Last als limitierte Ressource</div>
+      <div class="ref-item"><strong>Wickens (2008)</strong> Multiple Resource Theory. Human Factors, 50(3). → Multiple Resource Theory im Task Descriptor</div>
+      <div class="ref-item"><strong>Costa &amp; McCrae (1992)</strong> Revised NEO Personality Inventory. PAR. → Big-Five User Profile p ∈ ℝ⁵</div>
+      <div class="ref-item"><strong>Salvucci (2001)</strong> EMMA: An Eye-Movement Model for the Analysis of Tasks. ICCM 2001. → Augenbewegungsparameter im Jokinen-Modell</div>
+      <div class="ref-item"><strong>Bylinskii et al. (2018)</strong> Different Types of Saliency Maps. ACM TAP, 16(3). → Validierungsmetriken CC, SIM, NSS</div>
+      <div class="ref-item"><strong>Breiman (2001)</strong> Random Forests. Machine Learning, 45(1). → regression_model.py</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div>Supervisor Meeting · 03. Juni 2026 · hannah.maria.m@web.de</div>
+    <div>Pipeline v3.0 · Flask 3.1.3 · TF 2.16.2 · Keras 3.10.0</div>
+  </div>
+
+</div>
+</body>
+</html>
+
+  <div class="section">
+    <div class="section-num">08 · Kernreferenzen</div>
+    <h2>Wissenschaftliche Grundlage</h2>
+    <p class="section-intro">Die Pipeline referenziert direkt folgende Kernwerke.</p>
+    <div class="ref-list">
+      <div class="ref-item"><strong>Das et al. (2024)</strong> HCEye: Understanding How Human Cognitive Load is Driven by Visual Saliency in Eye Tracking. ETRA 2024. → HCEye-Sensitivitätsgewichte h ∈ ℝ⁶</div>
+      <div class="ref-item"><strong>Jiang et al. (2023)</strong> UEyes: Understanding Visual Saliency Across UI Paradigms. CHI 2023. → UMSI++ Saliency-Modell, Validierungs-Ground-Truth</div>
+      <div class="ref-item"><strong>Jokinen et al. (2020)</strong> Adaptive Feature Guidance: Modeling Visual Search with IRL. Int. Journal of Human-Computer Studies. → Kognitive Suchzeit-Modellierung</div>
+      <div class="ref-item"><strong>Rosenholtz et al. (2007)</strong> Measuring Visual Clutter. Journal of Vision, 7(2):17. → Feature Congestion, visuelle Überfüllung</div>
+      <div class="ref-item"><strong>Shannon (1948)</strong> A Mathematical Theory of Communication. Bell System Technical Journal, 27(3). → Entropie-Metrik</div>
+      <div class="ref-item"><strong>Treisman &amp; Gelade (1980)</strong> A Feature-Integration Theory of Attention. Cognitive Psychology, 12(1). → Feature- vs. Konjunktionssuche im Task Descriptor</div>
+      <div class="ref-item"><strong>Kahneman (1973)</strong> Attention and Effort. Prentice-Hall. → Kognitive Last als limitierte Ressource</div>
+      <div class="ref-item"><strong>Wickens (2008)</strong> Multiple Resource Theory. Human Factors, 50(3). → Multiple Resource Theory im Task Descriptor</div>
+      <div class="ref-item"><strong>Costa &amp; McCrae (1992)</strong> Revised NEO Personality Inventory. PAR. → Big-Five User Profile p ∈ ℝ⁵</div>
+      <div class="ref-item"><strong>Salvucci (2001)</strong> EMMA: An Eye-Movement Model for the Analysis of Tasks. ICCM 2001. → Augenbewegungsparameter im Jokinen-Modell</div>
+      <div class="ref-item"><strong>Bylinskii et al. (2018)</strong> Different Types of Saliency Maps. ACM TAP, 16(3). → Validierungsmetriken CC, SIM, NSS</div>
+      <div class="ref-item"><strong>Breiman (2001)</strong> Random Forests. Machine Learning, 45(1). → regression_model.py</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div>Supervisor Meeting · 03. Juni 2026 · hannah.maria.m@web.de</div>
+    <div>Pipeline v3.0 · Flask 3.1.3 · TF 2.16.2 · Keras 3.10.0</div>
+  </div>
+
+</div>
+</body>
+</html>

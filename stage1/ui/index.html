@@ -1,0 +1,2116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pipeline</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --bg: #0f1117;
+            --surface: #1a1d27;
+            --surface2: #242836;
+            --border: #2e3347;
+            --text: #e4e6f0;
+            --text-dim: #8b8fa3;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Navigation */
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 0 20px 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 32px;
+        }
+        .navbar-brand {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.02em;
+        }
+        .navbar-brand span {
+            color: var(--accent);
+        }
+        .navbar-links {
+            display: flex;
+            gap: 4px;
+        }
+        .nav-btn {
+            background: none;
+            border: 1px solid transparent;
+            border-radius: 7px;
+            color: var(--text-dim);
+            font-size: 13px;
+            padding: 7px 14px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .nav-btn:hover {
+            color: var(--text);
+            background: var(--surface2);
+        }
+        .nav-btn.active {
+            color: var(--text);
+            background: var(--surface2);
+            border-color: var(--border);
+        }
+
+        /* Views */
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* Pipeline visualization */
+        .pipeline-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .pipeline-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        .pipeline-node {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+        }
+        .pipeline-node-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+        }
+        .pipeline-node-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .pipeline-node-dim {
+            font-size: 11px;
+            color: var(--accent);
+            font-family: monospace;
+            margin-bottom: 6px;
+        }
+        .pipeline-node-desc {
+            font-size: 12px;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+        .pipeline-node-ref {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-top: 8px;
+            border-top: 1px solid var(--border);
+            padding-top: 6px;
+        }
+        .pipeline-arrow {
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 18px;
+            padding: 4px 0;
+        }
+        .pipeline-section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin: 24px 0 10px;
+        }
+        .ref-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .ref-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-size: 12px;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+        .ref-item strong {
+            color: var(--text);
+            display: block;
+            margin-bottom: 2px;
+            font-size: 13px;
+        }
+        /* Contact */
+        .contact-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 32px;
+            max-width: 560px;
+        }
+        .contact-card h2 {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+        .contact-card p {
+            color: var(--text-dim);
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .contact-email {
+            display: inline-block;
+            padding: 10px 18px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--accent);
+            font-size: 14px;
+            text-decoration: none;
+        }
+        .contact-email:hover {
+            border-color: var(--accent);
+        }
+
+        /* Layout */
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        .grid-results {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+        /* Within results: saliency + radar side by side */
+        .results-visual-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 24px;
+        }
+        @media (max-width: 900px) {
+            .grid-inputs { grid-template-columns: 1fr; }
+            .results-visual-row { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+        }
+        .card h2 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .subtle {
+            color: var(--text-dim);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        /* Drop Zone */
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 48px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        /* File input covers the entire drop zone — most reliable cross-browser approach */
+        .drop-zone input[type="file"] {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .drop-zone label {
+            position: absolute;
+            inset: 0;
+            cursor: pointer;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(59, 130, 246, 0.05);
+        }
+        .drop-zone-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        .drop-zone-text {
+            color: var(--text-dim);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .drop-zone-text strong {
+            color: var(--accent);
+            cursor: pointer;
+        }
+        .drop-zone input[type="file"] {
+            display: none;
+        }
+
+        /* Preview */
+        .preview-container {
+            display: none;
+            margin-top: 16px;
+        }
+        .preview-container.visible { display: block; }
+        .preview-img {
+            width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            border-radius: 8px;
+            background: var(--bg);
+        }
+        .preview-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+
+        /* Analyze Button */
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 16px;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-primary:disabled {
+            background: var(--surface2);
+            color: var(--text-dim);
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: var(--surface2);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { background: var(--border); }
+
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 24px;
+        }
+        .loading.visible { display: block; }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Results */
+        .results { display: none; }
+        .results.visible { display: block; }
+
+        .feature-row {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .feature-row:last-child { border-bottom: none; }
+        .feature-icon {
+            font-size: 20px;
+            width: 36px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .feature-info {
+            flex: 1;
+            margin-left: 12px;
+        }
+        .feature-name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .feature-desc {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+        .feature-value {
+            font-size: 18px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            margin-left: 12px;
+            flex-shrink: 0;
+            min-width: 70px;
+            text-align: right;
+        }
+        .feature-bar-bg {
+            width: 100%;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+        .feature-bar {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.6s ease;
+        }
+
+        /* Radar Chart */
+        .radar-container {
+            display: flex;
+            justify-content: center;
+            margin: 16px 0;
+        }
+
+        /* History */
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .history-table th {
+            text-align: left;
+            padding: 8px 6px;
+            color: var(--text-dim);
+            font-weight: 500;
+            border-bottom: 1px solid var(--border);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .history-table td {
+            padding: 8px 6px;
+            border-bottom: 1px solid var(--border);
+            font-variant-numeric: tabular-nums;
+        }
+        .history-empty {
+            text-align: center;
+            padding: 24px;
+            color: var(--text-dim);
+            font-size: 14px;
+        }
+
+        /* Feature Info Cards */
+        .features-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+        .feature-card {
+            background: var(--surface2);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .feature-card-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+        .feature-card-name { font-size: 13px; font-weight: 600; }
+        .feature-card-desc { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+        .feature-card-ref { font-size: 11px; color: var(--accent); margin-top: 4px; }
+
+        .full-width { grid-column: 1 / -1; }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .field label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .field select {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface2);
+            color: var(--text);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .summary-card {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .summary-label {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .summary-value {
+            font-size: 26px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .summary-meta {
+            margin-top: 4px;
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 12px 0 2px;
+        }
+
+        .pill {
+            padding: 7px 10px;
+            border-radius: 999px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        .result-section {
+            margin-top: 18px;
+            padding-top: 18px;
+            border-top: 1px solid var(--border);
+        }
+
+        .result-section h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 900px) {
+            .summary-grid, .control-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Interpretation Panel */
+        .interpretation-panel {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            border-radius: 10px;
+            padding: 16px 18px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        /* Score Breakdown + Task Context */
+        .score-breakdown {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+        }
+        .score-breakdown-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+        }
+        .score-flow {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+        .score-flow-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+        .score-flow-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .score-flow-label {
+            font-size: 10px;
+            color: var(--text-dim);
+            text-align: center;
+            max-width: 64px;
+        }
+        .score-flow-arrow { font-size: 16px; color: var(--text-dim); padding-bottom: 14px; }
+        .score-flow-delta { font-size: 13px; font-weight: 600; padding-bottom: 14px; }
+        .score-flow-delta.pos  { color: #f97316; }
+        .score-flow-delta.neg  { color: var(--success); }
+        .score-flow-delta.zero { color: var(--text-dim); }
+        .task-context-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 7px;
+        }
+        .task-context-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 7px 10px;
+        }
+        .task-context-key {
+            font-size: 10px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 2px;
+        }
+        .task-context-val {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            text-transform: capitalize;
+        }
+        .bd-select {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            color: var(--text);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 6px;
+            cursor: pointer;
+            outline: none;
+        }
+        .bd-select:hover { border-color: var(--accent); }
+        .bd-select:focus { border-color: var(--accent); }
+        .bd-desc {
+            margin-top: 5px;
+            font-size: 10px;
+            color: var(--text-dim);
+            line-height: 1.4;
+            min-height: 14px;
+        }
+
+        /* Step numbers + required/optional badges */
+        .step-heading {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+        .step-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .step-heading h2 { margin: 0; }
+        .tag-required {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 999px;
+            background: rgba(239,68,68,.12);
+            color: var(--danger);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .tag-optional {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 999px;
+            background: rgba(100,116,139,.12);
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .field-hint {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+        /* Upload error */
+        .upload-error {
+            display: none;
+            margin-top: 10px;
+            padding: 10px 14px;
+            background: rgba(239,68,68,.08);
+            border: 1px solid rgba(239,68,68,.3);
+            border-radius: 8px;
+            color: var(--danger);
+            font-size: 12px;
+        }
+        .upload-error.visible { display: block; }
+        /* Analysis feedback */
+        .analyze-status {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 8px;
+            min-height: 16px;
+            text-align: center;
+        }
+        .analyze-status.error { color: var(--danger); }
+        .analyze-status.success { color: var(--success); }
+
+        /* Coherence Warning Banner */
+        .coherence-warning {
+            background: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            border-left: 3px solid var(--warning);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            line-height: 1.65;
+            display: none;
+        }
+        .coherence-warning.visible { display: block; }
+        .coherence-warning-title {
+            font-weight: 700;
+            color: var(--warning);
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+        .coherence-warning-item {
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+        .coherence-warning-item strong { color: var(--text); }
+        .interpretation-panel.level-low    { border-left-color: var(--success); }
+        .interpretation-panel.level-moderate { border-left-color: var(--warning); }
+        .interpretation-panel.level-high   { border-left-color: #f97316; }
+        .interpretation-panel.level-very-high { border-left-color: var(--danger); }
+        .interpretation-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .interpretation-badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 999px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .badge-low      { background: rgba(34,197,94,.15);  color: var(--success); }
+        .badge-moderate { background: rgba(245,158,11,.15); color: var(--warning); }
+        .badge-high     { background: rgba(249,115,22,.15); color: #f97316; }
+        .badge-very-high{ background: rgba(239,68,68,.15);  color: var(--danger); }
+        .interpretation-title { font-weight: 600; font-size: 14px; }
+        .interpretation-body  { color: var(--text-dim); }
+        .interpretation-body strong { color: var(--text); }
+        .interpretation-items {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .interpretation-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+        .interpretation-item span:first-child { flex-shrink: 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="navbar-brand">Pipeline <span>— GUI Complexity</span></div>
+            <div class="navbar-links">
+                <button class="nav-btn active" onclick="showView('analyzer')">Analyzer</button>
+                <button class="nav-btn" onclick="showView('pipeline')">How it works</button>
+                <button class="nav-btn" onclick="showView('contact')">Contact</button>
+            </div>
+        </nav>
+
+        <!-- View: Analyzer -->
+        <div class="view active" id="view-analyzer">
+
+        <header style="text-align:left; margin-bottom:24px;">
+            <h1 style="font-size:22px; font-weight:600;">Interactional Complexity Analyzer</h1>
+            <p style="color:var(--text-dim); font-size:13px; margin-top:4px;">Estimates the cognitive complexity of a GUI screenshot from visual structure, predicted saliency, and eye-tracking-derived signals.</p>
+        </header>
+
+        <!-- Steps 1 + 2 side by side -->
+        <div class="grid-inputs">
+
+            <!-- Step 1: Upload -->
+            <div class="card">
+                <div class="step-heading">
+                    <span class="step-badge">1</span>
+                    <h2>Upload Screenshot</h2>
+                    <span class="tag-required">Required</span>
+                </div>
+                <p class="field-hint" style="margin-bottom:12px;">Upload a GUI screenshot (PNG, JPG, BMP, TIFF). The file is processed locally on your machine — nothing is stored permanently.</p>
+                <div class="drop-zone" id="dropZone">
+                    <input type="file" id="fileInput"
+                           accept="image/png,image/jpeg,image/jpg,image/bmp,image/tiff,image/webp">
+                    <label for="fileInput" aria-label="Click to select a screenshot or drop one here"></label>
+                    <div class="drop-zone-icon">🖼</div>
+                    <div class="drop-zone-text">
+                        Drag &amp; drop your screenshot here<br>
+                        or <strong style="color:var(--accent);">browse files</strong>
+                        <br><br>
+                        <small>PNG · JPG · BMP · TIFF · WebP</small>
+                    </div>
+                </div>
+                <div class="upload-error" id="uploadError"></div>
+                <div class="preview-container" id="previewContainer">
+                    <img class="preview-img" id="previewImg">
+                    <div class="preview-info">
+                        <span id="fileName">—</span>
+                        <span id="fileSize">—</span>
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="analyzeBtn" disabled>
+                    Analyze Screenshot
+                </button>
+                <div class="analyze-status" id="analyzeStatus"></div>
+            </div>
+
+            <!-- Step 2: Task Context -->
+            <div class="card">
+                <div class="step-heading">
+                    <span class="step-badge">2</span>
+                    <h2>Task Context</h2>
+                    <span class="tag-optional">Optional</span>
+                </div>
+                <p class="field-hint" style="margin-bottom:14px;">Adjust before clicking Analyze. These parameters shift the score to reflect how a user is actually interacting with this screen. Defaults give a neutral baseline.</p>
+                <div class="control-grid">
+                    <div class="field">
+                        <label for="taskType">Task Type</label>
+                        <select id="taskType">
+                            <option value="search" selected>Search</option>
+                            <option value="navigation">Navigation</option>
+                            <option value="monitoring">Monitoring</option>
+                            <option value="data_entry">Data Entry</option>
+                            <option value="decision">Decision Making</option>
+                        </select>
+                        <div class="field-hint">What is the user's primary activity on this screen?</div>
+                    </div>
+                    <div class="field">
+                        <label for="searchMode">Search Mode</label>
+                        <select id="searchMode">
+                            <option value="known_item" selected>Known Item</option>
+                            <option value="comparative">Comparative</option>
+                            <option value="exploratory">Exploratory</option>
+                        </select>
+                        <div class="field-hint">Does the user know exactly what to look for, or are they browsing?</div>
+                    </div>
+                    <div class="field">
+                        <label for="targetSpecificity">Target Specificity</label>
+                        <select id="targetSpecificity">
+                            <option value="high">High — target well defined</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="low">Low — vague or open-ended</option>
+                        </select>
+                        <div class="field-hint">How precisely is the target defined? High specificity reduces search load.</div>
+                    </div>
+                    <div class="field">
+                        <label for="timePressure">Time Pressure</label>
+                        <select id="timePressure">
+                            <option value="low">Low — ample time</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High — time-critical</option>
+                        </select>
+                        <div class="field-hint">Time constraints directly increase cognitive load (Kahneman, 1973).</div>
+                    </div>
+                </div>
+                <div class="field" style="margin-top: 12px;">
+                    <label for="profilePreset">User Profile <span class="tag-optional" style="vertical-align:middle;margin-left:6px;">Optional</span></label>
+                    <select id="profilePreset">
+                        <option value="neutral" selected>Neutral — no adjustment</option>
+                        <option value="focused">Focused / Conscientious</option>
+                        <option value="exploratory">Exploratory / Open</option>
+                        <option value="social">Social / Extraverted</option>
+                        <option value="stress_sensitive">Stress-Sensitive</option>
+                    </select>
+                    <div class="field-hint">Big Five personality preset that applies a small modifier to the score. Leave on Neutral to evaluate the interface independent of a specific user type (Costa &amp; McCrae, 1992).</div>
+                </div>
+            </div>
+
+        </div><!-- end grid-inputs -->
+
+        <!-- Step 3: Results — full width -->
+        <div class="card" style="margin-top:24px;">
+            <div class="step-heading">
+                <span class="step-badge">3</span>
+                <h2>Pipeline Results</h2>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p style="color: var(--text-dim); font-size: 14px;">Computing pipeline — this takes 10–30 seconds.</p>
+            </div>
+
+            <div class="results" id="results">
+                <!-- 1. Coherence warning (if any) -->
+                <div id="coherenceWarning" class="coherence-warning"></div>
+
+                <!-- 2. Score summary -->
+                <div class="summary-grid" id="summaryGrid"></div>
+
+                <!-- 3. Interpretation -->
+                <div id="interpretationPanel"></div>
+
+                <!-- 4. Saliency + Radar side by side -->
+                <div class="results-visual-row">
+                    <div id="saliencyPanel" style="display:none;">
+                        <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+                            <span style="font-size:13px; font-weight:600;">Predicted Attention Map</span>
+                            <button id="saliencyToggleBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0;">Hide</button>
+                        </div>
+                        <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">UMSI++ deep-learning saliency overlay (Jiang et al., CHI 2023). Warm colors = high predicted fixation probability. Used as saliency feature vector s∈ℝ⁵.</p>
+                        <img id="saliencyImg" src="" alt="Saliency heatmap"
+                             style="width:100%; border-radius:8px; border:1px solid var(--border);">
+                    </div>
+                    <div id="radarPanel" style="display:none;">
+                        <div style="margin-bottom:8px;">
+                            <span style="font-size:13px; font-weight:600;">Visual Feature Profile</span>
+                        </div>
+                        <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Radar chart of the 8 visual complexity features v∈ℝ⁸. Each axis is normalized to its empirical range. See feature table below for values.</p>
+                        <div class="radar-container">
+                            <canvas id="radarChart" width="260" height="260"></canvas>
+                        </div>
+                        <div id="radarInterpretation" style="font-size:12px; color:var(--text-dim); margin-top:8px; line-height:1.6;"></div>
+                    </div>
+                </div>
+
+                <!-- 5. Feature Vector Table -->
+                <div class="result-section" id="featureSection" style="display:none;">
+                    <h3>Visual Feature Vector <span style="font-size:11px; font-weight:400; color:var(--text-dim);">v ∈ ℝ⁸ — Stage 1 output</span></h3>
+                    <div id="featureRows"></div>
+                </div>
+
+                <!-- 6. Context pills + Score Breakdown -->
+                <div class="pill-row" id="contextPills"></div>
+                <div id="scoreBreakdown"></div>
+
+                <!-- 7. Export buttons -->
+                <div style="display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;">
+                    <button class="btn btn-secondary" id="exportBtn" style="width:auto; padding:10px 20px;">
+                        Export as CSV
+                    </button>
+                    <button class="btn btn-secondary" id="exportPdfBtn" style="width:auto; padding:10px 20px; background:#1e3a5f; border-color:#3b82f6; color:#93c5fd;">
+                        Download PDF Report
+                    </button>
+                </div>
+            </div>
+
+            <div id="emptyState" style="text-align:center; padding:32px; color:var(--text-dim);">
+                Upload a screenshot and click Analyze to see results
+            </div>
+        </div>
+
+        <!-- Comparison History -->
+        <div class="card" style="margin-top:24px;">
+            <h2>Comparison History</h2>
+            <div id="historyContent">
+                <div class="history-empty">No analyses yet</div>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+                <button class="btn btn-secondary" id="exportHistoryBtn" style="width:auto; padding:9px 18px; display:none;">
+                    Export All as CSV
+                </button>
+                <button class="btn btn-secondary" id="clearHistoryBtn" style="width:auto; padding:9px 18px; display:none;">
+                    Clear History
+                </button>
+            </div>
+        </div>
+
+        </div><!-- end view-analyzer -->
+
+        <!-- View: Pipeline -->
+        <div class="view" id="view-pipeline">
+            <h2 style="font-size:20px; font-weight:600; margin-bottom:6px;">How the Pipeline Works</h2>
+            <p style="color:var(--text-dim); font-size:13px; margin-bottom:28px;">Two-Stage Multi-Output architecture for computational estimation of interactional complexity from GUI screenshots.</p>
+
+            <div class="pipeline-section-title">Stage 1 — Feature Extraction (Image → Vectors)</div>
+            <div class="pipeline-row">
+                <div class="pipeline-node">
+                    <div class="pipeline-node-label">Stage 1a</div>
+                    <div class="pipeline-node-title">Visual Complexity</div>
+                    <div class="pipeline-node-dim">v ∈ ℝ⁸</div>
+                    <div class="pipeline-node-desc">8 image-derived features: Shannon entropy, edge density, feature congestion, subband entropy, layout symmetry, chromatic coherence, visual hierarchy, interactive element density.</div>
+                    <div class="pipeline-node-ref">Rosenholtz et al. (2007) · Shannon (1948) · Tuch et al. (2009)</div>
+                </div>
+                <div class="pipeline-node">
+                    <div class="pipeline-node-label">Stage 1b</div>
+                    <div class="pipeline-node-title">Saliency Features</div>
+                    <div class="pipeline-node-dim">s ∈ ℝ⁵</div>
+                    <div class="pipeline-node-desc">UMSI++ deep-learning saliency model predicts where users look. Five summary statistics: dispersion, entropy, coverage, peak count, center bias.</div>
+                    <div class="pipeline-node-ref">Jiang et al. CHI 2023 · Itti &amp; Koch (2001) · Tatler (2007)</div>
+                </div>
+                <div class="pipeline-node">
+                    <div class="pipeline-node-label">Stage 1c</div>
+                    <div class="pipeline-node-title">Search Time Model</div>
+                    <div class="pipeline-node-dim">Jokinen 2020</div>
+                    <div class="pipeline-node-desc">Cognitive search time estimated via Jokinen’s adaptive feature guidance model, integrating EMMA eye-movement parameters and ACT-R memory decay.</div>
+                    <div class="pipeline-node-ref">Jokinen et al. (2020) · Salvucci (2001) · Anderson et al. (2004)</div>
+                </div>
+            </div>
+
+            <div class="pipeline-arrow">↓</div>
+
+            <div class="pipeline-section-title">Stage 2 — Cognitive Load Estimation (Vectors → Score)</div>
+            <div class="pipeline-row">
+                <div class="pipeline-node">
+                    <div class="pipeline-node-label">HCEye Sensitivity</div>
+                    <div class="pipeline-node-title">Eye-Tracking Features</div>
+                    <div class="pipeline-node-dim">h ∈ ℝ⁶</div>
+                    <div class="pipeline-node-desc">Rule-based sensitivity model derived from HCEye dataset (27 participants, 150 web pages, 3 cognitive load conditions via dual-task paradigm).</div>
+                    <div class="pipeline-node-ref">Das et al. ETRA 2024</div>
+                </div>
+                <div class="pipeline-node">
+                    <div class="pipeline-node-label">Task Descriptor</div>
+                    <div class="pipeline-node-title">Task Context</div>
+                    <div class="pipeline-node-dim">t ∈ ℝ⁶</div>
+                    <div class="pipeline-node-desc">Task type, search mode, target specificity, time pressure, and search mode are encoded as a weighted vector that modifies the base score.</div>
+                    <div class="pipeline-node-ref">Kahneman (1973) · Wickens (2008) · Treisman &amp; Gelade (1980)</div>
+                </div>
+                <div class="pipeline-node">
+                    <div class="pipeline-node-label">User Profile</div>
+                    <div class="pipeline-node-title">Big Five Personality</div>
+                    <div class="pipeline-node-dim">p ∈ ℝ⁵</div>
+                    <div class="pipeline-node-desc">Optional Big Five personality preset (Costa &amp; McCrae, 1992) applies a small modifier based on neuroticism, conscientiousness, and openness.</div>
+                    <div class="pipeline-node-ref">Serapio-García et al. (2023) · Taubman-Ben-Ari et al. (2004)</div>
+                </div>
+            </div>
+
+            <div class="pipeline-arrow">↓</div>
+
+            <div class="pipeline-row" style="grid-template-columns: 1fr;">
+                <div class="pipeline-node" style="border-color: var(--accent);">
+                    <div class="pipeline-node-label">Full Feature Vector</div>
+                    <div class="pipeline-node-title">Multi-Output Prediction</div>
+                    <div class="pipeline-node-dim">x = [v, s, h, t, p] ∈ ℝ³⁰</div>
+                    <div class="pipeline-node-desc">The concatenated vector is passed to the regression model (HCEye rule-based by default, optional trained Random Forest). Three simultaneous outputs: Cognitive Load Score (0–100), Search Efficiency (0–1), Attention Demand (0–1). A mutual coherence check flags implausible combinations.</div>
+                    <div class="pipeline-node-ref">Breiman (2001) Random Forest · Borchani et al. (2015) Multi-Output Regression · Rosenholtz et al. (2007) Coherence</div>
+                </div>
+            </div>
+
+            <div class="pipeline-section-title" style="margin-top:32px;">Validation</div>
+            <div class="pipeline-row">
+                <div class="pipeline-node">
+                    <div class="pipeline-node-title">HCEye Behavioral Validation</div>
+                    <div class="pipeline-node-desc">H1 (fewer fixations under high load): p = 2.55×10⁻²⁸, Cohen’s d = 1.47 (large effect). Model prediction deviation: 0.6% from observed ratio.</div>
+                    <div class="pipeline-node-ref">Das et al. ETRA 2024</div>
+                </div>
+                <div class="pipeline-node">
+                    <div class="pipeline-node-title">UMSI++ Saliency Validation</div>
+                    <div class="pipeline-node-desc">Validated against UEyes human fixation ground truth (62 participants, 1,980 UI screenshots). CC = 0.896, SIM = 0.806 — above published SOTA range (CC: 0.40–0.70).</div>
+                    <div class="pipeline-node-ref">Jiang et al. CHI 2023 · Bylinskii et al. (2018)</div>
+                </div>
+            </div>
+
+            <div class="pipeline-section-title" style="margin-top:32px;">Key References</div>
+            <div class="ref-list">
+                <div class="ref-item"><strong>Das et al. (2024)</strong> HCEye: Eye Tracking Under Cognitive Load. ETRA 2024.</div>
+                <div class="ref-item"><strong>Jiang et al. (2023)</strong> UEyes: Understanding Visual Saliency Across UI Paradigms. CHI 2023.</div>
+                <div class="ref-item"><strong>Jokinen et al. (2020)</strong> Adaptive Feature Guidance. International Journal of Human-Computer Studies.</div>
+                <div class="ref-item"><strong>Rosenholtz et al. (2007)</strong> Measuring Visual Clutter. Journal of Vision, 7(2):17.</div>
+                <div class="ref-item"><strong>Shannon (1948)</strong> A Mathematical Theory of Communication. Bell System Technical Journal, 27(3).</div>
+                <div class="ref-item"><strong>Kahneman (1973)</strong> Attention and Effort. Prentice-Hall.</div>
+                <div class="ref-item"><strong>Costa &amp; McCrae (1992)</strong> Revised NEO Personality Inventory (NEO PI-R). PAR.</div>
+                <div class="ref-item"><strong>Breiman (2001)</strong> Random Forests. Machine Learning, 45(1).</div>
+            </div>
+        </div><!-- end view-pipeline -->
+
+        <!-- View: Contact -->
+        <div class="view" id="view-contact">
+            <div class="contact-card">
+                <h2>Contact</h2>
+                <p>This tool is part of a Master’s thesis project on computational estimation of GUI interactional complexity. For questions, feedback, or collaboration inquiries, please get in touch.</p>
+                <a class="contact-email" href="mailto:hannah.maria.m@web.de">hannah.maria.m@web.de</a>
+            </div>
+        </div><!-- end view-contact -->
+
+    </div><!-- end container -->
+
+    <script>
+        // ─── Navigation ───
+        function showView(name) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('view-' + name).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // ─── State ───
+        let selectedFile = null;
+        let history = [];
+        let featuresInfo = [];
+
+        const FEATURE_KEYS = [
+            "shannon_entropy", "edge_density", "feature_congestion",
+            "subband_entropy", "layout_symmetry", "chromatic_coherence",
+            "visual_hierarchy", "interactive_element_density"
+        ];
+
+        // Normalization ranges for bar/radar display
+        const FEATURE_NORMS = {
+            shannon_entropy: { min: 0, max: 8 },
+            edge_density: { min: 0, max: 0.15 },
+            feature_congestion: { min: 0, max: 120 },
+            subband_entropy: { min: 0, max: 5 },
+            layout_symmetry: { min: 0, max: 1 },
+            chromatic_coherence: { min: 0, max: 1 },
+            visual_hierarchy: { min: 0, max: 1 },
+            interactive_element_density: { min: 0, max: 0.5 },
+        };
+
+        const BAR_COLORS = [
+            "#3b82f6", "#8b5cf6", "#ef4444", "#f97316",
+            "#22c55e", "#f59e0b", "#06b6d4", "#ec4899"
+        ];
+
+        // ─── DOM Elements ───
+        const dropZone     = document.getElementById("dropZone");
+        const fileInput    = document.getElementById("fileInput");
+        const previewContainer = document.getElementById("previewContainer");
+        const previewImg   = document.getElementById("previewImg");
+        const fileName     = document.getElementById("fileName");
+        const fileSize     = document.getElementById("fileSize");
+        const analyzeBtn   = document.getElementById("analyzeBtn");
+        const analyzeStatus = document.getElementById("analyzeStatus");
+        const uploadError  = document.getElementById("uploadError");
+        const loading      = document.getElementById("loading");
+        const results      = document.getElementById("results");
+        const emptyState   = document.getElementById("emptyState");
+        const featureRows  = document.getElementById("featureRows");
+        const summaryGrid  = document.getElementById("summaryGrid");
+        const contextPills = document.getElementById("contextPills");
+
+        // ─── Load Feature Info ───
+        async function loadFeatures() {
+            try {
+                const res = await fetch("/api/features");
+                featuresInfo = await res.json();
+                renderFeatureCards();
+            } catch (e) {
+                console.error("Could not load features info", e);
+            }
+        }
+
+        function renderFeatureCards() {
+            // Feature descriptions are now inline in the results feature table.
+            // featuresGrid was removed during the UX redesign (June 2026).
+            const grid = document.getElementById("featuresGrid");
+            if (!grid) return;
+            grid.innerHTML = featuresInfo.map(f => `
+                <div class="feature-card">
+                    <div>
+                        <div class="feature-card-name">${f.name}</div>
+                        <div class="feature-card-desc">${f.description}</div>
+                        <div class="feature-card-ref">${f.reference} · Range: ${f.range}</div>
+                    </div>
+                </div>
+            `).join("");
+        }
+
+        // ─── Drag & Drop ───
+        dropZone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            dropZone.classList.add("dragover");
+        });
+
+        dropZone.addEventListener("dragleave", (e) => {
+            if (!dropZone.contains(e.relatedTarget)) {
+                dropZone.classList.remove("dragover");
+            }
+        });
+
+        dropZone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            dropZone.classList.remove("dragover");
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener("change", () => {
+            if (fileInput.files.length) {
+                handleFile(fileInput.files[0]);
+            }
+            fileInput.value = "";
+        });
+
+        function showUploadError(msg) {
+            uploadError.textContent = msg;
+            uploadError.classList.add("visible");
+        }
+        function clearUploadError() {
+            uploadError.classList.remove("visible");
+            uploadError.textContent = "";
+        }
+
+        function handleFile(file) {
+            clearUploadError();
+            const allowed = ["image/png","image/jpeg","image/jpg","image/bmp","image/tiff","image/webp"];
+            if (!allowed.includes(file.type) && !file.name.match(/\.(png|jpg|jpeg|bmp|tiff?|webp)$/i)) {
+                showUploadError("Unsupported file type. Please upload a PNG, JPG, BMP, TIFF or WebP image.");
+                return;
+            }
+            if (file.size > 50 * 1024 * 1024) {
+                showUploadError("File is too large (max 50 MB). Please use a smaller screenshot.");
+                return;
+            }
+            selectedFile = file;
+            const url = URL.createObjectURL(file);
+            previewImg.src = url;
+            fileName.textContent = file.name;
+            fileSize.textContent = formatSize(file.size);
+            previewContainer.classList.add("visible");
+            analyzeBtn.disabled = false;
+            analyzeStatus.textContent = "Image ready — click Analyze Screenshot to run the pipeline.";
+            analyzeStatus.className = "analyze-status";
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + " B";
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+            return (bytes / 1048576).toFixed(1) + " MB";
+        }
+
+        // ─── Analyze ───
+        analyzeBtn.addEventListener("click", analyze);
+
+        async function analyze() {
+            if (!selectedFile) {
+                analyzeStatus.textContent = "Please upload a screenshot first (Step 1).";
+                analyzeStatus.className = "analyze-status error";
+                return;
+            }
+
+            // Show loading
+            loading.classList.add("visible");
+            results.classList.remove("visible");
+            emptyState.style.display = "none";
+            analyzeBtn.disabled = true;
+            analyzeStatus.textContent = "Analyzing… this may take 20–40 seconds.";
+            analyzeStatus.className = "analyze-status";
+
+            const formData = new FormData();
+            formData.append("image", selectedFile);
+            formData.append("task_type", document.getElementById("taskType").value);
+            formData.append("target_specificity", document.getElementById("targetSpecificity").value);
+            formData.append("time_pressure", document.getElementById("timePressure").value);
+            formData.append("search_mode", document.getElementById("searchMode").value);
+            formData.append("profile_preset", document.getElementById("profilePreset").value);
+            formData.append("use_trained_model", "false");
+
+            try {
+                const res = await fetch("/api/cognitive-load", {
+                    method: "POST",
+                    body: formData,
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    analyzeStatus.textContent = "Error: " + data.error;
+                    analyzeStatus.className = "analyze-status error";
+                    return;
+                }
+
+                analyzeStatus.textContent = "✓ Analysis complete.";
+                analyzeStatus.className = "analyze-status success";
+                playDoneChime();
+
+                // Add to history
+                history.push({
+                    filename: data.filename,
+                    score: data.adjusted_prediction.cognitive_load_score,
+                    base_score: data.base_prediction.cognitive_load_score,
+                    search_efficiency: data.adjusted_prediction.search_efficiency,
+                    attention_demand: data.adjusted_prediction.attention_demand,
+                    task_type: data.task_descriptor.task_type,
+                    search_mode: data.task_descriptor.search_mode,
+                    specificity: data.task_descriptor.target_specificity,
+                    time_pressure: data.task_descriptor.time_pressure,
+                    profile: data.big_five_profile.label,
+                    visual_features: data.visual_features,
+                    saliency_features: data.saliency_features,
+                    hceye_features: data.cognitive_load_features,
+                    hceye_cli: data.cognitive_load_features && data.cognitive_load_features.cognitive_load_index,
+                    task_modifier: data.task_descriptor.modifier,
+                    profile_modifier: data.big_five_profile.modifier,
+                    coherence_data: data.coherence,
+                    prediction_source: data.prediction_source,
+                    vector_dimensions: data.vector_dimensions,
+                });
+                renderResults(data);
+                renderHistory();
+
+            } catch (e) {
+                analyzeStatus.textContent = "Connection error: " + e.message + " — is the server running on port 5001?";
+                analyzeStatus.className = "analyze-status error";
+            } finally {
+                loading.classList.remove("visible");
+                analyzeBtn.disabled = false;
+            }
+        }
+
+        // ─── Render Results ───
+        function renderResults(data) {
+            results.classList.add("visible");
+            emptyState.style.display = "none";
+
+            const base = data.base_prediction || {};
+            const adjusted = data.adjusted_prediction || {};
+            summaryGrid.innerHTML = `
+                <div class="summary-card">
+                    <div class="summary-label">Cognitive Load Score</div>
+                    <div class="summary-value">${adjusted.cognitive_load_score.toFixed(1)}</div>
+                    <div class="summary-meta">Base ${base.cognitive_load_score.toFixed(1)} · adjusted by task/profile · ${data.prediction_source === "stage2_trained_model" ? "experimental regressor" : "HCEye rule-based"}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Search Efficiency</div>
+                    <div class="summary-value">${adjusted.search_efficiency.toFixed(3)}</div>
+                    <div class="summary-meta">Higher = easier target acquisition</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Attention Demand</div>
+                    <div class="summary-value">${adjusted.attention_demand.toFixed(3)}</div>
+                    <div class="summary-meta">Higher = more attentional resources required</div>
+                </div>
+            `;
+
+            contextPills.innerHTML = [
+                `Task: ${data.task_descriptor.task_type}`,
+                `Mode: ${data.task_descriptor.search_mode}`,
+                `Specificity: ${data.task_descriptor.target_specificity}`,
+                `Time pressure: ${data.task_descriptor.time_pressure}`,
+                `Profile: ${data.big_five_profile.label}`,
+                `Score source: ${data.prediction_source === "stage2_trained_model" ? "Experimental Stage 2 model" : "HCEye rule-based"}`,
+                `${data.vector_dimensions}`,
+            ].map(text => `<div class="pill">${text}</div>`).join("");
+
+            renderInterpretation(data);
+
+            // ── Saliency heatmap overlay ──────────────────────────────────
+            const saliencyPanel = document.getElementById('saliencyPanel');
+            const saliencyImg   = document.getElementById('saliencyImg');
+            if (data.saliency_overlay_b64) {
+                saliencyImg.src = 'data:image/jpeg;base64,' + data.saliency_overlay_b64;
+                saliencyPanel.style.display = 'block';
+                document.getElementById('saliencyToggleBtn').onclick = () => {
+                    const visible = saliencyImg.style.display !== 'none';
+                    saliencyImg.style.display = visible ? 'none' : 'block';
+                    document.getElementById('saliencyToggleBtn').textContent = visible ? 'Show' : 'Hide';
+                };
+            } else {
+                saliencyPanel.style.display = 'none';
+            }
+
+            // ── Radar chart ───────────────────────────────────────────────
+            document.getElementById('radarPanel').style.display = 'block';
+            drawRadar(data.visual_features);
+            renderRadarInterpretation(data.visual_features);
+
+            // ── Feature Vector Table ──────────────────────────────────────
+            document.getElementById('featureSection').style.display = 'block';
+            featureRows.innerHTML = FEATURE_KEYS.map((key, i) => {
+                const info = featuresInfo.find(f => f.key === key) || {};
+                const val = data.visual_features[key];
+                const norm = FEATURE_NORMS[key];
+                const pct = Math.min(100, ((val - norm.min) / (norm.max - norm.min)) * 100);
+                const refText = info.reference
+                    ? `<span style="font-size:10px; color:var(--accent); margin-top:2px; display:block;">${info.reference}</span>`
+                    : '';
+                const descText = info.description
+                    ? `<div class="feature-desc">${info.description}${refText}</div>`
+                    : '';
+                return `
+                    <div class="feature-row">
+                        <div class="feature-info">
+                            <div class="feature-name">${info.name || key}</div>
+                            ${descText}
+                            <div class="feature-bar-bg">
+                                <div class="feature-bar" style="width: ${pct}%; background: var(--accent); opacity:0.7;"></div>
+                            </div>
+                        </div>
+                        <div class="feature-value">${val.toFixed(4)}</div>
+                    </div>
+                `;
+            }).join("");
+
+            // ─── Score Breakdown Panel ───
+            const baseScore = data.base_prediction.cognitive_load_score;
+            const tMod   = data.task_descriptor.modifier;
+            const pMod   = data.big_five_profile.modifier;
+            const final  = data.adjusted_prediction.cognitive_load_score;
+            const td     = data.task_descriptor;
+
+            // Store base score globally so live-update can recalculate
+            window._baseScore = baseScore;
+
+            // ── Modifier weights (mirror of Python task_descriptor.py) ──────
+            const TASK_W  = { navigation:0.45, search:0.65, monitoring:0.55, data_entry:0.70, decision:0.80 };
+            const SPEC_W  = { high:0.25, medium:0.55, low:0.85 };
+            const TIME_W  = { low:0.20, medium:0.55, high:0.90 };
+            const MODE_W  = { known_item:0.30, comparative:0.70, exploratory:0.90 };
+
+            // ── Profile modifier weights (mirror of Python user_profile.py) ─
+            // modifier = 4*N - 2.5*C - 1.5*(1-N) + 1*O - 1, clipped [-5, 6]
+            const PROFILES = {
+                neutral:          { label:'Neutral',                vec:[0.50,0.50,0.50,0.50,0.50] },
+                focused:          { label:'Focused / Conscientious',vec:[0.40,0.82,0.35,0.55,0.25] },
+                exploratory:      { label:'Exploratory / Open',     vec:[0.72,0.48,0.82,0.58,0.32] },
+                social:           { label:'Social / Extraverted',   vec:[0.68,0.52,0.60,0.84,0.34] },
+                stress_sensitive: { label:'Stress-Sensitive',       vec:[0.35,0.46,0.42,0.40,0.82] },
+            };
+
+            function calcTaskMod(taskT, specif, timeP, searchM) {
+                const t = TASK_W[taskT]||0.65, s = SPEC_W[specif]||0.55,
+                      tp = TIME_W[timeP]||0.55, sm = MODE_W[searchM]||0.30;
+                return Math.max(-8, Math.min(12, 8*t + 6*s + 10*tp + 7*sm - 15));
+            }
+            function calcProfileMod(profileKey) {
+                const v = (PROFILES[profileKey]||PROFILES.neutral).vec;
+                const [O,C,,, N] = v;
+                return Math.max(-5, Math.min(6, 4*N - 2.5*C - 1.5*(1-N) + 1*O - 1));
+            }
+            function deltaClass(d) { return d > 0.05 ? 'pos' : d < -0.05 ? 'neg' : 'zero'; }
+            function deltaStr(d)   { return (d >= 0 ? '+' : '') + d.toFixed(1); }
+
+            // ── Explanations shown below each dropdown ────────────────────
+            const TASK_DESC = {
+                navigation:  'Spatial/procedural — user follows a known path. Lowest attentional demand.',
+                search:      'Sustained focused attention required to locate a specific target.',
+                monitoring:  'Largely pre-attentive, peripheral scanning. Moderate demand.',
+                data_entry:  'Sustained attention + motor execution. High demand.',
+                decision:    'Simultaneous evaluation of alternatives. Highest attentional demand.',
+            };
+            const MODE_DESC = {
+                known_item:  'User knows exactly what to look for — direct memory retrieval.',
+                comparative: 'User must compare multiple options before choosing.',
+                exploratory: 'No fixed target — exhaustive scanning required. Highest load.',
+            };
+            const SPEC_DESC = {
+                high:   'Target is well-defined — narrows search set, reduces load.',
+                medium: 'Partially defined target — moderate search effort.',
+                low:    'Vague target — user must evaluate many candidates.',
+            };
+            const TIME_DESC = {
+                low:    'Ample time — user can process at their own pace.',
+                medium: 'Moderate time constraint — some pressure to act.',
+                high:   'Severe time constraint — reduced processing time increases load.',
+            };
+            const PROFILE_DESC = {
+                neutral:          'Baseline — no personality adjustment applied.',
+                focused:          'High conscientiousness, low neuroticism — structured, calm under load.',
+                exploratory:      'High openness — enjoys exploring, lower anxiety response.',
+                social:           'High extraversion — socially oriented, moderate load sensitivity.',
+                stress_sensitive: 'High neuroticism — amplified response to cognitive demand.',
+            };
+
+            function updateBreakdown() {
+                const taskT   = document.getElementById('bd-taskType').value;
+                const specif  = document.getElementById('bd-specificity').value;
+                const timeP   = document.getElementById('bd-timePressure').value;
+                const searchM = document.getElementById('bd-searchMode').value;
+                const profK   = document.getElementById('bd-profile').value;
+                const tM = calcTaskMod(taskT, specif, timeP, searchM);
+                const pM = calcProfileMod(profK);
+                const fin = Math.max(0, Math.min(100, window._baseScore + tM + pM));
+                document.getElementById('bd-tmod').textContent  = deltaStr(tM);
+                document.getElementById('bd-tmod').className    = 'score-flow-delta ' + deltaClass(tM);
+                document.getElementById('bd-pmod').textContent  = deltaStr(pM);
+                document.getElementById('bd-pmod').className    = 'score-flow-delta ' + deltaClass(pM);
+                document.getElementById('bd-final').textContent = fin.toFixed(1);
+                // update descriptions
+                document.getElementById('bd-desc-task').textContent    = TASK_DESC[taskT]   || '';
+                document.getElementById('bd-desc-mode').textContent    = MODE_DESC[searchM] || '';
+                document.getElementById('bd-desc-spec').textContent    = SPEC_DESC[specif]  || '';
+                document.getElementById('bd-desc-time').textContent    = TIME_DESC[timeP]   || '';
+                document.getElementById('bd-desc-profile').textContent = PROFILE_DESC[profK]|| '';
+                // update summary card score too
+                const scoreCard = summaryGrid.querySelector('.summary-value');
+                if (scoreCard) scoreCard.textContent = fin.toFixed(1);
+            }
+
+            document.getElementById('scoreBreakdown').innerHTML = `
+                <div class="score-breakdown">
+                    <div class="score-breakdown-title">Score Composition — adjust context to see live impact</div>
+                    <div class="score-flow">
+                        <div class="score-flow-item">
+                            <div class="score-flow-value">${baseScore.toFixed(1)}</div>
+                            <div class="score-flow-label">HCEye base</div>
+                        </div>
+                        <div class="score-flow-arrow">→</div>
+                        <span id="bd-tmod" class="score-flow-delta ${deltaClass(tMod)}">${deltaStr(tMod)}</span>
+                        <div class="score-flow-arrow">→</div>
+                        <span id="bd-pmod" class="score-flow-delta ${deltaClass(pMod)}">${deltaStr(pMod)}</span>
+                        <div class="score-flow-arrow">→</div>
+                        <div class="score-flow-item">
+                            <div id="bd-final" class="score-flow-value" style="color:var(--accent)">${final.toFixed(1)}</div>
+                            <div class="score-flow-label">Final score</div>
+                        </div>
+                    </div>
+                    <div class="task-context-grid">
+                        <div class="task-context-item">
+                            <div class="task-context-key">Task Type</div>
+                            <select id="bd-taskType" class="bd-select">
+                                <option value="navigation" ${td.task_type==='navigation'?'selected':''}>Navigation</option>
+                                <option value="search"     ${td.task_type==='search'?'selected':''}>Search</option>
+                                <option value="monitoring" ${td.task_type==='monitoring'?'selected':''}>Monitoring</option>
+                                <option value="data_entry" ${td.task_type==='data_entry'?'selected':''}>Data Entry</option>
+                                <option value="decision"   ${td.task_type==='decision'?'selected':''}>Decision</option>
+                            </select>
+                            <div id="bd-desc-task" class="bd-desc">${TASK_DESC[td.task_type]||''}</div>
+                        </div>
+                        <div class="task-context-item">
+                            <div class="task-context-key">Search Mode</div>
+                            <select id="bd-searchMode" class="bd-select">
+                                <option value="known_item"   ${td.search_mode==='known_item'?'selected':''}>Known Item</option>
+                                <option value="comparative"  ${td.search_mode==='comparative'?'selected':''}>Comparative</option>
+                                <option value="exploratory"  ${td.search_mode==='exploratory'?'selected':''}>Exploratory</option>
+                            </select>
+                            <div id="bd-desc-mode" class="bd-desc">${MODE_DESC[td.search_mode]||''}</div>
+                        </div>
+                        <div class="task-context-item">
+                            <div class="task-context-key">Target Specificity</div>
+                            <select id="bd-specificity" class="bd-select">
+                                <option value="high"   ${td.target_specificity==='high'?'selected':''}>High</option>
+                                <option value="medium" ${td.target_specificity==='medium'?'selected':''}>Medium</option>
+                                <option value="low"    ${td.target_specificity==='low'?'selected':''}>Low</option>
+                            </select>
+                            <div id="bd-desc-spec" class="bd-desc">${SPEC_DESC[td.target_specificity]||''}</div>
+                        </div>
+                        <div class="task-context-item">
+                            <div class="task-context-key">Time Pressure</div>
+                            <select id="bd-timePressure" class="bd-select">
+                                <option value="low"    ${td.time_pressure==='low'?'selected':''}>Low</option>
+                                <option value="medium" ${td.time_pressure==='medium'?'selected':''}>Medium</option>
+                                <option value="high"   ${td.time_pressure==='high'?'selected':''}>High</option>
+                            </select>
+                            <div id="bd-desc-time" class="bd-desc">${TIME_DESC[td.time_pressure]||''}</div>
+                        </div>
+                        <div class="task-context-item" style="grid-column:1/-1">
+                            <div class="task-context-key">Big Five Profile</div>
+                            <select id="bd-profile" class="bd-select">
+                                <option value="neutral"          ${data.big_five_profile.key==='neutral'?'selected':''}>Neutral</option>
+                                <option value="focused"          ${data.big_five_profile.key==='focused'?'selected':''}>Focused / Conscientious</option>
+                                <option value="exploratory"      ${data.big_five_profile.key==='exploratory'?'selected':''}>Exploratory / Open</option>
+                                <option value="social"           ${data.big_five_profile.key==='social'?'selected':''}>Social / Extraverted</option>
+                                <option value="stress_sensitive" ${data.big_five_profile.key==='stress_sensitive'?'selected':''}>Stress-Sensitive</option>
+                            </select>
+                            <div id="bd-desc-profile" class="bd-desc">${PROFILE_DESC[data.big_five_profile.key]||''}</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:8px; font-size:11px; color:var(--text-dim);">
+                        Base score fixed from image analysis · modifiers recalculated locally
+                    </div>
+                </div>
+            `;
+            // Attach live-update listeners
+            ['bd-taskType','bd-specificity','bd-timePressure','bd-searchMode','bd-profile']
+                .forEach(id => document.getElementById(id).addEventListener('change', updateBreakdown));
+        }
+
+        // ─── Coherence Warning ───
+        function renderCoherence(coherence) {
+            const el = document.getElementById('coherenceWarning');
+            if (!coherence || coherence.is_coherent) {
+                el.classList.remove('visible');
+                el.innerHTML = '';
+                return;
+            }
+            const items = coherence.warnings.map(w =>
+                `<div class="coherence-warning-item">&rsaquo; ${w}</div>`
+            ).join('');
+            el.innerHTML = `
+                <div class="coherence-warning-title">⚠️ Coherence Check — ${coherence.flags.length} inconsistenc${coherence.flags.length === 1 ? 'y' : 'ies'} detected</div>
+                ${items}
+                <div style="margin-top:8px; font-size:11px; color: var(--text-dim);">These are diagnostic flags, not errors. The prediction is still valid but may be at the boundary of the model’s calibration range.</div>
+            `;
+            el.classList.add('visible');
+        }
+
+        // ─── Interpretation ───
+        function renderInterpretation(data) {
+            renderCoherence(data.coherence);
+            const score = data.adjusted_prediction.cognitive_load_score;
+            const searchEff = data.adjusted_prediction.search_efficiency;
+            const attnDem  = data.adjusted_prediction.attention_demand;
+            const hcEyeIdx = (data.cognitive_load_features && data.cognitive_load_features.cognitive_load_index) || 0;
+            const fixRed   = (data.cognitive_load_features && data.cognitive_load_features.cog_fixation_reduction) || 1;
+            const durInc   = (data.cognitive_load_features && data.cognitive_load_features.cog_duration_increase) || 1;
+            const hlEff    = (data.cognitive_load_features && data.cognitive_load_features.highlight_effectiveness) || 0;
+
+            let level, badge, badgeClass, levelClass, title, body;
+
+            if (score < 25) {
+                level = 'LOW'; badge = 'Low Load'; badgeClass = 'badge-low'; levelClass = 'level-low';
+                title = 'Interface is easy to process';
+                body = `The visual complexity of this screen is <strong>well within typical attentional capacity</strong>. Users are unlikely to experience measurable cognitive strain, and visual search should be efficient.`;
+            } else if (score < 50) {
+                level = 'MODERATE'; badge = 'Moderate Load'; badgeClass = 'badge-moderate'; levelClass = 'level-moderate';
+                title = 'Manageable, but worth watching';
+                body = `The interface places a <strong>moderate demand on user attention</strong>. Most users will cope well under normal conditions, but performance may degrade slightly under time pressure or dual-task situations — consistent with HCEye findings.`;
+            } else if (score < 75) {
+                level = 'HIGH'; badge = 'High Load'; badgeClass = 'badge-high'; levelClass = 'level-high';
+                title = 'Elevated cognitive demand detected';
+                body = `This screen is estimated to cause <strong>notable attentional strain</strong>. Based on HCEye data, users under cognitive load show ~12% fewer fixations and ~8% longer fixation duration — meaning they take in less while processing each element more effortfully.`;
+            } else {
+                level = 'VERY_HIGH'; badge = 'Very High Load'; badgeClass = 'badge-very-high'; levelClass = 'level-very-high';
+                title = 'Critical cognitive overload risk';
+                body = `The visual structure of this screen is estimated to cause <strong>significant cognitive overload</strong>. Under such conditions, users miss relevant UI elements, make more errors, and take substantially longer to complete tasks (Rosenholtz et al., 2007; Jokinen et al., 2020).`;
+            }
+
+            // Derive concrete implications
+            const fixPct  = Math.round((1 - fixRed) * 100);
+            const durPct  = Math.round((durInc - 1) * 100);
+            const items = [];
+
+            if (fixPct > 3)
+                items.push(`📍 Under cognitive load, users are estimated to make <strong>~${fixPct}% fewer fixations</strong> on this screen — they see less of the interface.`);
+
+            if (durPct > 3)
+                items.push(`⏱ Fixation duration is estimated to increase by <strong>~${durPct}%</strong> — each element requires more processing effort.`);
+
+            if (searchEff < 0.5)
+                items.push(`🔍 <strong>Search efficiency is low (${searchEff.toFixed(2)})</strong> — users may have difficulty finding specific targets, especially under time pressure.`);
+            else if (searchEff > 0.75)
+                items.push(`🔍 <strong>Search efficiency is good (${searchEff.toFixed(2)})</strong> — targets should be findable without excessive visual scanning.`);
+
+            if (hlEff > 0.7)
+                items.push(`✨ <strong>Dynamic highlighting would be highly effective</strong> on this screen — it can compensate well for attention loss under load (HCEye: +${Math.round(hlEff*100)}% AOI retention with dynamic highlights).`);
+
+            const taskMod = data.task_descriptor && data.task_descriptor.modifier || 0;
+            if (taskMod > 4)
+                items.push(`⚠️ The selected <strong>task type adds ${taskMod.toFixed(1)} points</strong> to the score — exploratory or decision tasks amplify cognitive demand.`);
+            else if (taskMod < -2)
+                items.push(`✅ The selected <strong>task type reduces the score by ${Math.abs(taskMod).toFixed(1)} points</strong> — navigation tasks tend to be less demanding.`);
+
+            const panel = document.getElementById('interpretationPanel');
+            panel.innerHTML = `
+                <div class="interpretation-panel ${levelClass}">
+                    <div class="interpretation-header">
+                        <span class="interpretation-badge ${badgeClass}">${badge}</span>
+                        <span class="interpretation-title">${title}</span>
+                    </div>
+                    <div class="interpretation-body">${body}</div>
+                    ${items.length ? `<div class="interpretation-items">${items.map(i => `<div class="interpretation-item"><span>→</span><span>${i}</span></div>`).join('')}</div>` : ''}
+                    <div style="margin-top:12px; font-size:11px; color: var(--text-dim);">Based on: HCEye (Das et al., ETRA 2024) · Jokinen et al. (IJHCS 2020) · Rosenholtz et al. (JoV 2007)</div>
+                </div>
+            `;
+        }
+
+        // ─── Radar Interpretation ───
+        function renderRadarInterpretation(vf) {
+            const el = document.getElementById('radarInterpretation');
+            if (!el || !vf) return;
+
+            // Normalize each feature to 0–1
+            const norm = k => Math.min(1, Math.max(0,
+                (vf[k] - FEATURE_NORMS[k].min) / (FEATURE_NORMS[k].max - FEATURE_NORMS[k].min)
+            ));
+
+            const entropy   = norm('shannon_entropy');
+            const congestion = norm('feature_congestion');
+            const symmetry  = norm('layout_symmetry');
+            const hierarchy = norm('visual_hierarchy');
+            const edges     = norm('edge_density');
+            const chromatic = norm('chromatic_coherence');
+            const elements  = norm('interactive_element_density');
+
+            const findings = [];
+
+            if (entropy > 0.7)
+                findings.push('High information density (Shannon entropy) — the screen carries a large amount of visual information per pixel.');
+            else if (entropy < 0.3)
+                findings.push('Low information density — the screen is visually sparse, which reduces perceptual demand.');
+
+            if (congestion > 0.6)
+                findings.push('Elevated feature congestion — local regions are dense with competing visual features (color, contrast, orientation), which increases attentional filtering cost.');
+            else if (congestion < 0.25)
+                findings.push('Low feature congestion — visual elements are well-separated, supporting efficient pre-attentive processing.');
+
+            if (symmetry < 0.3)
+                findings.push('Weak layout symmetry — irregular spatial distribution of elements may increase scanning effort.');
+            else if (symmetry > 0.7)
+                findings.push('Strong layout symmetry — balanced element distribution aids visual parsing.');
+
+            if (hierarchy > 0.65)
+                findings.push('Clear visual hierarchy — size/contrast gradients guide the eye effectively, reducing search time.');
+            else if (hierarchy < 0.35)
+                findings.push('Flat visual hierarchy — lack of clear size or contrast gradients means users must scan more uniformly.');
+
+            if (elements > 0.6)
+                findings.push('High interactive element density — many actionable items per area increases selection demand.');
+
+            if (chromatic < 0.3)
+                findings.push('Low chromatic coherence — high color variance may signal inconsistent visual design or high information load.');
+
+            if (findings.length === 0)
+                findings.push('Feature profile is balanced — no single dimension is dominant or critically low.');
+
+            el.innerHTML = findings.map(f => `<div style="margin-bottom:5px;">— ${f}</div>`).join('');
+        }
+
+        // ─── Radar Chart ───
+        function drawRadar(data) {
+            const canvas = document.getElementById("radarChart");
+            const ctx = canvas.getContext("2d");
+            const W = canvas.width, H = canvas.height;
+            const cx = W / 2, cy = H / 2;
+            const R = Math.min(cx, cy) - 40;
+
+            ctx.clearRect(0, 0, W, H);
+
+            const n = FEATURE_KEYS.length;
+            const angleStep = (2 * Math.PI) / n;
+
+            // Draw grid rings
+            for (let ring = 1; ring <= 4; ring++) {
+                const r = (ring / 4) * R;
+                ctx.beginPath();
+                for (let i = 0; i <= n; i++) {
+                    const a = i * angleStep - Math.PI / 2;
+                    const x = cx + r * Math.cos(a);
+                    const y = cy + r * Math.sin(a);
+                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                }
+                ctx.strokeStyle = "rgba(255,255,255,0.08)";
+                ctx.stroke();
+            }
+
+            // Draw axes
+            for (let i = 0; i < n; i++) {
+                const a = i * angleStep - Math.PI / 2;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + R * Math.cos(a), cy + R * Math.sin(a));
+                ctx.strokeStyle = "rgba(255,255,255,0.1)";
+                ctx.stroke();
+
+                // Labels
+                const info = featuresInfo.find(f => f.key === FEATURE_KEYS[i]) || {};
+                const labelR = R + 22;
+                const lx = cx + labelR * Math.cos(a);
+                const ly = cy + labelR * Math.sin(a);
+                ctx.fillStyle = "#8b8fa3";
+                ctx.font = "10px -apple-system, sans-serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+
+                // Short labels
+                const shortNames = ["Entropy", "Edges", "FeatCong", "SubbEnt", "Symmetry", "Color", "Hierarchy", "Elements"];
+                ctx.fillText(shortNames[i], lx, ly);
+            }
+
+            // Draw data polygon
+            const values = FEATURE_KEYS.map(key => {
+                const norm = FEATURE_NORMS[key];
+                return Math.min(1, (data[key] - norm.min) / (norm.max - norm.min));
+            });
+
+            ctx.beginPath();
+            for (let i = 0; i <= n; i++) {
+                const idx = i % n;
+                const a = idx * angleStep - Math.PI / 2;
+                const r = values[idx] * R;
+                const x = cx + r * Math.cos(a);
+                const y = cy + r * Math.sin(a);
+                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            }
+            ctx.fillStyle = "rgba(59, 130, 246, 0.15)";
+            ctx.fill();
+            ctx.strokeStyle = "#3b82f6";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw dots
+            for (let i = 0; i < n; i++) {
+                const a = i * angleStep - Math.PI / 2;
+                const r = values[i] * R;
+                ctx.beginPath();
+                ctx.arc(cx + r * Math.cos(a), cy + r * Math.sin(a), 4, 0, 2 * Math.PI);
+                ctx.fillStyle = BAR_COLORS[i];
+                ctx.fill();
+            }
+        }
+
+        // ─── History Table ───
+        function renderHistory() {
+            const content = document.getElementById("historyContent");
+
+            if (history.length === 0) {
+                content.innerHTML = '<div class="history-empty">No analyses yet</div>';
+                document.getElementById("exportHistoryBtn").style.display = "none";
+                document.getElementById("clearHistoryBtn").style.display = "none";
+                return;
+            }
+
+            const shortKeys = ["Score", "Search", "Attn", "Task", "Profile"];
+            let html = `<div style="overflow-x: auto;"><table class="history-table"><tr>
+                <th>File</th>
+                ${shortKeys.map(k => `<th>${k}</th>`).join("")}
+            </tr>`;
+
+            history.forEach(row => {
+                html += `<tr>
+                    <td style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                        title="${row.filename}">${row.filename}</td>
+                    <td>${row.score.toFixed(1)}</td>
+                    <td>${row.search_efficiency.toFixed(3)}</td>
+                    <td>${row.attention_demand.toFixed(3)}</td>
+                    <td>${row.task_type}</td>
+                    <td title="${row.profile}">${row.profile}</td>
+                </tr>`;
+            });
+
+            html += "</table></div>";
+            content.innerHTML = html;
+            document.getElementById("exportHistoryBtn").style.display = "block";
+            document.getElementById("clearHistoryBtn").style.display = "block";
+        }
+
+        // ─── PDF Export ───
+        document.getElementById("exportPdfBtn").addEventListener("click", async () => {
+            if (history.length === 0) return;
+            const btn = document.getElementById("exportPdfBtn");
+            btn.textContent = "⏳ Generating…";
+            btn.disabled = true;
+            try {
+                await exportPDF(history[history.length - 1]);
+            } finally {
+                btn.textContent = "📄 Download PDF Report";
+                btn.disabled = false;
+            }
+        });
+
+        async function exportPDF(d) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+            const pageW = 210, pageH = 297, margin = 14, colW = pageW - margin * 2;
+            let y = 0;
+
+            // ── helpers ──────────────────────────────────────────────────
+            const accent = [59, 130, 246];   // blue
+            const dim    = [139, 143, 163];  // grey
+            const white  = [228, 230, 240];
+            const warn   = [245, 158, 11];
+            const danger = [239, 68, 68];
+            const ok     = [34, 197, 94];
+
+            function newPage() {
+                doc.addPage();
+                y = margin;
+            }
+            function checkPage(need = 12) {
+                if (y + need > pageH - margin) newPage();
+            }
+            function sectionTitle(text) {
+                checkPage(14);
+                doc.setFillColor(30, 35, 50);
+                doc.rect(margin, y, colW, 8, "F");
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(9);
+                doc.setTextColor(...accent);
+                doc.text(text.toUpperCase(), margin + 3, y + 5.5);
+                y += 11;
+            }
+            function row(label, value, valueColor) {
+                checkPage(7);
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(8.5);
+                doc.setTextColor(...dim);
+                doc.text(label, margin + 2, y);
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(...(valueColor || white));
+                doc.text(String(value), margin + 80, y);
+                y += 6;
+            }
+            function divider() {
+                checkPage(4);
+                doc.setDrawColor(46, 51, 71);
+                doc.line(margin, y, pageW - margin, y);
+                y += 4;
+            }
+
+            // ── Cover / Header ───────────────────────────────────────────
+            doc.setFillColor(15, 17, 23);
+            doc.rect(0, 0, pageW, pageH, "F");
+            doc.setFillColor(...accent);
+            doc.rect(0, 0, pageW, 2, "F");
+            y = 22;
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(18);
+            doc.setTextColor(...white);
+            doc.text("GUI Complexity Analysis Report", margin, y);
+            y += 8;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9);
+            doc.setTextColor(...dim);
+            doc.text(`File: ${d.filename || "—"} · Generated: ${new Date().toLocaleString()}`, margin, y);
+            y += 4;
+            doc.text("Pipeline: Two-Stage Multi-Output · HCEye rule-based scoring (Das et al., ETRA 2024)", margin, y);
+            y += 10;
+            divider();
+
+            // ── Overall Score Banner ─────────────────────────────────────
+            const score   = d.score || 0;
+            const level   = score < 25 ? "LOW" : score < 50 ? "MODERATE" : score < 75 ? "HIGH" : "VERY HIGH";
+            const lvlColor = score < 25 ? ok : score < 50 ? warn : score < 75 ? [249, 115, 22] : danger;
+            doc.setFillColor(26, 29, 39);
+            doc.roundedRect(margin, y, colW, 22, 2, 2, "F");
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(28);
+            doc.setTextColor(...lvlColor);
+            doc.text(score.toFixed(1), margin + 6, y + 16);
+            doc.setFontSize(9);
+            doc.setTextColor(...dim);
+            doc.text("/ 100", margin + 30, y + 16);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(11);
+            doc.setTextColor(...lvlColor);
+            doc.text(`${level} COGNITIVE LOAD`, margin + 55, y + 10);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(8.5);
+            doc.setTextColor(...dim);
+            const titleMap = { LOW: "Interface is easy to process", MODERATE: "Manageable, but worth watching", HIGH: "Elevated cognitive demand detected", "VERY HIGH": "Critical cognitive overload risk" };
+            doc.text(titleMap[level] || "", margin + 55, y + 17);
+            y += 28;
+
+            // ── Context / Settings ───────────────────────────────────────
+            sectionTitle("Analysis Settings");
+            row("Task Type",      d.task_type   || "—");
+            row("Search Mode",    d.search_mode || "—");
+            row("Target Specificity", d.specificity || "—");
+            row("Time Pressure",  d.time_pressure || "—");
+            row("User Profile",   d.profile || "Neutral");
+            row("Score Source",   d.prediction_source === "stage2_trained_model" ? "Experimental Stage 2" : "HCEye rule-based");
+            row("Vector Dims",    d.vector_dimensions || "—");
+            divider();
+
+            // ── Scores ───────────────────────────────────────────────────
+            sectionTitle("Prediction Scores");
+            row("Cognitive Load Score (adjusted)",   score.toFixed(2), lvlColor);
+            row("Cognitive Load Score (base)",        (d.base_score || 0).toFixed(2));
+            row("Search Efficiency",                  (d.search_efficiency || 0).toFixed(3));
+            row("Attention Demand",                   (d.attention_demand || 0).toFixed(3));
+            row("Cognitive Load Index (HCEye)",       (d.hceye_cli || 0).toFixed(3));
+            row("Task Modifier",                      (d.task_modifier || 0).toFixed(2));
+            row("Profile Modifier",                   (d.profile_modifier || 0).toFixed(2));
+            divider();
+
+            // ── Visual Features ──────────────────────────────────────────
+            sectionTitle("Visual Features  v ∈ ℝ⁸");
+            if (d.visual_features) {
+                Object.entries(d.visual_features).forEach(([k, v]) =>
+                    row(k.replace(/_/g, " "), typeof v === "number" ? v.toFixed(4) : v)
+                );
+            }
+            divider();
+
+            // ── Saliency Features ────────────────────────────────────────
+            sectionTitle("Saliency Features  s ∈ ℝ⁵  (UMSI++)");
+            if (d.saliency_features) {
+                Object.entries(d.saliency_features).forEach(([k, v]) =>
+                    row(k.replace(/_/g, " "), typeof v === "number" ? v.toFixed(4) : v)
+                );
+            }
+            divider();
+
+            // ── HCEye Features ───────────────────────────────────────────
+            sectionTitle("HCEye Features  h ∈ ℝ⁶");
+            if (d.hceye_features) {
+                Object.entries(d.hceye_features).forEach(([k, v]) =>
+                    row(k.replace(/_/g, " "), typeof v === "number" ? v.toFixed(4) : v)
+                );
+            }
+            divider();
+
+            // ── Coherence ────────────────────────────────────────────────
+            sectionTitle("Coherence Check");
+            const coh = d.coherence_data || {};
+            row("Is Coherent", coh.is_coherent ? "Yes" : "No", coh.is_coherent ? ok : danger);
+            row("Rules Checked", coh.rules_checked || "—");
+            if (coh.warnings && coh.warnings.length) {
+                coh.warnings.forEach(w => row("Warning", w, warn));
+            }
+            divider();
+
+            // ── Interpretation ───────────────────────────────────────────
+            sectionTitle("Overall Interpretation");
+            const interpEl = document.getElementById("interpretationPanel");
+            const interpText = interpEl ? interpEl.innerText.replace(/\n+/g, "  ") : "—";
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(8.5);
+            doc.setTextColor(...white);
+            const lines = doc.splitTextToSize(interpText, colW - 4);
+            lines.forEach(line => {
+                checkPage(6);
+                doc.text(line, margin + 2, y);
+                y += 5.5;
+            });
+            y += 4;
+            divider();
+
+            // ── Footer ───────────────────────────────────────────────────
+            checkPage(14);
+            doc.setFont("helvetica", "italic");
+            doc.setFontSize(7.5);
+            doc.setTextColor(...dim);
+            doc.text("Pipeline: Two-Stage Multi-Output Pipeline · Das et al. (ETRA 2024) · Jokinen et al. (IJHCS 2020) · Rosenholtz et al. (JoV 2007)", margin, y);
+            y += 5;
+            doc.text("Output is a computational index of interactional complexity — not a direct measure of cognitive load.", margin, y);
+
+            // ── Page numbers ─────────────────────────────────────────────
+            const pageCount = doc.getNumberOfPages();
+            for (let p = 1; p <= pageCount; p++) {
+                doc.setPage(p);
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(7.5);
+                doc.setTextColor(...dim);
+                doc.text(`${p} / ${pageCount}`, pageW - margin - 8, pageH - 8);
+            }
+
+            const safeName = (d.filename || "report").replace(/\.[^.]+$/, "");
+            doc.save(`complexity_report_${safeName}.pdf`);
+        }
+
+        // ─── CSV Export ───
+        document.getElementById("exportBtn").addEventListener("click", () => {
+            if (history.length === 0) return;
+            exportCSV([history[history.length - 1]], "complexity_vector.csv");
+        });
+
+        document.getElementById("exportHistoryBtn").addEventListener("click", () => {
+            exportCSV(history, "complexity_vectors_all.csv");
+        });
+
+        document.getElementById("clearHistoryBtn").addEventListener("click", () => {
+            history = [];
+            renderHistory();
+            results.classList.remove("visible");
+            emptyState.style.display = "block";
+        });
+
+        function exportCSV(data, filename) {
+            const headers = ["filename", "score", "search_efficiency", "attention_demand", "task_type", "profile", "task_modifier", "profile_modifier"];
+            const rows = data.map(d =>
+                headers.map(h => d[h] !== undefined ? d[h] : "").join(",")
+            );
+            const csv = [headers.join(","), ...rows].join("\n");
+            const blob = new Blob([csv], { type: "text/csv" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            a.click();
+        }
+
+        // ─── Done Chime (Web Audio API — no external file needed) ───
+        function playDoneChime() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                // Two-note ascending chime: C5 → E5
+                [[523.25, 0.0], [659.25, 0.18]].forEach(([freq, delay]) => {
+                    const osc  = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.type = "sine";
+                    osc.frequency.value = freq;
+                    const t = ctx.currentTime + delay;
+                    gain.gain.setValueAtTime(0, t);
+                    gain.gain.linearRampToValueAtTime(0.18, t + 0.01);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+                    osc.start(t);
+                    osc.stop(t + 0.55);
+                });
+            } catch (e) { /* AudioContext not available — silently skip */ }
+        }
+
+        // ─── Init ───
+        loadFeatures();
+    </script>
+</body>
+</html>

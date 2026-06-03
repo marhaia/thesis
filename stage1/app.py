@@ -1,0 +1,554 @@
+#!/usr/bin/env python3
+"""
+Stage 1 — Local Web Interface
+
+Simple Flask server that serves the UI and processes uploaded screenshots
+through the visual complexity pipeline.
+
+Usage:
+    python app.py
+    → Open http://localhost:5001 in your browser
+"""
+
+import json
+import os
+import sys
+import uuid
+from pathlib import Path
+
+from flask import Flask, jsonify, request, send_from_directory
+
+# Add stage1 and project root to path
+sys.path.insert(0, os.path.dirname(__file__))
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from visual_complexity import compute_complexity_vector
+from stage2.coherence_check import run_coherence_check
+
+# Lazy-load saliency model (heavy TF import — only when needed)
+_saliency_model = None
+
+
+def _as_bool(value, default=False):
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+def _get_saliency_model():
+    """Lazy-load the UMSI++ saliency model (avoids TF startup penalty on every request)."""
+    global _saliency_model
+    if _saliency_model is None:
+        from saliency.umsi_model import UMSIPlus
+        weights = Path(__file__).parent.parent / "saliency" / "weights" / "model_weights" / "saliency_models" / "UMSI++" / "umsi++.hdf5"
+        _saliency_model = UMSIPlus(str(weights))
+    return _saliency_model
+
+app = Flask(__name__, static_folder="ui", static_url_path="")
+
+UPLOAD_DIR = Path(__file__).parent / "data" / "uploads"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+@app.route("/")
+def index():
+    from flask import make_response
+    resp = make_response(send_from_directory("ui", "index.html"))
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
+
+
+@app.route("/api/analyze", methods=["POST"])
+def analyze():
+    """Accept an uploaded image and return the 8-feature complexity vector."""
+    if "image" not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+
+    file = request.files["image"]
+    if file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+
+    # Save uploaded file
+    ext = Path(file.filename).suffix.lower()
+    if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
+        return jsonify({"error": f"Unsupported format: {ext}"}), 400
+
+    filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
+    filepath = UPLOAD_DIR / filename
+    file.save(str(filepath))
+
+    try:
+        results = compute_complexity_vector(str(filepath))
+        results["filename"] = file.filename
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        # Clean up uploaded file
+        if filepath.exists():
+            filepath.unlink()
+
+
+@app.route("/api/features", methods=["GET"])
+def features_info():
+    """Return metadata about the 8 features."""
+    features = [
+        {
+            "key": "shannon_entropy",
+            "name": "Shannon Entropy",
+            "description": "Global information density of the image. Higher = more visual information competing for attention.",
+            "range": "[0, 8]",
+            "reference": "Shannon (1948)",
+            "icon": "📊"
+        },
+        {
+            "key": "edge_density",
+            "name": "Edge Density",
+            "description": "Proportion of pixels classified as edges. A proxy for structural complexity — more boundaries = more parsing effort.",
+            "range": "[0, 1]",
+            "reference": "Canny edge detection (AIM m4)",
+            "icon": "📐"
+        },
+        {
+            "key": "feature_congestion",
+            "name": "Feature Congestion",
+            "description": "Multi-scale clutter combining color covariance, contrast variance, and orientation energy. Higher = more visual noise.",
+            "range": "[0, ∞)",
+            "reference": "Rosenholtz et al. (2007) — AIM m8",
+            "icon": "🌀"
+        },
+        {
+            "key": "subband_entropy",
+            "name": "Subband Entropy",
+            "description": "Redundancy-based clutter via steerable pyramid decomposition. Higher = more unpredictable spatial frequency content.",
+            "range": "[0, ∞)",
+            "reference": "Rosenholtz et al. (2007) — AIM m7",
+            "icon": "🔬"
+        },
+        {
+            "key": "layout_symmetry",
+            "name": "Layout Symmetry",
+            "description": "Degree of axial balance (vertical + horizontal). Higher = more symmetric = less visual search needed.",
+            "range": "[0, 1]",
+            "reference": "Miniukovich & De Angeli (2015)",
+            "icon": "⚖️"
+        },
+        {
+            "key": "chromatic_coherence",
+            "name": "Chromatic Coherence",
+            "description": "Color palette fragmentation combining luminance variance, colorfulness, and hue/saturation spread. Higher = more fragmented.",
+            "range": "[0, 1]",
+            "reference": "Hasler & Süsstrunk (2003)",
+            "icon": "🎨"
+        },
+        {
+            "key": "visual_hierarchy",
+            "name": "Visual Hierarchy",
+            "description": "Strength of layered visual structure (contrast gradients + size dominance). Higher = clearer hierarchy = less search effort.",
+            "range": "[0, 1]",
+            "reference": "Tuch et al. (2009)",
+            "icon": "📏"
+        },
+        {
+            "key": "interactive_element_density",
+            "name": "Interactive Element Density",
+            "description": "Estimated count of UI controls per area. Higher = more action possibilities = higher decisional load.",
+            "range": "[0, ∞)",
+            "reference": "Custom (contour-based)",
+            "icon": "🔘"
+        },
+    ]
+    return jsonify(features)
+
+
+@app.route("/api/saliency", methods=["POST"])
+def saliency():
+    """Predict saliency heatmap and extract saliency features for an uploaded image."""
+    if "image" not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+
+    file = request.files["image"]
+    if file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+
+    ext = Path(file.filename).suffix.lower()
+    if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
+        return jsonify({"error": f"Unsupported format: {ext}"}), 400
+
+    filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
+    filepath = UPLOAD_DIR / filename
+    file.save(str(filepath))
+
+    try:
+        import base64
+        import cv2
+        import numpy as np
+        from saliency.saliency_features import extract_saliency_features
+
+        model = _get_saliency_model()
+        heatmap, classif = model.predict_saliency(str(filepath), return_classif=True)
+
+        # Extract saliency features
+        features = extract_saliency_features(heatmap)
+
+        # Create colored heatmap for visualization (base64 PNG)
+        heatmap_colored = cv2.applyColorMap(
+            (heatmap * 255).astype(np.uint8), cv2.COLORMAP_JET
+        )
+        _, buf = cv2.imencode(".png", heatmap_colored)
+        heatmap_b64 = base64.b64encode(buf).decode("utf-8")
+
+        # Classification results
+        classif_dict = {
+            cls: float(prob)
+            for cls, prob in zip(model.DESIGN_CLASSES, classif)
+        }
+
+        return jsonify({
+            "filename": file.filename,
+            "features": features,
+            "classification": classif_dict,
+            "predicted_class": model.DESIGN_CLASSES[int(np.argmax(classif))],
+            "heatmap_png_base64": heatmap_b64,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if filepath.exists():
+            filepath.unlink()
+
+
+@app.route("/api/search-time", methods=["POST"])
+def search_time():
+    """
+    Predict visual search time per UI element using the Jokinen 2020 model.
+
+    This is the CENTRAL cognitive metric of the thesis:
+      - Detects UI elements from the uploaded screenshot
+      - Computes UMSI++ saliency per element (deep bottom-up signal)
+      - Runs Monte Carlo simulation of novice visual search (EMMA + feature guidance)
+      - Returns predicted search time per element + aggregate statistics
+
+    Reference:
+        Jokinen, J.P.P. et al. (2020). Adaptive feature guidance: Modelling
+        visual search with graphical layouts. IJHCS, 136, 102376.
+
+    Request:
+        POST multipart/form-data with field "image" (PNG/JPG screenshot)
+        Optional query params:
+            n_simulations (int): Monte Carlo trials per element (default: 100)
+            use_saliency (bool): Use UMSI++ saliency (default: true)
+
+    Response JSON:
+        {
+            "filename": str,
+            "n_elements": int,
+            "mean_search_time_s": float,
+            "max_search_time_s": float,
+            "min_search_time_s": float,
+            "predicted_difficulty": str,  # "easy"|"moderate"|"difficult"|"very_hard"
+            "per_element": [
+                {"id": int, "search_time_s": float, "fixation_count": float,
+                 "bbox": [x,y,w,h], "center": [cx,cy], "color_category": str},
+                ...
+            ],
+            "model_info": {...}
+        }
+    """
+    if "image" not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+
+    file = request.files["image"]
+    if file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+
+    ext = Path(file.filename).suffix.lower()
+    if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
+        return jsonify({"error": f"Unsupported format: {ext}"}), 400
+
+    # Parse optional query parameters
+    n_simulations = request.args.get("n_simulations", 100, type=int)
+    use_saliency = request.args.get("use_saliency", "true").lower() != "false"
+
+    filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
+    filepath = UPLOAD_DIR / filename
+    file.save(str(filepath))
+
+    try:
+        import cv2
+        import numpy as np
+        from cognitive.element_detector import detect_elements
+        from cognitive.jokinen_model import JokinenSearchModel, JokinenParams
+
+        # Load image
+        img = cv2.imread(str(filepath))
+        if img is None:
+            return jsonify({"error": "Cannot read image"}), 400
+
+        # Step 1: Detect UI elements
+        elements = detect_elements(img)
+        if len(elements) == 0:
+            return jsonify({
+                "filename": file.filename,
+                "error": "No UI elements detected",
+                "n_elements": 0,
+            }), 200
+
+        # Step 2: Get saliency map (optional)
+        saliency_map = None
+        if use_saliency:
+            try:
+                model_umsi = _get_saliency_model()
+                saliency_map = model_umsi.predict_saliency(str(filepath))
+            except Exception:
+                pass  # Fall back to feature-only mode
+
+        # Step 3: Run Jokinen model
+        params = JokinenParams(
+            n_simulations=min(n_simulations, 500),  # Cap at 500 for performance
+            random_seed=42,
+        )
+        jokinen = JokinenSearchModel(params)
+        results = jokinen.predict_search_times(
+            elements=elements,
+            saliency_map=saliency_map,
+            image_shape=img.shape[:2],
+        )
+
+        # Add metadata
+        results["filename"] = file.filename
+        results["model_info"] = jokinen.get_model_info()
+        results["saliency_used"] = saliency_map is not None
+
+        return jsonify(results)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if filepath.exists():
+            filepath.unlink()
+
+
+@app.route("/api/cognitive-load", methods=["POST"])
+def cognitive_load():
+    """
+    Compute cognitive load features using HCEye-derived sensitivity model.
+
+    Combines visual complexity (v∈ℝ⁸) + saliency (s∈ℝ⁵) + HCEye cognitive
+    load sensitivity (h∈ℝ⁶) into a full feature vector for Stage 2.
+
+    Response JSON:
+        {
+            "filename": str,
+            "visual_features": {...},         # v∈ℝ⁸
+            "saliency_features": {...},       # s∈ℝ⁵  
+            "cognitive_load_features": {...},  # h∈ℝ⁶
+            "cognitive_load_index": float,    # Combined CLI (0-1)
+            "full_feature_vector": [...]      # ℝ¹⁹ for Stage 2
+        }
+    """
+    if "image" not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+
+    file = request.files["image"]
+    if file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+
+    ext = Path(file.filename).suffix.lower()
+    if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
+        return jsonify({"error": f"Unsupported format: {ext}"}), 400
+
+    filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
+    filepath = UPLOAD_DIR / filename
+    file.save(str(filepath))
+
+    try:
+        import numpy as np
+        from hceye.hceye_features import HCEyeFeatureExtractor
+        from stage2.task_descriptor import TaskDescriptor
+        from stage2.user_profile import get_profile
+        from stage2.regression_model import Stage2Model
+
+        use_trained_model = _as_bool(
+            request.form.get("use_trained_model", request.args.get("use_trained_model")),
+            default=False,
+        )
+
+        task_descriptor = TaskDescriptor(
+            task_type=request.form.get("task_type", "search"),
+            target_specificity=request.form.get("target_specificity", "medium"),
+            time_pressure=request.form.get("time_pressure", "medium"),
+            search_mode=request.form.get("search_mode", "known_item"),
+        )
+        profile = get_profile(request.form.get("profile_preset", "neutral"))
+
+        # Step 1: Visual complexity (v∈ℝ⁸)
+        vis_results = compute_complexity_vector(str(filepath))
+        v = np.array([
+            vis_results["shannon_entropy"],
+            vis_results["edge_density"],
+            vis_results["feature_congestion"],
+            vis_results["subband_entropy"],
+            vis_results["layout_symmetry"],
+            vis_results["chromatic_coherence"],
+            vis_results["visual_hierarchy"],
+            vis_results["interactive_element_density"],
+        ], dtype=np.float32)
+
+        # Step 2: Saliency features (s∈ℝ⁵) — optional
+        s = None
+        saliency_dict = {}
+        saliency_overlay_b64 = None
+        try:
+            import base64, cv2
+            from saliency.saliency_features import extract_saliency_features
+            sal_model = _get_saliency_model()
+            heatmap = sal_model.predict_saliency(str(filepath))
+            saliency_dict = extract_saliency_features(heatmap)
+            s = np.array([
+                saliency_dict["saliency_dispersion"],
+                saliency_dict["saliency_entropy"],
+                saliency_dict["saliency_coverage"],
+                saliency_dict["saliency_peak_count"],
+                saliency_dict["saliency_center_bias"],
+            ], dtype=np.float32)
+
+            # Build colored overlay: original image blended with JET-colormap heatmap.
+            # Alpha blend: 0.55 original + 0.45 heatmap (warm-on-dark, readable on
+            # both light and dark UIs). JET colormap: blue=low, red=high saliency.
+            # The overlay is returned as JPEG (quality 85) to keep response size
+            # manageable; PNG would be ~3–5× larger for typical screenshot dimensions.
+            # Reference for JET colormap in saliency visualization:
+            #   Itti, L. & Koch, C. (2001). Computational modelling of visual
+            #   attention. Nature Reviews Neuroscience, 2(3), 194–203.
+            orig = cv2.imread(str(filepath))
+            if orig is not None:
+                heat_u8 = (heatmap * 255).astype(np.uint8)
+                heat_colored = cv2.applyColorMap(heat_u8, cv2.COLORMAP_JET)
+                heat_resized = cv2.resize(
+                    heat_colored, (orig.shape[1], orig.shape[0]),
+                    interpolation=cv2.INTER_LINEAR,
+                )
+                overlay = cv2.addWeighted(orig, 0.55, heat_resized, 0.45, 0)
+                _, buf = cv2.imencode(".jpg", overlay, [cv2.IMWRITE_JPEG_QUALITY, 85])
+                saliency_overlay_b64 = base64.b64encode(buf).decode("utf-8")
+        except Exception:
+            pass  # Saliency optional
+
+        # Step 3: HCEye cognitive load features (h∈ℝ⁶)
+        lookup_path = Path(__file__).parent.parent / "hceye" / "sensitivity_lookup.json"
+        extractor = HCEyeFeatureExtractor(str(lookup_path))
+        h = extractor.extract_features(v, s)
+        cog_names = extractor.get_feature_names()
+        cog_dict = dict(zip(cog_names, h.tolist()))
+
+        # Step 4: Optional task/profile vectors
+        t = task_descriptor.to_vector()
+        t_dict = task_descriptor.as_dict()
+        p = np.array(profile["vector"], dtype=np.float32)
+
+        # Build full feature vector for Stage 2 base model (v⁸ + s⁵ + h⁶ = ℝ¹⁹)
+        parts = [v]
+        if s is not None:
+            parts.append(s)
+        else:
+            parts.append(np.zeros(5, dtype=np.float32))
+        parts.append(h)
+        base_vector = np.concatenate(parts)
+
+        # Extended vector for downstream experiments (base + descriptor + profile)
+        extended_vector = np.concatenate([base_vector, t, p]).tolist()
+
+        model_path = Path(__file__).parent.parent / "stage2" / "models" / "stage2_model.pkl"
+        predictions = {
+            "cognitive_load_score": float(h[5] * 100.0),
+            "search_efficiency": float(np.clip(1.0 - h[3], 0.0, 1.0)),
+            "attention_demand": float(np.clip(h[5] + 0.15, 0.0, 1.0)),
+        }
+        prediction_source = "hceye_rule_based"
+        if use_trained_model and model_path.exists():
+            stage2_model = Stage2Model(model_path=str(model_path))
+            predictions = stage2_model.predict(base_vector)
+            prediction_source = "stage2_trained_model"
+
+        base_score = float(predictions["cognitive_load_score"])
+        descriptor_modifier = float(t_dict["modifier"])
+        profile_modifier = float(profile["modifier"])
+        adjusted_score = float(np.clip(base_score + descriptor_modifier + profile_modifier, 0.0, 100.0))
+        search_efficiency = float(np.clip(
+            predictions["search_efficiency"] - 0.0025 * descriptor_modifier - 0.0030 * profile_modifier,
+            0.0,
+            1.0,
+        ))
+        attention_demand = float(np.clip(
+            predictions["attention_demand"] + 0.0040 * descriptor_modifier + 0.0040 * profile_modifier,
+            0.0,
+            1.0,
+        ))
+
+        # Coherence check — validate internal consistency of pipeline outputs
+        # Extract Jokinen search metrics if available (computed on-demand here).
+        mean_search_time_s: float | None = None
+        estimated_fixation_count: float | None = None
+        try:
+            from cognitive.jokinen_model import JokinenSearchModel, JokinenParams
+            from cognitive.element_detector import detect_elements
+            img_path_str = str(filepath)  # filepath still exists at this point
+            elements = detect_elements(img_path_str)
+            jokinen_model = JokinenSearchModel(JokinenParams())
+            jresult = jokinen_model.predict(elements)
+            mean_search_time_s = float(jresult.get("mean_search_time", jresult.get("mean_time", 0)))
+            estimated_fixation_count = float(jresult.get("mean_fixations", jresult.get("fixations", 0)))
+        except Exception:
+            pass  # Jokinen metrics are optional for coherence check
+
+        saliency_spread = saliency_dict.get("saliency_dispersion") if saliency_dict else None
+        coherence = run_coherence_check(
+            saliency_spread=saliency_spread,
+            estimated_fixation_count=estimated_fixation_count,
+            mean_search_time_s=mean_search_time_s,
+            cognitive_load_score=adjusted_score,
+        )
+
+        return jsonify({
+            "filename": file.filename,
+            "visual_features": vis_results,
+            "saliency_features": saliency_dict,
+            "saliency_overlay_b64": saliency_overlay_b64,
+            "cognitive_load_features": cog_dict,
+            "task_descriptor": t_dict,
+            "big_five_profile": profile,
+            "base_prediction": predictions,
+            "adjusted_prediction": {
+                "cognitive_load_score": adjusted_score,
+                "search_efficiency": search_efficiency,
+                "attention_demand": attention_demand,
+            },
+            "prediction_source": prediction_source,
+            "trained_model_requested": use_trained_model,
+            "trained_model_available": model_path.exists(),
+            "cognitive_load_index": float(h[5]),
+            "full_feature_vector": extended_vector,
+            "vector_dimensions": f"v({len(v)}) + s(5) + h({len(h)}) + t({len(t)}) + p({len(p)}) = {len(extended_vector)}",
+            "coherence": coherence,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if filepath.exists():
+            filepath.unlink()
+
+
+if __name__ == "__main__":
+    print("\n" + "=" * 50)
+    print("  Stage 1 — Visual Complexity Analyzer")
+    print("  Endpoints:")
+    print("    POST /api/analyze         → v∈ℝ⁸ visual complexity")
+    print("    POST /api/saliency        → s∈ℝ⁵ saliency features")
+    print("    POST /api/search-time     → Jokinen search time")
+    print("    POST /api/cognitive-load   → h∈ℝ⁶ + full vector ℝ¹⁹")
+    print("  Open: http://localhost:5001")
+    print("=" * 50 + "\n")
+    app.run(host="localhost", port=5001, debug=True)

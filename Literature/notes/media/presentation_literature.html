@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Literature Review — Cognitive Predictive Metrics for GUI Evaluation</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d2e;
+    --surface2: #252840;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --accent3: #43d9ad;
+    --accent4: #f9a825;
+    --text: #e8eaf6;
+    --text-dim: #9198b5;
+    --border: #2d3155;
+    --tier1: #43d9ad;
+    --tier2: #6c63ff;
+    --tier3: #f9a825;
+    --tier4: #9198b5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* SLIDE ENGINE */
+  .slideshow { width: 100%; height: 100vh; position: relative; }
+  .slide {
+    display: none;
+    width: 100%;
+    height: 100vh;
+    padding: 60px 80px;
+    flex-direction: column;
+    justify-content: center;
+    position: absolute;
+    top: 0; left: 0;
+    animation: fadein 0.4s ease;
+  }
+  .slide.active { display: flex; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* NAVIGATION */
+  .nav {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    z-index: 100;
+    background: rgba(15,17,23,0.85);
+    padding: 10px 20px;
+    border-radius: 40px;
+    border: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+  }
+  .nav button {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 8px 18px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+  .nav button:hover { background: var(--accent); border-color: var(--accent); }
+  .nav .counter { color: var(--text-dim); font-size: 12px; min-width: 60px; text-align: center; }
+  .progress-dots { display: flex; gap: 6px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); cursor: pointer; transition: all 0.2s; }
+  .dot.active { background: var(--accent); width: 20px; border-radius: 3px; }
+
+  /* TYPOGRAPHY */
+  h1 { font-size: 3.2rem; font-weight: 700; line-height: 1.1; }
+  h2 { font-size: 2rem; font-weight: 600; margin-bottom: 28px; }
+  h3 { font-size: 1.3rem; font-weight: 600; margin-bottom: 12px; color: var(--accent); }
+  p { font-size: 1.05rem; line-height: 1.7; color: var(--text-dim); }
+  .subtitle { font-size: 1.2rem; color: var(--text-dim); margin-top: 12px; }
+  .tag { display: inline-block; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 0.8rem; color: var(--text-dim); margin: 3px; }
+  .highlight { color: var(--accent3); font-weight: 600; }
+  .accent { color: var(--accent); font-weight: 600; }
+  .warn { color: var(--accent2); font-weight: 600; }
+  .muted { color: var(--text-dim); }
+
+  /* LAYOUT HELPERS */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .flex-row { display: flex; gap: 20px; align-items: flex-start; }
+  .spacer { flex: 1; }
+  .mt { margin-top: 20px; }
+  .mt-sm { margin-top: 10px; }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+  }
+  .card-accent { border-left: 3px solid var(--accent); }
+  .card-green { border-left: 3px solid var(--tier1); }
+  .card-orange { border-left: 3px solid var(--tier3); }
+  .card-red { border-left: 3px solid var(--accent2); }
+
+  /* SPECIAL COMPONENTS */
+  .rq-box {
+    background: linear-gradient(135deg, #1a1d2e, #252840);
+    border: 1px solid var(--accent);
+    border-radius: 16px;
+    padding: 28px 36px;
+    font-size: 1.25rem;
+    font-style: italic;
+    line-height: 1.6;
+    text-align: center;
+    margin: 20px 0;
+    box-shadow: 0 0 40px rgba(108,99,255,0.15);
+  }
+
+  .cluster-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .cluster-pill .num {
+    background: var(--accent);
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .stat-block {
+    text-align: center;
+    padding: 20px;
+    background: var(--surface);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  .stat-num { font-size: 2.8rem; font-weight: 700; color: var(--accent3); }
+  .stat-label { font-size: 0.85rem; color: var(--text-dim); margin-top: 4px; }
+
+  .finding {
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    border-left: 3px solid var(--accent3);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+  .finding .label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent3);
+    margin-bottom: 6px;
+  }
+
+  .pipeline-stage {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+  }
+  .pipeline-stage .stage-num {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--accent);
+    color: white;
+    padding: 2px 12px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .arrow { color: var(--accent); font-size: 2rem; display: flex; align-items: center; justify-content: center; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th { text-align: left; padding: 8px 12px; color: var(--text-dim); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); }
+  td { padding: 8px 12px; border-bottom: 1px solid rgba(45,49,85,0.4); }
+  tr:last-child td { border-bottom: none; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; }
+  .badge-t1 { background: rgba(67,217,173,0.15); color: var(--tier1); }
+  .badge-t2 { background: rgba(108,99,255,0.15); color: var(--tier2); }
+  .badge-t3 { background: rgba(249,168,37,0.15); color: var(--tier3); }
+  .badge-done { background: rgba(67,217,173,0.15); color: var(--tier1); }
+  .badge-gap { background: rgba(255,101,132,0.15); color: var(--accent2); }
+
+  /* TITLE SLIDE SPECIFIC */
+  .title-meta { display: flex; gap: 20px; margin-top: 40px; flex-wrap: wrap; }
+  .meta-item { display: flex; flex-direction: column; }
+  .meta-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); }
+  .meta-value { font-size: 0.95rem; color: var(--text); }
+
+  .slide-number {
+    position: absolute;
+    top: 24px;
+    right: 40px;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+  .section-label {
+    position: absolute;
+    top: 24px;
+    left: 80px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+  }
+
+  /* FINAL SLIDE */
+  .final-statement {
+    background: linear-gradient(135deg, rgba(108,99,255,0.1), rgba(67,217,173,0.08));
+    border: 1px solid var(--accent);
+    border-radius: 16px;
+    padding: 30px 40px;
+    font-size: 1.1rem;
+    line-height: 1.8;
+    margin-top: 20px;
+  }
+  .final-statement strong { color: var(--accent3); }
+
+  .impl-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(67,217,173,0.1);
+    border: 1px solid var(--tier1);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.82rem;
+    color: var(--tier1);
+    margin: 3px;
+  }
+</style>
+</head>
+<body>
+<div class="slideshow" id="slideshow">
+
+  <!-- ========== SLIDE 1: TITLE ========== -->
+  <div class="slide active" id="slide-1">
+    <div class="slide-number">01 / 14</div>
+    <h1>Literature Review</h1>
+    <h1 style="color: var(--accent);">Cognitive Predictive<br>Metrics for GUI Evaluation</h1>
+    <p class="subtitle" style="margin-top: 20px;">Masterarbeit — Hannah &nbsp;·&nbsp; HCI &nbsp;·&nbsp; Juni 2026</p>
+    <div class="title-meta">
+      <div class="meta-item">
+        <span class="meta-label">Zeitraum</span>
+        <span class="meta-value">Jan – Jun 2026</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Datenbank</span>
+        <span class="meta-value">ACM Digital Library (systematisch)</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Paper gesichtet</span>
+        <span class="meta-value">~120+</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Paper eingeschlossen</span>
+        <span class="meta-value">50 (39 mit vollständigen Notes)</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Abgabe</span>
+        <span class="meta-value">Dezember 2026</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== SLIDE 2: RESEARCH QUESTION ========== -->
+  <div class="slide" id="slide-2">
+    <div class="slide-number">02 / 14</div>
+    <div class="section-label">Forschungsfrage</div>
+    <h2>Die zentrale Frage</h2>
+    <div class="rq-box">
+      "Does the integration of cognitive predictive metrics into the AIM platform improve the computational evaluation of GUIs?"
+    </div>
+    <div class="grid2 mt">
+      <div class="card card-accent">
+        <h3>Problem</h3>
+        <p>Bestehende GUI-Evaluierungstools (AIM, UIClip, Criticmate) analysieren <strong style="color:var(--accent2)">visuelle Eigenschaften</strong>, nicht Nutzerverhalten. Eine GUI kann visuell "sauber" sein und trotzdem hohe kognitive Belastung erzeugen.</p>
+      </div>
+      <div class="card card-green">
+        <h3>Ansatz</h3>
+        <p>Zweistufige Erweiterungspipeline:<br>
+        <span class="highlight">Stage 1</span> → Visueller Komplexitätsvektor v ∈ ℝ⁸<br>
+        <span class="highlight">Stage 2</span> → Saliency + Fixation + Cognitive Load Index (0–100)</p>
+      </div>
+    </div>
+    <div class="mt-sm">
+      <span class="tag">automotive HMI</span>
+      <span class="tag">Computational Rationality</span>
+      <span class="tag">Multi-Output Regression</span>
+      <span class="tag">Eye-Tracking</span>
+      <span class="tag">NASA-TLX</span>
+    </div>
+  </div>
+
+  <!-- ========== SLIDE 3: LITERATURE MAP ========== -->
+  <div class="slide" id="slide-3">
+    <div class="slide-number">03 / 14</div>
+    <div class="section-label">Übersicht</div>
+    <h2>Literature Map — 9 Cluster</h2>
+    <div class="grid3" style="gap:12px;">
+      <div class="cluster-pill"><div class="num">1</div><span>AIM & GUI Evaluation Tools<br><span class="muted" style="font-size:0.8rem">8 Paper</span></span></div>
+      <div class="cluster-pill"><div class="num">2</div><span>Cognitive Models & CR<br><span class="muted" style="font-size:0.8rem">10 Paper</span></span></div>
+      <div class="cluster-pill"><div class="num">3</div><span>Saliency & Scanpaths<br><span class="muted" style="font-size:0.8rem">11 Paper</span></span></div>
+      <div class="cluster-pill"><div class="num">4</div><span>Automotive HMI<br><span class="muted" style="font-size:0.8rem">6 Paper</span></span></div>
+      <div class="cluster-pill"><div class="num">5</div><span>Pipeline & UI Adaptation<br><span class="muted" style="font-size:0.8rem">8 Paper</span></span></div>
+      <div class="cluster-pill"><div class="num">6</div><span>LLM Nutzersimulation<br><span class="muted" style="font-size:0.8rem">3 Paper</span></span></div>
+      <div class="cluster-pill"><div class="num">7</div><span>HCI Theorie & Grundlagen<br><span class="muted" style="font-size:0.8rem">6 Paper</span></span></div>
+      <div class="cluster-pill" style="opacity:0.6"><div class="num" style="background:var(--tier4)">8</div><span>Peripheral (Tier 4)<br><span class="muted" style="font-size:0.8rem">4 Paper</span></span></div>
+      <div class="cluster-pill" style="opacity:0.5"><div class="num" style="background:var(--accent2)">✕</div><span>Ausgeschlossen<br><span class="muted" style="font-size:0.8rem">3 Paper</span></span></div>
+    </div>
+    <div class="grid3 mt" style="gap:16px;">
+      <div class="stat-block"><div class="stat-num">50</div><div class="stat-label">eingeschlossene Paper</div></div>
+      <div class="stat-block"><div class="stat-num">39</div><div class="stat-label">vollständige Notes</div></div>
+      <div class="stat-block"><div class="stat-num">2018–<br><span style="font-size:1.8rem">2026</span></div><div class="stat-label">Zeitraum (Schwerpunkt CHI)</div></div>
+    </div>
+  </div>
+
+  <!-- ========== SLIDE 4: CLUSTER 1+2 ========== -->
+  <div class="slide" id="slide-4">
+    <div class="slide-number">04 / 14</div>
+    <div class="section-label">Cluster 1 + 2</div>
+    <h2>GUI Evaluation & Cognitive Models</h2>
+    <div class="grid2">
+      <div>
+        <h3 style="color: var(--accent3)">Cluster 1 — AIM & Tools</h3>
+        <table>
+          <tr><th>Paper</th><th>Beitrag</th><th>Tier</th></tr>
+          <tr><td><strong>OUL18</strong> AIM</td><td>Baseline-System</td><td><span class="badge badge-t1">T1</span></td></tr>
+          <tr><td><strong>WU24</strong> UIClip</td><td>CLIP-basierte Qualität</td><td><span class="badge badge-t3">T3</span></td></tr>
+          <tr><td><strong>KO26</strong> Criticmate</td><td>AI-Co-Kritik, 3 Stufen</td><td><span class="badge badge-t3">T3</span></td></tr>
+          <tr><td><strong>BUR21/22</strong> UiLab</td><td>Konsistenzmetriken</td><td><span class="badge badge-t2">T2</span></td></tr>
+        </table>
+        <p class="mt-sm" style="font-size:0.85rem"><span class="warn">Lücke:</span> Kein System integriert kognitive Belastungsvorhersage.</p>
+      </div>
+      <div>
+        <h3 style="color: var(--accent)">Cluster 2 — Computational Rationality</h3>
+        <table>
+          <tr><th>Paper</th><th>Relevanz</th><th>Tier</th></tr>
+          <tr><td><strong>OUL22</strong> CR Theory</td><td>Theoretisches Fundament</td><td><span class="badge badge-t1">T1</span></td></tr>
+          <tr><td><strong>JOK20</strong> AFG</td><td>→ direkt implementiert</td><td><span class="badge badge-t1">T1</span></td></tr>
+          <tr><td><strong>KANK17</strong> ABC</td><td>Kalibrierungsmethode</td><td><span class="badge badge-t1">T1</span></td></tr>
+          <tr><td><strong>SHI24</strong> CRTypist</td><td>CR-Anwendung Typing</td><td><span class="badge badge-t2">T2</span></td></tr>
+          <tr><td><strong>ZHA24</strong> Emotions</td><td>RL + Appraisal Modell</td><td><span class="badge badge-t2">T2</span></td></tr>
+        </table>
+        <p class="mt-sm" style="font-size:0.85rem"><span class="highlight">OUL22</span> erklärt warum Stage 2 funktioniert: Interaktion als optimale Kontrollpolitik unter kognitiven Grenzen.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== SLIDE 5: CLUSTER 3 ========== -->
+  <div class="slide" id="slide-5">
+    <div class="slide-number">05 / 14</div>
+    <div class="section-label">Cluster 3</div>
+    <h2>Saliency, Scanpaths & Visual Attention</h2>
+    <div class="grid2">
+      <div>
+        <h3>Entwicklungspfad</h3>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div class="card" style="padding:12px 16px; border-left: 2px solid var(--tier4)">
+            <span style="font-size:0.8rem; color: var(--text-dim)">2015–2017 · Taskagnostisch</span><br>
+            <span style="font-size:0.9rem">SALICON, DeepGaze II — pixel-level Saliency ohne Kontext</span>
+          </div>
+          <div class="card" style="padding:12px 16px; border-left: 2px solid var(--tier3)">
+            <span style="font-size:0.8rem; color: var(--text-dim)">2021–2023 · UI-spezifisch</span><br>
+            <span style="font-size:0.9rem">UEyes (JIA23), CHE21 — UI-Typen und Blickselektion</span>
+          </div>
+          <div class="card" style="padding:12px 16px; border-left: 2px solid var(--tier1)">
+            <span style="font-size:0.8rem; color: var(--text-dim)">2024–2026 · Task-konditioniert</span><br>
+            <span style="font-size:0.9rem">SeekUI (GUO26), Chartist (SHI25), EyeFormer (JIE24) — aufgabenspezifische Scanpaths</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h3>Schlüsselaussage: DAS24 (HCEye)</h3>
+        <div class="card card-red">
+          <p style="font-size:0.95rem; color: var(--text)">Kognitive Doppelbelastung (Fahren + Dashboard) führt zu:</p>
+          <ul style="margin-top: 10px; padding-left: 20px; font-size: 0.9rem; line-height: 1.8; color: var(--text-dim)">
+            <li><span class="highlight">Tunnelblick</span> — peripherere UI-Elemente werden übersehen</li>
+            <li><span class="highlight">↓ Fixationsanzahl</span> um 12,4% unter hoher Last</li>
+            <li><span class="highlight">↑ Fixationsdauer</span> um 8,1%</li>
+            <li><span class="highlight">↓ Scanpath-Länge</span> — kürzere, ineffizientere Pfade</li>
+          </ul>
+          <p style="margin-top: 10px; font-size:0.85rem; color: var(--accent2)">→ AIM kann dieses Verhalten nicht vorhersagen. Das ist die Hauptmotivation.</p>
+        </div>
+        <p class="mt-sm" style="font-size:0.85rem"><strong>LOP25</strong>: DTW + TDE sind valide Metriken für Scanpath-Vergleich.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== SLIDE 6: CLUSTER 4+5 ========== -->
+  <div class="slide" id="slide-6">
+    <div class="slide-number">06 / 14</div>
+    <div class="section-label">Cluster 4 + 5</div>
+    <h2>Automotive HMI & Pipeline-Methoden</h2>
+    <div class="grid2">
+      <div>
+        <h3 style="color: var(--accent4)">Cluster 4 — Automotive HMI</h3>
+        <table>
+          <tr><th>Paper</th><th>Relevanz für Thesis</th></tr>
+          <tr><td><strong>LOR24</strong> Review</td><td>Domänenüberblick, Forschungslücken</td></tr>
+          <tr><td><strong>BAI24</strong> HMD</td><td>CR-Modell für Dual-Task, optisches HMD</td></tr>
+          <tr><td><strong>LIN24</strong> Task-Switching</td><td>RL für Task-Switching im Fahrszenario</td></tr>
+          <tr><td><strong>JOK21</strong> Drivers</td><td>Adaptation an Fahrassistenzsysteme</td></tr>
+        </table>
+        <p class="mt-sm" style="font-size:0.85rem">Kein Paper evaluiert <em>static GUI screenshots</em> mit kognitivem Modell im automotive HMI-Kontext — der genaue Scope dieser Thesis.</p>
+      </div>
+      <div>
+        <h3 style="color: var(--accent)">Cluster 5 — Pipeline & Adaptation</h3>
+        <table>
+          <tr><th>Paper</th><th>Methodischer Beitrag</th></tr>
+          <tr><td><strong>TOD16/18/19</strong></td><td>Layout-Optimierung mit Visual Search</td></tr>
+          <tr><td><strong>LIA26</strong> HITL</td><td>Human-in-the-Loop + User Model Priors</td></tr>
+          <tr><td><strong>LAN24</strong> MARLUI</td><td>Multi-Agent RL für adaptive UIs</td></tr>
+          <tr><td><strong>MIA26</strong> Log2Motion</td><td>Multi-Output Prediction (Methode)</td></tr>
+        </table>
+        <p class="mt-sm" style="font-size:0.85rem"><strong>MIA26</strong> und <strong>LIA26</strong> liefern methodische Grundlagen für simultane Multi-Output-Vorhersage mit Coherence-Constraint.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== SLIDE 7: CLUSTER 6+7 ========== -->
+  <div class="slide" id="slide-7">
+    <div class="slide-number">07 / 14</div>
+    <div class="section-label">Cluster 6 + 7</div>
+    <h2>LLM-Simulation & HCI-Theorie</h2>
+    <div class="grid2">
+      <div>
+        <h3 style="color: var(--accent2)">Cluster 6 — LLM User Simulation</h3>
+        <div class="card card-accent" style="margin-bottom: 10px">
+          <p style="font-size:0.9rem"><strong style="color:var(--tier1)">ARG23 + SER23</strong> — Ermöglichen Big Five Persönlichkeitskonditionierung für LLMs. Empirisch validiert gegen Gallup/ANES-Umfragen. Grundlage für das User Profile in Stage 2.</p>
+        </div>
+        <div class="card card-red">
+          <p style="font-size:0.9rem"><strong style="color:var(--accent2)">KAP25</strong> — Warnung: LLMs als Forschungsteilnehmer zeigen <em>Surrogate Effect</em> (erzählen glatte Narrative, keine echten Erlebnisse). Nur Trait-Level-Simulation (Big Five) ist methodisch vertretbar. State-Level (akuter Stress) ist nicht valide.</p>
+        </div>
+        <p class="mt-sm" style="font-size:0.82rem; color: var(--text-dim)">⚠️ SER23 = reines arXiv-Preprint — im Text deklarieren</p>
+      </div>
+      <div>
+        <h3 style="color: var(--text-dim)">Cluster 7 — HCI-Theorie</h3>
+        <div class="card" style="margin-bottom: 10px">
+          <p style="font-size:0.9rem"><strong style="color:var(--accent)">OUL16</strong> — HCI-Forschung als Problemlösung: Design-Forschung braucht empirische Validierung, keine rein theoretischen Modelle. Positionierungsrahmen für die Thesis.</p>
+        </div>
+        <div class="card">
+          <p style="font-size:0.9rem"><strong style="color:var(--text-dim)">BOD06/BOD15</strong> — Third Wave HCI: Übergang von aufgabenzentrierter zu kontextueller, kognitiv-affektiver Interaktion. Gibt der Thesis historische Einbettung.</p>
+        </div>
+        <div class="card mt-sm">
+          <p style="font-size:0.9rem"><strong style="color:var(--accent3)">CHO26</strong> — Sensonaut: Multi-Modal-Suche via RL-Simulation. Zeigt Generalisierbarkeit des CR-Ansatzes über visuelle Domänen hinaus.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== SLIDE 8: RESEARCH GAP ========== -->
+  <div class="slide" id="slide-8">
+    <div class="slide-number">08 / 14</div>
+    <div class="section-label">Forschungslücke</div>
+    <h2>Was fehlt — Die Lücke im Forschungsstand</h2>
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+      <div class="finding">
+        <div class="label">Lücke 1 — Kein kognitives Modell in GUI-Evaluierungs-Plattformen</div>
+        AIM, UIClip, Criticmate und alle verwandten Tools evaluieren <em>visuelle Pixel</em>, nicht Verhalten. Kein existierendes Tool sagt vorher, wie viel kognitive Belastung eine GUI unter echten Nutzungsbedingungen erzeugt.
+      </div>
+      <div class="finding">
+        <div class="label">Lücke 2 — Keine Kopplung von Saliency + Fixation + Cognitive Load</div>
+        Saliency-Modelle (DeepGaze II, UEyes) und Cognitive-Load-Modelle existieren separat. Kein System koppelt alle drei Outputs mit einem Coherence-Constraint — die Kopplung ist das methodische Novum dieser Thesis.
+      </div>
+      <div class="finding">
+        <div class="label">Lücke 3 — Task-unabhängige Komplexitätsextraktion als erklärbare erste Stufe</div>
+        Task-konditionierte Modelle (SeekUI, Chartist) erfordern task-spezifisches Training. Stage 1 der Thesis liefert eine erklärbare, taskagnostische erste Stufe — interpretierbar und direkt in AIM integrierbar.
+      </div>
+      <div class="finding">
+        <div class="label">Lücke 4 — Automotive HMI-spezifische Validierung</div>
+        LOR24 Review (2024): Keine systematische Studie verbindet kognitive Modellierung mit static screenshot-basierter GUI-Evaluation im automotive Kontext.
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== SLIDE 9: PIPELINE ========== -->
+  <div class="slide" id="slide-9">
+    <div class="slide-number">09 / 14</div>
+    <div class="section-label">Methode</div>
+    <h2>Zweistufige Pipeline — durch Literatur begründet</h2>
+    <div style="display: flex; gap: 16px; align-items: stretch; margin-top: 10px;">
+      <div class="pipeline-stage" style="flex: 1.2">
+        <div class="stage-num">Stage 1</div>
+        <h3 style="margin-top: 8px; color: var(--tier1)">Visual Complexity Extraction</h3>
+        <p style="font-size: 0.85rem; margin-top: 8px; color: var(--text-dim)">v ∈ ℝ⁸</p>
+        <table style="margin-top: 12px; font-size:0.82rem">
+          <tr><td>Shannon Entropy</td><td class="muted">SHA48</td></tr>
+          <tr><td>Edge Density</td><td class="muted">—</td></tr>
+          <tr><td>Information Clutter</td><td class="muted">ROS07</td></tr>
+          <tr><td>Layout Symmetry</td><td class="muted">MIN15</td></tr>
+          <tr><td>Chromatic Coherence</td><td class="muted">—</td></tr>
+          <tr><td>Visual Hierarchy</td><td class="muted">TUC09</td></tr>
+          <tr><td>Element Density</td><td class="muted">—</td></tr>
+        </table>
+        <p style="margin-top: 12px; font-size:0.8rem; color: var(--tier1)">✅ Vollständig implementiert</p>
+      </div>
+      <div class="arrow">→</div>
+      <div class="pipeline-stage" style="flex: 0.8; background: var(--surface2)">
+        <div class="stage-num" style="background:var(--accent2)">+</div>
+        <h3 style="margin-top: 8px; color: var(--text-dim)">Input</h3>
+        <p style="font-size:0.85rem; margin-top: 8px; line-height: 1.6; color: var(--text-dim)">Task Descriptor<br>User Profile (Big Five)<br><span style="font-size:0.75rem; color: var(--border)">ARG23, SER23 → KAP25</span></p>
+      </div>
+      <div class="arrow">→</div>
+      <div class="pipeline-stage" style="flex: 1.4">
+        <div class="stage-num">Stage 2</div>
+        <h3 style="margin-top: 8px; color: var(--accent)">Multi-Output Prediction</h3>
+        <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px; font-size:0.85rem">
+          <div class="card" style="padding: 8px 12px; border-left: 2px solid var(--tier1)">
+            <strong style="color:var(--tier1)">Head 1</strong> — Saliency Map<br>
+            <span class="muted" style="font-size:0.78rem">AUC-Judd, NSS, SIM | JIA23, DAS24</span>
+          </div>
+          <div class="card" style="padding: 8px 12px; border-left: 2px solid var(--accent)">
+            <strong style="color:var(--accent)">Head 2</strong> — Fixation / Scanpath<br>
+            <span class="muted" style="font-size:0.78rem">DTW, TDE | JOK20, LOP25</span>
+          </div>
+          <div class="card" style="padding: 8px 12px; border-left: 2px solid var(--accent4)">
+            <strong style="color:var(--accent4)">Head 3</strong> — Cognitive Load Index<br>
+            <span class="muted" style="font-size:0.78rem">NASA-TLX | DAS24, HAR88</span>
+          </div>
+          <div class="card" style="padding: 8px 12px; border-left: 2px solid var(--accent2); font-size:0.8rem">
+            <strong style="color:var(--accent2)">Coherence-Term</strong> L<sub>coh</sub><br>
+            <span class="muted" style="font-size:0.78rem">koppelt alle 3 Heads | MIA26</span>
+          </div>
+        </div>
+        <p style="margin-top: 8px; font-size:0.8rem; color: var(--tier1)">✅ Vollständig implementiert</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== SLIDE 10: IMPLEMENTATION STATUS ========== -->
+  <div class="slide" id="slide-10">
+    <div class="slide-number">10 / 14</div>
+    <div class="section-label">Implementierungsstand</div>
+    <h2>Was bereits existiert</h2>
+    <div class="grid2" style="gap: 12px;">
+      <div>
+        <div class="finding" style="border-color: var(--tier1); margin-bottom: 8px">
+          <div class="label" style="color: var(--tier1)">Stage 1 — Visual Complexity</div>
+          <span class="impl-badge">✅ fertig</span> Flask API /api/analyze · 8 Features · Port 5001
+        </div>
+        <div class="finding" style="border-color: var(--tier1); margin-bottom: 8px">
+          <div class="label" style="color: var(--tier1)">UMSI++ Saliency Model</div>
+          <span class="impl-badge">✅ fertig</span> TF2/Keras 3 · Pretrained Weights geladen · /api/saliency
+        </div>
+        <div class="finding" style="border-color: var(--tier1); margin-bottom: 8px">
+          <div class="label" style="color: var(--tier1)">Jokinen 2020 AFG Model</div>
+          <span class="impl-badge">✅ fertig</span> Monte Carlo Visual Search · /api/search-time
+        </div>
+        <div class="finding" style="border-color: var(--tier1)">
+          <div class="label" style="color: var(--tier1)">HCEye Features (DAS24)</div>
+          <span class="impl-badge">✅ fertig</span> h ∈ ℝ⁶ · Empirische Koeffizienten aus DAS24
+        </div>
+      </div>
+      <div>
+        <div class="finding" style="border-color: var(--tier1); margin-bottom: 8px">
+          <div class="label" style="color: var(--tier1)">Stage 2 — Multi-Output Regression</div>
+          <span class="impl-badge">✅ fertig</span> Ridge/RF/XGBoost · Input x ∈ ℝ¹⁹ · Output y ∈ ℝ³
+        </div>
+        <div class="finding" style="border-color: var(--tier1); margin-bottom: 8px">
+          <div class="label" style="color: var(--tier1)">Coherence Check (3 Regeln)</div>
+          <span class="impl-badge">✅ fertig</span> Konsistenzprüfung zwischen allen Outputs
+        </div>
+        <div class="finding" style="border-color: var(--tier1); margin-bottom: 8px">
+          <div class="label" style="color: var(--tier1)">User Profile (Big Five)</div>
+          <span class="impl-badge">✅ fertig</span> 5 Presets · Modifier-Skalar für CL-Anpassung
+        </div>
+        <div class="finding" style="border-color: var(--tier3)">
+          <div class="label" style="color: var(--tier3)">Was noch fehlt</div>
+          Echte Nutzerdaten (N≈30–35) · Training auf realen Daten · Thesis-Kapitel 1–7
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== SLIDE 11: KEY FINDINGS ========== -->
+  <div class="slide" id="slide-11">
+    <div class="slide-number">11 / 14</div>
+    <div class="section-label">Ergebnisse der Analyse</div>
+    <h2>Was die Literaturanalyse zeigt</h2>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div class="finding" style="border-color: var(--accent)">
+        <div class="label" style="color:var(--accent)">Befund 1 — Theoretische Reife</div>
+        Das Feld der computationalen Verhaltensmodellierung (CR, Jokinen, Lingler, Bai) ist methodisch reif genug für empirische Anwendung auf GUI-Evaluation. Es fehlt die Integration in bestehende Evaluation-Infrastruktur.
+      </div>
+      <div class="finding" style="border-color: var(--accent3)">
+        <div class="label" style="color:var(--accent3)">Befund 2 — Empirische Evidenz vorhanden</div>
+        DAS24 (HCEye) liefert den direkten empirischen Beleg: Cognitive Load verändert Saliency-Verteilung messbar. Die Kopplung dieser Outputs ist nicht nur theoretisch sinnvoll — sie ist empirisch belegt.
+      </div>
+      <div class="finding" style="border-color: var(--accent4)">
+        <div class="label" style="color:var(--accent4)">Befund 3 — SOTA-Vergleich identifiziert</div>
+        GUO26 (SeekUI) ist der stärkste direkte Vergleichskandidat. Unterschied: SeekUI ist taskspezifisch trainiert; diese Thesis liefert erklärbaren 2-Stufen-Ansatz mit explizitem Complexity-Layer (Stage 1).
+      </div>
+      <div class="finding" style="border-color: var(--accent2)">
+        <div class="label" style="color:var(--accent2)">Befund 4 — Grenzen der LLM-Simulation</div>
+        Big Five Trait-Level LLM-Simulation (ARG23, SER23) ist methodisch vertretbar. State-Level Simulation ist es nicht (KAP25). Das User Profile der Thesis ist explizit auf Trait-Level beschränkt — die Literatur begründet diese Eingrenzung.
+      </div>
+      <div class="finding" style="border-color: var(--tier4)">
+        <div class="label" style="color:var(--tier4)">Befund 5 — Automotive-Scope ist valide Eingrenzung</div>
+        LOR24 zeigt: Automotive HMI ist der am besten dokumentierte Kontext für Dual-Task-Cognitive-Load-Studien. Die Domänenbeschränkung auf automotive Screenshots ist begründbar und notwendig.
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== SLIDE 12: GAPS IN LITERATURE ========== -->
+  <div class="slide" id="slide-12">
+    <div class="slide-number">12 / 14</div>
+    <div class="section-label">Lücken & Risiken</div>
+    <h2>Identifizierte Lücken & offene Punkte</h2>
+    <div class="grid2">
+      <div>
+        <h3 style="color: var(--accent2)">Fehlende PDFs</h3>
+        <table style="font-size:0.9rem">
+          <tr><td><strong>HAR88</strong></td><td>NASA-TLX Original (1988)</td><td><span class="badge badge-gap">fehlt</span></td></tr>
+          <tr><td><strong>CHE18</strong></td><td>Tappability Prediction</td><td><span class="badge badge-gap">fehlt</span></td></tr>
+          <tr><td><strong>KRE16</strong></td><td>Pupil Diameter & Cognitive Load</td><td><span class="badge badge-gap">fehlt</span></td></tr>
+          <tr><td><strong>TUC09</strong></td><td>Visual Complexity Websites</td><td><span class="badge badge-gap">fehlt</span></td></tr>
+          <tr><td><strong>LI20</strong></td><td>Deep Learning Usability Eval</td><td><span class="badge badge-gap">fehlt</span></td></tr>
+          <tr><td><strong>TAU04</strong></td><td>Driving Style Inventory</td><td><span class="badge badge-gap">fehlt</span></td></tr>
+        </table>
+      </div>
+      <div>
+        <h3 style="color: var(--accent4)">Methodische Lücken</h3>
+        <div style="display: flex; flex-direction: column; gap: 8px; font-size:0.9rem">
+          <div class="card card-orange">
+            <strong>Stage 1: 3 Features ohne Referenz</strong><br>
+            <span class="muted">Edge Density, Chromatic Coherence, Interactive Element Density — keine direkte Literatur. Müssen als "engineered features" deklariert werden.</span>
+          </div>
+          <div class="card card-orange">
+            <strong>ANON26 — Supervisor Paper</strong><br>
+            <span class="muted">Direkter Vorläufer der Thesis. Ergebnis unbekannt. Einfluss auf Positionierung unklar bis zur Veröffentlichung.</span>
+          </div>
+          <div class="card card-orange">
+            <strong>LIA24 — Simulierte Daten</strong><br>
+            <span class="muted">Cognitive Load Web Interface Design verwendet keine echten Probanden. Nur für methodische Einordnung verwertbar.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== SLIDE 13: TIMELINE ========== -->
+  <div class="slide" id="slide-13">
+    <div class="slide-number">13 / 14</div>
+    <div class="section-label">Zeitplan</div>
+    <h2>Verbleibende Arbeit bis Dezember</h2>
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 16px;">
+      <div class="card" style="display: flex; align-items: center; gap: 20px; padding: 14px 20px; opacity: 0.5">
+        <span style="color: var(--tier1); font-size: 1.2rem; width: 30px">✅</span>
+        <div>
+          <strong>Implementierung</strong> — Stage 1+2, Flask API, UMSI++, Jokinen AFG, HCEye
+          <span style="display:block; font-size:0.8rem; color:var(--text-dim)">Abgeschlossen</span>
+        </div>
+      </div>
+      <div class="card card-accent" style="display: flex; align-items: center; gap: 20px; padding: 14px 20px;">
+        <span style="color: var(--accent); font-size: 1rem; width: 30px; font-weight:700">JUN</span>
+        <div>
+          <strong>Literatur</strong> — Tier 1+2 selbst lesen, fehlende PDFs beschaffen
+        </div>
+      </div>
+      <div class="card" style="display: flex; align-items: center; gap: 20px; padding: 14px 20px;">
+        <span style="color: var(--tier3); font-size: 1rem; width: 30px; font-weight:700">JUL</span>
+        <div>
+          <strong>Studie (Vorbereitung)</strong> — Rekrutierung N≈30–35, Ethikantrag, Stimulusmaterial
+        </div>
+      </div>
+      <div class="card" style="display: flex; align-items: center; gap: 20px; padding: 14px 20px;">
+        <span style="color: var(--tier3); font-size: 1rem; width: 30px; font-weight:700">AUG</span>
+        <div>
+          <strong>Studie (Erhebung)</strong> — Eye-Tracking + NASA-TLX, automotive HMI Screenshots
+        </div>
+      </div>
+      <div class="card" style="display: flex; align-items: center; gap: 20px; padding: 14px 20px;">
+        <span style="color: var(--accent4); font-size: 1rem; width: 30px; font-weight:700">SEP</span>
+        <div>
+          <strong>Auswertung</strong> — Varianzdekomposition Stage 1 vs. Stage 2, Baselines B1–B3
+        </div>
+      </div>
+      <div class="card" style="display: flex; align-items: center; gap: 20px; padding: 14px 20px;">
+        <span style="color: var(--accent4); font-size: 1rem; width: 30px; font-weight:700">OKT</span>
+        <div>
+          <strong>Modell-Training</strong> — Training auf echten Daten, Coherence-Analyse
+        </div>
+      </div>
+      <div class="card card-green" style="display: flex; align-items: center; gap: 20px; padding: 14px 20px;">
+        <span style="color: var(--tier1); font-size: 1rem; width: 30px; font-weight:700">NOV</span>
+        <div>
+          <strong>Schreiben</strong> — Thesis-Kapitel 1–7
+        </div>
+      </div>
+      <div class="card" style="display: flex; align-items: center; gap: 20px; padding: 14px 20px; background: linear-gradient(135deg, rgba(108,99,255,0.15), rgba(67,217,173,0.1)); border-color: var(--accent)">
+        <span style="color: var(--accent3); font-size: 1rem; width: 30px; font-weight:800">DEZ</span>
+        <div>
+          <strong style="color: var(--accent3)">ABGABE</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== SLIDE 14: FINAL STATEMENT ========== -->
+  <div class="slide" id="slide-14">
+    <div class="slide-number">14 / 14</div>
+    <div class="section-label">Fazit</div>
+    <h2>Was die Analyse gebracht hat</h2>
+    <div class="final-statement">
+      <p>Die Literaturanalyse zeigt: <strong>Das Forschungsfeld ist bereit.</strong><br><br>
+      Die theoretische Grundlage (Computational Rationality, Jokinen 2020) ist ausgereift. Der empirische Beleg für die Notwendigkeit (DAS24: Cognitive Load verändert Saliency) ist vorhanden. Die Lücke — kein System integriert alle drei Outputs mit Coherence-Constraint in eine bestehende Evaluierungsplattform — ist klar identifiziert und durch <strong>~50 Paper in 9 Clustern</strong> belegt.<br><br>
+      Der Implementierungsstand ist entscheidend: <strong>Stage 1, Stage 2, UMSI++, Jokinen AFG, HCEye-Features, Flask API</strong> — alles läuft. Die Thesis ist keine Implementierungsarbeit mehr, sondern <strong>empirische Validierung + wissenschaftliches Schreiben</strong>.<br><br>
+      Was bleibt: <strong>Die Nutzerstudie (N≈30–35, Aug 2026)</strong> ist der kritische Pfad. Wenn Rekrutierung klappt → Dezember 2026 ist realistisch.</p>
+    </div>
+    <div class="grid3 mt" style="gap:16px;">
+      <div class="stat-block">
+        <div class="stat-num" style="color:var(--accent)">7</div>
+        <div class="stat-label">Thematische Cluster (Kern)</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-num" style="color:var(--tier1)">100%</div>
+        <div class="stat-label">Implementierung abgeschlossen</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-num" style="color:var(--accent4)">Dez</div>
+        <div class="stat-label">2026 — Abgabe</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end slideshow -->
+
+<!-- NAVIGATION -->
+<div class="nav">
+  <button onclick="changeSlide(-1)">← Zurück</button>
+  <div class="progress-dots" id="dots"></div>
+  <span class="counter" id="counter">1 / 14</span>
+  <button onclick="changeSlide(1)">Weiter →</button>
+</div>
+
+<script>
+  const TOTAL = 14;
+  let current = 1;
+
+  function init() {
+    const dots = document.getElementById('dots');
+    for (let i = 1; i <= TOTAL; i++) {
+      const d = document.createElement('div');
+      d.className = 'dot' + (i === 1 ? ' active' : '');
+      d.onclick = () => goTo(i);
+      dots.appendChild(d);
+    }
+  }
+
+  function goTo(n) {
+    document.getElementById('slide-' + current)?.classList.remove('active');
+    document.querySelectorAll('.dot')[current - 1]?.classList.remove('active');
+    current = Math.max(1, Math.min(TOTAL, n));
+    document.getElementById('slide-' + current)?.classList.add('active');
+    document.querySelectorAll('.dot')[current - 1]?.classList.add('active');
+    document.getElementById('counter').textContent = current + ' / ' + TOTAL;
+  }
+
+  function changeSlide(dir) { goTo(current + dir); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') changeSlide(1);
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') changeSlide(-1);
+  });
+
+  init();
+</script>
+</body>
+</html>

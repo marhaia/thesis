@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Development Status — Two-Stage GUI Complexity Pipeline</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d2e;
+    --surface2: #252840;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --accent3: #43d9ad;
+    --accent4: #f9a825;
+    --text: #e8eaf6;
+    --text-dim: #9198b5;
+    --border: #2d3155;
+    --done: #43d9ad;
+    --warn: #f9a825;
+    --miss: #ff6584;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  .slideshow { width: 100%; height: 100vh; position: relative; }
+  .slide {
+    display: none;
+    width: 100%;
+    height: 100vh;
+    padding: 50px 80px 90px;
+    flex-direction: column;
+    justify-content: center;
+    position: absolute;
+    top: 0; left: 0;
+    animation: fadein 0.35s ease;
+  }
+  .slide.active { display: flex; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .nav {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    z-index: 100;
+    background: rgba(15,17,23,0.85);
+    padding: 10px 20px;
+    border-radius: 40px;
+    border: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+  }
+  .nav button {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 8px 18px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+  .nav button:hover { background: var(--accent); border-color: var(--accent); }
+  .nav .counter { color: var(--text-dim); font-size: 12px; min-width: 60px; text-align: center; }
+  .progress-dots { display: flex; gap: 6px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); cursor: pointer; transition: all 0.2s; }
+  .dot.active { background: var(--accent); width: 20px; border-radius: 3px; }
+
+  h1 { font-size: 3rem; font-weight: 700; line-height: 1.1; }
+  h2 { font-size: 1.9rem; font-weight: 600; margin-bottom: 24px; }
+  h3 { font-size: 1.15rem; font-weight: 600; margin-bottom: 10px; color: var(--accent); }
+  p { font-size: 1rem; line-height: 1.7; color: var(--text-dim); }
+  .subtitle { font-size: 1.15rem; color: var(--text-dim); margin-top: 12px; }
+  .tag { display: inline-block; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 0.8rem; color: var(--text-dim); margin: 3px; }
+  .hl { color: var(--accent3); font-weight: 600; }
+  .ac { color: var(--accent); font-weight: 600; }
+  .wn { color: var(--accent4); font-weight: 600; }
+  .er { color: var(--accent2); font-weight: 600; }
+  .muted { color: var(--text-dim); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .grid4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
+  .mt { margin-top: 20px; }
+  .mt-sm { margin-top: 10px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 22px;
+  }
+  .card-accent { border-left: 3px solid var(--accent); }
+  .card-green { border-left: 3px solid var(--done); }
+  .card-orange { border-left: 3px solid var(--warn); }
+  .card-red { border-left: 3px solid var(--miss); }
+
+  .stat-block {
+    text-align: center;
+    padding: 18px;
+    background: var(--surface);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  .stat-num { font-size: 2.5rem; font-weight: 700; color: var(--accent3); }
+  .stat-label { font-size: 0.82rem; color: var(--text-dim); margin-top: 4px; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; }
+  .badge-done { background: rgba(67,217,173,0.15); color: var(--done); }
+  .badge-warn { background: rgba(249,168,37,0.15); color: var(--warn); }
+  .badge-miss { background: rgba(255,101,132,0.15); color: var(--miss); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th { text-align: left; padding: 7px 10px; color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); }
+  td { padding: 7px 10px; border-bottom: 1px solid rgba(45,49,85,0.4); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+
+  /* Pipeline box */
+  .pipe-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    text-align: center;
+    position: relative;
+  }
+  .pipe-label {
+    position: absolute;
+    top: -11px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--accent);
+    color: #fff;
+    padding: 2px 14px;
+    border-radius: 10px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .pipe-label.green { background: var(--done); color: #0f1117; }
+  .pipe-label.orange { background: var(--warn); color: #0f1117; }
+  .arrow-down { color: var(--accent); font-size: 1.4rem; text-align: center; line-height: 1; margin: 2px 0; }
+
+  /* Feature pill */
+  .feat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.88rem;
+    margin: 4px;
+  }
+  .feat-pill .fi {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 4px;
+    padding: 1px 7px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .feat-pill .fi.green { background: var(--done); color: #0f1117; }
+
+  /* RQ box */
+  .rq-box {
+    background: linear-gradient(135deg, #1a1d2e, #252840);
+    border: 1px solid var(--accent);
+    border-radius: 16px;
+    padding: 24px 36px;
+    font-size: 1.2rem;
+    font-style: italic;
+    line-height: 1.6;
+    text-align: center;
+    margin: 16px 0;
+    box-shadow: 0 0 40px rgba(108,99,255,0.15);
+  }
+
+  .final-statement {
+    background: linear-gradient(135deg, rgba(108,99,255,0.08), rgba(67,217,173,0.06));
+    border: 1px solid var(--accent);
+    border-radius: 16px;
+    padding: 28px 36px;
+    font-size: 1.02rem;
+    line-height: 1.85;
+    margin-top: 18px;
+  }
+  .final-statement strong { color: var(--accent3); }
+
+  .title-meta { display: flex; gap: 24px; margin-top: 36px; flex-wrap: wrap; }
+  .meta-item { display: flex; flex-direction: column; }
+  .meta-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); }
+  .meta-value { font-size: 0.95rem; color: var(--text); }
+
+  .slide-number { position: absolute; top: 22px; right: 40px; font-size: 0.75rem; color: var(--text-dim); }
+  .section-label { position: absolute; top: 22px; left: 80px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--accent); }
+
+  .check-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid rgba(45,49,85,0.3); font-size: 0.9rem; }
+  .check-row:last-child { border-bottom: none; }
+  .status-icon { font-size: 1.1rem; flex-shrink: 0; width: 24px; }
+  .prio-pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+  .prio-high { background: rgba(255,101,132,0.15); color: var(--miss); }
+  .prio-med  { background: rgba(249,168,37,0.15);  color: var(--warn); }
+  .prio-low  { background: rgba(67,217,173,0.1);   color: var(--done); }
+
+  .q-box {
+    background: var(--surface);
+    border-left: 3px solid var(--accent4);
+    border-radius: 0 10px 10px 0;
+    padding: 12px 18px;
+    margin-bottom: 10px;
+    font-size: 0.93rem;
+    line-height: 1.55;
+  }
+  .q-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent4); margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div class="slideshow" id="slideshow">
+
+<!-- ===== SLIDE 1: TITLE ===== -->
+<div class="slide active" id="slide-1">
+  <div class="slide-number">01 / 13</div>
+  <h1>Development Status</h1>
+  <h1 style="color:var(--accent)">Two-Stage GUI<br>Complexity Pipeline</h1>
+  <p class="subtitle" style="margin-top:18px">Masterarbeit · Hannah Mueller &nbsp;·&nbsp; HCI &nbsp;·&nbsp; Juni 2026</p>
+  <div class="title-meta">
+    <div class="meta-item">
+      <span class="meta-label">Stand</span>
+      <span class="meta-value">02.06.2026 · v2.6</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">API</span>
+      <span class="meta-value">Flask · Port 5001 · 4 Endpoints</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Implementiert</span>
+      <span class="meta-value">Stage 1a + 1b + 1c + HCEye + Stage 2 (default)</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Abgabe</span>
+      <span class="meta-value">Dezember 2026</span>
+    </div>
+  </div>
+  <div class="mt-sm">
+    <span class="tag">v ∈ ℝ⁸ Visual Complexity</span>
+    <span class="tag">s ∈ ℝ⁵ Saliency (UMSI++)</span>
+    <span class="tag">Jokinen 2020 AFG</span>
+    <span class="tag">h ∈ ℝ⁶ HCEye</span>
+    <span class="tag">Cognitive Load 0–100</span>
+  </div>
+</div>
+
+<!-- ===== SLIDE 2: RESEARCH QUESTION ===== -->
+<div class="slide" id="slide-2">
+  <div class="slide-number">02 / 13</div>
+  <div class="section-label">Kontext</div>
+  <h2>Forschungsfrage & Ansatz</h2>
+  <div class="rq-box">
+    "Does the integration of cognitive predictive metrics into the AIM platform improve the computational evaluation of GUIs?"
+  </div>
+  <div class="grid2 mt">
+    <div class="card card-red">
+      <h3 style="color:var(--miss)">Problem</h3>
+      <p>AIM analysiert <span class="er">visuelle Eigenschaften</span>, nicht Nutzerverhalten. Eine GUI kann visuell ordentlich sein und trotzdem hohe kognitive Belastung erzeugen.</p>
+    </div>
+    <div class="card card-green">
+      <h3 style="color:var(--done)">Lösung: Zweistufige Pipeline</h3>
+      <p><span class="hl">Stage 1</span> → Feature-Extraktion aus Screenshot<br>
+      (visuelle Komplexität + Saliency + Kognition)<br><br>
+      <span class="hl">Stage 2</span> → Cognitive Load Index (0–100)<br>
+      (HCEye-Koeffizienten + Task-Kontext)</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 3: ARCHITEKTUR OVERVIEW ===== -->
+<div class="slide" id="slide-3">
+  <div class="slide-number">03 / 13</div>
+  <div class="section-label">Architektur</div>
+  <h2>Pipeline-Übersicht</h2>
+  <div style="display:flex; flex-direction:column; align-items:center; gap:0;">
+    <div style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px 30px; font-size:0.95rem; font-weight:600;">📸 Screenshot (PNG/JPG)</div>
+    <div class="arrow-down">↓</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; width:100%;">
+      <div class="pipe-box">
+        <div class="pipe-label green">Stage 1a ✅</div>
+        <p style="font-size:0.85rem; margin-top:8px;"><strong>visual_complexity.py</strong><br><span class="muted">v ∈ ℝ⁸<br>8 Metriken</span></p>
+      </div>
+      <div class="pipe-box">
+        <div class="pipe-label green">Stage 1b ✅</div>
+        <p style="font-size:0.85rem; margin-top:8px;"><strong>umsi_model.py</strong><br><span class="muted">s ∈ ℝ⁵<br>UMSI++ Saliency</span></p>
+      </div>
+      <div class="pipe-box">
+        <div class="pipe-label green">Stage 1c ✅</div>
+        <p style="font-size:0.85rem; margin-top:8px;"><strong>jokinen_model.py</strong><br><span class="muted">Kognitive Suchzeit<br>Monte Carlo</span></p>
+      </div>
+    </div>
+    <div class="arrow-down">↓</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; width:80%;">
+      <div class="pipe-box">
+        <div class="pipe-label green">HCEye ✅</div>
+        <p style="font-size:0.85rem; margin-top:8px;"><strong>hceye_features.py</strong><br><span class="muted">h ∈ ℝ⁶ · Das et al. 2024</span></p>
+      </div>
+      <div class="pipe-box">
+        <div class="pipe-label green">Task Descriptor ✅</div>
+        <p style="font-size:0.85rem; margin-top:8px;"><strong>task_descriptor.py</strong><br><span class="muted">t ∈ ℝ⁵ · Aufgaben-Kontext</span></p>
+      </div>
+    </div>
+    <div class="arrow-down">↓</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; width:80%;">
+      <div class="pipe-box" style="border-color:var(--done)">
+        <div class="pipe-label green">Default ✅</div>
+        <p style="font-size:0.85rem; margin-top:8px;"><strong>HCEye-Koeffizienten + Task-Adj.</strong><br><span class="hl">Cognitive Load Score 0–100</span></p>
+      </div>
+      <div class="pipe-box" style="border-color:var(--warn); opacity:0.7">
+        <div class="pipe-label orange">Experimental ⚠️</div>
+        <p style="font-size:0.85rem; margin-top:8px;"><strong>regression_model.py</strong><br><span class="wn">Ridge / XGBoost<br>(kein Training)</span></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 4: STAGE 1a ===== -->
+<div class="slide" id="slide-4">
+  <div class="slide-number">04 / 13</div>
+  <div class="section-label">Stage 1a</div>
+  <h2>Visuelle Komplexität — v ∈ ℝ⁸</h2>
+  <div class="grid2">
+    <div>
+      <h3>8 Features aus Screenshot</h3>
+      <div>
+        <span class="feat-pill"><span class="fi">f₁</span> Shannon Entropy</span>
+        <span class="feat-pill"><span class="fi">f₂</span> Edge Density</span>
+        <span class="feat-pill"><span class="fi">f₃</span> Feature Congestion (AIM m8)</span>
+        <span class="feat-pill"><span class="fi">f₄</span> Subband Entropy (AIM m7)</span>
+        <span class="feat-pill"><span class="fi">f₅</span> Layout Symmetry</span>
+        <span class="feat-pill"><span class="fi">f₆</span> Chromatic Coherence</span>
+        <span class="feat-pill"><span class="fi">f₇</span> Visual Hierarchy</span>
+        <span class="feat-pill"><span class="fi">f₈</span> Interactive Element Density</span>
+      </div>
+      <p class="mt-sm" style="font-size:0.85rem">f₃ und f₄ direkt aus AIM-Metriken abgeleitet (Rosenholtz et al.).<br>f₅–f₈ eigene Implementierungen.</p>
+    </div>
+    <div>
+      <h3>Status</h3>
+      <div class="card card-green" style="margin-bottom:12px">
+        <p style="font-size:0.9rem">✅ <strong>Vollständig implementiert</strong> in <code>stage1/visual_complexity.py</code><br>
+        Flask-Endpoint: <code>POST /api/analyze</code><br>
+        Web-UI auf Port 5001 vorhanden</p>
+      </div>
+      <h3 style="color:var(--warn)">Offene Punkte</h3>
+      <div class="card card-orange">
+        <p style="font-size:0.85rem">⚠️ Normalisierungsbereiche noch heuristisch — sollten gegen Validierungsdatensatz kalibriert werden.<br><br>
+        ⚠️ <strong>f₇ Visual Hierarchy</strong>: Berechnung basiert auf Kontrastschätzung, kein ML-Element-Detektor.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 5: STAGE 1b (SALIENCY) ===== -->
+<div class="slide" id="slide-5">
+  <div class="slide-number">05 / 13</div>
+  <div class="section-label">Stage 1b</div>
+  <h2>UMSI++ Saliency — s ∈ ℝ⁵</h2>
+  <div class="grid2">
+    <div>
+      <h3>Modell</h3>
+      <div class="card card-green" style="margin-bottom:12px">
+        <p style="font-size:0.88rem"><strong>UMSI++ (Jiang et al., CHI 2023)</strong><br>
+        Pretrained auf UEyes-Datensatz<br>
+        62 Probanden · 1980 UI-Screenshots · 5 Dauer-Bedingungen<br><br>
+        Output: Saliency Heatmap (512×512 → Original-Res) +<br>
+        Design-Klassifikation (6-class Softmax)</p>
+      </div>
+      <h3>Abgeleitete Features</h3>
+      <div>
+        <span class="feat-pill"><span class="fi green">s₁</span> Saliency Dispersion</span>
+        <span class="feat-pill"><span class="fi green">s₂</span> Peak Count</span>
+        <span class="feat-pill"><span class="fi green">s₃</span> Center Bias</span>
+        <span class="feat-pill"><span class="fi green">s₄</span> Saliency Entropy</span>
+        <span class="feat-pill"><span class="fi green">s₅</span> Coverage</span>
+      </div>
+    </div>
+    <div>
+      <h3>Status</h3>
+      <div class="card card-green" style="margin-bottom:12px">
+        <p style="font-size:0.88rem">✅ TF2/Keras3-Port läuft auf M4 Mac (CPU)<br>
+        ✅ Pretrained Weights geladen (UEyes CHI2023, 421 MB)<br>
+        ✅ Endpoint: <code>POST /api/saliency</code></p>
+      </div>
+      <h3 style="color:var(--warn)">Limitation</h3>
+      <div class="card card-orange">
+        <p style="font-size:0.85rem">⚠️ Inferenz: ~5–15 Sek/Bild auf CPU (kein GPU-Support)<br><br>
+        ⚠️ PathGAN++ und DeepGaze++ Weights heruntergeladen, aber TF2-Port noch offen → nur UMSI++ aktiv</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 6: STAGE 1c (JOKINEN) ===== -->
+<div class="slide" id="slide-6">
+  <div class="slide-number">06 / 13</div>
+  <div class="section-label">Stage 1c</div>
+  <h2>Jokinen 2020 Kognitives Suchmodell</h2>
+  <div class="grid2">
+    <div>
+      <h3>Modell</h3>
+      <div class="card card-accent" style="margin-bottom:12px">
+        <p style="font-size:0.88rem"><strong>Adaptive Feature Guidance (AFG)</strong><br>
+        Jokinen et al. (2020). IJHCS, 136, 102376<br><br>
+        Input: UI-Elemente (aus <code>element_detector.py</code>) + UMSI++ Saliency Map<br>
+        Prozess: Monte-Carlo-Simulation (50–500 Trials/Element)<br>
+        Cognitive Modell: EMMA + VSTM (Visual Short-Term Memory)<br><br>
+        Output: <span class="hl">Predicted Visual Search Time</span> pro Element</p>
+      </div>
+      <p style="font-size:0.85rem; color:var(--text-dim)">Endpoint: <code>POST /api/search-time</code></p>
+    </div>
+    <div>
+      <h3>Status</h3>
+      <div class="card card-green" style="margin-bottom:12px">
+        <p style="font-size:0.88rem">✅ Vollständig implementiert<br>
+        ✅ UMSI++ als Bottom-Up-Signal integriert<br>
+        ✅ Element-Detektor für UI-Typen vorhanden</p>
+      </div>
+      <h3 style="color:var(--warn)">Limitation</h3>
+      <div class="card card-orange">
+        <p style="font-size:0.85rem">⚠️ <strong>Parameter sind Literaturwerte</strong> (EMMA, VSTM), nicht empirisch kalibriert<br><br>
+        ⚠️ Element-Detektor ist regelbasiert — ML-basierter Detektor würde Genauigkeit signifikant verbessern<br><br>
+        ⚠️ Keine Sensitivitätsanalyse der Monte-Carlo-Parameter</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 7: HCEYE + TASK DESCRIPTOR ===== -->
+<div class="slide" id="slide-7">
+  <div class="slide-number">07 / 13</div>
+  <div class="section-label">Linking Layer</div>
+  <h2>HCEye Features + Task Descriptor</h2>
+  <div class="grid2">
+    <div>
+      <h3>HCEye — h ∈ ℝ⁶</h3>
+      <div class="card card-green" style="margin-bottom:12px">
+        <p style="font-size:0.88rem"><strong>Das et al. (2024). ETRA'24 — "Shifting Focus with HCEye"</strong><br>
+        150 Webseiten · 27 Probanden · 3 Load-Bedingungen<br><br>
+        Empirische Sensitivitätsgewichte: Wie stark beeinflusst kognitive Belastung<br>
+        welchen visuellen Kanal?<br><br>
+        <span class="hl">→ Brücke zwischen v ∈ ℝ⁸ und Cognitive Load</span></p>
+      </div>
+    </div>
+    <div>
+      <h3>Task Descriptor — t ∈ ℝ⁵</h3>
+      <div class="card card-accent" style="margin-bottom:12px">
+        <p style="font-size:0.88rem">Kodiert Aufgaben-Kontext für den Cognitive-Load-Adjustment:<br><br>
+        • <strong>Aufgabentyp</strong>: navigation, search, data_entry, decision, monitoring<br>
+        • <strong>Spezifität</strong>: High Specificity → niedrigere Last<br>
+        • <strong>Zeitdruck</strong>: High Time Pressure → höhere Last<br><br>
+        + Big-Five-Persönlichkeits-Preset (optional, <code>user_profile.py</code>)</p>
+      </div>
+      <div class="card card-orange">
+        <p style="font-size:0.85rem">⚠️ Gewichte sind <strong>Ordinalwerte aus Literatur</strong>, nicht empirisch kalibriert (Wickens 2008, Paas et al. 2003)</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 8: STAGE 2 OUTPUT ===== -->
+<div class="slide" id="slide-8">
+  <div class="slide-number">08 / 13</div>
+  <div class="section-label">Stage 2</div>
+  <h2>Cognitive Load Output</h2>
+  <div class="grid2">
+    <div>
+      <h3 style="color:var(--done)">Default Path (aktiv) ✅</h3>
+      <div class="card card-green">
+        <p style="font-size:0.88rem">
+        <strong>Formel:</strong><br>
+        <code>score = Σ(hᵢ · vᵢ · wᵢ) + task_adj + profile_adj</code><br><br>
+        <strong>Kein Training notwendig</strong><br>
+        Basiert auf HCEye-Koeffizienten (empirisch, N=150 Webseiten)<br><br>
+        <strong>Output:</strong><br>
+        • <span class="hl">cognitive_load_score</span>: 0–100<br>
+        • search_efficiency: 0–1<br>
+        • attention_demand: 0–1<br>
+        • dominant_features: [f₁, f₃, f₇, …]<br><br>
+        Endpoint: <code>POST /api/cognitive-load</code></p>
+      </div>
+    </div>
+    <div>
+      <h3 style="color:var(--warn)">Experimental Path ⚠️</h3>
+      <div class="card card-orange">
+        <p style="font-size:0.88rem">
+        <strong>regression_model.py</strong><br>
+        Ridge Regression + XGBoost (Cross-Validated)<br>
+        Input: x ∈ ℝ¹⁹ (v + s + h)<br><br>
+        <span class="wn">Status: Gerüst da, aber nicht trainiert.</span><br>
+        Training-Daten fehlen noch (eigene Nutzerstudie).<br><br>
+        Nur noch als <strong>explizites Opt-in</strong> aufrufbar<br>
+        (<code>?use_model=true</code>)</p>
+      </div>
+      <div class="card card-accent mt-sm">
+        <p style="font-size:0.85rem"><span class="ac">Wichtig:</span> Für wissenschaftliche Validierung der Thesis ist mindestens ein erster Trainingsversuch auf verfügbaren HCEye-Daten nötig.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 9: STATUS OVERVIEW ===== -->
+<div class="slide" id="slide-9">
+  <div class="slide-number">09 / 13</div>
+  <div class="section-label">Status</div>
+  <h2>Implementierungs-Übersicht</h2>
+  <table>
+    <tr>
+      <th>Modul</th>
+      <th>Beschreibung</th>
+      <th>Status</th>
+    </tr>
+    <tr><td><code>stage1/visual_complexity.py</code></td><td>8 visuelle Komplexitätsmetriken</td><td><span class="badge badge-done">✅ Fertig</span></td></tr>
+    <tr><td><code>stage1/app.py</code></td><td>Flask-API, 4 Endpoints, Port 5001</td><td><span class="badge badge-done">✅ Fertig</span></td></tr>
+    <tr><td><code>saliency/umsi_model.py</code></td><td>UMSI++ TF2/Keras3, CPU, 421 MB Weights</td><td><span class="badge badge-done">✅ Fertig</span></td></tr>
+    <tr><td><code>saliency/saliency_features.py</code></td><td>5 Saliency-Feature-Aggregationen</td><td><span class="badge badge-done">✅ Fertig</span></td></tr>
+    <tr><td><code>cognitive/jokinen_model.py</code></td><td>Kognitives Suchmodell, Monte Carlo</td><td><span class="badge badge-done">✅ Fertig</span></td></tr>
+    <tr><td><code>cognitive/element_detector.py</code></td><td>UI-Element-Detektor (regelbasiert)</td><td><span class="badge badge-done">✅ Fertig</span></td></tr>
+    <tr><td><code>hceye/hceye_features.py</code></td><td>HCEye Sensitivitäts-Schicht h ∈ ℝ⁶</td><td><span class="badge badge-done">✅ Fertig</span></td></tr>
+    <tr><td><code>stage2/task_descriptor.py</code></td><td>Aufgaben-Kontext-Kodierung t ∈ ℝ⁵</td><td><span class="badge badge-done">✅ Fertig</span></td></tr>
+    <tr><td><code>stage2/user_profile.py</code></td><td>Big-Five-Persönlichkeits-Preset</td><td><span class="badge badge-done">✅ Fertig</span></td></tr>
+    <tr><td><code>stage2/regression_model.py</code></td><td>Ridge/XGBoost — Gerüst vorhanden</td><td><span class="badge badge-warn">⚠️ Kein Training</span></td></tr>
+    <tr><td><code>tests/test_pipeline.py</code></td><td>End-to-End Test</td><td><span class="badge badge-warn">⚠️ Nur 1 Test</span></td></tr>
+    <tr><td>PathGAN++ / DeepGaze++</td><td>Weights da, TF2-Port fehlt</td><td><span class="badge badge-miss">❌ Offen</span></td></tr>
+  </table>
+</div>
+
+<!-- ===== SLIDE 10: WHAT'S MISSING ===== -->
+<div class="slide" id="slide-10">
+  <div class="slide-number">10 / 13</div>
+  <div class="section-label">Gaps</div>
+  <h2>Was noch fehlt</h2>
+  <div class="grid2">
+    <div>
+      <h3 style="color:var(--miss)">Kritisch — für Thesis-Abgabe nötig</h3>
+      <div class="check-row"><span class="status-icon">🔴</span><div><strong>Evaluation auf Ground-Truth-Daten</strong> <span class="prio-pill prio-high">hoch</span><br><span class="muted" style="font-size:0.82rem">Ohne Validierung keine wissenschaftliche Aussagekraft. RMSE, R², Pearson nötig.</span></div></div>
+      <div class="check-row"><span class="status-icon">🔴</span><div><strong>Stage 2 Training</strong> <span class="prio-pill prio-high">hoch</span><br><span class="muted" style="font-size:0.82rem">Regression läuft nur im HCEye-Default-Modus. Auch ein kleines Training wäre Nachweis.</span></div></div>
+      <div class="check-row"><span class="status-icon">🟡</span><div><strong>Baseline-Vergleich formalisieren</strong> <span class="prio-pill prio-med">mittel</span><br><span class="muted" style="font-size:0.82rem"><code>baseline_comparison.py</code> vorhanden, nicht dokumentiert.</span></div></div>
+      <div class="check-row"><span class="status-icon">🟡</span><div><strong>Jokinen-Parameter-Sensitivität</strong> <span class="prio-pill prio-med">mittel</span><br><span class="muted" style="font-size:0.82rem">Monte-Carlo-Parameter = Literaturwerte. Sensitivitätsanalyse fehlt.</span></div></div>
+    </div>
+    <div>
+      <h3 style="color:var(--warn)">Wichtig — für Qualität</h3>
+      <div class="check-row"><span class="status-icon">🟡</span><div><strong>PathGAN++ / DeepGaze++ Port</strong><br><span class="muted" style="font-size:0.82rem">Weights da, Architektur fehlt. Aufwand: ~2 Wochen.</span></div></div>
+      <div class="check-row"><span class="status-icon">🟡</span><div><strong>ML-basierter Element-Detektor</strong><br><span class="muted" style="font-size:0.82rem">Aktuell regelbasiert. ML würde Jokinen-Genauigkeit signifikant verbessern.</span></div></div>
+      <div class="check-row"><span class="status-icon">🟡</span><div><strong>Test-Coverage erhöhen</strong><br><span class="muted" style="font-size:0.82rem">Nur 1 End-to-End-Test, keine Unit-Tests für Einzelmodule.</span></div></div>
+      <h3 style="color:var(--done); margin-top:16px">Nice-to-have</h3>
+      <div class="check-row"><span class="status-icon">🟢</span><div><strong>Eye-Tracking-Integration</strong><br><span class="muted" style="font-size:0.82rem"><code>hceye/gaze/</code> hat Daten, keine direkte Pipeline-Anbindung.</span></div></div>
+      <div class="check-row"><span class="status-icon">🟢</span><div><strong>Docker-Compose vollständig</strong><br><span class="muted" style="font-size:0.82rem">AIM läuft, aber nicht gemeinsam mit Stage 1/2.</span></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 11: LIMITATIONS ===== -->
+<div class="slide" id="slide-11">
+  <div class="slide-number">11 / 13</div>
+  <div class="section-label">Honest Assessment</div>
+  <h2>Aktuelle Limitationen</h2>
+  <div class="grid2">
+    <div>
+      <div class="card card-red" style="margin-bottom:12px">
+        <h3 style="color:var(--miss)">1. Kein empirisches Training</h3>
+        <p style="font-size:0.88rem">Stage 2 läuft im rule-based Modus. Die Regression ist ein Gerüst ohne trainierte Parameter. <strong>Default-Path ist rule-based</strong>, nicht datengetrieben.</p>
+      </div>
+      <div class="card card-orange" style="margin-bottom:12px">
+        <h3 style="color:var(--warn)">2. Limitierter Element-Detektor</h3>
+        <p style="font-size:0.88rem">Jokinen-Modell-Genauigkeit hängt von UI-Element-Erkennung ab. Aktuell regelbasiert → systematische Fehler bei komplexen Layouts.</p>
+      </div>
+      <div class="card card-orange">
+        <h3 style="color:var(--warn)">3. Task-Gewichte ordinal</h3>
+        <p style="font-size:0.88rem"><code>task_descriptor.py</code> verwendet Literatur-basierte Ordinalwerte (Wickens, Paas). Müssten durch Nutzerstudie kalibriert werden.</p>
+      </div>
+    </div>
+    <div>
+      <div class="card card-orange" style="margin-bottom:12px">
+        <h3 style="color:var(--warn)">4. UMSI++ auf CPU</h3>
+        <p style="font-size:0.88rem">~5–15 Sek/Bild auf M4 Mac. GPU-Support möglich aber nicht eingerichtet. Bei Nutzerstudie (N≈30–35) kein Problem, bei größerem Datensatz bottleneck.</p>
+      </div>
+      <div class="card card-orange" style="margin-bottom:12px">
+        <h3 style="color:var(--warn)">5. Fehlende stat. Validierung</h3>
+        <p style="font-size:0.88rem">Kein ICC (Intra-Class Correlation), kein Cronbach's Alpha für Feature-Stabilität. Wichtig für Kapitel "Construct Validity".</p>
+      </div>
+      <div class="card card-accent">
+        <h3>Was gut ist</h3>
+        <p style="font-size:0.88rem">✅ Alle theoretischen Bausteine sind implementiert<br>
+        ✅ Default-Pfad gibt plausible Scores<br>
+        ✅ System läuft end-to-end<br>
+        ✅ API ist vollständig verwendbar</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 12: NEXT STEPS ===== -->
+<div class="slide" id="slide-12">
+  <div class="slide-number">12 / 13</div>
+  <div class="section-label">Roadmap</div>
+  <h2>Nächste Schritte — priorisiert</h2>
+  <div class="grid2">
+    <div>
+      <h3>Kurzfristig (Juni 2026)</h3>
+      <div class="check-row"><span class="status-icon">1</span><div><strong>Evaluation-Framework</strong><br><span class="muted" style="font-size:0.82rem">Metric-Set definieren (RMSE, R², Pearson) + Testdatensatz zusammenstellen</span></div></div>
+      <div class="check-row"><span class="status-icon">2</span><div><strong>Baseline-Vergleich dokumentieren</strong><br><span class="muted" style="font-size:0.82rem"><code>baseline_comparison.py</code> formalisieren + in Thesis aufnehmen</span></div></div>
+      <div class="check-row"><span class="status-icon">3</span><div><strong>Stage 2 erstes Training</strong><br><span class="muted" style="font-size:0.82rem">Mit verfügbaren HCEye-Daten (auch wenn klein) — Nachweis dass Pipeline trainierbar</span></div></div>
+      <div class="check-row"><span class="status-icon">4</span><div><strong>Jokinen Sensitivitätsanalyse</strong><br><span class="muted" style="font-size:0.82rem">Parameter-Sweep über EMMA-Konstanten</span></div></div>
+    </div>
+    <div>
+      <h3>Mittelfristig (Jul–Aug 2026)</h3>
+      <div class="check-row"><span class="status-icon">5</span><div><strong>Nutzerstudie (N ≈ 30–35)</strong><br><span class="muted" style="font-size:0.82rem">Kritischer Pfad für Abgabe. Rekrutierung starten.</span></div></div>
+      <div class="check-row"><span class="status-icon">6</span><div><strong>Task-Gewichte kalibrieren</strong><br><span class="muted" style="font-size:0.82rem">Studiendaten → echte Regressionskoeffizienten</span></div></div>
+      <div class="check-row"><span class="status-icon">7</span><div><strong>Stage 2 Volltraining</strong><br><span class="muted" style="font-size:0.82rem">Mit Studiendaten als Ground Truth</span></div></div>
+      <h3 style="margin-top:16px">Später (Sep–Nov 2026)</h3>
+      <div class="check-row"><span class="status-icon">8</span><div><strong>Thesis schreiben</strong><br><span class="muted" style="font-size:0.82rem">Methodik, Ergebnisse, Diskussion, Conclusion</span></div></div>
+      <div class="check-row"><span class="status-icon">9</span><div><strong>PathGAN++ (wenn Zeit)</strong><br><span class="muted" style="font-size:0.82rem">Weights sind da, TF2-Port ~2 Wochen</span></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 13: SUPERVISOR QUESTIONS ===== -->
+<div class="slide" id="slide-13">
+  <div class="slide-number">13 / 13</div>
+  <div class="section-label">Meeting</div>
+  <h2>Diskussionspunkte</h2>
+  <div class="grid2">
+    <div>
+      <div class="q-box">
+        <div class="q-label">Validierung</div>
+        Reicht der Default-HCEye-Modus als wissenschaftliche Validierung, oder brauchen wir zwingend das Training mit eigenem Datensatz?
+      </div>
+      <div class="q-box">
+        <div class="q-label">Saliency-Modelle</div>
+        Soll PathGAN++ noch portiert werden, oder ist UMSI++ als einzelnes Modell ausreichend für die Thesis?
+      </div>
+      <div class="q-box">
+        <div class="q-label">Nutzerstudie</div>
+        Können Studien-Daten für Kalibrierung der Task-Descriptor-Gewichte bereitgestellt werden? Oder ist Literatur-Kalibrierung ausreichend?
+      </div>
+    </div>
+    <div>
+      <div class="q-box">
+        <div class="q-label">Zeitplan</div>
+        Nutzerstudie im August (N ≈ 30–35): Ist Rekrutierung realistisch? Welche Unterstützung ist möglich?
+      </div>
+      <div class="q-box">
+        <div class="q-label">Scope</div>
+        Soll automotive HMI weiterhin explizit als Domäne in der Thesis bleiben, oder wird die Pipeline generisch für GUI evaluation positioniert?
+      </div>
+      <div class="card card-green mt-sm">
+        <p style="font-size:0.88rem"><strong>Zusammenfassung:</strong> Die Implementierung ist zu ~85% abgeschlossen. Der kritische Pfad ist die <span class="hl">Nutzerstudie + empirische Validierung</span>. Alle Bausteine laufen — der nächste Schritt ist wissenschaftliche Messung.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end slideshow -->
+
+<div class="nav">
+  <button onclick="changeSlide(-1)">← Zurück</button>
+  <div class="progress-dots" id="dots"></div>
+  <span class="counter" id="counter">1 / 13</span>
+  <button onclick="changeSlide(1)">Weiter →</button>
+</div>
+
+<script>
+  const TOTAL = 13;
+  let current = 1;
+
+  function init() {
+    const dots = document.getElementById('dots');
+    for (let i = 1; i <= TOTAL; i++) {
+      const d = document.createElement('div');
+      d.className = 'dot' + (i === 1 ? ' active' : '');
+      d.onclick = () => goTo(i);
+      dots.appendChild(d);
+    }
+  }
+
+  function goTo(n) {
+    document.getElementById('slide-' + current)?.classList.remove('active');
+    document.querySelectorAll('.dot')[current - 1]?.classList.remove('active');
+    current = Math.max(1, Math.min(TOTAL, n));
+    document.getElementById('slide-' + current)?.classList.add('active');
+    document.querySelectorAll('.dot')[current - 1]?.classList.add('active');
+    document.getElementById('counter').textContent = current + ' / ' + TOTAL;
+  }
+
+  function changeSlide(dir) { goTo(current + dir); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') changeSlide(1);
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') changeSlide(-1);
+  });
+
+  init();
+</script>
+</body>
+</html>

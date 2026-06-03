@@ -1,0 +1,1202 @@
+{
+  "101-UEyes-9466ef": {
+    "fixation_reduction": 1.0476190476190477,
+    "duration_increase": 0.8322425685809387,
+    "exploration_reduction": 1.254102142247119,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.0,
+    "cognitive_load_index": 0.0
+  },
+  "104-UEyes-e9b8fa": {
+    "fixation_reduction": 0.7142857142857143,
+    "duration_increase": 1.2637537511761605,
+    "exploration_reduction": 0.7649719502223865,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.816326530612245,
+    "cognitive_load_index": 0.9100722210440125
+  },
+  "107-UEyes-195990": {
+    "fixation_reduction": 0.6829268292682927,
+    "duration_increase": 1.569113275741592,
+    "exploration_reduction": 0.7094368453359732,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.0975609756097562,
+    "cognitive_load_index": 1.0
+  },
+  "121-UEyes-348c74": {
+    "fixation_reduction": 0.7843137254901961,
+    "duration_increase": 1.2663599946798394,
+    "exploration_reduction": 0.8054715021304755,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.7843137254901961,
+    "cognitive_load_index": 0.8307884067976152
+  },
+  "134-UEyes-259405": {
+    "fixation_reduction": 0.9090909090909092,
+    "duration_increase": 0.9094836065813766,
+    "exploration_reduction": 1.0910547798175803,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.75,
+    "cognitive_load_index": 0.3552059043640373
+  },
+  "143-UEyes-486fbb": {
+    "fixation_reduction": 0.7474747474747475,
+    "duration_increase": 1.099705593457916,
+    "exploration_reduction": 1.0649719291158792,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.7878787878787878,
+    "cognitive_load_index": 0.5817416348138831
+  },
+  "145-UEyes-69a8c4": {
+    "fixation_reduction": 1.1470588235294117,
+    "duration_increase": 0.7192108888881779,
+    "exploration_reduction": 1.2614723939002759,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.102941176470588,
+    "cognitive_load_index": 0.0
+  },
+  "146-UEyes-7d1335": {
+    "fixation_reduction": 0.6862745098039216,
+    "duration_increase": 1.4833585880547593,
+    "exploration_reduction": 0.7065993883275895,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9019607843137255,
+    "cognitive_load_index": 1.0
+  },
+  "16-UEyes-8f7ad5": {
+    "fixation_reduction": 0.8405797101449275,
+    "duration_increase": 1.432672609045452,
+    "exploration_reduction": 0.7773446903440463,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.1014492753623188,
+    "cognitive_load_index": 0.7455809313081836
+  },
+  "18-UEyes-fe0708": {
+    "fixation_reduction": 0.5094339622641509,
+    "duration_increase": 1.8226867168572687,
+    "exploration_reduction": 0.5964989728854766,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.6415094339622641,
+    "cognitive_load_index": 1.0
+  },
+  "195-UEyes-856a72": {
+    "fixation_reduction": 0.7441860465116278,
+    "duration_increase": 1.4964031292082312,
+    "exploration_reduction": 0.7406671337471961,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9418604651162791,
+    "cognitive_load_index": 0.9887077179042563
+  },
+  "214-UEyes-1bafe2": {
+    "fixation_reduction": 1.0232558139534882,
+    "duration_increase": 0.9309150302401669,
+    "exploration_reduction": 1.0656154956427035,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.0232558139534882,
+    "cognitive_load_index": 0.12137261530796535
+  },
+  "217-UEyes-134669": {
+    "fixation_reduction": 0.9508196721311475,
+    "duration_increase": 0.8889038033147728,
+    "exploration_reduction": 1.0595006157814266,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.6994535519125683,
+    "cognitive_load_index": 0.3597864747249507
+  },
+  "229-UEyes-5a97ec": {
+    "fixation_reduction": 1.0617283950617284,
+    "duration_increase": 0.8934628333060751,
+    "exploration_reduction": 1.239767054521348,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9876543209876544,
+    "cognitive_load_index": 0.0
+  },
+  "239-UEyes-cad727": {
+    "fixation_reduction": 0.5925925925925926,
+    "duration_increase": 1.8381827761009135,
+    "exploration_reduction": 0.5928103929621004,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.6111111111111112,
+    "cognitive_load_index": 1.0
+  },
+  "24-UEyes-fb6dd3": {
+    "fixation_reduction": 1.4594594594594594,
+    "duration_increase": 0.5866482324268496,
+    "exploration_reduction": 1.7666860746026136,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8648648648648648,
+    "cognitive_load_index": 0.0
+  },
+  "250-UEyes-bd57a3": {
+    "fixation_reduction": 0.5263157894736842,
+    "duration_increase": 1.0859092439398188,
+    "exploration_reduction": 0.5518276916197972,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.543859649122807,
+    "cognitive_load_index": 1.0
+  },
+  "253-UEyes-16a273": {
+    "fixation_reduction": 0.6590909090909091,
+    "duration_increase": 1.5105642106683956,
+    "exploration_reduction": 0.665311411206631,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8636363636363636,
+    "cognitive_load_index": 1.0
+  },
+  "258-UEyes-ecf129": {
+    "fixation_reduction": 0.7666666666666667,
+    "duration_increase": 1.260177371079605,
+    "exploration_reduction": 0.8005336225973079,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9555555555555556,
+    "cognitive_load_index": 0.7619847212104202
+  },
+  "265-UEyes-42941c": {
+    "fixation_reduction": 0.5681818181818182,
+    "duration_increase": 2.094857408250718,
+    "exploration_reduction": 0.5860376257572504,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9034090909090909,
+    "cognitive_load_index": 1.0
+  },
+  "270-UEyes-3eb8f9": {
+    "fixation_reduction": 0.75,
+    "duration_increase": 1.3484241319945665,
+    "exploration_reduction": 0.7624257105992046,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.0227272727272727,
+    "cognitive_load_index": 0.8293019778999382
+  },
+  "277-UEyes-07a2c8": {
+    "fixation_reduction": 0.8444444444444444,
+    "duration_increase": 1.237757412098736,
+    "exploration_reduction": 0.8117512981054247,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.0,
+    "cognitive_load_index": 0.6395596315510965
+  },
+  "285-UEyes-73bdee": {
+    "fixation_reduction": 0.6818181818181818,
+    "duration_increase": 0.7191065370031429,
+    "exploration_reduction": 0.6357053186837427,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.2272727272727273,
+    "cognitive_load_index": 0.6474085754229595
+  },
+  "293-UEyes-e643f8": {
+    "fixation_reduction": 0.7291666666666666,
+    "duration_increase": 1.3427387518796445,
+    "exploration_reduction": 0.9423334302224675,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.5625,
+    "cognitive_load_index": 0.956520214438118
+  },
+  "299-UEyes-92510f": {
+    "fixation_reduction": 0.7999999999999999,
+    "duration_increase": 0.8713301265047485,
+    "exploration_reduction": 1.2233811592530952,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.6499999999999999,
+    "cognitive_load_index": 0.4260792271646033
+  },
+  "3-UEyes-edbb42": {
+    "fixation_reduction": 0.96,
+    "duration_increase": 1.0350940906750006,
+    "exploration_reduction": 0.9393482550378699,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.5199999999999999,
+    "cognitive_load_index": 0.5438305570914206
+  },
+  "316-UEyes-b3acff": {
+    "fixation_reduction": 0.6666666666666666,
+    "duration_increase": 1.0887163994935627,
+    "exploration_reduction": 1.159219504171595,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8717948717948718,
+    "cognitive_load_index": 0.5504338276505426
+  },
+  "317-UEyes-c4b437": {
+    "fixation_reduction": 0.9130434782608695,
+    "duration_increase": 0.9373138228784827,
+    "exploration_reduction": 1.0073756716566555,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.717391304347826,
+    "cognitive_load_index": 0.42334375512744715
+  },
+  "319-UEyes-ed727a": {
+    "fixation_reduction": 0.7567567567567568,
+    "duration_increase": 1.1210336960106637,
+    "exploration_reduction": 0.880280110318795,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.7207207207207208,
+    "cognitive_load_index": 0.7433852733441286
+  },
+  "326-UEyes-61a325": {
+    "fixation_reduction": 0.7777777777777778,
+    "duration_increase": 1.3259556290648618,
+    "exploration_reduction": 0.7684904623825746,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.1,
+    "cognitive_load_index": 0.7438656666770803
+  },
+  "331-UEyes-e2f93a": {
+    "fixation_reduction": 0.5675675675675675,
+    "duration_increase": 1.7736187085481552,
+    "exploration_reduction": 0.547154652269959,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.135135135135135,
+    "cognitive_load_index": 1.0
+  },
+  "338-UEyes-441395": {
+    "fixation_reduction": 1.2727272727272727,
+    "duration_increase": 0.25400921136429877,
+    "exploration_reduction": 1.6033129921921097,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9696969696969696,
+    "cognitive_load_index": 0.0
+  },
+  "356-UEyes-b5613a": {
+    "fixation_reduction": 1.037037037037037,
+    "duration_increase": 0.4653463583546849,
+    "exploration_reduction": 1.2111805412511343,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8641975308641975,
+    "cognitive_load_index": 0.09007717003010807
+  },
+  "370-UEyes-dda275": {
+    "fixation_reduction": 0.9295774647887324,
+    "duration_increase": 0.9940892551827212,
+    "exploration_reduction": 1.0150813690273812,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.7887323943661971,
+    "cognitive_load_index": 0.3660020920099149
+  },
+  "372-UEyes-e3d6fa": {
+    "fixation_reduction": 0.627906976744186,
+    "duration_increase": 1.5212887223596663,
+    "exploration_reduction": 0.6721040506644854,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9069767441860465,
+    "cognitive_load_index": 1.0
+  },
+  "380-UEyes-66058d": {
+    "fixation_reduction": 1.1538461538461537,
+    "duration_increase": 0.6638801361294927,
+    "exploration_reduction": 1.5159194913331078,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.0256410256410258,
+    "cognitive_load_index": 0.0
+  },
+  "388-UEyes-5b04c4": {
+    "fixation_reduction": 0.7536231884057971,
+    "duration_increase": 1.056888796735086,
+    "exploration_reduction": 0.9328961674330934,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.7729468599033816,
+    "cognitive_load_index": 0.6425651345105071
+  },
+  "389-UEyes-27d67e": {
+    "fixation_reduction": 0.8947368421052633,
+    "duration_increase": 0.9097299550610614,
+    "exploration_reduction": 0.9737059477141646,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.1644736842105263,
+    "cognitive_load_index": 0.24055568398003047
+  },
+  "390-UEyes-042af0": {
+    "fixation_reduction": 0.9411764705882352,
+    "duration_increase": 0.9335104889250962,
+    "exploration_reduction": 1.0122523659086518,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.0,
+    "cognitive_load_index": 0.2506552854726637
+  },
+  "391-UEyes-b0a63b": {
+    "fixation_reduction": 0.8205128205128205,
+    "duration_increase": 1.042540119928443,
+    "exploration_reduction": 1.1460262499076919,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9743589743589743,
+    "cognitive_load_index": 0.3233169389881931
+  },
+  "392-UEyes-aa24d4": {
+    "fixation_reduction": 0.8571428571428572,
+    "duration_increase": 1.258285780863831,
+    "exploration_reduction": 0.8774803878051487,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.1571428571428573,
+    "cognitive_load_index": 0.5181559763248358
+  },
+  "398-UEyes-d1e801": {
+    "fixation_reduction": 1.0638297872340428,
+    "duration_increase": 0.7866012946345393,
+    "exploration_reduction": 1.2322326962422685,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.7659574468085106,
+    "cognitive_load_index": 0.09836969186685625
+  },
+  "399-UEyes-2d86fb": {
+    "fixation_reduction": 1.0909090909090908,
+    "duration_increase": 0.7050256326126313,
+    "exploration_reduction": 1.1988034586340222,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.1515151515151514,
+    "cognitive_load_index": 0.0
+  },
+  "401-UEyes-5a19e3": {
+    "fixation_reduction": 0.6410256410256411,
+    "duration_increase": 1.6252579205690905,
+    "exploration_reduction": 0.6427691394728456,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.7692307692307693,
+    "cognitive_load_index": 1.0
+  },
+  "402-UEyes-5fe2ce": {
+    "fixation_reduction": 0.7021276595744681,
+    "duration_increase": 1.6262830314786512,
+    "exploration_reduction": 0.7927587765100412,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8510638297872342,
+    "cognitive_load_index": 1.0
+  },
+  "403-UEyes-20bf03": {
+    "fixation_reduction": 1.1818181818181819,
+    "duration_increase": 0.6952361369469244,
+    "exploration_reduction": 1.4071124435741236,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.3636363636363635,
+    "cognitive_load_index": 0.0
+  },
+  "414-UEyes-9aa968": {
+    "fixation_reduction": 0.5961538461538463,
+    "duration_increase": 2.100951876716545,
+    "exploration_reduction": 0.556065960618596,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.7307692307692308,
+    "cognitive_load_index": 1.0
+  },
+  "43-UEyes-8dcfba": {
+    "fixation_reduction": 0.8048780487804879,
+    "duration_increase": 1.4050121847209973,
+    "exploration_reduction": 0.7869105596118141,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8536585365853658,
+    "cognitive_load_index": 0.8803604329996181
+  },
+  "442-UEyes-ed473c": {
+    "fixation_reduction": 0.9166666666666666,
+    "duration_increase": 0.9644645331242867,
+    "exploration_reduction": 0.982685101905805,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.6458333333333334,
+    "cognitive_load_index": 0.47195993206279674
+  },
+  "446-UEyes-21d79e": {
+    "fixation_reduction": 1.2820512820512822,
+    "duration_increase": 0.582193639832636,
+    "exploration_reduction": 1.599603411480575,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.5897435897435898,
+    "cognitive_load_index": 0.0
+  },
+  "447-UEyes-0950e7": {
+    "fixation_reduction": 0.9655172413793104,
+    "duration_increase": 0.91254920725378,
+    "exploration_reduction": 1.2438431245773123,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9195402298850575,
+    "cognitive_load_index": 0.11215056062661935
+  },
+  "462-UEyes-2481a3": {
+    "fixation_reduction": 0.9545454545454546,
+    "duration_increase": 1.1025582904428946,
+    "exploration_reduction": 0.9582498411508439,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9545454545454546,
+    "cognitive_load_index": 0.3643874510431852
+  },
+  "463-UEyes-c36099": {
+    "fixation_reduction": 0.7457627118644068,
+    "duration_increase": 1.128056250138618,
+    "exploration_reduction": 0.9200923632434714,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.903954802259887,
+    "cognitive_load_index": 0.6409024782690808
+  },
+  "467-UEyes-ffd262": {
+    "fixation_reduction": 0.75,
+    "duration_increase": 1.2941344836357953,
+    "exploration_reduction": 0.7632959760785841,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.826923076923077,
+    "cognitive_load_index": 0.8904307999099356
+  },
+  "473-UEyes-35a756": {
+    "fixation_reduction": 0.8181818181818182,
+    "duration_increase": 1.2000441047226276,
+    "exploration_reduction": 0.8347467853193238,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9090909090909092,
+    "cognitive_load_index": 0.6708042735415963
+  },
+  "490-UEyes-0c11b6": {
+    "fixation_reduction": 0.8749999999999999,
+    "duration_increase": 0.9860233054159632,
+    "exploration_reduction": 0.8722167336853902,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.85,
+    "cognitive_load_index": 0.48518884420974
+  },
+  "51-UEyes-714584": {
+    "fixation_reduction": 0.7777777777777778,
+    "duration_increase": 1.2555126808442636,
+    "exploration_reduction": 0.8403212473492323,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.1111111111111112,
+    "cognitive_load_index": 0.6434609556633543
+  },
+  "52-UEyes-d3a405": {
+    "fixation_reduction": 0.8205128205128205,
+    "duration_increase": 1.198290569613314,
+    "exploration_reduction": 0.8621360684794315,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.2307692307692308,
+    "cognitive_load_index": 0.4882055648584857
+  },
+  "58-UEyes-25265d": {
+    "fixation_reduction": 0.7962962962962963,
+    "duration_increase": 1.084339928578088,
+    "exploration_reduction": 0.9155390744109058,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.5925925925925926,
+    "cognitive_load_index": 0.7199413101855289
+  },
+  "69-UEyes-12be73": {
+    "fixation_reduction": 1.3043478260869565,
+    "duration_increase": 0.4656178932963627,
+    "exploration_reduction": 1.5300275760020137,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.1884057971014492,
+    "cognitive_load_index": 0.0
+  },
+  "83-UEyes-1acfdd": {
+    "fixation_reduction": 0.5490196078431373,
+    "duration_increase": 2.1944067887026146,
+    "exploration_reduction": 0.5234346269133389,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8235294117647058,
+    "cognitive_load_index": 1.0
+  },
+  "agoda": {
+    "fixation_reduction": 1.0178571428571428,
+    "duration_increase": 0.9463388802566887,
+    "exploration_reduction": 1.0426829954215964,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9285714285714286,
+    "cognitive_load_index": 0.18940181257607866
+  },
+  "Amazon(1)": {
+    "fixation_reduction": 0.6888888888888889,
+    "duration_increase": 1.5967126253414983,
+    "exploration_reduction": 1.195766295260913,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9111111111111111,
+    "cognitive_load_index": 0.8228531089426125
+  },
+  "Amazon(2)": {
+    "fixation_reduction": 0.8666666666666667,
+    "duration_increase": 1.073095515711032,
+    "exploration_reduction": 1.015590373315491,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8444444444444444,
+    "cognitive_load_index": 0.4494478727081385
+  },
+  "Amazon": {
+    "fixation_reduction": 1.3225806451612903,
+    "duration_increase": 0.29531501457896175,
+    "exploration_reduction": 1.406878263987873,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8387096774193548,
+    "cognitive_load_index": 0.0
+  },
+  "apple(1)": {
+    "fixation_reduction": 0.8888888888888888,
+    "duration_increase": 0.7530467581546273,
+    "exploration_reduction": 0.8987203864068973,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.027777777777778,
+    "cognitive_load_index": 0.36474196461762404
+  },
+  "asiaone": {
+    "fixation_reduction": 1.12,
+    "duration_increase": 0.6041472649840991,
+    "exploration_reduction": 1.3243768431682832,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.2266666666666668,
+    "cognitive_load_index": 0.0
+  },
+  "bandao": {
+    "fixation_reduction": 0.7999999999999999,
+    "duration_increase": 1.0867434940376413,
+    "exploration_reduction": 0.8668899039836139,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.95,
+    "cognitive_load_index": 0.5715690600360184
+  },
+  "bbc-home": {
+    "fixation_reduction": 1.0789473684210527,
+    "duration_increase": 1.076237161641025,
+    "exploration_reduction": 1.158057279162461,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.6842105263157895,
+    "cognitive_load_index": 0.22440062340676184
+  },
+  "bbc-sport": {
+    "fixation_reduction": 0.8636363636363636,
+    "duration_increase": 1.1989794566715508,
+    "exploration_reduction": 0.9469850347803024,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.75,
+    "cognitive_load_index": 0.6293599176244686
+  },
+  "bbc-weather": {
+    "fixation_reduction": 0.7878787878787878,
+    "duration_increase": 1.0557170504423092,
+    "exploration_reduction": 0.9538739228325487,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8080808080808081,
+    "cognitive_load_index": 0.5759762264873152
+  },
+  "bbc": {
+    "fixation_reduction": 0.7209302325581396,
+    "duration_increase": 1.4121796584188973,
+    "exploration_reduction": 0.7534306013803612,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.883720930232558,
+    "cognitive_load_index": 0.976375340351272
+  },
+  "best-design": {
+    "fixation_reduction": 0.8636363636363636,
+    "duration_increase": 1.1127896279479643,
+    "exploration_reduction": 0.9123310241413797,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9204545454545455,
+    "cognitive_load_index": 0.5097754328407534
+  },
+  "business-time": {
+    "fixation_reduction": 1.0434782608695652,
+    "duration_increase": 0.846152642075054,
+    "exploration_reduction": 1.1681268372058473,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.5,
+    "cognitive_load_index": 0.29443718099320326
+  },
+  "cbc": {
+    "fixation_reduction": 1.05,
+    "duration_increase": 0.41898265458941036,
+    "exploration_reduction": 1.1082635690639824,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8999999999999999,
+    "cognitive_load_index": 0.12782428729067843
+  },
+  "cell": {
+    "fixation_reduction": 1.1158536585365855,
+    "duration_increase": 0.8777760944977776,
+    "exploration_reduction": 1.1594692880966857,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.902439024390244,
+    "cognitive_load_index": 0.02661397053716872
+  },
+  "clubsnap": {
+    "fixation_reduction": 1.1162790697674418,
+    "duration_increase": 0.9831207896034563,
+    "exploration_reduction": 1.1805597104074537,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8139534883720929,
+    "cognitive_load_index": 0.05637104577487596
+  },
+  "cnn-sport": {
+    "fixation_reduction": 0.835820895522388,
+    "duration_increase": 0.981172251346322,
+    "exploration_reduction": 0.992462624680017,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8557213930348259,
+    "cognitive_load_index": 0.4413433248401877
+  },
+  "cnn-world": {
+    "fixation_reduction": 1.0526315789473686,
+    "duration_increase": 0.5552612817473025,
+    "exploration_reduction": 1.101713557294115,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8947368421052633,
+    "cognitive_load_index": 0.1321909618039231
+  },
+  "coursera": {
+    "fixation_reduction": 0.9615384615384616,
+    "duration_increase": 1.0396661098731304,
+    "exploration_reduction": 0.9555599424223775,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.1538461538461537,
+    "cognitive_load_index": 0.21760923983896346
+  },
+  "dailymotion-gaming(1)": {
+    "fixation_reduction": 1.0465116279069766,
+    "duration_increase": 0.7338930669076689,
+    "exploration_reduction": 1.1678576077471308,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.883720930232558,
+    "cognitive_load_index": 0.09972283514532385
+  },
+  "dailymotion-gaming": {
+    "fixation_reduction": 1.1944444444444444,
+    "duration_increase": 0.7503012646788204,
+    "exploration_reduction": 1.325917857986449,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.638888888888889,
+    "cognitive_load_index": 0.0
+  },
+  "dailymotion": {
+    "fixation_reduction": 0.8636363636363636,
+    "duration_increase": 1.0620053057108427,
+    "exploration_reduction": 0.9317767747935463,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9204545454545455,
+    "cognitive_load_index": 0.4629553842478946
+  },
+  "deviantart-HP": {
+    "fixation_reduction": 0.9583333333333334,
+    "duration_increase": 0.8813628746908931,
+    "exploration_reduction": 1.1032477045608324,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.5833333333333334,
+    "cognitive_load_index": 0.381168196959445
+  },
+  "deviantart": {
+    "fixation_reduction": 0.9329268292682927,
+    "duration_increase": 1.010452847868039,
+    "exploration_reduction": 1.0137051564126047,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.1707317073170733,
+    "cognitive_load_index": 0.1795391113767935
+  },
+  "ebay-coins": {
+    "fixation_reduction": 0.8571428571428572,
+    "duration_increase": 0.920865573631265,
+    "exploration_reduction": 0.8825052179462928,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9857142857142858,
+    "cognitive_load_index": 0.42832985470247137
+  },
+  "ebay-deals": {
+    "fixation_reduction": 0.6744186046511628,
+    "duration_increase": 1.7239532649813913,
+    "exploration_reduction": 0.6431382974832957,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8197674418604651,
+    "cognitive_load_index": 1.0
+  },
+  "ebay-music": {
+    "fixation_reduction": 0.9117647058823529,
+    "duration_increase": 0.9897854684734144,
+    "exploration_reduction": 1.0166501136014086,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8431372549019608,
+    "cognitive_load_index": 0.3555665909323943
+  },
+  "ebay": {
+    "fixation_reduction": 0.6590909090909091,
+    "duration_increase": 3.354693282162372,
+    "exploration_reduction": 0.6270852394587874,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.7045454545454546,
+    "cognitive_load_index": 1.0
+  },
+  "eco-news": {
+    "fixation_reduction": 0.9767441860465116,
+    "duration_increase": 0.961656515449242,
+    "exploration_reduction": 1.0705380277684666,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.5116279069767441,
+    "cognitive_load_index": 0.42041650861947194
+  },
+  "eco": {
+    "fixation_reduction": 0.9722222222222222,
+    "duration_increase": 0.9772320619280799,
+    "exploration_reduction": 1.0522142096086953,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8888888888888888,
+    "cognitive_load_index": 0.24852386026086984
+  },
+  "Facebook(2)": {
+    "fixation_reduction": 0.8333333333333334,
+    "duration_increase": 1.1029654393935102,
+    "exploration_reduction": 0.8937900630490863,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.5925925925925926,
+    "cognitive_load_index": 0.709820621266653
+  },
+  "Facebook": {
+    "fixation_reduction": 0.7037037037037037,
+    "duration_increase": 1.4970885299518673,
+    "exploration_reduction": 0.6842093475346499,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.7777777777777778,
+    "cognitive_load_index": 1.0
+  },
+  "flickr-weather": {
+    "fixation_reduction": 0.8947368421052633,
+    "duration_increase": 0.9513187154307998,
+    "exploration_reduction": 1.0199294895809354,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.1842105263157896,
+    "cognitive_load_index": 0.19987156834955164
+  },
+  "ft": {
+    "fixation_reduction": 0.735632183908046,
+    "duration_increase": 1.1333731854741194,
+    "exploration_reduction": 0.9364213294391892,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.7126436781609196,
+    "cognitive_load_index": 0.7393472143681145
+  },
+  "github": {
+    "fixation_reduction": 0.5272727272727272,
+    "duration_increase": 1.888457606950681,
+    "exploration_reduction": 0.5256495916003314,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.5818181818181818,
+    "cognitive_load_index": 1.0
+  },
+  "Gmarket-Screenshot": {
+    "fixation_reduction": 0.9285714285714286,
+    "duration_increase": 1.1126154775677588,
+    "exploration_reduction": 0.9513400560064758,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.1785714285714286,
+    "cognitive_load_index": 0.2896598048503792
+  },
+  "gmarket-ss2": {
+    "fixation_reduction": 0.7446808510638298,
+    "duration_increase": 1.2718596005040443,
+    "exploration_reduction": 0.7756100987095633,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.6170212765957447,
+    "cognitive_load_index": 0.9776415118346187
+  },
+  "google-news": {
+    "fixation_reduction": 1.3846153846153846,
+    "duration_increase": 0.28539588561303436,
+    "exploration_reduction": 1.5424535793074767,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8974358974358974,
+    "cognitive_load_index": 0.0
+  },
+  "google-plus": {
+    "fixation_reduction": 0.4952830188679245,
+    "duration_increase": 1.1673727218977525,
+    "exploration_reduction": 0.4821794509574818,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.660377358490566,
+    "cognitive_load_index": 1.0
+  },
+  "google-store": {
+    "fixation_reduction": 1.090909090909091,
+    "duration_increase": 0.7800142423814438,
+    "exploration_reduction": 1.0467584645063284,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9545454545454546,
+    "cognitive_load_index": 0.10064587214729609
+  },
+  "gov": {
+    "fixation_reduction": 1.0,
+    "duration_increase": 0.8459502070375675,
+    "exploration_reduction": 1.1885526368843051,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.0512820512820513,
+    "cognitive_load_index": 0.04865721643610424
+  },
+  "htc": {
+    "fixation_reduction": 0.6938775510204083,
+    "duration_increase": 1.550417283195904,
+    "exploration_reduction": 0.6449798955211233,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.0255102040816326,
+    "cognitive_load_index": 1.0
+  },
+  "ibm": {
+    "fixation_reduction": 1.4516129032258063,
+    "duration_increase": 0.4721555216965084,
+    "exploration_reduction": 1.7006807354170752,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.5483870967741935,
+    "cognitive_load_index": 0.0
+  },
+  "ica": {
+    "fixation_reduction": 0.9333333333333333,
+    "duration_increase": 1.001122069478167,
+    "exploration_reduction": 0.9948540343123493,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.6888888888888889,
+    "cognitive_load_index": 0.42640091233276745
+  },
+  "ieee": {
+    "fixation_reduction": 1.1624999999999999,
+    "duration_increase": 0.8321275369989632,
+    "exploration_reduction": 1.2066739849948522,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8999999999999999,
+    "cognitive_load_index": 0.0
+  },
+  "indiegogo": {
+    "fixation_reduction": 1.5652173913043477,
+    "duration_increase": 0.3510521430123984,
+    "exploration_reduction": 1.762599502818365,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.4782608695652175,
+    "cognitive_load_index": 0.0
+  },
+  "intel": {
+    "fixation_reduction": 0.8749999999999999,
+    "duration_increase": 1.1250438018035944,
+    "exploration_reduction": 0.9175078986660355,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.91875,
+    "cognitive_load_index": 0.5039822687583728
+  },
+  "jetstar": {
+    "fixation_reduction": 1.025,
+    "duration_increase": 0.9050143025249978,
+    "exploration_reduction": 1.1955419823940625,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.7000000000000001,
+    "cognitive_load_index": 0.19463867840395838
+  },
+  "latimes": {
+    "fixation_reduction": 0.9206349206349206,
+    "duration_increase": 0.7199666271575682,
+    "exploration_reduction": 1.00224502321885,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.3333333333333333,
+    "cognitive_load_index": 0.11120173055251278
+  },
+  "lenovo": {
+    "fixation_reduction": 0.88,
+    "duration_increase": 1.0137667012942275,
+    "exploration_reduction": 0.965755242891552,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9333333333333332,
+    "cognitive_load_index": 0.3853409722684504
+  },
+  "lg": {
+    "fixation_reduction": 0.8571428571428571,
+    "duration_increase": 1.1903376357012179,
+    "exploration_reduction": 0.8888053110198323,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.0952380952380953,
+    "cognitive_load_index": 0.49625964502568565
+  },
+  "microsoft-xbox": {
+    "fixation_reduction": 1.2162162162162162,
+    "duration_increase": 0.27865839993272434,
+    "exploration_reduction": 1.30819362480141,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.2702702702702702,
+    "cognitive_load_index": 0.0
+  },
+  "moc": {
+    "fixation_reduction": 0.7777777777777778,
+    "duration_increase": 1.1598720205169717,
+    "exploration_reduction": 0.9068081285863187,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.6851851851851852,
+    "cognitive_load_index": 0.7483388909167317
+  },
+  "natureblog": {
+    "fixation_reduction": 0.9791666666666666,
+    "duration_increase": 1.0252409953591157,
+    "exploration_reduction": 0.9874437826672713,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9722222222222222,
+    "cognitive_load_index": 0.2599203640167852
+  },
+  "nature": {
+    "fixation_reduction": 1.0652173913043477,
+    "duration_increase": 0.8152054262431584,
+    "exploration_reduction": 1.2331912606849578,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.826086956521739,
+    "cognitive_load_index": 0.0662782899781443
+  },
+  "nea": {
+    "fixation_reduction": 1.3448275862068966,
+    "duration_increase": 0.5358666546264823,
+    "exploration_reduction": 1.5364911381787167,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.4741379310344829,
+    "cognitive_load_index": 0.0
+  },
+  "news-au": {
+    "fixation_reduction": 0.975,
+    "duration_increase": 1.0924379612566717,
+    "exploration_reduction": 0.9668919130174325,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.7000000000000001,
+    "cognitive_load_index": 0.45869736549282614
+  },
+  "nips": {
+    "fixation_reduction": 0.8297872340425532,
+    "duration_increase": 1.3622622317913418,
+    "exploration_reduction": 0.8365201101986387,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9574468085106383,
+    "cognitive_load_index": 0.7419841094305963
+  },
+  "ntu-research": {
+    "fixation_reduction": 1.0397727272727273,
+    "duration_increase": 0.8686544383426952,
+    "exploration_reduction": 1.1078277835957313,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9090909090909092,
+    "cognitive_load_index": 0.13379662911799725
+  },
+  "nus": {
+    "fixation_reduction": 0.9799999999999999,
+    "duration_increase": 0.8633892572701977,
+    "exploration_reduction": 1.1475201677005753,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.39999999999999997,
+    "cognitive_load_index": 0.42165322153294993
+  },
+  "nytimes-home": {
+    "fixation_reduction": 1.0285714285714287,
+    "duration_increase": 0.8379125834303626,
+    "exploration_reduction": 1.2132224379331285,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.0285714285714287,
+    "cognitive_load_index": 0.014994565187437985
+  },
+  "nytimes-news": {
+    "fixation_reduction": 0.85,
+    "duration_increase": 1.1742343023123036,
+    "exploration_reduction": 0.8609913502261485,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8222222222222223,
+    "cognitive_load_index": 0.6477175236129922
+  },
+  "nytimes-news1": {
+    "fixation_reduction": 1.090909090909091,
+    "duration_increase": 0.6874770665017981,
+    "exploration_reduction": 1.2267012638720662,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9715909090909092,
+    "cognitive_load_index": 0.0
+  },
+  "opentrolley": {
+    "fixation_reduction": 1.0256410256410258,
+    "duration_increase": 1.0352396193883222,
+    "exploration_reduction": 1.0222721619743331,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.0,
+    "cognitive_load_index": 0.18300394596830027
+  },
+  "picasa": {
+    "fixation_reduction": 0.8431372549019608,
+    "duration_increase": 1.0972808834750354,
+    "exploration_reduction": 0.9243961007678099,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.5294117647058824,
+    "cognitive_load_index": 0.7074133845499151
+  },
+  "pinterest-2": {
+    "fixation_reduction": 0.8999999999999999,
+    "duration_increase": 0.9696531431916439,
+    "exploration_reduction": 0.9820060105347492,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.5199999999999999,
+    "cognitive_load_index": 0.551995992976834
+  },
+  "pinterest-about": {
+    "fixation_reduction": 0.7906976744186046,
+    "duration_increase": 1.1833764197636554,
+    "exploration_reduction": 0.8266726619589844,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.872093023255814,
+    "cognitive_load_index": 0.7110583191566024
+  },
+  "reuters": {
+    "fixation_reduction": 0.96875,
+    "duration_increase": 0.8582420545666072,
+    "exploration_reduction": 1.1568098235498552,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.7916666666666666,
+    "cognitive_load_index": 0.2308767843000966
+  },
+  "rfi": {
+    "fixation_reduction": 0.888888888888889,
+    "duration_increase": 1.0636877996645302,
+    "exploration_reduction": 0.9426251991200044,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.85,
+    "cognitive_load_index": 0.46681951147412826
+  },
+  "samsung": {
+    "fixation_reduction": 0.9166666666666666,
+    "duration_increase": 1.0264900172765894,
+    "exploration_reduction": 1.0069781514584362,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.5416666666666666,
+    "cognitive_load_index": 0.5255079105454357
+  },
+  "science-news1": {
+    "fixation_reduction": 1.048780487804878,
+    "duration_increase": 0.8686973038273924,
+    "exploration_reduction": 1.1124504908909114,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.951219512195122,
+    "cognitive_load_index": 0.1006427621702866
+  },
+  "science-news": {
+    "fixation_reduction": 0.6363636363636365,
+    "duration_increase": 1.7740729068658916,
+    "exploration_reduction": 0.6039471156338949,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.090909090909091,
+    "cognitive_load_index": 1.0
+  },
+  "sciencedirect": {
+    "fixation_reduction": 0.5681818181818182,
+    "duration_increase": 2.050385063689099,
+    "exploration_reduction": 0.57564876126049,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9204545454545455,
+    "cognitive_load_index": 1.0
+  },
+  "science": {
+    "fixation_reduction": 0.9230769230769231,
+    "duration_increase": 1.1912468468748372,
+    "exploration_reduction": 0.9251054986102359,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9230769230769231,
+    "cognitive_load_index": 0.49281218089434947
+  },
+  "sgair": {
+    "fixation_reduction": 0.7906976744186046,
+    "duration_increase": 1.4170737291203013,
+    "exploration_reduction": 0.8358386702693479,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.7441860465116278,
+    "cognitive_load_index": 0.9246993415595505
+  },
+  "singtel": {
+    "fixation_reduction": 0.9302325581395349,
+    "duration_increase": 0.9834192707248374,
+    "exploration_reduction": 1.013435545681124,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9069767441860465,
+    "cognitive_load_index": 0.30732203931335933
+  },
+  "sourceforge": {
+    "fixation_reduction": 1.1607142857142858,
+    "duration_increase": 0.8328456188131395,
+    "exploration_reduction": 1.1756595659867417,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.0,
+    "cognitive_load_index": 0.0
+  },
+  "stackoverflow": {
+    "fixation_reduction": 0.7586206896551724,
+    "duration_increase": 1.1976399754343265,
+    "exploration_reduction": 1.0077345924176513,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.9655172413793104,
+    "cognitive_load_index": 0.5852242783329559
+  },
+  "st": {
+    "fixation_reduction": 0.7272727272727273,
+    "duration_increase": 1.4336143527067675,
+    "exploration_reduction": 0.730757237427443,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8522727272727273,
+    "cognitive_load_index": 1.0
+  },
+  "tc": {
+    "fixation_reduction": 0.8461538461538461,
+    "duration_increase": 1.1534746260718178,
+    "exploration_reduction": 0.859382874777084,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.826923076923077,
+    "cognitive_load_index": 0.636445782914438
+  },
+  "the-scientist": {
+    "fixation_reduction": 0.830188679245283,
+    "duration_increase": 1.1356495981092116,
+    "exploration_reduction": 0.9120911347756825,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.4339622641509434,
+    "cognitive_load_index": 0.8018691642349315
+  },
+  "tigerair": {
+    "fixation_reduction": 0.5384615384615385,
+    "duration_increase": 1.8726634684095722,
+    "exploration_reduction": 0.525264725231474,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.576923076923077,
+    "cognitive_load_index": 1.0
+  },
+  "times": {
+    "fixation_reduction": 0.8125,
+    "duration_increase": 1.2169594502802705,
+    "exploration_reduction": 0.8178728845196973,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.75,
+    "cognitive_load_index": 0.7785577105070489
+  },
+  "twitter": {
+    "fixation_reduction": 0.5714285714285714,
+    "duration_increase": 1.9363694013959534,
+    "exploration_reduction": 0.5772870602453694,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.880952380952381,
+    "cognitive_load_index": 1.0
+  },
+  "washington": {
+    "fixation_reduction": 0.7,
+    "duration_increase": 1.1709974172113002,
+    "exploration_reduction": 0.862839954171413,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.7799999999999999,
+    "cognitive_load_index": 0.8154383086932582
+  },
+  "wiki": {
+    "fixation_reduction": 0.8372093023255813,
+    "duration_increase": 1.046070049285475,
+    "exploration_reduction": 0.8758702770288526,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.872093023255814,
+    "cognitive_load_index": 0.5402107008842602
+  },
+  "yahoo-finance": {
+    "fixation_reduction": 1.5,
+    "duration_increase": 0.6011369799115964,
+    "exploration_reduction": 1.6710089817744362,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 1.105263157894737,
+    "cognitive_load_index": 0.0
+  },
+  "youtube": {
+    "fixation_reduction": 0.782608695652174,
+    "duration_increase": 1.1760603575815782,
+    "exploration_reduction": 0.8804686499224527,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.7729468599033816,
+    "cognitive_load_index": 0.7279790128355522
+  },
+  "zuji": {
+    "fixation_reduction": 0.8222222222222223,
+    "duration_increase": 1.5844336940273547,
+    "exploration_reduction": 0.8822093198676685,
+    "aoi_sensitivity": 0.4,
+    "highlight_effectiveness": 0.8,
+    "cognitive_load_index": 0.9459273605509017
+  }
+}
