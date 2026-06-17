@@ -120,17 +120,17 @@ Das System schätzt **kognitive Belastungsindikatoren** aus Automotive-GUI-Scree
 
 ## Referenzen aus dem Dokument
 - Argyle et al. (2023) — LLMs simulieren demografische Profile
-- Chen et al. (2018) — Tappability-Prediction (Single-Output Baseline)
+- ~~Chen et al. (2018)~~ — ❌ **Nicht verifizierbar** (DOI zeigt auf anderes Paper) — ersetzt durch **Miniukovich & De Angeli (2015)**
 - Hart & Staveland (1988) — NASA-TLX
 - Jiang et al. (2015) — SALICON Dataset
 - Kapania et al. (2025) — Epistemische Grenzen LLM-User-Simulation
-- Krejtz et al. (2016) — Transition Entropy, Eye Tracking + Cognitive Load
+- Krejtz et al. (2016) — Eye Tracking Cognitive Load (PLOS ONE, DOI: 10.1371/journal.pone.0150489 ✅ — Supervisor-DOI war falsch)
 - Kümmerer et al. (2017) — DeepGaze II
-- Li et al. (2020) — Automated Usability Evaluation
+- ~~Li et al. (2020)~~ — ❌ **Nicht verifizierbar** (kein DOI, nicht auffindbar in ACM DL) — ersetzt durch **Wu et al. (2024) UIClip**
 - Miniukovich & De Angeli (2015) — Interface Aesthetics / Symmetry
 - Oulasvirta et al. (2022) — Computational Rationality
 - Rosenholtz et al. (2007) — Visual Clutter
 - Serapio-García et al. (2023) — Big Five in LLMs
 - Shannon (1948) — Informationstheorie
-- Taubman-Ben-Ari et al. (2004) — Driving Style & Personality
+- Taubman-Ben-Ari et al. (2004) — Driving Style & Personality ⚠️ PDF ausstehend (TAU16 als Review-Ersatz vorhanden)
 - Tuch et al. (2009) — Visual Complexity of Websites

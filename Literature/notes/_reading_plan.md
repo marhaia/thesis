@@ -5,6 +5,100 @@
 
 ---
 
+## Tagesplan — Tier 1 + Tier 2 (27 Paper, 5/Tag)
+
+> **Ziel:** 6 Tage · Tier 1 zuerst vollständig, dann Tier 2 thematisch gebündelt  
+> **Tempo:** Tier 1 = ca. 45–60 min/Paper · Tier 2 = ca. 30–40 min/Paper  
+> **Beim Lesen:** Abstract → Methodik → Ergebnisse → Discussion/Limitations → Note ergänzen
+
+| Tag | Paper | Thematischer Fokus |
+|-----|-------|--------------------|
+| **Tag 1** | OUL18 · OUL22 · JOK20 · DAS24 · JIA23 | Tier 1 komplett Block 1 — AIM + Theorie + Kernempirie |
+| **Tag 2** | GUO26 · KANK17 · JOK21 · CHE21 · SHI24 | Tier 1 abschließen + Stage 2 CR-Kern |
+| **Tag 3** | LAN24 · SHI25 · LIA25 · TOD19 · TOD16 | Stage 2 Architektur + Layout-Optimierung |
+| **Tag 4** | LOR24 · BUR21 · LIA26 · MIA26 · KO26 | Validierung + Pipeline-Methodik |
+| **Tag 5** | JIE24 · SAR16 · GAJ08 · ZHA24 · BAI24 | Personality Layer + Ability-Based Modeling |
+| **Tag 6** | TOD18 · KRE16 | Tier 2 abschließen — Lernkurve + Eye Tracking CL |
+
+---
+
+### Tag 1 — AIM-Plattform + Theoretisches Fundament
+**Lesefokus:** Was genau macht AIM? Was ist CR? Warum verändert CL die Saliency?
+
+| # | Paper | Kernfrage beim Lesen |
+|---|-------|---------------------|
+| 1 | **OUL18** AIM | Welche Metriken hat AIM aktuell? Welche fehlen? Was ist die API-Schnittstelle? |
+| 2 | **OUL22** Computational Rationality | Wie funktioniert das POMDP-Modell? Was ist der Unterschied zu GOMS/ACT-R? |
+| 3 | **JOK20** Adaptive Feature Guidance | Wie wird Predicted Search Time berechnet? Welche Parameter? |
+| 4 | **DAS24** HCEye | Welches Experiment? Welche CL-Stufen? Welche Saliency-Shifts? Statistik? |
+| 5 | **JIA23** UEyes | Welche UI-Typen? Wie werden Saliency-Maps validiert? N=? |
+
+---
+
+### Tag 2 — SOTA + CR in Automotive
+**Lesefokus:** Was kann GUO26 was AIM nicht kann? Wie ist KANK17 auf Stage 2 übertragbar?
+
+| # | Paper | Kernfrage beim Lesen |
+|---|-------|---------------------|
+| 1 | **GUO26** SeekUI | VLM-Architektur? Reward-Signal? Benchmark? Direkt vergleichbar mit deiner Pipeline? |
+| 2 | **KANK17** ABC | Wie wird das Modell kalibriert? Was sind die freien Parameter? Wie auf Stage 2 übertragen? |
+| 3 | **JOK21** Drivers Adaptation | Wie wird CR auf Automotive angewendet? Gleiche Struktur wie JOK20? |
+| 4 | **CHE21** Gaze Selection | RL-Modell: Welche States/Actions? Wie modelliert es Fixationsdauer? |
+| 5 | **SHI24** CRTypist | Supervisory Control: Wie wird Vision + Motor entkoppelt? |
+
+---
+
+### Tag 3 — Stage 2 Architektur + Layout-Optimierung
+**Lesefokus:** Wie bauen andere Multi-Output-Systeme? Was ist die Gewichtungsformel?
+
+| # | Paper | Kernfrage beim Lesen |
+|---|-------|---------------------|
+| 1 | **LAN24** MARLUI | Multi-Agent RL für UI: Wie wird Intent inferiert? Verbindung zu Task Descriptor? |
+| 2 | **SHI25** Chartist | Task-konditionierte Scanpaths: Wie werden Tasks kodiert? LLM-Integration? |
+| 3 | **LIA25** Affordance CR | Wie verbindet das Paper Stage 1 Features mit Stage 2 Actions? |
+| 4 | **TOD19** Individualising Layouts | Predictive search model: Formeln? Validierung gegen Eye Tracking? |
+| 5 | **TOD16** Sketchplore | Gewichtungsschema U = Σwᵢsᵢ: Welche Metriken? Wie werden Gewichte gelernt? |
+
+---
+
+### Tag 4 — Validierung + Pipeline-Methodik
+**Lesefokus:** Wie validieren andere ihre Pipelines? Was ist methodisch übertragbar?
+
+| # | Paper | Kernfrage beim Lesen |
+|---|-------|---------------------|
+| 1 | **LOR24** In-Vehicle UI Review | Welche Gaps benennt der Review? Welche Metriken fehlen laut Autoren? |
+| 2 | **BUR21** UiLab | Wie ist das Benchmark-Setup? Reproduzierbarkeit? Vergleichbar mit deiner Pipeline? |
+| 3 | **LIA26** Human-in-the-Loop | Wie werden User Model Priors integriert? Optimierungsschleife? |
+| 4 | **MIA26** Log2Motion | Multi-Output-Kohärenz: Wie werden Speed + Accuracy + Effort gemeinsam modelliert? |
+| 5 | **KO26** Criticmate | Zwei-Phasen-Evaluation (Perception → Comprehension): Übertragbar auf deine Heads? |
+
+---
+
+### Tag 5 — Personality Layer + Ability-Based Modeling
+**Lesefokus:** Wie werden Nutzerprofile in kognitive Modelle integriert?
+
+| # | Paper | Kernfrage beim Lesen |
+|---|-------|---------------------|
+| 1 | **JIE24** EyeFormer | Personalisierte Scanpaths: Wie werden Nutzereigenschaften kodiert? Transformer-Architektur? |
+| 2 | **SAR16** Ability-Based Aging | Wie werden motorische/kognitive Fähigkeiten als Modell-Input genutzt? |
+| 3 | **GAJ08** SUPPLE++ | Fundamentalpaper: Wie werden User Traits direkt in UI-Parameter übersetzt? |
+| 4 | **ZHA24** Simulating Emotions | Appraisal-Modell + RL: Wie wird Emotion als Zustandsvariable modelliert? |
+| 5 | **BAI24** HMD Multitasking | Attention Switching: Wie wird zwischen Tasks umgeschaltet? Dual-Task-Metriken? |
+
+---
+
+### Tag 6 — Tier 2 abschließen
+**Lesefokus:** Lernkurve + Eye-Tracking-Validierung
+
+| # | Paper | Kernfrage beim Lesen |
+|---|-------|---------------------|
+| 1 | **TOD18** Familiarisation | Layout-Lernkurve: Wie wird Vorwissen als Variable modelliert? History-Variable? |
+| 2 | **KRE16** Eye Tracking CL | Pupillendurchmesser + Mikrosakkaden: Konkrete r-Werte? Verbindung zu HCEye-Metriken? |
+
+---
+
+---
+
 ## Screening-Kriterien
 - **Tier 1** — Direkt zitierpflichtig: Ohne dieses Paper kann kein Kernargument der Thesis belegt werden
 - **Tier 2** — Wichtig für konkrete Abschnitte: Related Work, Methode, Diskussion
@@ -117,16 +211,16 @@ Vorhanden, aber nicht für Core-Argument nötig. Für Outlook oder Diskussionska
 
 ---
 
-## ⏳ Noch fehlende PDFs (kommen im Laufe des Tages)
+## PDFs — Offene Punkte (Stand 4. Juni 2026)
 
-| ID | Titel | Wofür |
-|----|-------|-------|
-| **CHE18** | Chen 2018 — Predicting Tappability | Tier 3 — Single-Output Baseline, Kontrastpaper |
-| **KRE16** | Krejtz 2016 — Transition Entropy + Pupil | Tier 2 — Head 2 Validierung (Fixation Entropy) |
-| **TUC09** | Tuch 2009 — Visual Complexity of Websites | Tier 3 — Stage 1 Feature Validierung |
-| **LI20** | Li 2020 — Automated Usability Evaluation | Tier 3 — Kontrastpaper Deep Learning |
-| **HAR88** | Hart & Staveland 1988 — NASA-TLX | Tier 2 — Head 3 Validierung (Zotero-Eintrag reicht) |
-| **TAU04** | Taubman-Ben-Ari 2004 — Driving Style | Tier 3 — Personality + Automotive Kontext |
+| ID | Status | Anmerkung |
+|----|--------|-----------|
+| **KRE16** | ✅ `Tier2_Sorgfaeltig/` | Note erstellt |
+| **TUC09** | ✅ `Tier3_Ueberfliegen/` | Note erstellt |
+| **HAR88** | ⚠️ fehlt | Nur in Hochschul-Bibliothek zugänglich — Zotero-Eintrag reicht |
+| **TAU16** | ✅ `Tier4_Peripheral/` | 2016-Review als Ersatz für TAU04 (Original noch offen) |
+| **CHE18** | ❌ entfernt | Titel + DOI nicht verifizierbar (KI-Halluzination) — durch MIN15 + WU24 ersetzt |
+| **LI20** | ❌ entfernt | Titel + DOI nicht verifizierbar (KI-Halluzination) — durch WU24 ersetzt |
 
 ---
 

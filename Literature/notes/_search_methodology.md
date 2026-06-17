@@ -76,14 +76,44 @@ Diese Paper sind thematisch angrenzend und könnten in einem Outlook- oder Relat
 
 ---
 
-## 3. Statistik
+## 3. Statistik (Stand 4. Juni 2026)
 
 | Schritt | Anzahl |
 |---------|--------|
-| Gefunden (vor Duplikaten) | 117 |
+| Gefunden via ACM DL (vor Duplikaten) | 117 |
 | Nach Duplikat-Entfernung | 59 |
 | Gescreent | 59 |
-| Ausgewählt (für Analyse) | 33 |
+| Ausgewählt (initiale Analyse) | 33 |
+| + Snowballing via ResearchRabbit | +12 |
+| + Nachträglich aus Ausstehend-Ordner (TUC09, KRE16, TAU16) | +3 |
+| **Gesamt Core-Literatur** | **47** |
+| + Hintergrundliteratur (BOD06, BOD15, REF_LIN19) | +3 |
+| + Entwicklungsreferenzen (HOE70, BRE01, BOR15) | +3 |
+| **Gesamt PDF-Sammlung** | **53** |
+
+**Aufgliederung nach Tiers:**
+
+| Tier | Beschreibung | Anzahl |
+|------|-------------|--------|
+| Tier 1 | Pflichtlektüre — vollständig gelesen | 7 |
+| Tier 2 | Sorgfältig lesen | 20 |
+| Tier 3 | Überfliegen | 20 |
+| Tier 4 | Peripheral | 6 |
+| Hintergrund | Theoretische Grundlagen | 3 |
+| Entwicklungsreferenzen | Code-Methodik (ML/Stats) | 3 |
+
+---
+
+## 3b. Referenz-Audit (4. Juni 2026)
+
+Beim Abgleich mit der Supervisor-Referenzliste wurden Unstimmigkeiten identifiziert:
+
+| ID | Problem | Ergebnis |
+|----|---------|----------|
+| **CHE18** | DOI `10.1145/3173574.3174121` zeigt auf ein anderes Paper: „User-Driven Design Principles for Gesture Representations" (McAweeney et al., CHI 2018). Titel und Autoren frei erfunden. | ❌ Entfernt. Ersetzt durch MIN15 + WU24. |
+| **LI20** | Kein DOI; Paper „Automated usability evaluation of mobile applications using deep learning" (Li, Ye, Fan et al.) nicht in ACM DL auffindbar. | ❌ Entfernt. Ersetzt durch WU24. |
+| **KRE16** | Supervisor-DOI `10.1145/2857491.2857540` zeigt auf falsches Paper (Gangstudien, Kothari et al.). Unser PDF korrekt: PLOS ONE `10.1371/journal.pone.0150489`. | ✅ PDF korrekt. DOI-Fehler dokumentiert. |
+| **TAU04** | DOI `10.1016/S0001-4575(03)00010-1` verifiziert — Paper existiert (Accident Analysis & Prevention 2004). | ⚠️ Real. PDF noch ausstehend (Hochschule). |
 
 ---
 

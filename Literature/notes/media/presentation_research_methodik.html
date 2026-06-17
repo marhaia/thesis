@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Literaturrecherche — Methodik & Auswahl</title>
+<style>
+:root {
+  --bg: #0c0e1a;
+  --surface: #141728;
+  --surface2: #1c2038;
+  --border: #252a45;
+  --accent: #7c6cfc;
+  --text: #e4e7f5;
+  --dim: #7b82a8;
+  --t1: #43d9ad;
+  --t2: #e05c5c;
+  --t3: #f5a623;
+  --t4: #818aad;
+  --th: #e8c87a;
+  --td: #6ab4fa;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+.slideshow { width: 100%; height: 100vh; position: relative; }
+.slide {
+  display: none;
+  width: 100%;
+  height: 100vh;
+  padding: 52px 72px;
+  flex-direction: column;
+  position: absolute;
+  top: 0; left: 0;
+}
+.slide.active { display: flex; }
+.slide-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 10px;
+}
+h1 { font-size: 52px; font-weight: 700; line-height: 1.1; }
+h2 { font-size: 32px; font-weight: 700; margin-bottom: 6px; }
+h3 { font-size: 18px; font-weight: 600; }
+.subtitle { font-size: 18px; color: var(--dim); margin-top: 12px; }
+.accent { color: var(--accent); }
+.t1c { color: var(--t1); }
+.t2c { color: var(--t2); }
+.t3c { color: var(--t3); }
+.t4c { color: var(--t4); }
+.thc { color: var(--th); }
+.tdc { color: var(--td); }
+
+/* Nav */
+.nav {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 40px;
+  padding: 10px 22px;
+  z-index: 100;
+}
+.nav button {
+  background: none;
+  border: none;
+  color: var(--dim);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color .2s, background .2s;
+}
+.nav button:hover { color: var(--text); background: var(--border); }
+.nav-counter { font-size: 13px; color: var(--dim); min-width: 60px; text-align: center; }
+.nav-dots { display: flex; gap: 6px; }
+.nav-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--border); cursor: pointer; transition: background .2s;
+}
+.nav-dot.active { background: var(--accent); }
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px 26px;
+}
+.card-sm {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+}
+
+/* Grid helpers */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
+.flex-row { display: flex; gap: 20px; align-items: flex-start; }
+.flex-col { display: flex; flex-direction: column; gap: 10px; }
+.flex-1 { flex: 1; }
+
+/* Tag */
+.tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+/* Pill */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--dim);
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+
+/* Stat */
+.stat-big { font-size: 56px; font-weight: 800; line-height: 1; }
+.stat-label { font-size: 14px; color: var(--dim); margin-top: 4px; }
+
+/* Badge */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;
+}
+.badge-ok { background: #43d9ad22; color: var(--t1); border: 1px solid #43d9ad44; }
+.badge-warn { background: #f5a62322; color: var(--t3); border: 1px solid #f5a62344; }
+.badge-err { background: #e05c5c22; color: var(--t2); border: 1px solid #e05c5c44; }
+
+/* Paper chip */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 11px; border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 12px; font-weight: 500;
+  background: var(--surface2);
+  white-space: nowrap;
+}
+.chip .dot { width: 7px; height: 7px; }
+
+/* Divider */
+hr { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+
+/* Canvas wrapper */
+.canvas-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Slide 1 — Title */
+#s1 { justify-content: center; }
+#s1 .kicker { font-size: 13px; letter-spacing: 3px; color: var(--accent); font-weight: 600; text-transform: uppercase; margin-bottom: 20px; }
+#s1 h1 { font-size: 58px; max-width: 760px; }
+#s1 .meta { display: flex; gap: 28px; margin-top: 40px; }
+#s1 .meta-item { display: flex; flex-direction: column; gap: 3px; }
+#s1 .meta-item span:first-child { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; }
+#s1 .meta-item span:last-child { font-size: 15px; font-weight: 500; }
+#s1 .deco {
+  position: absolute; right: 72px; top: 50%; transform: translateY(-50%);
+  width: 340px; height: 340px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, #7c6cfc22, transparent 70%);
+  border: 1px solid #7c6cfc30;
+}
+#s1 .deco::after {
+  content: ''; position: absolute;
+  width: 220px; height: 220px;
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px dashed #7c6cfc40;
+}
+
+/* Funnel SVG */
+.funnel-wrap { display: flex; align-items: center; justify-content: center; flex: 1; }
+
+/* Tier cards */
+.tier-card {
+  border-radius: 12px;
+  padding: 20px 22px;
+  border: 1px solid;
+}
+.tier-card.t1 { background: #43d9ad10; border-color: #43d9ad40; }
+.tier-card.t2 { background: #e05c5c10; border-color: #e05c5c40; }
+.tier-card.t3 { background: #f5a62310; border-color: #f5a62340; }
+.tier-card.t4 { background: #81818110; border-color: #81818140; }
+
+.tier-big { font-size: 38px; font-weight: 800; margin-bottom: 4px; }
+.tier-name { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+.tier-desc { font-size: 12px; color: var(--dim); line-height: 1.5; }
+.tier-count { font-size: 13px; font-weight: 600; margin-top: 10px; }
+
+/* Paper grid for slides 9/10 */
+.paper-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-content: flex-start;
+}
+
+/* Audit table */
+.audit-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 20px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+/* Bottom branding */
+.slide-num {
+  position: absolute;
+  bottom: 28px;
+  right: 72px;
+  font-size: 12px;
+  color: var(--dim);
+}
+</style>
+</head>
+<body>
+
+<div class="slideshow" id="deck">
+
+<!-- ─── SLIDE 1 · TITLE ─── -->
+<div class="slide active" id="s1">
+  <div class="kicker">Masterarbeit — Hannah</div>
+  <h1>Literaturrecherche<br><span class="accent">Methodik &amp; Auswahl</span></h1>
+  <p class="subtitle" style="max-width:540px; margin-top:16px;">
+    Systematische Recherche zur Forschungsfrage: Integration kognitiv-prädiktiver Metriken in die AIM-Plattform
+  </p>
+  <div class="meta" style="margin-top:36px;">
+    <div class="meta-item"><span>Stand</span><span>4. Juni 2026</span></div>
+    <div class="meta-item"><span>Datenbanken</span><span>ACM DL + ResearchRabbit</span></div>
+    <div class="meta-item"><span>Gesamt PDFs</span><span>53</span></div>
+    <div class="meta-item"><span>Tiers</span><span>4 + Hintergrund + Dev</span></div>
+  </div>
+  <div class="deco"></div>
+  <div class="slide-num">01 / 13</div>
+</div>
+
+<!-- ─── SLIDE 2 · FORSCHUNGSFRAGE ─── -->
+<div class="slide" id="s2">
+  <div class="slide-label">Scope</div>
+  <h2>Forschungsfrage &amp; Literaturbedarf</h2>
+  <div style="margin-top:28px;">
+    <div class="card" style="border-color:#7c6cfc60; background:#7c6cfc0d; padding:28px 32px; margin-bottom:24px;">
+      <div style="font-size:12px; color:var(--accent); font-weight:600; letter-spacing:1px; margin-bottom:10px;">FORSCHUNGSFRAGE</div>
+      <p style="font-size:20px; line-height:1.55; font-weight:500;">
+        „Does the integration of cognitive predictive metrics into the AIM platform improve the computational evaluation of GUIs?"
+      </p>
+    </div>
+    <div class="grid-3" style="margin-top:0;">
+      <div class="card-sm">
+        <div class="tag" style="background:#7c6cfc22; color:#7c6cfc; margin-bottom:10px;">Stage 1</div>
+        <p style="font-size:13px; color:var(--dim); line-height:1.5;">Welche <strong style="color:var(--text);">visuellen Features</strong> sind als Grundlage für kognitive Metriken empirisch fundiert?</p>
+      </div>
+      <div class="card-sm">
+        <div class="tag" style="background:#43d9ad22; color:#43d9ad; margin-bottom:10px;">Stage 2</div>
+        <p style="font-size:13px; color:var(--dim); line-height:1.5;">Wie werden <strong style="color:var(--text);">Saliency, CR-Modell, NASA-TLX</strong> in ein Vorhersagemodell integriert?</p>
+      </div>
+      <div class="card-sm">
+        <div class="tag" style="background:#f5a62322; color:#f5a623; margin-bottom:10px;">Validierung</div>
+        <p style="font-size:13px; color:var(--dim); line-height:1.5;">Welche <strong style="color:var(--text);">Nutzerprofil-Dimensionen</strong> (Persönlichkeit, kognitive Last, Fahrverhalten) sind empirisch abgesichert?</p>
+      </div>
+    </div>
+    <div class="card-sm" style="margin-top:14px; border-color:#43d9ad30;">
+      <p style="font-size:13px; color:var(--dim);">Umsetzung: <strong style="color:var(--text);">Pipeline bereits implementiert</strong> — Stage 1 (Flask API :5001, UMSI++ Saliency, 12 visuelle Features), Stage 2 (Jokinen AFG-Modell, HCEye-Metriken, Random Forest Regression, NASA-TLX-Simulation via LLM). Literatur dient der <em>theoretischen Fundierung und Validierung</em>.</p>
+    </div>
+  </div>
+  <div class="slide-num">02 / 13</div>
+</div>
+
+<!-- ─── SLIDE 3 · SUCHMETHODIK ─── -->
+<div class="slide" id="s3">
+  <div class="slide-label">Methodik</div>
+  <h2>Suchdatenbanken &amp; Vorgehen</h2>
+  <div class="grid-2" style="margin-top:28px; align-items:stretch;">
+    <div class="card" style="border-color:#7c6cfc50;">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+        <div style="width:40px;height:40px;border-radius:10px;background:#7c6cfc22;display:flex;align-items:center;justify-content:center;font-size:20px;">📚</div>
+        <div>
+          <h3>ACM Digital Library</h3>
+          <p style="font-size:12px;color:var(--dim);">Systematische Suche</p>
+        </div>
+      </div>
+      <ul style="font-size:13px; color:var(--dim); line-height:2; padding-left:16px;">
+        <li>4 Suchcluster mit spezifischen Queries</li>
+        <li>Filter: Research Article, 2016–2026 (Ausnahmen für Grundlagenwerke)</li>
+        <li>117 Treffer → 59 nach Deduplizierung</li>
+        <li>Venues: CHI, UIST, ETRA, IMWUT, CSCW</li>
+      </ul>
+    </div>
+    <div class="card" style="border-color:#f5a62350;">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+        <div style="width:40px;height:40px;border-radius:10px;background:#f5a62322;display:flex;align-items:center;justify-content:center;font-size:20px;">🔗</div>
+        <div>
+          <h3>ResearchRabbit</h3>
+          <p style="font-size:12px;color:var(--dim);">Zitationsnetzwerk · Snowballing</p>
+        </div>
+      </div>
+      <ul style="font-size:13px; color:var(--dim); line-height:2; padding-left:16px;">
+        <li>Forward + Backward citations der Kernliteratur</li>
+        <li>Identifiziert: GUO26, KO26, CHO26, MIA26, SHI25 u.a.</li>
+        <li>+12 Paper via Snowballing nicht in ACM-Queries gefunden</li>
+        <li>Deklariert als „Snowballing" im Methodikkapitel</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px; border-color:#43d9ad30;">
+    <p style="font-size:13px; color:var(--dim);">
+      <strong style="color:var(--t1);">Reproduzierbarkeit:</strong> Alle ACM-DL-Queries dokumentiert in <code style="background:var(--surface2);padding:2px 6px;border-radius:4px;">_search_methodology.md</code>. Excel-Protokoll in <code style="background:var(--surface2);padding:2px 6px;border-radius:4px;">Literatur_Research.xlsx</code> als vollständiges Such-Backup.
+    </p>
+  </div>
+  <div class="slide-num">03 / 13</div>
+</div>
+
+<!-- ─── SLIDE 4 · PRISMA FUNNEL ─── -->
+<div class="slide" id="s4">
+  <div class="slide-label">PRISMA</div>
+  <h2>Suchprozess &amp; Auswahlfluss</h2>
+  <div class="funnel-wrap" style="margin-top:16px;">
+    <svg width="900" height="390" viewBox="0 0 900 390">
+      <defs>
+        <marker id="arr" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#7b82a8"/>
+        </marker>
+      </defs>
+      <!-- STEP 1 -->
+      <rect x="250" y="10" width="400" height="58" rx="10" fill="#141728" stroke="#7c6cfc60" stroke-width="1.5"/>
+      <text x="450" y="34" text-anchor="middle" fill="#7c6cfc" font-size="11" font-weight="600" letter-spacing="1">IDENTIFIKATION</text>
+      <text x="450" y="52" text-anchor="middle" fill="#e4e7f5" font-size="22" font-weight="800">117</text>
+      <text x="450" y="62" text-anchor="middle" fill="#7b82a8" font-size="11" dy="4">Treffer in ACM DL (vor Duplikaten)</text>
+      <!-- arrow -->
+      <line x1="450" y1="78" x2="450" y2="106" stroke="#7b82a8" stroke-width="1.5" marker-end="url(#arr)"/>
+      <!-- STEP 2 -->
+      <rect x="275" y="112" width="350" height="58" rx="10" fill="#141728" stroke="#43d9ad60" stroke-width="1.5"/>
+      <text x="450" y="136" text-anchor="middle" fill="#43d9ad" font-size="11" font-weight="600" letter-spacing="1">DEDUPLIZIERUNG</text>
+      <text x="450" y="154" text-anchor="middle" fill="#e4e7f5" font-size="22" font-weight="800">59</text>
+      <text x="450" y="164" text-anchor="middle" fill="#7b82a8" font-size="11" dy="4">Nach Entfernung von Duplikaten</text>
+      <!-- excl note right -->
+      <text x="650" y="148" fill="#7b82a8" font-size="11">−58 Duplikate / irrelevant</text>
+      <!-- arrow -->
+      <line x1="450" y1="180" x2="450" y2="208" stroke="#7b82a8" stroke-width="1.5" marker-end="url(#arr)"/>
+      <!-- STEP 3 -->
+      <rect x="287" y="214" width="326" height="58" rx="10" fill="#141728" stroke="#f5a62360" stroke-width="1.5"/>
+      <text x="450" y="238" text-anchor="middle" fill="#f5a623" font-size="11" font-weight="600" letter-spacing="1">SCREENING</text>
+      <text x="450" y="256" text-anchor="middle" fill="#e4e7f5" font-size="22" font-weight="800">47</text>
+      <text x="450" y="266" text-anchor="middle" fill="#7b82a8" font-size="11" dy="4">Core-Literatur incl. Snowballing (+12)</text>
+      <!-- excl note right -->
+      <text x="635" y="250" fill="#7b82a8" font-size="11">−12 Excluded (Scope/Method)</text>
+      <!-- arrow -->
+      <line x1="450" y1="282" x2="450" y2="310" stroke="#7b82a8" stroke-width="1.5" marker-end="url(#arr)"/>
+      <!-- STEP 4 -->
+      <rect x="300" y="316" width="300" height="60" rx="10" fill="#141728" stroke="#e05c5c60" stroke-width="1.5"/>
+      <text x="450" y="340" text-anchor="middle" fill="#e05c5c" font-size="11" font-weight="600" letter-spacing="1">FINALE SAMMLUNG</text>
+      <text x="450" y="358" text-anchor="middle" fill="#e4e7f5" font-size="22" font-weight="800">53</text>
+      <text x="450" y="368" text-anchor="middle" fill="#7b82a8" font-size="11" dy="4">PDFs gesamt (inkl. Hintergrund + Dev-Refs)</text>
+      <!-- Sidebar stats -->
+      <rect x="10" y="80" width="200" height="200" rx="10" fill="#141728" stroke="#252a45"/>
+      <text x="110" y="104" text-anchor="middle" fill="#7b82a8" font-size="11" font-weight="600">Suchcluster</text>
+      <text x="24" y="126" fill="#7b82a8" font-size="11">C1  AIM Platform Limitations</text>
+      <text x="24" y="144" fill="#7b82a8" font-size="11">C2  Cognitive Metrics</text>
+      <text x="24" y="162" fill="#7b82a8" font-size="11">C3  Task &amp; Cognitive Load</text>
+      <text x="24" y="180" fill="#7b82a8" font-size="11">C4  Computational Rationality</text>
+      <text x="24" y="204" fill="#43d9ad" font-size="11">+   Snowballing (RR)</text>
+      <text x="24" y="222" fill="#43d9ad" font-size="11">+   Nachträgl. (Ausstehend)</text>
+      <text x="24" y="244" fill="#6ab4fa" font-size="11">+   Entwicklungsreferenzen</text>
+    </svg>
+  </div>
+  <div class="slide-num">04 / 13</div>
+</div>
+
+<!-- ─── SLIDE 5 · SUCHCLUSTER ─── -->
+<div class="slide" id="s5">
+  <div class="slide-label">Suche</div>
+  <h2>Suchcluster &amp; Queries</h2>
+  <div class="grid-2" style="margin-top:24px; gap:16px;">
+    <div class="card">
+      <div class="tag" style="background:#7c6cfc22;color:#7c6cfc;margin-bottom:10px;">Cluster 1</div>
+      <h3 style="margin-bottom:6px;">AIM Platform Limitations</h3>
+      <p style="font-size:12px;color:var(--dim);line-height:1.6;margin-bottom:10px;">Defizite aktueller computational Modelle — Rechtfertigung der RQ</p>
+      <code style="font-size:11px;background:var(--surface2);padding:5px 10px;border-radius:6px;display:block;color:#9198b5;">"Aalto Interface Metrics"</code>
+      <p style="font-size:11px;color:var(--dim);margin-top:8px;">7 Treffer → 4 ausgewählt</p>
+    </div>
+    <div class="card">
+      <div class="tag" style="background:#43d9ad22;color:#43d9ad;margin-bottom:10px;">Cluster 2</div>
+      <h3 style="margin-bottom:6px;">Cognitive Metrics</h3>
+      <p style="font-size:12px;color:var(--dim);line-height:1.6;margin-bottom:10px;">Quantifizierbare Metriken jenseits visueller Saliency</p>
+      <code style="font-size:11px;background:var(--surface2);padding:5px 10px;border-radius:6px;display:block;color:#9198b5;">"visual search time" AND GUI AND model*</code>
+      <p style="font-size:11px;color:var(--dim);margin-top:8px;">25 Treffer → 6 ausgewählt</p>
+    </div>
+    <div class="card">
+      <div class="tag" style="background:#f5a62322;color:#f5a623;margin-bottom:10px;">Cluster 3</div>
+      <h3 style="margin-bottom:6px;">Task &amp; Cognitive Load</h3>
+      <p style="font-size:12px;color:var(--dim);line-height:1.6;margin-bottom:10px;">Empirie für Unzulänglichkeit statischer Bottom-Up-Modelle</p>
+      <code style="font-size:11px;background:var(--surface2);padding:5px 10px;border-radius:6px;display:block;color:#9198b5;">saliency AND "user interface" AND ("task-driven" OR "goal-directed")</code>
+      <p style="font-size:11px;color:var(--dim);margin-top:8px;">54 Treffer → 7 ausgewählt</p>
+    </div>
+    <div class="card">
+      <div class="tag" style="background:#e05c5c22;color:#e05c5c;margin-bottom:10px;">Cluster 4</div>
+      <h3 style="margin-bottom:6px;">Computational Rationality</h3>
+      <p style="font-size:12px;color:var(--dim);line-height:1.6;margin-bottom:10px;">Theoretischer Rahmen: Interaktion als Optimierungsproblem</p>
+      <code style="font-size:11px;background:var(--surface2);padding:5px 10px;border-radius:6px;display:block;color:#9198b5;">"computational rationality" AND optimiz*</code>
+      <p style="font-size:11px;color:var(--dim);margin-top:8px;">20 Treffer → 11 ausgewählt</p>
+    </div>
+  </div>
+  <div class="slide-num">05 / 13</div>
+</div>
+
+<!-- ─── SLIDE 6 · INKLUSION / EXKLUSION ─── -->
+<div class="slide" id="s6">
+  <div class="slide-label">Kriterien</div>
+  <h2>Inclusion / Exclusion</h2>
+  <div class="grid-2" style="margin-top:24px; align-items:start; gap:20px;">
+    <div>
+      <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:12px;">✓  Einschlusskriterien</div>
+      <div class="flex-col" style="gap:8px;">
+        <div class="card-sm" style="border-color:#43d9ad30;font-size:13px;color:var(--dim);">Direkte Relevanz für AIM oder computational GUI Evaluation</div>
+        <div class="card-sm" style="border-color:#43d9ad30;font-size:13px;color:var(--dim);">Liefert kognitive Metriken, Empirie oder theoretischen Rahmen für Stage 1/2</div>
+        <div class="card-sm" style="border-color:#43d9ad30;font-size:13px;color:var(--dim);">Peer-reviewed: ACM, IEEE, Elsevier, PLOS ONE — oder prominenter arXiv-Preprint (2024–2026)</div>
+        <div class="card-sm" style="border-color:#43d9ad30;font-size:13px;color:var(--dim);">Zeitraum: 2016–2026 bevorzugt — Ausnahmen für Grundlagen (Shannon 1948, Hart 1988)</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:700;color:var(--t2);margin-bottom:12px;">✗  Ausschlusskriterien</div>
+      <div class="flex-col" style="gap:8px;">
+        <div class="card-sm" style="border-color:#e05c5c30;font-size:12px;color:var(--dim);"><strong style="color:var(--text);">Out of Scope:</strong> VR/XR-Ergonomie, tangible interfaces, Safety-Critical formal methods</div>
+        <div class="card-sm" style="border-color:#e05c5c30;font-size:12px;color:var(--dim);"><strong style="color:var(--text);">Motor Only:</strong> Fitts' Law-Varianten, Lasso-Steering ohne kognitiven Load-Bezug</div>
+        <div class="card-sm" style="border-color:#e05c5c30;font-size:12px;color:var(--dim);"><strong style="color:var(--text);">Generic LLM:</strong> LLM-Feedback ohne predictive/computational Metriken (z.B. UICrit)</div>
+        <div class="card-sm" style="border-color:#e05c5c30;font-size:12px;color:var(--dim);"><strong style="color:var(--text);">Conversational/Recommender:</strong> Kein GUI-Evaluations-Kontext</div>
+        <div class="card-sm" style="border-color:#e05c5c30;font-size:12px;color:var(--dim);"><strong style="color:var(--text);">Domain too narrow:</strong> Nicht generalisierbar auf automotive HMIs</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">06 / 13</div>
+</div>
+
+<!-- ─── SLIDE 7 · TIER-SYSTEM ─── -->
+<div class="slide" id="s7">
+  <div class="slide-label">Tier-System</div>
+  <h2>Priorisierung der Lektüre</h2>
+  <div class="grid-4" style="margin-top:28px; align-items:stretch;">
+    <div class="tier-card t1">
+      <div class="tier-big t1c">T1</div>
+      <div class="tier-name t1c">Pflichtlektüre</div>
+      <div class="tier-desc">Vollständig lesen. Kern der Argumentation. Direkt zitierbar für RQ und jedes Kapitel.</div>
+      <div class="tier-count t1c">7 Paper</div>
+      <div style="margin-top:12px;font-size:11px;color:var(--dim);">🟢 Finder-Tag: Grün</div>
+    </div>
+    <div class="tier-card t2">
+      <div class="tier-big t2c">T2</div>
+      <div class="tier-name t2c">Sorgfältig</div>
+      <div class="tier-desc">Sorgfältig lesen. Stützt Stage 1/2 technisch. Methodik, Ergebnisse, Diskussion vollständig erfassen.</div>
+      <div class="tier-count t2c">20 Paper</div>
+      <div style="margin-top:12px;font-size:11px;color:var(--dim);">🔴 Finder-Tag: Rot</div>
+    </div>
+    <div class="tier-card t3">
+      <div class="tier-big t3c">T3</div>
+      <div class="tier-name t3c">Überfliegen</div>
+      <div class="tier-desc">Kernaussage + Ergebnisse lesen. Liefert Kontext, Vergleich, Related Work. Notiz reicht.</div>
+      <div class="tier-count t3c">20 Paper</div>
+      <div style="margin-top:12px;font-size:11px;color:var(--dim);">🟠 Finder-Tag: Orange</div>
+    </div>
+    <div class="tier-card t4">
+      <div class="tier-big t4c">T4</div>
+      <div class="tier-name t4c">Peripheral</div>
+      <div class="tier-desc">Nur bei Bedarf. Thematisch angrenzend. Kein Muss für Thesis-Argumentation.</div>
+      <div class="tier-count t4c">6 Paper</div>
+      <div style="margin-top:12px;font-size:11px;color:var(--dim);">⬛ Finder-Tag: Keins</div>
+    </div>
+  </div>
+  <div class="grid-2" style="margin-top:14px; gap:14px;">
+    <div class="card-sm" style="border-color:#e8c87a40;">
+      <span class="dot" style="background:var(--th);"></span>
+      <strong style="font-size:13px; margin-left:8px; color:var(--th);">Hintergrund</strong>
+      <span style="font-size:12px; color:var(--dim); margin-left:8px;">3 Paper — BOD06, BOD15, REF_LIN19 — HCI-Theorie 2./3. Welle und MR-Kontext</span>
+      <span style="float:right;font-size:11px;color:var(--dim);">🟡 Gelb</span>
+    </div>
+    <div class="card-sm" style="border-color:#6ab4fa40;">
+      <span class="dot" style="background:var(--td);"></span>
+      <strong style="font-size:13px; margin-left:8px; color:var(--td);">Entwicklungsreferenzen</strong>
+      <span style="font-size:12px; color:var(--dim); margin-left:8px;">3 Paper — HOE70, BRE01, BOR15 — Methoden-Grundlagen aus Code-Kommentaren</span>
+    </div>
+  </div>
+  <div class="slide-num">07 / 13</div>
+</div>
+
+<!-- ─── SLIDE 8 · NETZWERK / TIER MAP ─── -->
+<div class="slide" id="s8">
+  <div class="slide-label">Übersicht</div>
+  <h2>Paper-Landschaft — Tier &amp; Thesis-Relevanz</h2>
+  <div style="margin-top:14px; flex:1; display:flex; flex-direction:column;">
+    <canvas id="netCanvas" width="1280" height="440" style="border-radius:12px; border:1px solid var(--border); width:100%; height:auto; flex:1; max-height:440px;"></canvas>
+  </div>
+  <div class="slide-num">08 / 13</div>
+</div>
+
+<!-- ─── SLIDE 9 · TIER 1 PAPERS ─── -->
+<div class="slide" id="s9">
+  <div class="slide-label">Tier 1 — Pflichtlektüre</div>
+  <h2>7 Paper — vollständig gelesen</h2>
+  <div class="grid-2" style="margin-top:22px; gap:14px; align-items:start;">
+    <div class="flex-col" style="gap:10px;">
+      <div class="card" style="border-color:#43d9ad40;">
+        <div class="tag" style="background:#43d9ad22;color:#43d9ad;margin-bottom:8px;">OUL18</div>
+        <p style="font-size:13px;font-weight:600;">Aalto Interface Metrics (AIM)</p>
+        <p style="font-size:12px;color:var(--dim);margin-top:4px;">Oulasvirta et al. · CHI 2018 · <em>Das Kernsystem das erweitert wird</em></p>
+      </div>
+      <div class="card" style="border-color:#43d9ad40;">
+        <div class="tag" style="background:#43d9ad22;color:#43d9ad;margin-bottom:8px;">OUL22</div>
+        <p style="font-size:13px;font-weight:600;">Computational Rationality as a Theory of Interaction</p>
+        <p style="font-size:12px;color:var(--dim);margin-top:4px;">Oulasvirta, Jokinen, Howes, Lewis · CHI 2022 · <em>Theoretisches Fundament Stage 2</em></p>
+      </div>
+      <div class="card" style="border-color:#43d9ad40;">
+        <div class="tag" style="background:#43d9ad22;color:#43d9ad;margin-bottom:8px;">JOK20</div>
+        <p style="font-size:13px;font-weight:600;">Adaptive Feature Guidance</p>
+        <p style="font-size:12px;color:var(--dim);margin-top:4px;">Jokinen et al. · CHI 2020 · <em>Das AFG-Modell — implementiert in cognitive/jokinen_model.py</em></p>
+      </div>
+      <div class="card" style="border-color:#43d9ad40;">
+        <div class="tag" style="background:#43d9ad22;color:#43d9ad;margin-bottom:8px;">KANK17</div>
+        <p style="font-size:13px;font-weight:600;">Inferring Cognitive Models via ABC</p>
+        <p style="font-size:12px;color:var(--dim);margin-top:4px;">Kangasrääsiö et al. · CHI 2017 · <em>Methodische Grundlage für Parameterschätzung</em></p>
+      </div>
+    </div>
+    <div class="flex-col" style="gap:10px;">
+      <div class="card" style="border-color:#43d9ad40;">
+        <div class="tag" style="background:#43d9ad22;color:#43d9ad;margin-bottom:8px;">DAS24</div>
+        <p style="font-size:13px;font-weight:600;">HCEye: Visual Highlighting &amp; Cognitive Load</p>
+        <p style="font-size:12px;color:var(--dim);margin-top:4px;">Das et al. · CHI 2024 · <em>Kernempirie: Cognitive Load verändert Saliency — HCEye-Features implementiert</em></p>
+      </div>
+      <div class="card" style="border-color:#43d9ad40;">
+        <div class="tag" style="background:#43d9ad22;color:#43d9ad;margin-bottom:8px;">JIA23</div>
+        <p style="font-size:13px;font-weight:600;">UEyes: Visual Saliency across UI Types</p>
+        <p style="font-size:12px;color:var(--dim);margin-top:4px;">Jiang et al. · CHI 2023 · <em>Datensatz-Grundlage — UMSI++ Training</em></p>
+      </div>
+      <div class="card" style="border-color:#43d9ad40;">
+        <div class="tag" style="background:#43d9ad22;color:#43d9ad;margin-bottom:8px;">GUO26</div>
+        <p style="font-size:13px;font-weight:600;">SeekUI: Predicting Visual Search with VLM</p>
+        <p style="font-size:12px;color:var(--dim);margin-top:4px;">Guo et al. · CHI 2026 · <em>State-of-the-Art Saliency + Task-Kombination — Ausblick</em></p>
+      </div>
+      <div class="card-sm" style="border-color:#43d9ad30; background:#43d9ad08;">
+        <p style="font-size:12px;color:var(--dim);">📌 Alle 7 Paper haben vollständige Notes in <code style="background:var(--surface2);padding:1px 6px;border-radius:4px;">papers/Tier1_Pflichtlektuere/</code> und 🟢 Grün-Tag in Finder.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">09 / 13</div>
+</div>
+
+<!-- ─── SLIDE 10 · TIER 2 & 3 ─── -->
+<div class="slide" id="s10">
+  <div class="slide-label">Tier 2 + 3</div>
+  <h2>Tier 2 (sorgfältig) · Tier 3 (überfliegen)</h2>
+  <div class="grid-2" style="margin-top:20px; gap:20px; align-items:start;">
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:10px;letter-spacing:1px;">TIER 2 — 20 PAPER 🔴</div>
+      <div class="paper-list">
+        <span class="chip"><span class="dot" style="background:var(--t2)"></span>JOK21</span>
+        <span class="chip"><span class="dot" style="background:var(--t2)"></span>CHE21</span>
+        <span class="chip"><span class="dot" style="background:var(--t2)"></span>SHI24</span>
+        <span class="chip"><span class="dot" style="background:var(--t2)"></span>SHI25</span>
+        <span class="chip"><span class="dot" style="background:var(--t2)"></span>LAN24</span>
+        <span class="chip"><span class="dot" style="background:var(--t2)"></span>LIA25</span>
+        <span class="chip"><span class="dot" style="background:var(--t2)"></span>TOD16</span>
+        <span class="chip"><span class="dot" style="background:var(--t2)"></span>TOD18</span>
+        <span class="chip"><span class="dot" style="background:var(--t2)"></span>TOD19</span>
+        <span class="chip"><span class="dot" style="background:var(--t2)"></span>LOR24</span>
+        <span class="chip"><span class="dot" style="background:var(--t2)"></span>BUR21</span>
+        <span class="chip"><span class="dot" style="background:var(--t2)"></span>LIA26</span>
+        <span class="chip"><span class="dot" style="background:var(--t2)"></span>MIA26</span>
+        <span class="chip"><span class="dot" style="background:var(--t2)"></span>KO26</span>
+        <span class="chip"><span class="dot" style="background:var(--t2)"></span>JIE24</span>
+        <span class="chip"><span class="dot" style="background:var(--t2)"></span>SAR16</span>
+        <span class="chip"><span class="dot" style="background:var(--t2)"></span>GAJ08</span>
+        <span class="chip"><span class="dot" style="background:var(--t2)"></span>ZHA24</span>
+        <span class="chip"><span class="dot" style="background:var(--t2)"></span>BAI24</span>
+        <span class="chip"><span class="dot" style="background:var(--t2)"></span>KRE16</span>
+      </div>
+      <p style="font-size:11px;color:var(--dim);margin-top:12px;">Alle mit vollständigen Notes in <code style="background:var(--surface2);padding:1px 6px;border-radius:4px;">papers/Tier2_Sorgfaeltig/</code></p>
+    </div>
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--t3);margin-bottom:10px;letter-spacing:1px;">TIER 3 — 20 PAPER 🟠</div>
+      <div class="paper-list">
+        <span class="chip"><span class="dot" style="background:var(--t3)"></span>ARG23</span>
+        <span class="chip"><span class="dot" style="background:var(--t3)"></span>SER23</span>
+        <span class="chip"><span class="dot" style="background:var(--t3)"></span>KAP25</span>
+        <span class="chip"><span class="dot" style="background:var(--t3)"></span>OUL16</span>
+        <span class="chip"><span class="dot" style="background:var(--t3)"></span>WU24</span>
+        <span class="chip"><span class="dot" style="background:var(--t3)"></span>TUC09</span>
+        <span class="chip"><span class="dot" style="background:var(--t3)"></span>MIN15</span>
+        <span class="chip"><span class="dot" style="background:var(--t3)"></span>ROS07</span>
+        <span class="chip"><span class="dot" style="background:var(--t3)"></span>KUM17</span>
+        <span class="chip"><span class="dot" style="background:var(--t3)"></span>JIA15</span>
+        <span class="chip"><span class="dot" style="background:var(--t3)"></span>SHA48</span>
+        <span class="chip"><span class="dot" style="background:var(--t3)"></span>SAL00</span>
+        <span class="chip"><span class="dot" style="background:var(--t3)"></span>BUR22</span>
+        <span class="chip"><span class="dot" style="background:var(--t3)"></span>LOP25</span>
+        <span class="chip"><span class="dot" style="background:var(--t3)"></span>LIA24</span>
+        <span class="chip"><span class="dot" style="background:var(--t3)"></span>LIN24</span>
+        <span class="chip"><span class="dot" style="background:var(--t3)"></span>CHO26</span>
+      </div>
+      <div style="margin-top:12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--th);margin-bottom:8px;letter-spacing:1px;">HINTERGRUND 🟡</div>
+        <div class="paper-list">
+          <span class="chip"><span class="dot" style="background:var(--th)"></span>BOD06</span>
+          <span class="chip"><span class="dot" style="background:var(--th)"></span>BOD15</span>
+          <span class="chip"><span class="dot" style="background:var(--th)"></span>REF_LIN19</span>
+        </div>
+        <div style="font-size:12px;font-weight:700;color:var(--td);margin-bottom:8px;margin-top:10px;letter-spacing:1px;">ENTWICKLUNGSREFS</div>
+        <div class="paper-list">
+          <span class="chip"><span class="dot" style="background:var(--td)"></span>HOE70</span>
+          <span class="chip"><span class="dot" style="background:var(--td)"></span>BRE01</span>
+          <span class="chip"><span class="dot" style="background:var(--td)"></span>BOR15</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">10 / 13</div>
+</div>
+
+<!-- ─── SLIDE 11 · REFERENZ AUDIT ─── -->
+<div class="slide" id="s11">
+  <div class="slide-label">Audit</div>
+  <h2>Referenz-Audit — Supervisor-Dokument</h2>
+  <div class="flex-col" style="margin-top:24px; gap:12px;">
+    <div class="audit-row" style="border-color:#e05c5c40; background:#e05c5c08;">
+      <div>
+        <div class="tag" style="background:#e05c5c22;color:#e05c5c;">CHE18</div>
+        <div style="font-size:11px;color:var(--dim);margin-top:4px;">Chen et al. 2018</div>
+      </div>
+      <div>
+        <p style="font-size:12px;color:var(--text);">DOI <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;font-size:11px;">10.1145/3173574.3174121</code> zeigt auf ein anderes Paper:<br>
+        <em style="color:var(--dim);">„User-Driven Design Principles for Gesture Representations"</em> (McAweeney, Zhang, Nebeling)</p>
+        <p style="font-size:11px;color:var(--dim);margin-top:4px;">Titel „Predicting tappability" und Autoren „Chen, J. et al." sind nicht verifizierbar.</p>
+      </div>
+      <div>
+        <span class="badge badge-err">❌ Entfernt</span>
+        <p style="font-size:11px;color:var(--dim);margin-top:6px;">Ersetzt durch <strong style="color:var(--text);">MIN15 + WU24</strong></p>
+      </div>
+    </div>
+    <div class="audit-row" style="border-color:#e05c5c40; background:#e05c5c08;">
+      <div>
+        <div class="tag" style="background:#e05c5c22;color:#e05c5c;">LI20</div>
+        <div style="font-size:11px;color:var(--dim);margin-top:4px;">Li et al. 2020</div>
+      </div>
+      <div>
+        <p style="font-size:12px;color:var(--text);">Kein DOI angegeben. Paper <em style="color:var(--dim);">„Automated usability evaluation of mobile applications using deep learning"</em> nicht in ACM DL auffindbar.</p>
+        <p style="font-size:11px;color:var(--dim);margin-top:4px;">Li, Ye, Fan, Chen, Guo — keine Treffer in ACM DL oder Google Scholar.</p>
+      </div>
+      <div>
+        <span class="badge badge-err">❌ Entfernt</span>
+        <p style="font-size:11px;color:var(--dim);margin-top:6px;">Ersetzt durch <strong style="color:var(--text);">WU24</strong></p>
+      </div>
+    </div>
+    <div class="audit-row" style="border-color:#f5a62340; background:#f5a62308;">
+      <div>
+        <div class="tag" style="background:#f5a62322;color:#f5a623;">KRE16</div>
+        <div style="font-size:11px;color:var(--dim);margin-top:4px;">Krejtz et al. 2016</div>
+      </div>
+      <div>
+        <p style="font-size:12px;color:var(--text);">Supervisor-DOI <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;font-size:11px;">10.1145/2857491.2857540</code> zeigt auf falsches Paper:<br>
+        <em style="color:var(--dim);">„Novel apparatus for eye movements when walking" (Kothari et al., ETRA 2016)</em></p>
+        <p style="font-size:11px;color:var(--dim);margin-top:4px;">Korrektes Paper in PLOS ONE: DOI <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;font-size:11px;">10.1371/journal.pone.0150489</code></p>
+      </div>
+      <div>
+        <span class="badge badge-warn">⚠️ DOI korrigiert</span>
+        <p style="font-size:11px;color:var(--dim);margin-top:6px;">PDF vorhanden und korrekt ✅</p>
+      </div>
+    </div>
+    <div class="audit-row" style="border-color:#43d9ad40; background:#43d9ad08;">
+      <div>
+        <div class="tag" style="background:#43d9ad22;color:#43d9ad;">TAU04</div>
+        <div style="font-size:11px;color:var(--dim);margin-top:4px;">Taubman-Ben-Ari 2004</div>
+      </div>
+      <div>
+        <p style="font-size:12px;color:var(--text);">DOI <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;font-size:11px;">10.1016/S0001-4575(03)00010-1</code> verifiziert — Paper existiert.<br>
+        <em style="color:var(--dim);">Accident Analysis &amp; Prevention 36(3), 2004</em></p>
+        <p style="font-size:11px;color:var(--dim);margin-top:4px;">TAU16 (2016-Review) als Ersatz vorhanden; TAU04-PDF noch ausstehend (Hochschule).</p>
+      </div>
+      <div>
+        <span class="badge badge-warn">⚠️ PDF ausstehend</span>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">11 / 13</div>
+</div>
+
+<!-- ─── SLIDE 12 · FINALER STATUS ─── -->
+<div class="slide" id="s12">
+  <div class="slide-label">Status</div>
+  <h2>Finaler Stand — 4. Juni 2026</h2>
+  <div class="flex-row" style="margin-top:24px; gap:20px; align-items:stretch;">
+    <div class="flex-col" style="gap:12px; flex:1.2;">
+      <div class="card" style="text-align:center; padding:20px;">
+        <div class="stat-big accent">53</div>
+        <div class="stat-label">PDFs gesamt gesammelt</div>
+      </div>
+      <div class="grid-2" style="gap:10px;">
+        <div class="card-sm" style="text-align:center;">
+          <div style="font-size:32px;font-weight:800;color:var(--t1);">7</div>
+          <div style="font-size:11px;color:var(--dim);">Tier 1 vollständig</div>
+        </div>
+        <div class="card-sm" style="text-align:center;">
+          <div style="font-size:32px;font-weight:800;color:var(--t2);">20</div>
+          <div style="font-size:11px;color:var(--dim);">Tier 2 sorgfältig</div>
+        </div>
+        <div class="card-sm" style="text-align:center;">
+          <div style="font-size:32px;font-weight:800;color:var(--t3);">20</div>
+          <div style="font-size:11px;color:var(--dim);">Tier 3 überfliegen</div>
+        </div>
+        <div class="card-sm" style="text-align:center;">
+          <div style="font-size:32px;font-weight:800;color:var(--td);">6</div>
+          <div style="font-size:11px;color:var(--dim);">BG + Dev-Refs</div>
+        </div>
+      </div>
+    </div>
+    <div class="flex-col" style="flex:2; gap:10px;">
+      <div style="font-size:13px;font-weight:700;color:var(--dim);margin-bottom:2px;">NOCH OFFEN</div>
+      <div class="card-sm" style="border-color:#f5a62340;">
+        <span class="badge badge-warn" style="margin-bottom:6px;display:inline-flex;">HAR88 — PDF fehlt</span>
+        <p style="font-size:12px;color:var(--dim);">Hart &amp; Staveland 1988, NASA-TLX. Nur in Hochschul-Bibliothek zugänglich. DOI <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;font-size:11px;">10.1016/S0166-4115(08)62386-9</code> verifiziert.</p>
+      </div>
+      <div class="card-sm" style="border-color:#f5a62340;">
+        <span class="badge badge-warn" style="margin-bottom:6px;display:inline-flex;">TAU04 — PDF fehlt</span>
+        <p style="font-size:12px;color:var(--dim);">Original Driving Style Inventory (2004). TAU16 als Review-Ersatz vorhanden. Supervisor anfragen.</p>
+      </div>
+      <div class="card-sm" style="border-color:#e05c5c40;">
+        <span class="badge badge-err" style="margin-bottom:6px;display:inline-flex;">CHE18 + LI20 — Klärung ausstehend</span>
+        <p style="font-size:12px;color:var(--dim);">E-Mail an Supervisor vorbereitet. Bis zur Klärung aus Thesis-Referenzliste entfernt. MIN15 + WU24 als Ersatz.</p>
+      </div>
+      <div style="font-size:13px;font-weight:700;color:var(--dim);margin-top:6px;margin-bottom:2px;">NÄCHSTE SCHRITTE</div>
+      <div class="card-sm" style="border-color:#43d9ad30;">
+        <p style="font-size:12px;color:var(--dim); line-height:1.7;">
+          ✅ Alle 40 Notes erstellt (Tier 1-3 + BG + Dev-Refs)<br>
+          ✅ Finder-Farbtags gesetzt (Grün/Rot/Orange/Gelb)<br>
+          ⏳ Tier 2-3 systematisch lesen nach Leseplan<br>
+          ⏳ Supervisor anfragen: CHE18, LI20, TAU04<br>
+          ⏳ HAR88 an Hochschule beschaffen
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">12 / 13</div>
+</div>
+
+<!-- ─── SLIDE 13 · END ─── -->
+<div class="slide" id="s13">
+  <div style="display:flex; flex-direction:column; justify-content:center; height:100%;">
+    <div class="slide-label">Ende</div>
+    <h1 style="font-size:48px;">Literatur ist<br><span class="accent">gesichert &amp; verifiziert.</span></h1>
+    <p class="subtitle" style="max-width:600px;margin-top:18px;">53 PDFs gesammelt · 40 Notes erstellt · Tiers gesetzt · Referenz-Audit abgeschlossen · Supervisor-Anfrage vorbereitet</p>
+    <div style="margin-top:40px; display:flex; gap:14px; flex-wrap:wrap;">
+      <span class="pill"><span class="dot" style="background:var(--t1)"></span>7 Tier 1</span>
+      <span class="pill"><span class="dot" style="background:var(--t2)"></span>20 Tier 2</span>
+      <span class="pill"><span class="dot" style="background:var(--t3)"></span>20 Tier 3</span>
+      <span class="pill"><span class="dot" style="background:var(--t4)"></span>6 Tier 4</span>
+      <span class="pill"><span class="dot" style="background:var(--th)"></span>3 Hintergrund</span>
+      <span class="pill"><span class="dot" style="background:var(--td)"></span>3 Dev-Refs</span>
+    </div>
+  </div>
+  <div class="slide-num">13 / 13</div>
+</div>
+
+</div><!-- /slideshow -->
+
+<!-- ─── NAVIGATION ─── -->
+<div class="nav">
+  <button onclick="go(-1)">&#8592;</button>
+  <div class="nav-dots" id="dots"></div>
+  <div class="nav-counter" id="counter">1 / 13</div>
+  <button onclick="go(1)">&#8594;</button>
+</div>
+
+<script>
+const TOTAL = 13;
+let cur = 1;
+
+// Build dots
+const dotsEl = document.getElementById('dots');
+for (let i = 1; i <= TOTAL; i++) {
+  const d = document.createElement('div');
+  d.className = 'nav-dot' + (i === 1 ? ' active' : '');
+  d.onclick = () => goTo(i);
+  dotsEl.appendChild(d);
+}
+
+function goTo(n) {
+  document.getElementById('s' + cur).classList.remove('active');
+  dotsEl.children[cur - 1].classList.remove('active');
+  cur = Math.max(1, Math.min(TOTAL, n));
+  document.getElementById('s' + cur).classList.add('active');
+  dotsEl.children[cur - 1].classList.add('active');
+  document.getElementById('counter').textContent = cur + ' / ' + TOTAL;
+  if (cur === 8) requestAnimationFrame(drawNetwork);
+}
+
+function go(d) { goTo(cur + d); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(1);
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') go(-1);
+});
+
+// ─── NETWORK VISUALIZATION ───
+function drawNetwork() {
+  const canvas = document.getElementById('netCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0d1020';
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle grid
+  ctx.strokeStyle = '#1a1e35';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 60) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 60) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+
+  const tierColor = { 1: '#43d9ad', 2: '#e05c5c', 3: '#f5a623', 4: '#818aad', H: '#e8c87a', D: '#6ab4fa' };
+  const tierR = { 1: 9, 2: 7, 3: 5, 4: 4, H: 5, D: 5 };
+
+  // Clusters: [id, label1, label2, cx, cy, r, color]
+  const clusters = [
+    { id: 'S1',   l1: 'Stage 1',          l2: 'Visuelle Features',     cx: 148, cy: 218, r: 115, col: '#7c6cfc' },
+    { id: 'CR',   l1: 'CR &',             l2: 'Kognitive Modelle',     cx: 370, cy: 130, r: 110, col: '#43d9ad' },
+    { id: 'SAL',  l1: 'Saliency &',       l2: 'Blickbewegungen',       cx: 610, cy: 130, r: 110, col: '#e05c5c' },
+    { id: 'AUT',  l1: 'Automotive',       l2: 'HMI',                   cx: 650, cy: 340, r:  75, col: '#f5a623' },
+    { id: 'USR',  l1: 'Nutzerprofil &',   l2: 'Validierung',           cx: 400, cy: 340, r:  85, col: '#6ab4fa' },
+    { id: 'GRD',  l1: 'Theorie &',        l2: 'Grundlagen',            cx: 900, cy: 218, r:  90, col: '#818aad' },
+  ];
+
+  // Papers: [id, cluster, tier]
+  const papers = [
+    // Stage 1
+    ['OUL18','S1',1], ['BUR21','S1',2], ['KO26','S1',2], ['LAN24','S1',2], ['TOD16','S1',2],
+    ['TOD18','S1',2], ['TOD19','S1',2], ['LIA26','S1',2], ['WU24','S1',3], ['TUC09','S1',3],
+    ['MIN15','S1',3], ['ROS07','S1',3], ['BUR22','S1',3],
+    // CR
+    ['OUL22','CR',1], ['JOK20','CR',1], ['KANK17','CR',1], ['GUO26','CR',1],
+    ['JOK21','CR',2], ['SHI24','CR',2], ['LIA25','CR',2], ['MIA26','CR',2], ['SHI25','CR',2], ['LIN24','CR',3],
+    // Saliency
+    ['JIA23','SAL',1], ['DAS24','SAL',1], ['CHE21','SAL',2], ['JIE24','SAL',2], ['KRE16','SAL',2],
+    ['BAI24','SAL',2], ['KUM17','SAL',3], ['JIA15','SAL',3], ['SAL00','SAL',3], ['LOP25','SAL',3],
+    ['LIA24','SAL',3], ['CHO26','SAL',3],
+    // Automotive
+    ['LOR24','AUT',2], ['ZHA24','AUT',2], ['TAU16','AUT',4],
+    // User
+    ['ARG23','USR',3], ['SER23','USR',3], ['KAP25','USR',3], ['SAR16','USR',2], ['GAJ08','USR',2],
+    // Grundlagen
+    ['OUL16','GRD',3], ['BOD06','GRD','H'], ['BOD15','GRD','H'], ['SHA48','GRD',3],
+    ['REF_LIN19','GRD','H'], ['HOE70','GRD','D'], ['BRE01','GRD','D'], ['BOR15','GRD','D'],
+  ];
+
+  // Group papers by cluster
+  const byCluster = {};
+  clusters.forEach(c => { byCluster[c.id] = []; });
+  papers.forEach(p => byCluster[p[1]].push(p));
+
+  // Sort: T1 first, then T2, T3, H, D
+  const tierOrder = { 1: 0, 2: 1, 3: 2, H: 3, D: 4, 4: 5 };
+  Object.values(byCluster).forEach(arr => arr.sort((a, b) => (tierOrder[a[2]] || 5) - (tierOrder[b[2]] || 5)));
+
+  // Calculate paper positions in concentric rings within each cluster
+  const paperPos = [];
+  clusters.forEach(c => {
+    const ps = byCluster[c.id];
+    const n = ps.length;
+    // Ring layout: center (1), ring1 (up to 5), ring2 (up to 9), ring3 (rest)
+    const rings = [{ r: 0, max: 1 }, { r: 32, max: 5 }, { r: 62, max: 9 }, { r: 90, max: 15 }];
+    let idx = 0;
+    for (const ring of rings) {
+      if (idx >= n) break;
+      const inRing = Math.min(ring.max, n - idx);
+      for (let i = 0; i < inRing; i++) {
+        let x, y;
+        if (ring.r === 0) {
+          x = c.cx; y = c.cy;
+        } else {
+          const angle = (2 * Math.PI * i / inRing) - Math.PI / 2;
+          x = c.cx + ring.r * Math.cos(angle);
+          y = c.cy + ring.r * Math.sin(angle);
+        }
+        paperPos.push({ id: ps[idx][0], tier: ps[idx][2], x, y });
+        idx++;
+      }
+    }
+  });
+
+  // Draw cluster glows
+  clusters.forEach(c => {
+    const g = ctx.createRadialGradient(c.cx, c.cy, 0, c.cx, c.cy, c.r + 30);
+    g.addColorStop(0, c.col + '18');
+    g.addColorStop(1, c.col + '00');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(c.cx, c.cy, c.r + 30, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Dashed circle border
+    ctx.strokeStyle = c.col + '35';
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([6, 5]);
+    ctx.beginPath();
+    ctx.arc(c.cx, c.cy, c.r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Label below
+    ctx.fillStyle = c.col + 'cc';
+    ctx.font = 'bold 11.5px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(c.l1, c.cx, c.cy + c.r + 16);
+    ctx.fillStyle = c.col + '88';
+    ctx.font = '10.5px system-ui, sans-serif';
+    ctx.fillText(c.l2, c.cx, c.cy + c.r + 29);
+  });
+
+  // Draw paper dots
+  paperPos.forEach(p => {
+    const col = tierColor[p.tier] || '#818aad';
+    const r = tierR[p.tier] || 5;
+
+    // Glow
+    const g2 = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 2.8);
+    g2.addColorStop(0, col + '60');
+    g2.addColorStop(1, col + '00');
+    ctx.fillStyle = g2;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r * 2.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Dot
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Label
+    const fs = r >= 7 ? 10 : 9;
+    ctx.fillStyle = r >= 7 ? '#e4e7f5' : '#9aa0c0';
+    ctx.font = `${r >= 7 ? 'bold ' : ''}${fs}px system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(p.id, p.x, p.y + r + fs + 1);
+  });
+
+  // Legend (bottom right)
+  const lx = W - 230, ly = H - 110;
+  ctx.fillStyle = '#12152688';
+  roundRect(ctx, lx - 10, ly - 10, 230, 108, 8);
+  ctx.fill();
+  ctx.strokeStyle = '#252a45';
+  ctx.lineWidth = 1;
+  roundRect(ctx, lx - 10, ly - 10, 230, 108, 8);
+  ctx.stroke();
+
+  const legend = [
+    { tier: 1, label: 'Tier 1 — Pflichtlektüre' },
+    { tier: 2, label: 'Tier 2 — Sorgfältig' },
+    { tier: 3, label: 'Tier 3 — Überfliegen' },
+    { tier: 'H', label: 'Hintergrund' },
+    { tier: 'D', label: 'Entwicklungsrefs' },
+  ];
+  legend.forEach((item, i) => {
+    const liy = ly + 4 + i * 19;
+    ctx.fillStyle = tierColor[item.tier];
+    ctx.beginPath();
+    ctx.arc(lx + 6, liy + 5, tierR[item.tier] || 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#9aa0c0';
+    ctx.font = '11px system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(item.label, lx + 18, liy + 9);
+  });
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+</script>
+</body>
+</html>

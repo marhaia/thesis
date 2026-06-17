@@ -5,16 +5,31 @@
 
 ---
 
-## 1. Fehlende PDFs (kommen noch)
+## 1. Fehlende PDFs — Stand 4. Juni 2026
 
-| ID | Autoren | Titel | Wo zu finden | Priorität |
-|----|---------|-------|-------------|-----------|
-| **KRE16** | Krejtz et al. 2016 | Eye Tracking Cognitive Load Using Pupil Diameter and Microsaccades | ACM ETRA, DOI: 10.1145/2857491.2857540 | 🔴 Hoch — Head 2 Validierung |
-| **TUC09** | Tuch et al. 2009 | Visual Complexity of Websites: Effects on Users' Experience | IJHCS, DOI: 10.1016/j.ijhcs.2009.04.002 | 🔴 Hoch — Stage 1 Feature |
-| **HAR88** | Hart & Staveland 1988 | Development of NASA-TLX | Buchkapitel North-Holland — Zotero-Eintrag reicht, kein PDF nötig | 🔴 Hoch — Head 3 Grundlage |
-| **CHE18** | Chen et al. 2018 | Predicting Tappability of Mobile Interface Elements | ACM CHI, DOI: 10.1145/3173574.3174121 | 🟡 Mittel — Single-Output Baseline |
-| **LI20** | Li et al. 2020 | Automated Usability Evaluation of Mobile Apps Using Deep Learning | ACM CHI, DOI: 10.1145/3313831.3376224 | 🟡 Mittel — Kontrastpaper |
-| **TAU04** | Taubman-Ben-Ari et al. 2004 | Driving Style & Personality | Journal of Safety Research | 🟢 Niedrig — Peripheral |
+### Gefunden ✅
+
+| ID | Titel | Ablage |
+|----|-------|--------|
+| **KRE16** | Krejtz et al. — Eye Tracking Cognitive Load (Pupil + Microsaccades) | `pdfs/Tier2_Sorgfaeltig/KRE16_Eye_Tracking_Cognitive_Load.pdf` — PLOS ONE DOI: 10.1371/journal.pone.0150489 ✅. Supervisor-DOI `10.1145/2857491.2857540` ist falsch (zeigt auf Gangstudien-Paper). |
+| **TUC09** | Tuch et al. — Visual Complexity of Websites (IJHCS 2009) | `pdfs/Tier3_Ueberfliegen/TUC09_Visual_Complexity_Websites.pdf` |
+| **TAU16** | Taubman-Ben-Ari & Skvirsky 2016 — Driving Style Inventory (Review, 2016er-Version statt 2004) | `pdfs/Tier4_Peripheral/TAU16_Driving_Style_Inventory_Review.pdf` |
+| **HOE70** | Hoerl & Kennard 1970 — Ridge Regression | `pdfs/Entwicklungsreferenzen/HOE70_Ridge_Regression.pdf` |
+| **BRE01** | Breiman 2001 — Random Forests | `pdfs/Entwicklungsreferenzen/BRE01_Random_Forests.pdf` |
+| **BOR15** | Borchani et al. 2015 — Multi-Output Regression Survey | `pdfs/Entwicklungsreferenzen/BOR15_Multi_Output_Regression.pdf` |
+
+### Noch ausstehend
+
+| ID | Autoren | Titel | Priorität | Anmerkung |
+|----|---------|-------|-----------|-----------|
+| **HAR88** | Hart & Staveland 1988 | Development of NASA-TLX | 🔴 Hoch | Nur in Hochschul-Bibliothek zugänglich — Zotero-Eintrag reicht als Platzhalter |
+
+### Entfernt — Referenzen waren nicht verifiziert ❌
+
+| ID | Begründung |
+|----|------------|
+| **CHE18** | DOI `10.1145/3173574.3174121` existiert **aber zeigt auf ein anderes Paper**: "User-Driven Design Principles for Gesture Representations" (McAweeney, Zhang, Nebeling, CHI 2018). Titel "Predicting tappability" und Autoren "Chen, J. et al." sind **frei erfunden**. Durch MIN15 + WU24 ersetzt. |
+| **LI20** | DOI `10.1145/3313831.3376224` existiert **aber zeigt auf ein anderes Paper**: "Decoding Intent With Control Theory: Comparing Muscle Versus Manual Interface Performance" (Yamagami, Steele, Burden, CHI 2020). Titel "Automated usability evaluation" und Autoren "Li, G. et al." sind **frei erfunden**. Durch WU24 ersetzt. |
 
 ---
 

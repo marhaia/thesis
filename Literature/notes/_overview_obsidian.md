@@ -45,8 +45,9 @@ status: active
 | KO26 | Criticmate: Stagewise Human–AI Co-Critique | 2026 | 📝 | [[KO26_Criticmate]] |
 | WU24 | UIClip: Data-driven Model for Assessing UI Design | 2024 | 📝 | [[WU24_UIClip]] |
 | MIN15 | Computation of Interface Aesthetics | 2015 | 📒 | [[_nachschlagen]] |
-| LI20 | Automated usability evaluation of mobile apps | 2020 | 📥 | — |
-| CHE18 | Predicting tappability of mobile interface elements | 2018 | 📥 | — |
+
+> [!warning] Entfernte Referenzen
+> **CHE18** (Chen et al. 2018) und **LI20** (Li et al. 2020) wurden aus dem Corpus entfernt — DOIs führen zu anderen Papieren, Titel/Autoren nicht verifizierbar. Ersetzt durch **MIN15** + **WU24**. Supervisor anfragen.
 
 > [!tip] Kernaussage
 > AIM ist die Baseline und das System das erweitert wird. WU24/KO26 zeigen SOTA — keines integriert kognitive Belastungsvorhersage.
@@ -89,7 +90,7 @@ status: active
 | KUM17 | DeepGaze II | 2017 | 📒 | [[_nachschlagen]] |
 | JIA15 | SALICON: Saliency in Context | 2015 | 📒 | [[_nachschlagen]] |
 | ROS07 | Measuring Visual Clutter | 2007 | 📒 | [[_nachschlagen]] |
-| TUC09 | Visual complexity of websites | 2009 | 📥 | — |
+| TUC09 | Visual complexity of websites | 2009 | � | [[TUC09_Visual_Complexity_Websites]] |
 
 > [!tip] Kernaussage
 > DAS24 = empirischer Hauptbeweis für die Kopplung von Saliency und kognitiver Belastung. GUO26 = direkter SOTA-Vergleichskandidat.
@@ -105,8 +106,8 @@ status: active
 | BAI24 | Heads-Up Multitasker: Attention Switching on Optical HMDs | 2024 | 📝 | [[BAI24_HMD_Multitasking]] |
 | LIN24 | Supporting Task Switching with Reinforcement Learning | 2024 | 📝 | [[LIN24_Task_Switching_RL]] |
 | ANON26 | [Supervisor Paper — vertraulich] | 2026 | 📝 | [[_projektplan]] |
-| KRE16 | Eye tracking cognitive load (pupil diameter & microsaccades) | 2016 | 📥 | — |
-| TAU04 | The multidimensional driving style inventory | 2004 | 📥 | — |
+| KRE16 | Eye tracking cognitive load (pupil diameter & microsaccades) | 2016 | � | [[KRE16_Eye_Tracking_Cognitive_Load]] |
+| TAU16 | Driving Style Inventory — Review (2016) | 2016 | 📒 | `pdfs/Tier4_Peripheral/` — TAU04 original PDF ausstehend |
 
 > [!tip] Kernaussage
 > LOR24 = Review für Domäneneinordnung. BAI24/LIN24 = CR-Anwendungen in Dual-Task-Szenarien (methodisch verwandt mit Stage 2).
@@ -197,7 +198,8 @@ status: active
 > - ✅ Implementierung vollständig (Stage 1+2, Flask API :5001, UMSI++, Jokinen AFG, HCEye)
 
 > [!todo] Noch ausstehend
-> - 📥 Fehlende PDFs: CHE18, KRE16, TUC09, LI20, HAR88, TAU04 → [[_luecken]]
+> - 📥 Fehlende PDFs: **HAR88** 🔴 (nur Hochschule) · **TAU04** 🟢 (TAU16 als Ersatz vorhanden) → [[_luecken]]
+> - ⚠️ Supervisor anfragen: CHE18/LI20 (nicht verifizierbar) + TAU04 PDF
 > - 📖 Selbst-Lesen: alle 📝-Einträge (Tier 1 Pflicht vor Schreibstart)
 > - 🔬 Nutzerstudie N≈30–35 (Aug 2026)
 > - ✍️ Thesis-Kapitel (Nov 2026)
