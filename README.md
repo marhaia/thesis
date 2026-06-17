@@ -83,8 +83,15 @@ pip install -r requirements.txt
 
 ### 3. Get the saliency model weights
 
-The UMSI++ weights (~433 MB) are **not** included in the repository. Place the
-weights file here:
+The UMSI++ weights (~433 MB) are **not** included in the repository.
+
+**Option A — download script:**
+
+```bash
+WEIGHTS_URL="https://.../umsi++.hdf5" python3 scripts/download_weights.py
+```
+
+**Option B — place the file manually** at:
 
 ```
 saliency/weights/model_weights/saliency_models/UMSI++/umsi++.hdf5
