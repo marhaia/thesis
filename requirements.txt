@@ -1,0 +1,23 @@
+# Core web framework
+Flask==3.1.3
+
+# Numerical / scientific
+numpy==1.26.4
+scipy==1.13.1
+pandas==2.3.3
+
+# Image processing & computer vision
+opencv-python==4.13.0.92
+scikit-image==0.24.0
+pillow==11.3.0
+
+# Machine learning
+scikit-learn==1.6.1
+
+# Deep learning (saliency model — UMSI++)
+# On Apple Silicon, tensorflow-macos is installed automatically as a dependency.
+tensorflow==2.16.2
+keras==3.10.0
+
+# Plotting (optional, used by analysis scripts)
+matplotlib==3.9.4
