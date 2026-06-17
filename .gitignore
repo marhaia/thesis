@@ -66,3 +66,6 @@ ueyes/
 
 # User uploads (runtime artefacts)
 stage1/data/uploads/
+
+# Auto-push log
+planning/scripts/auto_push.log
