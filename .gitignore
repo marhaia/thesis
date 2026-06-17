@@ -63,3 +63,6 @@ aim/frontend/node_modules/
 # Embedded git repos (have own remotes)
 aim/
 ueyes/
+
+# User uploads (runtime artefacts)
+stage1/data/uploads/
