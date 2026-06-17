@@ -136,3 +136,92 @@ def feature_names() -> List[str]:
         "visual_search_intensity",
         "decisional_demand",
     ]
+
+
+def estimate_search_efficiency(
+    visual_hierarchy: float,
+    saliency_dispersion: float,
+    saliency_peak_count: float,
+    task: "TaskDescriptor",
+    max_peaks: int = 8,
+) -> float:
+    """Estimate visual search efficiency from visual features + task context.
+
+    Implements the task-conditioned visual search efficiency concept from
+    SeekUI (Guo et al., ACM CHI 2026, doi:10.1145/3772318.3791178):
+    search efficiency on a GUI is jointly determined by three factors —
+    (1) layout predictability (visual hierarchy), (2) attentional competition
+    (number/spread of salient regions), and (3) task-layout alignment (how
+    well the target specificity and search mode match the visual structure).
+
+    This function provides an *analytical* fallback for the ``search_efficiency``
+    regression output before a trained Stage 2 model is available.  It uses
+    features from the existing Stage 1 pipeline and the TaskDescriptor without
+    any additional inference step.
+
+    Factor weights (sum to 1.0):
+        0.40 — visual_hierarchy: strongest single predictor; clear hierarchy
+               reduces search path length (Jokinen et al., 2020, IJHCS 136).
+        0.25 — saliency focus (1 - normalized_peaks): fewer competing
+               attentional peaks → fewer distractor fixations
+               (Rosenholtz et al., 2007, J. Vision 7:2:17; SeekUI §4.2).
+        0.20 — saliency concentration (1 - dispersion): concentrated saliency
+               guides the eye towards the target region
+               (SeekUI reward function: spatial scanpath efficiency).
+        0.10 — target specificity: high specificity → narrower search set
+               (Treisman & Gelade, 1980, Cognitive Psychology 12).
+        0.05 — search mode: known-item search is most efficient (direct
+               memory retrieval); exploratory scan is least efficient
+               (Marchionini, 1997, information-seeking model).
+
+    Args:
+        visual_hierarchy:    v[6] from Stage 1 feature vector ∈ [0, 1].
+        saliency_dispersion: s[0] from saliency feature vector ∈ [0, 1].
+        saliency_peak_count: s[3] from saliency feature vector (raw integer
+                             or float, clipped to [0, max_peaks]).
+        task:                TaskDescriptor instance for the current analysis.
+        max_peaks:           Normalisation ceiling for peak count (default 8).
+
+    Returns:
+        float ∈ [0, 1].  1.0 = maximally efficient; 0.0 = exhaustive search.
+
+    References:
+        Guo, Z. et al. (2026). SeekUI. ACM CHI 2026.
+            https://doi.org/10.1145/3772318.3791178
+        Jokinen, J. P. P. et al. (2020). Adaptive feature guidance.
+            IJHCS, 136, 102376. https://doi.org/10.1016/j.ijhcs.2019.102376
+        Marchionini, G. (1997). Information seeking in electronic environments.
+            Cambridge University Press.
+        Rosenholtz, R., Li, Y., & Nakano, L. (2007). Measuring visual clutter.
+            Journal of Vision, 7(2), 17. https://doi.org/10.1167/7.2.17
+        Treisman, A. M., & Gelade, G. (1980). A feature-integration theory
+            of attention. Cognitive Psychology, 12(1), 97–136.
+    """
+    # Factor 1: layout predictability (already normalised by Stage 1)
+    hierarchy_contribution = float(np.clip(visual_hierarchy, 0.0, 1.0))
+
+    # Factor 2: attentional competition — fewer peaks = cleaner search
+    normalized_peaks = float(np.clip(saliency_peak_count / max(max_peaks, 1), 0.0, 1.0))
+    focus_contribution = 1.0 - normalized_peaks
+
+    # Factor 3: saliency concentration — low dispersion = eye guided to target
+    concentration_contribution = 1.0 - float(np.clip(saliency_dispersion, 0.0, 1.0))
+
+    # Factor 4: target specificity — high specificity → narrow search set.
+    # SPECIFICITY_WEIGHTS are *load* weights (high specificity = 0.25 load),
+    # so invert: efficiency ∝ (1 - load_weight).
+    specificity_load = SPECIFICITY_WEIGHTS.get(task.target_specificity, SPECIFICITY_WEIGHTS["medium"])
+    specificity_contribution = 1.0 - specificity_load
+
+    # Factor 5: search mode — SEARCH_MODE_WEIGHTS are *load* weights; invert.
+    mode_load = SEARCH_MODE_WEIGHTS.get(task.search_mode, SEARCH_MODE_WEIGHTS["known_item"])
+    mode_contribution = 1.0 - mode_load
+
+    efficiency = (
+        0.40 * hierarchy_contribution
+        + 0.25 * focus_contribution
+        + 0.20 * concentration_contribution
+        + 0.10 * specificity_contribution
+        + 0.05 * mode_contribution
+    )
+    return float(np.clip(efficiency, 0.0, 1.0))

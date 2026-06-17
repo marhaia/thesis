@@ -5,15 +5,28 @@ Stage 1 — Local Web Interface
 Simple Flask server that serves the UI and processes uploaded screenshots
 through the visual complexity pipeline.
 
+Performance notes:
+    The two most expensive pipeline steps are the visual complexity feature
+    extraction (``compute_complexity_vector``) and the UMSI++ saliency model
+    inference. To keep repeated analyses of the *same* image fast, both results
+    are cached in-memory keyed by the SHA256 hash of the uploaded image bytes
+    (see ``_visual_cache`` / ``_saliency_cache``). The caches are pure runtime
+    optimizations — they never change the computed values, only avoid redundant
+    recomputation. The UMSI++ model is additionally warmed up once at startup
+    (``_warmup_saliency_model``) so the first real request does not pay the
+    TensorFlow graph-build cost.
+
 Usage:
     python app.py
     → Open http://localhost:5001 in your browser
 """
 
 import json
+import hashlib
 import os
 import sys
 import uuid
+from collections import OrderedDict
 from pathlib import Path
 
 from flask import Flask, jsonify, request, send_from_directory
@@ -26,6 +39,16 @@ from stage2.coherence_check import run_coherence_check
 
 # Lazy-load saliency model (heavy TF import — only when needed)
 _saliency_model = None
+
+# In-memory caches keyed by the SHA256 hash of the uploaded image bytes.
+# OrderedDict is used as a simple LRU: on a cache hit the entry is moved to the
+# end, and once the cache exceeds its max size the oldest (front) entry is
+# evicted. These caches only avoid recomputation; identical inputs always yield
+# identical results.
+_saliency_cache = OrderedDict()   # image_hash -> {"heatmap", "classif"}
+_saliency_cache_max = 32          # max distinct images kept for saliency
+_visual_cache = OrderedDict()     # image_hash -> visual complexity results dict
+_visual_cache_max = 64            # max distinct images kept for visual features
 
 
 def _as_bool(value, default=False):
@@ -43,6 +66,88 @@ def _get_saliency_model():
         weights = Path(__file__).parent.parent / "saliency" / "weights" / "model_weights" / "saliency_models" / "UMSI++" / "umsi++.hdf5"
         _saliency_model = UMSIPlus(str(weights))
     return _saliency_model
+
+
+def _hash_upload(file_storage):
+    """Return ``(sha256_hex, raw_bytes)`` for an uploaded image.
+
+    Reads the full upload stream to compute a content hash (used as the cache
+    key) and then rewinds the stream so the caller can still persist the file.
+    """
+    data = file_storage.read()
+    file_storage.stream.seek(0)  # rewind so the bytes can be written to disk later
+    return hashlib.sha256(data).hexdigest(), data
+
+
+def _predict_saliency_cached(image_hash, image_path):
+    """Run UMSI++ saliency prediction with an LRU hash cache.
+
+    Returns ``(heatmap, classif, cache_hit)`` where ``cache_hit`` is True when
+    the result was served from cache. Caching avoids repeated (expensive)
+    TensorFlow inference for identical images.
+    """
+    cached = _saliency_cache.get(image_hash)
+    if cached is not None:
+        _saliency_cache.move_to_end(image_hash)  # mark as most-recently-used
+        return cached["heatmap"], cached["classif"], True
+
+    model = _get_saliency_model()
+    heatmap, classif = model.predict_saliency(str(image_path), return_classif=True)
+    _saliency_cache[image_hash] = {"heatmap": heatmap, "classif": classif}
+    # Evict the oldest entries once the cache grows beyond its size limit.
+    while len(_saliency_cache) > _saliency_cache_max:
+        _saliency_cache.popitem(last=False)
+    return heatmap, classif, False
+
+
+def _compute_visual_cached(image_hash, image_path):
+    """Compute the 8 visual complexity features with an LRU hash cache.
+
+    Returns ``(results, cache_hit)``. ``compute_complexity_vector`` is the
+    single most expensive step in the pipeline, so caching it by image hash
+    gives the largest speedup for repeated analyses of the same screenshot.
+    """
+    cached = _visual_cache.get(image_hash)
+    if cached is not None:
+        _visual_cache.move_to_end(image_hash)  # mark as most-recently-used
+        return cached, True
+
+    results = compute_complexity_vector(str(image_path))
+    _visual_cache[image_hash] = results
+    # Evict the oldest entries once the cache grows beyond its size limit.
+    while len(_visual_cache) > _visual_cache_max:
+        _visual_cache.popitem(last=False)
+    return results, False
+
+
+def _warmup_saliency_model():
+    """Warm up TensorFlow model once at startup to reduce first-request latency."""
+    if not _as_bool(os.getenv("STAGE1_WARMUP", "1"), default=True):
+        print("[Warmup] Skipped (STAGE1_WARMUP=0)")
+        return
+
+    warmup_path = UPLOAD_DIR / f"_warmup_{uuid.uuid4().hex[:8]}.png"
+    try:
+        import cv2
+        import numpy as np
+
+        # Synthetic GUI-like image (text + blocks) to trigger model graph load.
+        img = np.zeros((320, 480, 3), dtype=np.uint8)
+        img[:] = (28, 30, 37)
+        cv2.rectangle(img, (24, 24), (456, 86), (58, 62, 74), -1)
+        cv2.rectangle(img, (24, 106), (280, 286), (45, 49, 61), -1)
+        cv2.rectangle(img, (300, 106), (456, 286), (45, 49, 61), -1)
+        cv2.putText(img, "Warmup", (34, 62), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (180, 190, 220), 2, cv2.LINE_AA)
+        cv2.imwrite(str(warmup_path), img)
+
+        image_hash = hashlib.sha256(img.tobytes()).hexdigest()
+        _predict_saliency_cached(image_hash, warmup_path)
+        print("[Warmup] UMSI++ model loaded and primed.")
+    except Exception as e:
+        print(f"[Warmup] Skipped due to error: {e}")
+    finally:
+        if warmup_path.exists():
+            warmup_path.unlink()
 
 app = Flask(__name__, static_folder="ui", static_url_path="")
 
@@ -75,13 +180,18 @@ def analyze():
     if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
         return jsonify({"error": f"Unsupported format: {ext}"}), 400
 
+    # Hash the upload first so identical images reuse cached feature results.
+    image_hash, image_bytes = _hash_upload(file)
     filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
     filepath = UPLOAD_DIR / filename
-    file.save(str(filepath))
+    filepath.write_bytes(image_bytes)
 
     try:
-        results = compute_complexity_vector(str(filepath))
+        # Copy the cached dict before mutating it so the cache stays pristine.
+        results, cache_hit = _compute_visual_cached(image_hash, filepath)
+        results = dict(results)
         results["filename"] = file.filename
+        results["visual_cache_hit"] = cache_hit
         return jsonify(results)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -177,9 +287,10 @@ def saliency():
     if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
         return jsonify({"error": f"Unsupported format: {ext}"}), 400
 
+    image_hash, image_bytes = _hash_upload(file)
     filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
     filepath = UPLOAD_DIR / filename
-    file.save(str(filepath))
+    filepath.write_bytes(image_bytes)
 
     try:
         import base64
@@ -187,8 +298,8 @@ def saliency():
         import numpy as np
         from saliency.saliency_features import extract_saliency_features
 
+        heatmap, classif, cache_hit = _predict_saliency_cached(image_hash, filepath)
         model = _get_saliency_model()
-        heatmap, classif = model.predict_saliency(str(filepath), return_classif=True)
 
         # Extract saliency features
         features = extract_saliency_features(heatmap)
@@ -212,6 +323,7 @@ def saliency():
             "classification": classif_dict,
             "predicted_class": model.DESIGN_CLASSES[int(np.argmax(classif))],
             "heatmap_png_base64": heatmap_b64,
+            "saliency_cache_hit": cache_hit,
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -272,9 +384,10 @@ def search_time():
     n_simulations = request.args.get("n_simulations", 100, type=int)
     use_saliency = request.args.get("use_saliency", "true").lower() != "false"
 
+    image_hash, image_bytes = _hash_upload(file)
     filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
     filepath = UPLOAD_DIR / filename
-    file.save(str(filepath))
+    filepath.write_bytes(image_bytes)
 
     try:
         import cv2
@@ -300,8 +413,7 @@ def search_time():
         saliency_map = None
         if use_saliency:
             try:
-                model_umsi = _get_saliency_model()
-                saliency_map = model_umsi.predict_saliency(str(filepath))
+                saliency_map, _, _ = _predict_saliency_cached(image_hash, filepath)
             except Exception:
                 pass  # Fall back to feature-only mode
 
@@ -360,9 +472,11 @@ def cognitive_load():
     if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
         return jsonify({"error": f"Unsupported format: {ext}"}), 400
 
+    # Hash once and reuse the same key for both the visual and saliency caches.
+    image_hash, image_bytes = _hash_upload(file)
     filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
     filepath = UPLOAD_DIR / filename
-    file.save(str(filepath))
+    filepath.write_bytes(image_bytes)
 
     try:
         import numpy as np
@@ -385,7 +499,8 @@ def cognitive_load():
         profile = get_profile(request.form.get("profile_preset", "neutral"))
 
         # Step 1: Visual complexity (v∈ℝ⁸)
-        vis_results = compute_complexity_vector(str(filepath))
+        vis_results, visual_cache_hit = _compute_visual_cached(image_hash, filepath)
+        vis_results = dict(vis_results)
         v = np.array([
             vis_results["shannon_entropy"],
             vis_results["edge_density"],
@@ -404,8 +519,7 @@ def cognitive_load():
         try:
             import base64, cv2
             from saliency.saliency_features import extract_saliency_features
-            sal_model = _get_saliency_model()
-            heatmap = sal_model.predict_saliency(str(filepath))
+            heatmap, _, cache_hit = _predict_saliency_cached(image_hash, filepath)
             saliency_dict = extract_saliency_features(heatmap)
             s = np.array([
                 saliency_dict["saliency_dispersion"],
@@ -435,6 +549,7 @@ def cognitive_load():
                 _, buf = cv2.imencode(".jpg", overlay, [cv2.IMWRITE_JPEG_QUALITY, 85])
                 saliency_overlay_b64 = base64.b64encode(buf).decode("utf-8")
         except Exception:
+            cache_hit = False
             pass  # Saliency optional
 
         # Step 3: HCEye cognitive load features (h∈ℝ⁶)
@@ -515,8 +630,10 @@ def cognitive_load():
         return jsonify({
             "filename": file.filename,
             "visual_features": vis_results,
+            "visual_cache_hit": visual_cache_hit,
             "saliency_features": saliency_dict,
             "saliency_overlay_b64": saliency_overlay_b64,
+            "saliency_cache_hit": cache_hit,
             "cognitive_load_features": cog_dict,
             "task_descriptor": t_dict,
             "big_five_profile": profile,
@@ -551,4 +668,7 @@ if __name__ == "__main__":
     print("    POST /api/cognitive-load   → h∈ℝ⁶ + full vector ℝ¹⁹")
     print("  Open: http://localhost:5001")
     print("=" * 50 + "\n")
+    # Prime the UMSI++ model before accepting traffic so the first real
+    # request doesn't pay the TensorFlow graph-build cost.
+    _warmup_saliency_model()
     app.run(host="localhost", port=5001, debug=True)

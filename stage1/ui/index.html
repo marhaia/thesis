@@ -58,6 +58,55 @@
             display: flex;
             gap: 4px;
         }
+        .navbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .nav-settings {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface2);
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+        .nav-settings-title {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-dim);
+            margin-right: 2px;
+        }
+        .nav-settings label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            color: var(--text);
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        @media (max-width: 980px) {
+            .navbar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .navbar-actions {
+                width: 100%;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            .nav-settings {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+        }
         .nav-btn {
             background: none;
             border: 1px solid transparent;
@@ -208,12 +257,15 @@
             grid-template-columns: 1fr;
             gap: 24px;
         }
-        /* Within results: saliency + radar side by side */
+        /* Within results: saliency on top, radar below */
         .results-visual-row {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
+            grid-template-columns: 1fr;
+            gap: 18px;
             margin-top: 24px;
+        }
+        .results-visual-row > div {
+            width: 100%;
         }
         @media (max-width: 900px) {
             .grid-inputs { grid-template-columns: 1fr; }
@@ -276,11 +328,13 @@
         .drop-zone-icon {
             font-size: 48px;
             margin-bottom: 12px;
+            transition: opacity 0.2s;
         }
         .drop-zone-text {
             color: var(--text-dim);
             font-size: 14px;
             line-height: 1.6;
+            transition: opacity 0.2s;
         }
         .drop-zone-text strong {
             color: var(--accent);
@@ -289,28 +343,58 @@
         .drop-zone input[type="file"] {
             display: none;
         }
-
-        /* Preview */
-        .preview-container {
-            display: none;
-            margin-top: 16px;
+        /* Image preview inside the drop zone */
+        .drop-zone.has-image {
+            padding: 0;
+            background: var(--bg);
+            border-style: solid;
         }
-        .preview-container.visible { display: block; }
-        .preview-img {
+        .drop-zone.has-image .drop-zone-icon,
+        .drop-zone.has-image .drop-zone-text {
+            display: none;
+        }
+        .drop-zone-preview {
+            display: none;
             width: 100%;
-            max-height: 300px;
+            height: 100%;
+            min-height: 200px;
+            position: relative;
+        }
+        .drop-zone.has-image .drop-zone-preview {
+            display: flex;
+            flex-direction: column;
+        }
+        .drop-zone-preview img {
+            width: 100%;
+            max-height: 280px;
             object-fit: contain;
-            border-radius: 8px;
+            border-radius: 8px 8px 0 0;
+            display: block;
             background: var(--bg);
         }
-        .preview-info {
+        .drop-zone-preview-info {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 8px;
-            font-size: 13px;
+            padding: 8px 12px;
+            font-size: 12px;
             color: var(--text-dim);
+            border-top: 1px solid var(--border);
+            background: var(--surface2);
+            border-radius: 0 0 8px 8px;
         }
+        .drop-zone-preview-change {
+            color: var(--accent);
+            font-size: 12px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+        .drop-zone-preview-change:hover { text-decoration: underline; }
+
+        /* Preview (legacy, kept hidden) */
+        .preview-container { display: none !important; }
 
         /* Analyze Button */
         .btn {
@@ -344,30 +428,111 @@
         /* Loading */
         .loading {
             display: none;
-            text-align: center;
-            padding: 24px;
+            text-align: left;
+            padding: 20px 24px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 16px;
         }
         .loading.visible { display: block; }
+        .loading-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
         .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid var(--border);
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
             border-top-color: var(--accent);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
-            margin: 0 auto 12px;
+            flex-shrink: 0;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            flex: 1;
+        }
+        .loading-timer {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent);
+            font-variant-numeric: tabular-nums;
+            min-width: 48px;
+            text-align: right;
+        }
+        .loading-stages {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .loading-stage {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            color: var(--text-dim);
+            padding: 5px 8px;
+            border-radius: 6px;
+            transition: background .3s, color .3s;
+        }
+        .loading-stage.stage-active {
+            background: rgba(var(--accent-rgb, 99,102,241), .08);
+            color: var(--text);
+        }
+        .loading-stage.stage-done {
+            color: var(--text-dim);
+            opacity: .6;
+        }
+        .stage-icon {
+            font-size: 13px;
+            width: 18px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .stage-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            border: 1.5px solid var(--border);
+            flex-shrink: 0;
+        }
+        .loading-stage.stage-active .stage-dot {
+            background: var(--accent);
+            border-color: var(--accent);
+            animation: pulse-dot .9s ease-in-out infinite;
+        }
+        .loading-stage.stage-done .stage-dot {
+            background: var(--text-dim);
+            border-color: var(--text-dim);
+        }
+        @keyframes pulse-dot {
+            0%,100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: .6; }
+        }
+        .loading-note {
+            margin-top: 12px;
+            font-size: 11px;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
 
         /* Results */
         .results { display: none; }
         .results.visible { display: block; }
 
         .feature-row {
-            display: flex;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 88px;
             align-items: center;
+            column-gap: 12px;
             padding: 12px 0;
             border-bottom: 1px solid var(--border);
+            width: 100%;
         }
         .feature-row:last-child { border-bottom: none; }
         .feature-icon {
@@ -377,8 +542,8 @@
             flex-shrink: 0;
         }
         .feature-info {
-            flex: 1;
-            margin-left: 12px;
+            min-width: 0;
+            margin-left: 0;
         }
         .feature-name {
             font-size: 14px;
@@ -393,10 +558,13 @@
             font-size: 18px;
             font-weight: 700;
             font-variant-numeric: tabular-nums;
-            margin-left: 12px;
-            flex-shrink: 0;
-            min-width: 70px;
+            margin-left: 0;
+            min-width: 88px;
             text-align: right;
+        }
+        #featureSection,
+        #featureRows {
+            width: 100%;
         }
         .feature-bar-bg {
             width: 100%;
@@ -411,12 +579,85 @@
             border-radius: 2px;
             transition: width 0.6s ease;
         }
+        /* Contextual signal badge per feature */
+        .feature-signal {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 4px;
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+        .feature-signal.ok   { background: rgba(52,200,122,.15); color: #34c87a; }
+        .feature-signal.warn { background: rgba(245,200,66,.12); color: #f5c842; }
+        .feature-signal.high { background: rgba(245,144,59,.14); color: #f5903b; }
+        .feature-signal.crit { background: rgba(245,75,75,.13);  color: #f54b4b; }
+        /* Design diagnosis box */
+        .design-diagnosis {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            font-size: 12px;
+            line-height: 1.65;
+        }
+        .design-diagnosis-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: var(--text-dim);
+            margin-bottom: 10px;
+        }
+        .diagnosis-item {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 6px;
+            align-items: baseline;
+        }
+        .diagnosis-item:last-child { margin-bottom: 0; }
+        .diagnosis-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+        .diagnosis-dot.ok   { background: #34c87a; }
+        .diagnosis-dot.warn { background: #f5c842; }
+        .diagnosis-dot.high { background: #f5903b; }
+        .diagnosis-dot.crit { background: #f54b4b; }
 
         /* Radar Chart */
         .radar-container {
             display: flex;
-            justify-content: center;
+            justify-content: stretch;
             margin: 16px 0;
+            width: 100%;
+        }
+        #radarChart {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .radar-interpretation {
+            margin-top: 8px;
+            max-width: 68ch;
+            color: var(--text-dim);
+            font-size: 12px;
+            line-height: 1.65;
+        }
+        .radar-interpretation-list {
+            margin: 0;
+            padding-left: 18px;
+        }
+        .radar-interpretation-list li {
+            margin: 0 0 6px;
+        }
+        .radar-interpretation-list li:last-child {
+            margin-bottom: 0;
         }
 
         /* History */
@@ -609,8 +850,20 @@
             text-align: center;
             max-width: 64px;
         }
-        .score-flow-arrow { font-size: 16px; color: var(--text-dim); padding-bottom: 14px; }
-        .score-flow-delta { font-size: 13px; font-weight: 600; padding-bottom: 14px; }
+        .score-flow-arrow {
+            font-size: 16px;
+            color: var(--text-dim);
+            line-height: 1;
+        }
+        .score-flow-delta {
+            display: inline-block;
+            font-size: 18px;
+            font-weight: 700;
+            line-height: 1;
+            padding-bottom: 0;
+            font-variant-numeric: tabular-nums;
+            min-height: 18px;
+        }
         .score-flow-delta.pos  { color: #f97316; }
         .score-flow-delta.neg  { color: var(--success); }
         .score-flow-delta.zero { color: var(--text-dim); }
@@ -658,6 +911,117 @@
             color: var(--text-dim);
             line-height: 1.4;
             min-height: 14px;
+        }
+        .preset-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 8px 0 10px;
+        }
+        .preset-btn {
+            background: var(--surface2);
+            color: var(--text-dim);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            font-size: 11px;
+            padding: 4px 10px;
+            cursor: pointer;
+        }
+        .preset-btn:hover {
+            border-color: var(--accent);
+            color: var(--text);
+        }
+        .decision-summary {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+        }
+        .decision-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .decision-summary-item {
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+        .decision-summary-item strong {
+            display: block;
+            font-size: 16px;
+            color: var(--text);
+            margin-top: 2px;
+            font-variant-numeric: tabular-nums;
+        }
+        .decision-summary-reco {
+            font-size: 12px;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+        .context-hint {
+            margin-top: 10px;
+            font-size: 11px;
+            color: var(--text-dim);
+            line-height: 1.5;
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            padding: 8px 10px;
+            background: var(--surface2);
+        }
+        @media (max-width: 900px) {
+            .decision-summary-grid { grid-template-columns: 1fr 1fr; }
+        }
+        .score-block {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            background: var(--surface);
+            margin-bottom: 12px;
+        }
+        .analysis-tag-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 8px 0 0;
+        }
+        .analysis-tag {
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(59,130,246,.08);
+            border: 1px solid rgba(59,130,246,.28);
+            font-size: 11px;
+            color: #93c5fd;
+        }
+        .adjusted-hero {
+            border: 1px solid rgba(59,130,246,.35);
+            background: linear-gradient(145deg, rgba(59,130,246,.10), rgba(59,130,246,.03));
+            border-radius: 10px;
+            padding: 12px;
+        }
+        .adjusted-hero-value {
+            font-size: 34px;
+            font-weight: 800;
+            color: var(--accent);
+            line-height: 1;
+            margin: 2px 0 6px;
+            font-variant-numeric: tabular-nums;
+        }
+        .adjusted-hero-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--text-dim);
+        }
+        .adjusted-hero-note {
+            font-size: 12px;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+        .section-separator {
+            border-top: 1px dashed var(--border);
+            margin: 12px 0;
         }
 
         /* Step numbers + required/optional badges */
@@ -801,10 +1165,23 @@
         <!-- Navigation -->
         <nav class="navbar">
             <div class="navbar-brand">Pipeline <span>— GUI Complexity</span></div>
-            <div class="navbar-links">
-                <button class="nav-btn active" onclick="showView('analyzer')">Analyzer</button>
-                <button class="nav-btn" onclick="showView('pipeline')">How it works</button>
-                <button class="nav-btn" onclick="showView('contact')">Contact</button>
+            <div class="navbar-actions">
+                <div class="navbar-links">
+                    <button class="nav-btn active" onclick="showView('analyzer')">Analyzer</button>
+                    <button class="nav-btn" onclick="showView('pipeline')">How it works</button>
+                    <button class="nav-btn" onclick="showView('contact')">Contact</button>
+                </div>
+                <div class="nav-settings">
+                    <span class="nav-settings-title">Alerts</span>
+                    <label>
+                        <input type="checkbox" id="notifyToggle" checked>
+                        Desktop
+                    </label>
+                    <label>
+                        <input type="checkbox" id="soundToggle" checked>
+                        Sound
+                    </label>
+                </div>
             </div>
         </nav>
 
@@ -838,15 +1215,16 @@
                         <br><br>
                         <small>PNG · JPG · BMP · TIFF · WebP</small>
                     </div>
-                </div>
-                <div class="upload-error" id="uploadError"></div>
-                <div class="preview-container" id="previewContainer">
-                    <img class="preview-img" id="previewImg">
-                    <div class="preview-info">
-                        <span id="fileName">—</span>
-                        <span id="fileSize">—</span>
+                    <div class="drop-zone-preview" id="dropZonePreview">
+                        <img id="previewImg" alt="preview">
+                        <div class="drop-zone-preview-info">
+                            <span><span id="fileName">—</span> &nbsp;·&nbsp; <span id="fileSize">—</span></span>
+                            <button class="drop-zone-preview-change" id="changeImageBtn" type="button">Change image</button>
+                        </div>
                     </div>
                 </div>
+                <div class="upload-error" id="uploadError"></div>
+                <div class="preview-container" id="previewContainer"></div>
                 <button class="btn btn-primary" id="analyzeBtn" disabled>
                     Analyze Screenshot
                 </button>
@@ -912,6 +1290,7 @@
                     </select>
                     <div class="field-hint">Big Five personality preset that applies a small modifier to the score. Leave on Neutral to evaluate the interface independent of a specific user type (Costa &amp; McCrae, 1992).</div>
                 </div>
+                <div id="contextHint" class="context-hint">Tip: choose context first, then click Analyze Screenshot once. After results, use What-if for fast local simulation.</div>
             </div>
 
         </div><!-- end grid-inputs -->
@@ -924,8 +1303,32 @@
             </div>
 
             <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p style="color: var(--text-dim); font-size: 14px;">Computing pipeline — this takes 10–30 seconds.</p>
+                <div class="loading-header">
+                    <div class="spinner"></div>
+                    <span class="loading-title" id="loadingTitle">Running pipeline…</span>
+                    <span class="loading-timer" id="loadingTimer">0s</span>
+                </div>
+                <div class="loading-stages">
+                    <div class="loading-stage" id="lstage-1">
+                        <div class="stage-dot"></div>
+                        <span>Extracting visual features (color, symmetry, entropy…)</span>
+                    </div>
+                    <div class="loading-stage" id="lstage-2">
+                        <div class="stage-dot"></div>
+                        <span>Computing saliency map with UMSI++ <em>(slowest step — TF inference)</em></span>
+                    </div>
+                    <div class="loading-stage" id="lstage-3">
+                        <div class="stage-dot"></div>
+                        <span>HCEye cognitive load model</span>
+                    </div>
+                    <div class="loading-stage" id="lstage-4">
+                        <div class="stage-dot"></div>
+                        <span>Task &amp; profile modifiers → final score</span>
+                    </div>
+                </div>
+                <div class="loading-note" id="loadingNote">
+                    UMSI++ runs on CPU (M4) — saliency alone takes 15–45 s. Longer is normal.
+                </div>
             </div>
 
             <div class="results" id="results">
@@ -944,31 +1347,35 @@
                         <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px;">
                             <span style="font-size:13px; font-weight:600;">Predicted Attention Map</span>
                             <button id="saliencyToggleBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0;">Hide</button>
+                            <button id="downloadSaliencyBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0;">Download Map</button>
+                            <button id="downloadOriginalBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0;">Download Original</button>
                         </div>
                         <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">UMSI++ deep-learning saliency overlay (Jiang et al., CHI 2023). Warm colors = high predicted fixation probability. Used as saliency feature vector s∈ℝ⁵.</p>
                         <img id="saliencyImg" src="" alt="Saliency heatmap"
                              style="width:100%; border-radius:8px; border:1px solid var(--border);">
                     </div>
                     <div id="radarPanel" style="display:none;">
-                        <div style="margin-bottom:8px;">
+                        <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                             <span style="font-size:13px; font-weight:600;">Visual Feature Profile</span>
+                            <button id="downloadRadarBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0;">Download Profile</button>
                         </div>
                         <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Radar chart of the 8 visual complexity features v∈ℝ⁸. Each axis is normalized to its empirical range. See feature table below for values.</p>
                         <div class="radar-container">
-                            <canvas id="radarChart" width="260" height="260"></canvas>
+                            <canvas id="radarChart" width="900" height="900"></canvas>
                         </div>
-                        <div id="radarInterpretation" style="font-size:12px; color:var(--text-dim); margin-top:8px; line-height:1.6;"></div>
+                        <div id="radarInterpretation" class="radar-interpretation"></div>
                     </div>
                 </div>
 
                 <!-- 5. Feature Vector Table -->
                 <div class="result-section" id="featureSection" style="display:none;">
-                    <h3>Visual Feature Vector <span style="font-size:11px; font-weight:400; color:var(--text-dim);">v ∈ ℝ⁸ — Stage 1 output</span></h3>
+                    <h3>Visual Feature Vector <span style="font-size:11px; font-weight:400; color:var(--text-dim);">v ∈ ℝ⁸ — companion view to the profile above</span></h3>
+                    <div id="featureDiagnosis"></div>
                     <div id="featureRows"></div>
                 </div>
 
                 <!-- 6. Context pills + Score Breakdown -->
-                <div class="pill-row" id="contextPills"></div>
+                <div class="pill-row" id="contextPills" style="display:none;"></div>
                 <div id="scoreBreakdown"></div>
 
                 <!-- 7. Export buttons -->
@@ -1132,6 +1539,104 @@
             "visual_hierarchy", "interactive_element_density"
         ];
 
+        // Direction: 'higher_is_worse' → high value = more load (red direction)
+        //            'higher_is_better' → high value = less load (green direction)
+        const FEATURE_DIRECTION = {
+            shannon_entropy:            'higher_is_worse',
+            edge_density:               'higher_is_worse',
+            feature_congestion:         'higher_is_worse',
+            subband_entropy:            'higher_is_worse',
+            layout_symmetry:            'higher_is_better',
+            chromatic_coherence:        'higher_is_worse',
+            visual_hierarchy:           'higher_is_better',
+            interactive_element_density:'higher_is_worse',
+        };
+
+        // Thresholds for signal badge (as % of normalised range)
+        // ok < warn < high < crit
+        const FEATURE_THRESHOLDS = {
+            shannon_entropy:             { warn:40, high:65, crit:85 },
+            edge_density:                { warn:35, high:60, crit:80 },
+            feature_congestion:          { warn:35, high:60, crit:80 },
+            subband_entropy:             { warn:40, high:65, crit:85 },
+            layout_symmetry:             { warn:65, high:40, crit:20 }, // inverted
+            chromatic_coherence:         { warn:40, high:65, crit:80 },
+            visual_hierarchy:            { warn:65, high:40, crit:20 }, // inverted
+            interactive_element_density: { warn:35, high:60, crit:80 },
+        };
+
+        function featureSignal(key, pct) {
+            const dir = FEATURE_DIRECTION[key];
+            const t   = FEATURE_THRESHOLDS[key];
+            // for 'higher_is_worse': higher pct → worse
+            // for 'higher_is_better': higher pct → better (invert)
+            const loadPct = dir === 'higher_is_better' ? 100 - pct : pct;
+            if (loadPct >= t.crit) return { cls: 'crit', label: 'High load impact' };
+            if (loadPct >= t.high) return { cls: 'high', label: 'Elevated' };
+            if (loadPct >= t.warn) return { cls: 'warn', label: 'Moderate' };
+            return { cls: 'ok', label: 'Within range' };
+        }
+
+        function barColor(key, pct) {
+            const sig = featureSignal(key, pct);
+            return { ok:'#34c87a', warn:'#f5c842', high:'#f5903b', crit:'#f54b4b' }[sig.cls];
+        }
+
+        function buildDesignDiagnosis(vf) {
+            // Compute normalised pct + signal for all features
+            const items = FEATURE_KEYS.map(key => {
+                const val  = vf[key];
+                const norm = FEATURE_NORMS[key];
+                const pct  = Math.min(100, ((val - norm.min) / (norm.max - norm.min)) * 100);
+                const sig  = featureSignal(key, pct);
+                return { key, pct, sig };
+            });
+
+            const crits = items.filter(i => i.sig.cls === 'crit');
+            const highs = items.filter(i => i.sig.cls === 'high');
+            const oks   = items.filter(i => i.sig.cls === 'ok');
+
+            const NAMES = {
+                shannon_entropy:'Shannon Entropy', edge_density:'Edge Density',
+                feature_congestion:'Feature Congestion', subband_entropy:'Subband Entropy',
+                layout_symmetry:'Layout Symmetry', chromatic_coherence:'Chromatic Coherence',
+                visual_hierarchy:'Visual Hierarchy', interactive_element_density:'Element Density',
+            };
+
+            const bullets = [];
+
+            if (crits.length) {
+                bullets.push({ cls:'crit', text: `<strong>Critical load drivers:</strong> ${crits.map(i=>NAMES[i.key]).join(', ')} — address these first.` });
+            }
+            if (highs.length) {
+                bullets.push({ cls:'high', text: `<strong>Elevated:</strong> ${highs.map(i=>NAMES[i.key]).join(', ')} — worth reviewing in context.` });
+            }
+            if (oks.length === FEATURE_KEYS.length) {
+                bullets.push({ cls:'ok', text: 'All 8 features are within expected range — no single feature is driving the load score.' });
+            } else if (oks.length >= 5) {
+                bullets.push({ cls:'ok', text: `${oks.length} of 8 features are within range (${oks.map(i=>NAMES[i.key]).join(', ')}).` });
+            }
+
+            // Specific actionable hints
+            const symSig = items.find(i=>i.key==='layout_symmetry')?.sig.cls;
+            const hierSig = items.find(i=>i.key==='visual_hierarchy')?.sig.cls;
+            if ((symSig==='crit'||symSig==='high') && (hierSig==='crit'||hierSig==='high')) {
+                bullets.push({ cls:'high', text: 'Low symmetry and weak visual hierarchy together increase scan path length — consider stronger alignment and size contrast.' });
+            }
+            const congSig = items.find(i=>i.key==='feature_congestion')?.sig.cls;
+            const entSig  = items.find(i=>i.key==='shannon_entropy')?.sig.cls;
+            if ((congSig==='crit'||congSig==='high') && (entSig==='crit'||entSig==='high')) {
+                bullets.push({ cls:'crit', text: 'High congestion and entropy together signal visual clutter — reducing element density or increasing whitespace would lower cognitive load.' });
+            }
+
+            if (!bullets.length) bullets.push({ cls:'ok', text: 'No critical patterns detected across feature combinations.' });
+
+            return `<div class="design-diagnosis">
+                <div class="design-diagnosis-title">Design Diagnosis <span style="text-transform:none; letter-spacing:0; font-weight:400; margin-left:6px; color:var(--text-dim);">(rule-based from normalized visual features + interaction patterns)</span></div>
+                ${bullets.map(b => `<div class="diagnosis-item"><div class="diagnosis-dot ${b.cls}"></div><span>${b.text}</span></div>`).join('')}
+            </div>`;
+        }
+
         // Normalization ranges for bar/radar display
         const FEATURE_NORMS = {
             shannon_entropy: { min: 0, max: 8 },
@@ -1165,6 +1670,47 @@
         const featureRows  = document.getElementById("featureRows");
         const summaryGrid  = document.getElementById("summaryGrid");
         const contextPills = document.getElementById("contextPills");
+        const contextHint  = document.getElementById("contextHint");
+        const notifyToggle = document.getElementById("notifyToggle");
+        const soundToggle  = document.getElementById("soundToggle");
+
+        function notificationsEnabled() {
+            return !!(notifyToggle && notifyToggle.checked);
+        }
+        function soundEnabled() {
+            return !!(soundToggle && soundToggle.checked);
+        }
+
+        function updateContextHint() {
+            if (!contextHint) return;
+            const task = document.getElementById("taskType")?.value || "search";
+            const mode = document.getElementById("searchMode")?.value || "known_item";
+            const time = document.getElementById("timePressure")?.value || "medium";
+
+            if (!selectedFile) {
+                contextHint.textContent = "Tip: choose context first, then click Analyze Screenshot once. After results, use What-if for fast local simulation.";
+                return;
+            }
+
+            if (time === "high" && (task === "decision" || mode === "exploratory")) {
+                contextHint.textContent = "High-load setup selected (time-critical + decision/exploratory). Expect a higher adjusted score.";
+                return;
+            }
+
+            contextHint.textContent = "Context ready. Click Analyze Screenshot to compute a new baseline, or adjust later in What-if.";
+        }
+
+        // "Change image" button — opens file picker and resets drop zone state
+        document.getElementById("changeImageBtn").addEventListener("click", (e) => {
+            e.stopPropagation(); // don't bubble to label/dropzone
+            dropZone.classList.remove("has-image");
+            selectedFile = null;
+            analyzeBtn.disabled = true;
+            analyzeStatus.textContent = "";
+            fileInput.value = "";
+            updateContextHint();
+            fileInput.click();
+        });
 
         // ─── Load Feature Info ───
         async function loadFeatures() {
@@ -1245,10 +1791,11 @@
             previewImg.src = url;
             fileName.textContent = file.name;
             fileSize.textContent = formatSize(file.size);
-            previewContainer.classList.add("visible");
+            dropZone.classList.add("has-image");
             analyzeBtn.disabled = false;
             analyzeStatus.textContent = "Image ready — click Analyze Screenshot to run the pipeline.";
             analyzeStatus.className = "analyze-status";
+            updateContextHint();
         }
 
         function formatSize(bytes) {
@@ -1257,7 +1804,7 @@
             return (bytes / 1048576).toFixed(1) + " MB";
         }
 
-        // ─── Analyze ───
+    // ─── Analyze ───
         analyzeBtn.addEventListener("click", analyze);
 
         async function analyze() {
@@ -1267,12 +1814,54 @@
                 return;
             }
 
+            // Ask notification permission from a user gesture once (if undecided).
+            primeNotificationPermission();
+
+            // ── Live timer + stage progression ──
+            const STAGES = [
+                { id: 'lstage-1', start:  0, label: 'Extracting visual features…' },
+                { id: 'lstage-2', start:  5, label: 'Running UMSI++ saliency — this is the slow step…' },
+                { id: 'lstage-3', start: 50, label: 'HCEye cognitive load model…' },
+                { id: 'lstage-4', start: 60, label: 'Applying task & profile modifiers…' },
+            ];
+            const timerEl  = document.getElementById('loadingTimer');
+            const titleEl  = document.getElementById('loadingTitle');
+            const noteEl   = document.getElementById('loadingNote');
+            let elapsed = 0;
+
+            // reset stage classes
+            for (const s of STAGES) {
+                const el = document.getElementById(s.id);
+                if (el) el.className = 'loading-stage';
+            }
+            timerEl.textContent = '0s';
+            titleEl.textContent = 'Running pipeline…';
+            noteEl.textContent  = 'UMSI++ runs on CPU (M4) — saliency alone takes 15–45 s. Longer is normal.';
+
+            const stageInterval = setInterval(() => {
+                elapsed++;
+                timerEl.textContent = elapsed + 's';
+                let cur = STAGES[0];
+                for (const s of STAGES) { if (elapsed >= s.start) cur = s; }
+                titleEl.textContent = cur.label;
+                for (const s of STAGES) {
+                    const el = document.getElementById(s.id);
+                    if (!el) continue;
+                    if (s.id === cur.id)        el.className = 'loading-stage stage-active';
+                    else if (elapsed >= s.start) el.className = 'loading-stage stage-done';
+                    else                         el.className = 'loading-stage';
+                }
+                if (elapsed === 30) noteEl.textContent = 'Still running — UMSI++ saliency can take up to 60 s on CPU. Hang tight.';
+                if (elapsed === 75) noteEl.textContent = elapsed + ' s elapsed — almost there. First run is slowest (TF model load).';
+                if (elapsed >= 120) noteEl.textContent = elapsed + ' s elapsed — unusually long. Check the Flask terminal for errors.';
+            }, 1000);
+
             // Show loading
             loading.classList.add("visible");
             results.classList.remove("visible");
             emptyState.style.display = "none";
             analyzeBtn.disabled = true;
-            analyzeStatus.textContent = "Analyzing… this may take 20–40 seconds.";
+            analyzeStatus.textContent = "Running pipeline…";
             analyzeStatus.className = "analyze-status";
 
             const formData = new FormData();
@@ -1292,14 +1881,24 @@
                 const data = await res.json();
 
                 if (data.error) {
+                    clearInterval(stageInterval);
                     analyzeStatus.textContent = "Error: " + data.error;
                     analyzeStatus.className = "analyze-status error";
                     return;
                 }
 
-                analyzeStatus.textContent = "✓ Analysis complete.";
+                clearInterval(stageInterval);
+                timerEl.textContent = elapsed + 's';
+                titleEl.textContent = '✓ Done — rendering results…';
+                for (const s of STAGES) {
+                    const el = document.getElementById(s.id);
+                    if (el) el.className = 'loading-stage stage-done';
+                }
+
+                analyzeStatus.textContent = `✓ Analysis complete. (${elapsed}s)`;
                 analyzeStatus.className = "analyze-status success";
                 playDoneChime();
+                notifyAnalysisComplete(data, elapsed);
 
                 // Add to history
                 history.push({
@@ -1327,13 +1926,19 @@
                 renderHistory();
 
             } catch (e) {
-                analyzeStatus.textContent = "Connection error: " + e.message + " — is the server running on port 5001?";
+                clearInterval(stageInterval);
+                const message = e && e.message ? e.message : "Unknown error";
+                const isFetchFailure = /failed to fetch|networkerror|load failed/i.test(message);
+                analyzeStatus.textContent = isFetchFailure
+                    ? "Connection error: the app server is not reachable on http://localhost:5001. Reload the page after the server has started."
+                    : "Connection error: " + message;
                 analyzeStatus.className = "analyze-status error";
             } finally {
                 loading.classList.remove("visible");
                 analyzeBtn.disabled = false;
             }
         }
+
 
         // ─── Render Results ───
         function renderResults(data) {
@@ -1360,16 +1965,6 @@
                 </div>
             `;
 
-            contextPills.innerHTML = [
-                `Task: ${data.task_descriptor.task_type}`,
-                `Mode: ${data.task_descriptor.search_mode}`,
-                `Specificity: ${data.task_descriptor.target_specificity}`,
-                `Time pressure: ${data.task_descriptor.time_pressure}`,
-                `Profile: ${data.big_five_profile.label}`,
-                `Score source: ${data.prediction_source === "stage2_trained_model" ? "Experimental Stage 2 model" : "HCEye rule-based"}`,
-                `${data.vector_dimensions}`,
-            ].map(text => `<div class="pill">${text}</div>`).join("");
-
             renderInterpretation(data);
 
             // ── Saliency heatmap overlay ──────────────────────────────────
@@ -1383,22 +1978,62 @@
                     saliencyImg.style.display = visible ? 'none' : 'block';
                     document.getElementById('saliencyToggleBtn').textContent = visible ? 'Show' : 'Hide';
                 };
+                document.getElementById('downloadSaliencyBtn').onclick = () => {
+                    const a = document.createElement('a');
+                    a.href = saliencyImg.src;
+                    a.download = 'saliency_overlay.jpg';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                };
+                document.getElementById('downloadOriginalBtn').onclick = () => {
+                    if (!selectedFile) return;
+                    const url = URL.createObjectURL(selectedFile);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = selectedFile.name || 'uploaded_image';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url);
+                };
             } else {
                 saliencyPanel.style.display = 'none';
             }
 
             // ── Radar chart ───────────────────────────────────────────────
             document.getElementById('radarPanel').style.display = 'block';
+            window._latestVisualFeatures = data.visual_features;
             drawRadar(data.visual_features);
             renderRadarInterpretation(data.visual_features);
+            document.getElementById('downloadRadarBtn').onclick = () => {
+                const canvas = document.getElementById('radarChart');
+                if (!canvas) return;
+                const a = document.createElement('a');
+                a.href = canvas.toDataURL('image/png');
+                a.download = 'visual_feature_profile.png';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            };
 
             // ── Feature Vector Table ──────────────────────────────────────
             document.getElementById('featureSection').style.display = 'block';
-            featureRows.innerHTML = FEATURE_KEYS.map((key, i) => {
+
+            // Design diagnosis (3 bullets above feature table)
+            const diagnosisEl = document.getElementById('featureDiagnosis');
+            if (diagnosisEl) diagnosisEl.innerHTML = buildDesignDiagnosis(data.visual_features);
+
+            featureRows.innerHTML = FEATURE_KEYS.map((key) => {
                 const info = featuresInfo.find(f => f.key === key) || {};
-                const val = data.visual_features[key];
+                const val  = data.visual_features[key];
                 const norm = FEATURE_NORMS[key];
-                const pct = Math.min(100, ((val - norm.min) / (norm.max - norm.min)) * 100);
+                const pct  = Math.min(100, ((val - norm.min) / (norm.max - norm.min)) * 100);
+                const sig  = featureSignal(key, pct);
+                const col  = barColor(key, pct);
+                const dir  = FEATURE_DIRECTION[key] === 'higher_is_better'
+                    ? '<span style="font-size:10px;color:var(--text-dim);">↑ higher = better</span>'
+                    : '<span style="font-size:10px;color:var(--text-dim);">↑ higher = more load</span>';
                 const refText = info.reference
                     ? `<span style="font-size:10px; color:var(--accent); margin-top:2px; display:block;">${info.reference}</span>`
                     : '';
@@ -1408,13 +2043,17 @@
                 return `
                     <div class="feature-row">
                         <div class="feature-info">
-                            <div class="feature-name">${info.name || key}</div>
+                            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                <div class="feature-name">${info.name || key}</div>
+                                <span class="feature-signal ${sig.cls}">${sig.label}</span>
+                                ${dir}
+                            </div>
                             ${descText}
                             <div class="feature-bar-bg">
-                                <div class="feature-bar" style="width: ${pct}%; background: var(--accent); opacity:0.7;"></div>
+                                <div class="feature-bar" style="width:${pct}%; background:${col};"></div>
                             </div>
                         </div>
-                        <div class="feature-value">${val.toFixed(4)}</div>
+                        <div class="feature-value" style="color:${col};">${val.toFixed(4)}</div>
                     </div>
                 `;
             }).join("");
@@ -1457,6 +2096,17 @@
             }
             function deltaClass(d) { return d > 0.05 ? 'pos' : d < -0.05 ? 'neg' : 'zero'; }
             function deltaStr(d)   { return (d >= 0 ? '+' : '') + d.toFixed(1); }
+            function scoreBand(score) {
+                if (score < 25) return { label: 'Low load', note: 'Easy to process for most users.', cls: 'badge-low' };
+                if (score < 50) return { label: 'Moderate load', note: 'Manageable, but can degrade under pressure.', cls: 'badge-moderate' };
+                if (score < 75) return { label: 'High load', note: 'Elevated attentional strain expected.', cls: 'badge-high' };
+                return { label: 'Very high load', note: 'Critical overload risk; redesign recommended.', cls: 'badge-very-high' };
+            }
+            function recommendationFor(score, delta) {
+                if (score >= 75 || delta >= 10) return 'Recommendation: Redesign recommended before delivery.';
+                if (score >= 50 || delta >= 5) return 'Recommendation: Minor simplification advised.';
+                return 'Recommendation: Keep as is.';
+            }
 
             // ── Explanations shown below each dropdown ────────────────────
             const TASK_DESC = {
@@ -1489,48 +2139,161 @@
                 stress_sensitive: 'High neuroticism — amplified response to cognitive demand.',
             };
 
+            const originalContext = {
+                task_type: td.task_type,
+                target_specificity: td.target_specificity,
+                time_pressure: td.time_pressure,
+                search_mode: td.search_mode,
+                profile: data.big_five_profile.key,
+            };
+
+            function isSimulationActive(taskT, specif, timeP, searchM, profK) {
+                return taskT !== originalContext.task_type ||
+                    specif !== originalContext.target_specificity ||
+                    timeP !== originalContext.time_pressure ||
+                    searchM !== originalContext.search_mode ||
+                    profK !== originalContext.profile;
+            }
+
             function updateBreakdown() {
                 const taskT   = document.getElementById('bd-taskType').value;
                 const specif  = document.getElementById('bd-specificity').value;
                 const timeP   = document.getElementById('bd-timePressure').value;
                 const searchM = document.getElementById('bd-searchMode').value;
                 const profK   = document.getElementById('bd-profile').value;
+                const simActive = isSimulationActive(taskT, specif, timeP, searchM, profK);
+
                 const tM = calcTaskMod(taskT, specif, timeP, searchM);
                 const pM = calcProfileMod(profK);
-                const fin = Math.max(0, Math.min(100, window._baseScore + tM + pM));
+                const simScore = Math.max(0, Math.min(100, window._baseScore + tM + pM));
+                const deltaVsOriginal = simScore - final;
+                const band = scoreBand(simScore);
+
                 document.getElementById('bd-tmod').textContent  = deltaStr(tM);
                 document.getElementById('bd-tmod').className    = 'score-flow-delta ' + deltaClass(tM);
                 document.getElementById('bd-pmod').textContent  = deltaStr(pM);
                 document.getElementById('bd-pmod').className    = 'score-flow-delta ' + deltaClass(pM);
-                document.getElementById('bd-final').textContent = fin.toFixed(1);
-                // update descriptions
-                document.getElementById('bd-desc-task').textContent    = TASK_DESC[taskT]   || '';
+                document.getElementById('bd-sim-score').textContent = simScore.toFixed(1);
+                document.getElementById('bd-sim-level').textContent = band.label;
+                document.getElementById('bd-sim-level').className = 'interpretation-badge ' + band.cls;
+                document.getElementById('bd-sim-note').textContent = band.note;
+                document.getElementById('bd-sim-delta').textContent = `${deltaStr(deltaVsOriginal)} vs original (${final.toFixed(1)})`;
+                document.getElementById('bd-sim-delta').className = 'score-flow-delta ' + deltaClass(deltaVsOriginal);
+
+                document.getElementById('bd-ds-base').textContent = final.toFixed(1);
+                document.getElementById('bd-ds-sim').textContent = simScore.toFixed(1);
+                document.getElementById('bd-ds-delta').textContent = deltaStr(deltaVsOriginal);
+                document.getElementById('bd-ds-delta').className = 'score-flow-delta ' + deltaClass(deltaVsOriginal);
+                document.getElementById('bd-ds-band').textContent = band.label;
+                document.getElementById('bd-ds-reco').textContent = recommendationFor(simScore, deltaVsOriginal);
+
+                const stateEl = document.getElementById('bd-sim-state');
+                if (simActive) {
+                    stateEl.textContent = 'Simulation active (values differ from original analysis).';
+                    stateEl.className = 'analysis-tag';
+                } else {
+                    stateEl.textContent = 'Original context selected (no simulation change).';
+                    stateEl.className = 'pill';
+                }
+
+                document.getElementById('bd-desc-task').textContent    = TASK_DESC[taskT] || '';
                 document.getElementById('bd-desc-mode').textContent    = MODE_DESC[searchM] || '';
-                document.getElementById('bd-desc-spec').textContent    = SPEC_DESC[specif]  || '';
-                document.getElementById('bd-desc-time').textContent    = TIME_DESC[timeP]   || '';
-                document.getElementById('bd-desc-profile').textContent = PROFILE_DESC[profK]|| '';
-                // update summary card score too
-                const scoreCard = summaryGrid.querySelector('.summary-value');
-                if (scoreCard) scoreCard.textContent = fin.toFixed(1);
+                document.getElementById('bd-desc-spec').textContent    = SPEC_DESC[specif] || '';
+                document.getElementById('bd-desc-time').textContent    = TIME_DESC[timeP] || '';
+                document.getElementById('bd-desc-profile').textContent = PROFILE_DESC[profK] || '';
             }
 
             document.getElementById('scoreBreakdown').innerHTML = `
                 <div class="score-breakdown">
-                    <div class="score-breakdown-title">Score Composition — adjust context to see live impact</div>
-                    <div class="score-flow">
-                        <div class="score-flow-item">
-                            <div class="score-flow-value">${baseScore.toFixed(1)}</div>
-                            <div class="score-flow-label">HCEye base</div>
+                    <div class="score-block">
+                        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--text-dim); margin-bottom:4px;">
+                            Baseline (locked, from your uploaded image)
                         </div>
-                        <div class="score-flow-arrow">→</div>
-                        <span id="bd-tmod" class="score-flow-delta ${deltaClass(tMod)}">${deltaStr(tMod)}</span>
-                        <div class="score-flow-arrow">→</div>
-                        <span id="bd-pmod" class="score-flow-delta ${deltaClass(pMod)}">${deltaStr(pMod)}</span>
-                        <div class="score-flow-arrow">→</div>
-                        <div class="score-flow-item">
-                            <div id="bd-final" class="score-flow-value" style="color:var(--accent)">${final.toFixed(1)}</div>
-                            <div class="score-flow-label">Final score</div>
+                        <div style="display:flex; align-items:end; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+                            <div>
+                                <div style="font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px;">Original adjusted score</div>
+                                <div class="adjusted-hero-value" style="font-size:30px;">${final.toFixed(1)}</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <span class="interpretation-badge ${scoreBand(final).cls}">${scoreBand(final).label}</span>
+                                <div style="font-size:11px; color:var(--text-dim); margin-top:6px;">This score never changes in What-if.</div>
+                            </div>
                         </div>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;">
+                            <span class="pill">Task: ${data.task_descriptor.task_type}</span>
+                            <span class="pill">Mode: ${data.task_descriptor.search_mode}</span>
+                            <span class="pill">Profile: ${data.big_five_profile.label}</span>
+                            <span class="pill">Source: ${data.prediction_source === "stage2_trained_model" ? "Experimental Stage 2" : "HCEye rule-based"}</span>
+                        </div>
+                        <div style="font-size:11px; color:var(--text-dim); margin-top:8px; line-height:1.5;">
+                            Baseline = the original result from this exact run (image + selected task/profile at analysis time). It is read-only and kept as your reference point.
+                        </div>
+                    </div>
+
+                    <!-- ── Section B: What-if simulation (interactive) ── -->
+                    <div class="section-separator"></div>
+                    <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--text-dim); margin-bottom:6px;">
+                        What-if: adjust context &amp; see score impact live
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px; flex-wrap:wrap;">
+                        <div id="bd-sim-state" class="pill">Original context selected (no simulation change).</div>
+                        <button id="bd-reset" class="btn btn-secondary" style="width:auto; margin:0; padding:6px 10px; font-size:11px;">Reset to original</button>
+                        <button id="bd-run-analysis" class="btn btn-secondary" style="width:auto; margin:0; padding:6px 10px; font-size:11px;">Run new analysis with these settings</button>
+                    </div>
+                    <div class="preset-row">
+                        <button class="preset-btn" data-preset="default">Default</button>
+                        <button class="preset-btn" data-preset="time_critical">Time-Critical</button>
+                        <button class="preset-btn" data-preset="exploratory">Exploratory User</button>
+                        <button class="preset-btn" data-preset="stress">Stress-Sensitive</button>
+                    </div>
+                    <div class="score-block" style="margin-bottom:10px;">
+                        <div style="display:flex; align-items:end; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+                            <div>
+                                <div style="font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px;">Simulated adjusted score</div>
+                                <div id="bd-sim-score" class="adjusted-hero-value" style="font-size:30px;">${final.toFixed(1)}</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <span id="bd-sim-level" class="interpretation-badge ${scoreBand(final).cls}">${scoreBand(final).label}</span>
+                                <div id="bd-sim-delta" class="score-flow-delta zero" style="padding-bottom:0; margin-top:8px;">+0.0 vs original (${final.toFixed(1)})</div>
+                            </div>
+                        </div>
+                        <div id="bd-sim-note" class="adjusted-hero-note">${scoreBand(final).note}</div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px 14px; margin-bottom:12px; font-size:12px;">
+                        <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                            <span style="font-size:18px; font-weight:700;">${baseScore.toFixed(1)}</span>
+                            <span style="font-size:10px; color:var(--text-dim);">image</span>
+                        </div>
+                        <span style="color:var(--text-dim);">+</span>
+                        <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                            <span id="bd-tmod" class="score-flow-delta ${deltaClass(tMod)}">${deltaStr(tMod)}</span>
+                            <span style="font-size:10px; color:var(--text-dim);">task</span>
+                        </div>
+                        <span style="color:var(--text-dim);">+</span>
+                        <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                            <span id="bd-pmod" class="score-flow-delta ${deltaClass(pMod)}">${deltaStr(pMod)}</span>
+                            <span style="font-size:10px; color:var(--text-dim);">profile</span>
+                        </div>
+                        <span style="color:var(--text-dim);">=</span>
+                        <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+                            <span id="bd-final" style="font-size:18px; font-weight:700; color:var(--accent);">${final.toFixed(1)}</span>
+                            <span style="font-size:10px; color:var(--text-dim);">simulated</span>
+                        </div>
+                    </div>
+                    <div style="font-size:11px; color:var(--text-dim); margin:-4px 0 10px; line-height:1.5;">
+                        Formula: <strong>image</strong> is fixed from the uploaded screenshot. <strong>task</strong> and <strong>profile</strong> are context modifiers from the dropdowns. Their sum gives the simulated adjusted score.
+                    </div>
+                    <div class="decision-summary">
+                        <div class="decision-summary-grid">
+                            <div class="decision-summary-item">Baseline<strong id="bd-ds-base">${final.toFixed(1)}</strong></div>
+                            <div class="decision-summary-item">Simulated<strong id="bd-ds-sim">${final.toFixed(1)}</strong></div>
+                            <div class="decision-summary-item">Delta<strong id="bd-ds-delta">+0.0</strong></div>
+                            <div class="decision-summary-item">Band<strong id="bd-ds-band">${scoreBand(final).label}</strong></div>
+                        </div>
+                        <div id="bd-ds-reco" class="decision-summary-reco">Recommendation: Keep as is.</div>
+                    </div>
+                    <div style="font-size:12px; color:var(--text-dim); margin-bottom:10px; line-height:1.5;">
+                        Change dropdowns to test scenarios. This section updates only the simulated score and never overwrites the locked baseline above.
                     </div>
                     <div class="task-context-grid">
                         <div class="task-context-item">
@@ -1540,7 +2303,7 @@
                                 <option value="search"     ${td.task_type==='search'?'selected':''}>Search</option>
                                 <option value="monitoring" ${td.task_type==='monitoring'?'selected':''}>Monitoring</option>
                                 <option value="data_entry" ${td.task_type==='data_entry'?'selected':''}>Data Entry</option>
-                                <option value="decision"   ${td.task_type==='decision'?'selected':''}>Decision</option>
+                                <option value="decision"   ${td.task_type==='decision'?'selected':''}>Decision Making</option>
                             </select>
                             <div id="bd-desc-task" class="bd-desc">${TASK_DESC[td.task_type]||''}</div>
                         </div>
@@ -1556,25 +2319,25 @@
                         <div class="task-context-item">
                             <div class="task-context-key">Target Specificity</div>
                             <select id="bd-specificity" class="bd-select">
-                                <option value="high"   ${td.target_specificity==='high'?'selected':''}>High</option>
+                                <option value="high"   ${td.target_specificity==='high'?'selected':''}>High — target well defined</option>
                                 <option value="medium" ${td.target_specificity==='medium'?'selected':''}>Medium</option>
-                                <option value="low"    ${td.target_specificity==='low'?'selected':''}>Low</option>
+                                <option value="low"    ${td.target_specificity==='low'?'selected':''}>Low — vague or open-ended</option>
                             </select>
                             <div id="bd-desc-spec" class="bd-desc">${SPEC_DESC[td.target_specificity]||''}</div>
                         </div>
                         <div class="task-context-item">
                             <div class="task-context-key">Time Pressure</div>
                             <select id="bd-timePressure" class="bd-select">
-                                <option value="low"    ${td.time_pressure==='low'?'selected':''}>Low</option>
+                                <option value="low"    ${td.time_pressure==='low'?'selected':''}>Low — ample time</option>
                                 <option value="medium" ${td.time_pressure==='medium'?'selected':''}>Medium</option>
-                                <option value="high"   ${td.time_pressure==='high'?'selected':''}>High</option>
+                                <option value="high"   ${td.time_pressure==='high'?'selected':''}>High — time-critical</option>
                             </select>
                             <div id="bd-desc-time" class="bd-desc">${TIME_DESC[td.time_pressure]||''}</div>
                         </div>
                         <div class="task-context-item" style="grid-column:1/-1">
-                            <div class="task-context-key">Big Five Profile</div>
+                            <div class="task-context-key">User Profile (Big Five)</div>
                             <select id="bd-profile" class="bd-select">
-                                <option value="neutral"          ${data.big_five_profile.key==='neutral'?'selected':''}>Neutral</option>
+                                <option value="neutral"          ${data.big_five_profile.key==='neutral'?'selected':''}>Neutral — no adjustment</option>
                                 <option value="focused"          ${data.big_five_profile.key==='focused'?'selected':''}>Focused / Conscientious</option>
                                 <option value="exploratory"      ${data.big_five_profile.key==='exploratory'?'selected':''}>Exploratory / Open</option>
                                 <option value="social"           ${data.big_five_profile.key==='social'?'selected':''}>Social / Extraverted</option>
@@ -1583,14 +2346,49 @@
                             <div id="bd-desc-profile" class="bd-desc">${PROFILE_DESC[data.big_five_profile.key]||''}</div>
                         </div>
                     </div>
-                    <div style="margin-top:8px; font-size:11px; color:var(--text-dim);">
-                        Base score fixed from image analysis · modifiers recalculated locally
-                    </div>
                 </div>
             `;
             // Attach live-update listeners
             ['bd-taskType','bd-specificity','bd-timePressure','bd-searchMode','bd-profile']
                 .forEach(id => document.getElementById(id).addEventListener('change', updateBreakdown));
+
+            const PRESETS = {
+                default: { task_type: 'search', search_mode: 'known_item', target_specificity: 'medium', time_pressure: 'medium', profile: 'neutral' },
+                time_critical: { task_type: 'decision', search_mode: 'known_item', target_specificity: 'high', time_pressure: 'high', profile: 'focused' },
+                exploratory: { task_type: 'search', search_mode: 'exploratory', target_specificity: 'low', time_pressure: 'medium', profile: 'exploratory' },
+                stress: { task_type: 'search', search_mode: 'comparative', target_specificity: 'medium', time_pressure: 'high', profile: 'stress_sensitive' },
+            };
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const p = PRESETS[btn.dataset.preset];
+                    if (!p) return;
+                    document.getElementById('bd-taskType').value = p.task_type;
+                    document.getElementById('bd-searchMode').value = p.search_mode;
+                    document.getElementById('bd-specificity').value = p.target_specificity;
+                    document.getElementById('bd-timePressure').value = p.time_pressure;
+                    document.getElementById('bd-profile').value = p.profile;
+                    updateBreakdown();
+                });
+            });
+
+            document.getElementById('bd-reset').addEventListener('click', () => {
+                document.getElementById('bd-taskType').value = originalContext.task_type;
+                document.getElementById('bd-specificity').value = originalContext.target_specificity;
+                document.getElementById('bd-timePressure').value = originalContext.time_pressure;
+                document.getElementById('bd-searchMode').value = originalContext.search_mode;
+                document.getElementById('bd-profile').value = originalContext.profile;
+                updateBreakdown();
+            });
+
+            document.getElementById('bd-run-analysis').addEventListener('click', () => {
+                document.getElementById('taskType').value = document.getElementById('bd-taskType').value;
+                document.getElementById('searchMode').value = document.getElementById('bd-searchMode').value;
+                document.getElementById('targetSpecificity').value = document.getElementById('bd-specificity').value;
+                document.getElementById('timePressure').value = document.getElementById('bd-timePressure').value;
+                document.getElementById('profilePreset').value = document.getElementById('bd-profile').value;
+                analyze();
+            });
+            updateBreakdown();
         }
 
         // ─── Coherence Warning ───
@@ -1731,16 +2529,26 @@
             if (findings.length === 0)
                 findings.push('Feature profile is balanced — no single dimension is dominant or critically low.');
 
-            el.innerHTML = findings.map(f => `<div style="margin-bottom:5px;">— ${f}</div>`).join('');
+            el.innerHTML = `<ul class="radar-interpretation-list">${findings.map(f => `<li>${f}</li>`).join('')}</ul>`;
         }
 
         // ─── Radar Chart ───
         function drawRadar(data) {
             const canvas = document.getElementById("radarChart");
+            const parent = canvas.parentElement;
+            const dpr = window.devicePixelRatio || 1;
+            const cssSize = Math.max(360, Math.floor(parent.clientWidth));
+            canvas.style.width = cssSize + "px";
+            canvas.style.height = cssSize + "px";
+            canvas.width = Math.floor(cssSize * dpr);
+            canvas.height = Math.floor(cssSize * dpr);
+
             const ctx = canvas.getContext("2d");
-            const W = canvas.width, H = canvas.height;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            const W = cssSize, H = cssSize;
             const cx = W / 2, cy = H / 2;
-            const R = Math.min(cx, cy) - 40;
+            const R = Math.min(cx, cy) - 62;
 
             ctx.clearRect(0, 0, W, H);
 
@@ -1772,11 +2580,11 @@
 
                 // Labels
                 const info = featuresInfo.find(f => f.key === FEATURE_KEYS[i]) || {};
-                const labelR = R + 22;
+                const labelR = R + 28;
                 const lx = cx + labelR * Math.cos(a);
                 const ly = cy + labelR * Math.sin(a);
                 ctx.fillStyle = "#8b8fa3";
-                ctx.font = "10px -apple-system, sans-serif";
+                ctx.font = "12px -apple-system, sans-serif";
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
 
@@ -1872,13 +2680,15 @@
             const pageW = 210, pageH = 297, margin = 14, colW = pageW - margin * 2;
             let y = 0;
 
-            // ── helpers ──────────────────────────────────────────────────
-            const accent = [59, 130, 246];   // blue
-            const dim    = [139, 143, 163];  // grey
-            const white  = [228, 230, 240];
-            const warn   = [245, 158, 11];
-            const danger = [239, 68, 68];
-            const ok     = [34, 197, 94];
+            // ── Light theme palette ──────────────────────────────────────
+            const accent = [37, 99, 235];    // blue
+            const ink    = [33, 37, 48];     // near-black body text
+            const dim    = [110, 116, 132];  // muted grey
+            const lineCol= [216, 220, 230];  // divider line
+            const panel  = [244, 246, 250];  // light panel background
+            const warn   = [202, 138, 4];
+            const danger = [220, 38, 38];
+            const ok     = [22, 163, 74];
 
             function newPage() {
                 doc.addPage();
@@ -1889,7 +2699,7 @@
             }
             function sectionTitle(text) {
                 checkPage(14);
-                doc.setFillColor(30, 35, 50);
+                doc.setFillColor(...panel);
                 doc.rect(margin, y, colW, 8, "F");
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(9);
@@ -1904,32 +2714,49 @@
                 doc.setTextColor(...dim);
                 doc.text(label, margin + 2, y);
                 doc.setFont("helvetica", "bold");
-                doc.setTextColor(...(valueColor || white));
+                doc.setTextColor(...(valueColor || ink));
                 doc.text(String(value), margin + 80, y);
                 y += 6;
             }
             function divider() {
                 checkPage(4);
-                doc.setDrawColor(46, 51, 71);
+                doc.setDrawColor(...lineCol);
                 doc.line(margin, y, pageW - margin, y);
                 y += 4;
             }
+            // Fit an image to the column width (capped height), centered, page-aware.
+            function addImage(dataUrl, fmt, natW, natH, caption) {
+                if (!natW || !natH) return;
+                let w = colW;
+                let h = natH * (w / natW);
+                const maxH = 105;
+                if (h > maxH) { h = maxH; w = natW * (h / natH); }
+                checkPage(h + (caption ? 8 : 4));
+                if (caption) {
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(8.5);
+                    doc.setTextColor(...dim);
+                    doc.text(caption, margin + 2, y);
+                    y += 4;
+                }
+                const x = margin + (colW - w) / 2;
+                doc.addImage(dataUrl, fmt, x, y, w, h);
+                y += h + 6;
+            }
 
-            // ── Cover / Header ───────────────────────────────────────────
-            doc.setFillColor(15, 17, 23);
-            doc.rect(0, 0, pageW, pageH, "F");
+            // ── Header (white background) ────────────────────────────────
             doc.setFillColor(...accent);
             doc.rect(0, 0, pageW, 2, "F");
             y = 22;
             doc.setFont("helvetica", "bold");
             doc.setFontSize(18);
-            doc.setTextColor(...white);
+            doc.setTextColor(...ink);
             doc.text("GUI Complexity Analysis Report", margin, y);
             y += 8;
             doc.setFont("helvetica", "normal");
             doc.setFontSize(9);
             doc.setTextColor(...dim);
-            doc.text(`File: ${d.filename || "—"} · Generated: ${new Date().toLocaleString()}`, margin, y);
+            doc.text(`File: ${d.filename || "-"}  ·  Generated: ${new Date().toLocaleString()}`, margin, y);
             y += 4;
             doc.text("Pipeline: Two-Stage Multi-Output · HCEye rule-based scoring (Das et al., ETRA 2024)", margin, y);
             y += 10;
@@ -1938,8 +2765,8 @@
             // ── Overall Score Banner ─────────────────────────────────────
             const score   = d.score || 0;
             const level   = score < 25 ? "LOW" : score < 50 ? "MODERATE" : score < 75 ? "HIGH" : "VERY HIGH";
-            const lvlColor = score < 25 ? ok : score < 50 ? warn : score < 75 ? [249, 115, 22] : danger;
-            doc.setFillColor(26, 29, 39);
+            const lvlColor = score < 25 ? ok : score < 50 ? warn : score < 75 ? [234, 88, 12] : danger;
+            doc.setFillColor(...panel);
             doc.roundedRect(margin, y, colW, 22, 2, 2, "F");
             doc.setFont("helvetica", "bold");
             doc.setFontSize(28);
@@ -1961,14 +2788,33 @@
 
             // ── Context / Settings ───────────────────────────────────────
             sectionTitle("Analysis Settings");
-            row("Task Type",      d.task_type   || "—");
-            row("Search Mode",    d.search_mode || "—");
-            row("Target Specificity", d.specificity || "—");
-            row("Time Pressure",  d.time_pressure || "—");
+            row("Task Type",      d.task_type   || "-");
+            row("Search Mode",    d.search_mode || "-");
+            row("Target Specificity", d.specificity || "-");
+            row("Time Pressure",  d.time_pressure || "-");
             row("User Profile",   d.profile || "Neutral");
             row("Score Source",   d.prediction_source === "stage2_trained_model" ? "Experimental Stage 2" : "HCEye rule-based");
-            row("Vector Dims",    d.vector_dimensions || "—");
+            row("Vector Dims",    d.vector_dimensions || "-");
             divider();
+
+            // ── Visual Maps (saliency overlay + radar profile) ───────────
+            const salImg = document.getElementById('saliencyImg');
+            const radarCanvas = document.getElementById('radarChart');
+            const haveSal = salImg && salImg.src && salImg.naturalWidth > 0;
+            const haveRadar = radarCanvas && radarCanvas.width > 0;
+            if (haveSal || haveRadar) {
+                sectionTitle("Visual Maps");
+                if (haveSal) {
+                    addImage(salImg.src, "JPEG", salImg.naturalWidth, salImg.naturalHeight,
+                             "Saliency Overlay (UMSI++ heatmap on screenshot)");
+                }
+                if (haveRadar) {
+                    addImage(radarCanvas.toDataURL("image/png"), "PNG",
+                             radarCanvas.width, radarCanvas.height,
+                             "Visual Feature Radar Profile");
+                }
+                divider();
+            }
 
             // ── Scores ───────────────────────────────────────────────────
             sectionTitle("Prediction Scores");
@@ -1982,7 +2828,7 @@
             divider();
 
             // ── Visual Features ──────────────────────────────────────────
-            sectionTitle("Visual Features  v ∈ ℝ⁸");
+            sectionTitle("Visual Features (v, 8 dims)");
             if (d.visual_features) {
                 Object.entries(d.visual_features).forEach(([k, v]) =>
                     row(k.replace(/_/g, " "), typeof v === "number" ? v.toFixed(4) : v)
@@ -1991,7 +2837,7 @@
             divider();
 
             // ── Saliency Features ────────────────────────────────────────
-            sectionTitle("Saliency Features  s ∈ ℝ⁵  (UMSI++)");
+            sectionTitle("Saliency Features (s, 5 dims) - UMSI++");
             if (d.saliency_features) {
                 Object.entries(d.saliency_features).forEach(([k, v]) =>
                     row(k.replace(/_/g, " "), typeof v === "number" ? v.toFixed(4) : v)
@@ -2000,7 +2846,7 @@
             divider();
 
             // ── HCEye Features ───────────────────────────────────────────
-            sectionTitle("HCEye Features  h ∈ ℝ⁶");
+            sectionTitle("HCEye Features (h, 6 dims)");
             if (d.hceye_features) {
                 Object.entries(d.hceye_features).forEach(([k, v]) =>
                     row(k.replace(/_/g, " "), typeof v === "number" ? v.toFixed(4) : v)
@@ -2012,7 +2858,7 @@
             sectionTitle("Coherence Check");
             const coh = d.coherence_data || {};
             row("Is Coherent", coh.is_coherent ? "Yes" : "No", coh.is_coherent ? ok : danger);
-            row("Rules Checked", coh.rules_checked || "—");
+            row("Rules Checked", coh.rules_checked || "-");
             if (coh.warnings && coh.warnings.length) {
                 coh.warnings.forEach(w => row("Warning", w, warn));
             }
@@ -2021,10 +2867,10 @@
             // ── Interpretation ───────────────────────────────────────────
             sectionTitle("Overall Interpretation");
             const interpEl = document.getElementById("interpretationPanel");
-            const interpText = interpEl ? interpEl.innerText.replace(/\n+/g, "  ") : "—";
+            const interpText = interpEl ? interpEl.innerText.replace(/\n+/g, "  ") : "-";
             doc.setFont("helvetica", "normal");
             doc.setFontSize(8.5);
-            doc.setTextColor(...white);
+            doc.setTextColor(...ink);
             const lines = doc.splitTextToSize(interpText, colW - 4);
             lines.forEach(line => {
                 checkPage(6);
@@ -2041,7 +2887,7 @@
             doc.setTextColor(...dim);
             doc.text("Pipeline: Two-Stage Multi-Output Pipeline · Das et al. (ETRA 2024) · Jokinen et al. (IJHCS 2020) · Rosenholtz et al. (JoV 2007)", margin, y);
             y += 5;
-            doc.text("Output is a computational index of interactional complexity — not a direct measure of cognitive load.", margin, y);
+            doc.text("Output is a computational index of interactional complexity - not a direct measure of cognitive load.", margin, y);
 
             // ── Page numbers ─────────────────────────────────────────────
             const pageCount = doc.getNumberOfPages();
@@ -2087,8 +2933,51 @@
             a.click();
         }
 
+        // ─── Browser Notification Helpers ───────────────────────────────
+        function primeNotificationPermission() {
+            if (!notificationsEnabled()) return;
+            if (!("Notification" in window)) return;
+            if (Notification.permission !== "default") return;
+            Notification.requestPermission().catch(() => {});
+        }
+
+        function flashTitleOnce(message) {
+            const original = document.title;
+            document.title = message;
+            setTimeout(() => {
+                document.title = original;
+            }, 4000);
+        }
+
+        function notifyAnalysisComplete(data, elapsedSec) {
+            if (!notificationsEnabled()) return;
+            const score = data && data.adjusted_prediction
+                ? data.adjusted_prediction.cognitive_load_score
+                : null;
+            const scoreText = score !== null ? score.toFixed(1) : "n/a";
+            const body = `Score: ${scoreText}`;
+
+            // If user is already on the tab, avoid noisy notifications.
+            const background = document.hidden || !document.hasFocus();
+            if (!background) return;
+
+            if ("Notification" in window && Notification.permission === "granted") {
+                try {
+                    const n = new Notification("Your analysis is ready", { body });
+                    setTimeout(() => n.close(), 6000);
+                    return;
+                } catch (_) {
+                    // fall through to title flash
+                }
+            }
+
+            // Fallback when notifications are blocked/unsupported.
+            flashTitleOnce("✓ Your analysis is ready");
+        }
+
         // ─── Done Chime (Web Audio API — no external file needed) ───
         function playDoneChime() {
+            if (!soundEnabled()) return;
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 // Two-note ascending chime: C5 → E5
@@ -2110,7 +2999,30 @@
         }
 
         // ─── Init ───
+        if (notifyToggle) {
+            const savedNotify = localStorage.getItem("ui_notify_enabled");
+            notifyToggle.checked = savedNotify === null ? true : savedNotify === "1";
+            notifyToggle.addEventListener("change", () => {
+                localStorage.setItem("ui_notify_enabled", notifyToggle.checked ? "1" : "0");
+                if (notifyToggle.checked) primeNotificationPermission();
+            });
+        }
+        if (soundToggle) {
+            const savedSound = localStorage.getItem("ui_sound_enabled");
+            soundToggle.checked = savedSound === null ? true : savedSound === "1";
+            soundToggle.addEventListener("change", () => {
+                localStorage.setItem("ui_sound_enabled", soundToggle.checked ? "1" : "0");
+            });
+        }
         loadFeatures();
+        ["taskType", "searchMode", "targetSpecificity", "timePressure", "profilePreset"]
+            .forEach(id => document.getElementById(id).addEventListener("change", updateContextHint));
+        window.addEventListener("resize", () => {
+            if (window._latestVisualFeatures && document.getElementById("radarPanel").style.display !== "none") {
+                drawRadar(window._latestVisualFeatures);
+            }
+        });
+        updateContextHint();
     </script>
 </body>
 </html>
