@@ -2,8 +2,8 @@
 
 **Arbeitstitel:** Integrating Cognitive Predictive Metrics into the AIM Platform for Automated GUI Evaluation  
 **Verfasserin:** Hannah  
-**Studiengang:** Master HCI / [Studiengang eintragen]  
-**Betreuer:in:** [Name eintragen]  
+**Studiengang:** User Experience Design  
+**Betreuer:** Gerhard Graf und Prof. Dr. Christian Sturm  
 **Datum:** Juni 2026
 
 ---
@@ -26,11 +26,11 @@ AIM (Oulasvirta et al., 2018) ist eine Open-Source-Plattform, die ca. 20 wahrneh
 
 ### 2.2 Computational Rationality als theoretische Grundlage
 
-Das Rahmenwerk der Computational Rationality (CR) nach Oulasvirta, Jokinen und Howes (2022) ersetzt regelbasierte Heuristiken (GOMS, ACT-R-Rezepte) durch sequentielle Entscheidungstheorie: Interaktion wird als optimale Kontrollpolitik modelliert, die kognitive, wahrnehmungsbasierte und motorische Grenzen balanciert. Formalisiert als Partially Observable Markov Decision Process (POMDP), gelöst via Reinforcement Learning, erklärt CR den Übergang von Novizen-geleiteter, bottom-up-Suche zu expert-geführtem, top-down-Memorabruf (Jokinen et al., 2020). Aktuelle CR-Anwendungen umfassen Gaze-basierte Selektion (Chen et al., 2021), Touchscreen-Tippen (Shi et al., 2024), task-konditionierte Scanpaths (Shi et al., 2025) und Attention-Switching in Dual-Task-Szenarien (Lingler et al., 2024).
+Das Rahmenwerk der Computational Rationality (CR) nach Oulasvirta, Jokinen und Howes (2022) ersetzt regelbasierte Heuristiken (GOMS, ACT-R-Rezepte) durch sequentielle Entscheidungstheorie: Interaktion wird als optimale Kontrollpolitik modelliert, die kognitive, wahrnehmungsbasierte und motorische Grenzen balanciert. Formalisiert als Partially Observable Markov Decision Process (POMDP), gelöst via Reinforcement Learning, erklärt CR den Übergang von Novizen-geleiteter, bottom-up-Suche zu expert-geführtem, top-down-Memorabruf (Jokinen et al., 2020). Aktuelle CR-Anwendungen umfassen Gaze-basierte Selektion (Chen et al., 2021), Touchscreen-Tippen (Shi et al., 2024), task-konditionierte Scanpaths (Shi et al., 2025), Attention-Switching in Dual-Task-Szenarien (Lingler et al., 2024) sowie Adaptive UI via Multi-Agent RL (Langerak et al., 2024).
 
 ### 2.3 Salienz, Scanpaths und Cognitive Load
 
-Scanpath-Vorhersage hat sich von taskagnostischen Salienzmodellen (DeepGaze II, Kümmerer et al., 2017) zu task-konditionierten Ansätzen entwickelt: SeekUI (Guo et al., 2026) und Chartist (Shi et al., 2025) zeigen, dass task-spezifische Konditionierung die Vorhersagequalität signifikant verbessert. EyeFormer (Jiang et al., 2024) demonstriert die Machbarkeit personalisierter Scanpaths durch Few-Shot-Konditionierung. Für die simultane Vorhersage mehrerer Outputs (Geschwindigkeit, Genauigkeit, Aufwand aus einem Modell) liefert MIA26 (Log2Motion) methodische Grundlagen.
+Scanpath-Vorhersage hat sich von taskagnostischen Salienzmodellen (DeepGaze II, Kümmerer et al., 2017) zu task-konditionierten Ansätzen entwickelt: SeekUI (Guo et al., 2026) und Chartist (Shi et al., 2025) zeigen, dass task-spezifische Konditionierung die Vorhersagequalität signifikant verbessert. EyeFormer (Jiang et al., 2024) demonstriert die Machbarkeit personalisierter Scanpaths durch Few-Shot-Konditionierung. Für die simultane Vorhersage mehrerer Outputs (Geschwindigkeit, Genauigkeit, Aufwand aus einem Modell) liefert Miazga et al. (2026) methodische Grundlagen.
 
 ### 2.4 Lücke im Forschungsstand
 
@@ -118,7 +118,7 @@ Der **Coherence-Term** $L_\text{coherence}$ bestraft physikalisch inkonsistente 
 
 ## 5. Zeitplan
 
-> *Hinweis: Implementierung (Stage 1+2, Flask-API auf Port 5001, UMSI++ Saliency-Modell mit pretrained Weights, Jokinen 2020 AFG, HCEye-Features, Coherence-Check, User Profile) ist bereits vollständig abgeschlossen.*
+> *Hinweis: Die gesamte Pipeline (Stage 1, Stage 2, API-Integration, Salienzmodell, kognitive Nutzermodelle, Coherence-Check, User Profile) ist bereits vollständig implementiert. Die verbleibende Arbeit umfasst Datenerhebung, Modelltraining auf echten Daten und das Schreiben der Thesis.*
 
 | Phase | Inhalt | Zeitraum |
 |-------|--------|----------|
@@ -155,3 +155,4 @@ Der **Coherence-Term** $L_\text{coherence}$ bestraft physikalisch inkonsistente 
 - Shi, D. et al. (2024). CRTypist. *CHI 2024*
 - Shi, D. et al. (2025). Chartist. *CHI 2025*
 - Kapania, S. et al. (2025). Simulacrum of Stories. *CHI 2025*
+- Langerak, T. et al. (2024). MARLUI: Multi-Agent Reinforcement Learning for Adaptive Point-and-Click UIs. *ACM TOCHI 2024*

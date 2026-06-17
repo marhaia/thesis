@@ -11,22 +11,37 @@
 Wie kann man UI-Adaptierung (welche Elemente anzeigen?) als Multi-Agent RL Problem formulieren — ohne hand-crafted Regeln oder echte Nutzerdaten für Training?
 
 ## Methode
-- Zwei Agenten: User-Agent (simuliert Nutzungsverhalten via point-and-click) + Interface-Agent (lernt Adaptierungspolitik)
-- Turn-based Multi-Agent RL in geteilter Umgebung
-- Trainiert ohne echte Nutzerdaten — Transfer auf reale Nutzer im gleichen Task
+MARLUI formuliert Online-UI-Adaptation als kooperatives Multi-Agent-RL-Problem. Zwei Agenten agieren turn-based in einer geteilten Umgebung (der adaptierten UI), ohne echte Nutzerdaten zu benötigen.
+
+**User Agent (hierarchisch, 2 Ebenen):**
+- *High-level Decision-Making Policy πd:* Wählt nächstes Target-Slot; State Sd = (p, m, x, g) — Position, UI-Encoding, aktueller Zustand, Zielzustand; Reward: Rd = α·Egd − (1−α)·(TD + TM) + 1_success; TD = Hick-Hyman-Entscheidungszeit (SDP-Modell); TM = Bewegungszeit
+- *Low-level Motor Policy πm:* WHo-Modell (Fitts'-Law-basiert); gibt Endpoint-Verteilung (μp, σp) aus; σp = 1/6 Slot-Breite → 96% Hit-Rate; Position gesamplet aus p ∼ N(μp, σp)
+- CR-Annahme [Ref 83] = OUL22: Nutzer verhält sich bounded-rational → MDP-Formulierung zulässig
+
+**Interface Agent (flat RL Policy πI):**
+- Observiert: (p, x, m, o) — Position, UI-Zustand, Item-Encoding, Interaktionshistory (Stack)
+- Kennt NICHT das Ziel g des User Agents → POMDP-Setting
+- Reward: RI = RD (direkt an User-Agent-Performance gekoppelt)
+- Lernt implizite Verteilung über wahrscheinliche Nutzerziele durch Beobachtung der Interaktionssequenz
+
+**Training:** Simultanes Training beider Agenten via PPO (RLLib); Curriculum Learning (Schwierigkeit steigt wenn Completion Rate >90%); ∼36h Training (Intel Xeon + NVIDIA TITAN Xp). **Keine echten Nutzerdaten benötigt.**
+
+**Evaluation:** N=12 Probanden (ETH Zürich), Character-Creation-Task (5 Attribute × 3 Items = 243 Konfigurationen), 30 Trials/Condition (Latin Square), Oculus Quest 2. Baselines: Static (keine Adaptation) + SVM (trainiert auf 6 Pilotnutzern, >3000 Interaktionen, 91% Top-3-Accuracy).
 
 ## Wichtigste Ergebnisse
-- Interface-Agent lernt relevante Elemente anzuzeigen durch Beobachtung des User-Agenten
-- Überträgt erfolgreich auf reale Nutzer in gleichen Tasks
-- Ohne Heuristiken oder domain-spezifische Regeln generalisierbar
-- Kernproblem: Intent-Inferenz (Was will der Nutzer?) als RL-gelöste Herausforderung
+- **Actions:** MARLUI = 3.34 vs. Static = 5.73 vs. SVM = 3.87 Aktionen; F(2,22)=209.68, p<.001; Holm-korrigierte Post-hoc: MARLUI signifikant besser als SVM (p=0.006) und Static (p<.001)
+- **Task Completion Time:** MARLUI = 12.14s vs. Static = 12.36s vs. SVM = 12.71s — **kein signifikanter Unterschied**: F(1.568,17.243)=0.86, p=0.42 → Nutzer bildeten Strategien mit der statischen Reihenfolge (Familiarity-Effekt)
+- **Sim-to-Real Transfer:** Policies die ohne echte Nutzerdaten trainiert wurden, übertragen sich auf reale Nutzer in gleichen Tasks — MARLUI competitive mit SVM, das echte Nutzerdaten benötigt
+- **Generalisierung:** 50% der Goals im Training genügen für vollständige Generalisierung (Figure 5); Framework anwendbar auf 5 verschiedene Interface-Typen (Toolbar, Keypad, Block Tower, Out-of-reach Grabbing, Hierarchical Menu)
+- **Section 7.4:** *"familiarity is not captured by our current cognitive model"* — Limitation explizit benannt; direkte Verbindung zu TOD18 Familiarisierungs-Modell
 
-## Wichtigste Ergebnisse
-- Interface-Agent lernt relevante Elemente anzuzeigen durch Beobachtung des User-Agenten — ohne Heuristiken oder Nutzerdaten
-- Sim-to-real Transfer erfolgreich: N=12 Teilnehmer, signifikant weniger Actions als statische Baseline (3.34 vs. 5.73, p<.001) — aber kein signifikanter Unterschied in Task Completion Time
-- **Key quote (Section 2.2):** *"More recent work extends these models and, for instance, predicts... cognitive load"* [Ref 24/32] — LAN24 zitiert CL-Modellierung als verwandtes Feld, Ref [32] = Duchowski 2018 (Pupillary Activity als CL-Maß) = dein Feld
-- Section 1: *"The presence of more items requires users to process more information... lead to an increased cognitive load"* — direkt zitierbar für UI-Komplexität → CL-Verbindung
-- Kernproblem: Intent-Inferenz als RL-gelöste Herausforderung — du löst es anders (expliziter Task Descriptor)
+## Direkt zitierbare Schlüsselsätze
+
+> *"The presence of more items requires users to process more information and, thus, to evaluate more options, both of which lead to an increased cognitive load."* (Section 1)
+
+> *"it does not adapt to the user themselves (e.g., different levels of expertise). Such personalization is an interesting direction for future research."* (Section 9)
+
+> *"increasing realism in the model of the simulated user is an interesting future research direction, for instance, modeling human-like search or motor control with a biomechanical model."* (Section 9)
 
 ## Verwendung in der Thesis
 
@@ -57,11 +72,14 @@ Wie kann man UI-Adaptierung (welche Elemente anzeigen?) als Multi-Agent RL Probl
 - Kein signifikanter Unterschied in Task Completion Time trotz weniger Actions → zeigt dass reine Action-Reduktion nicht ausreicht
 
 ## Verbindungen zu anderen Papern
+- OUL22 [Ref 83] = CR-Theorie: MARLUI baut explizit auf CR auf ("users behave rationally within their bounded resources [83]") — direkte Verbindung zur Thesis-Theoriebasis
+- **AIM [Ref 81]** = OUL18 explizit zitiert: "Aalto interface metrics (AIM) a service and codebase for computational GUI evaluation" — LAN24 kennt AIM; Stage 1 ist direkte AIM-Pipeline-Erweiterung
+- JOK21 [Ref 52] + JOK21 Typing [Ref 51] beide in LAN24 zitiert — bestätigt Jokinen-Gruppe als State-of-Art in CR-basierter User Modeling
+- **Familiarity-Lücke → TOD18:** Section 7.4 benennt explizit: "familiarity is not captured by our current cognitive model" — MARLUI identifiziert genau die Lücke, die TOD18 für Webseiten-Familiarisierung schließt; für Stage 2 (experience_level) ist dieser Befund legitimierend
 - Methodisch → CHE21, JOK21 (beide: CR-basierte User Agents ohne echte Nutzerdaten)
 - Task Descriptor Kontext → KO26 (beide: explizite Task-Repräsentation vs. implizite Intent-Inferenz)
-- CL-Modellierung Verweis → KRE16 (Duchowski Ref [32] im Paper = Pupillary Activity als CL-Maß)
 - Adaptive UI Tradition → SHI24 (supervisory control als verwandte Architektur)
 
 ---
 
-**Tags:** #stage2 #RL #multi-agent #intent #adaptive-ui #task-descriptor #cognitive-load #sim-to-real #CR
+**Tags:** #stage2 #RL #multi-agent #intent #adaptive-ui #task-descriptor #cognitive-load #sim-to-real #CR #TOCHI2024 #ETH-Zurich #WHo-model #Fitts #AIM-zitiert #OUL22-zitiert #JOK21-zitiert #familiarity-gap

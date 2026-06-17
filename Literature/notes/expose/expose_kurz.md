@@ -2,8 +2,8 @@
 
 **Arbeitstitel:** Integrating Cognitive Predictive Metrics into the AIM Platform for Automated GUI Evaluation  
 **Verfasserin:** Hannah  
-**Studiengang:** Master HCI / [Studiengang eintragen]  
-**Betreuer:in:** [Name eintragen]  
+**Studiengang:** User Experience Design  
+**Betreuer:** Gerhard Graf und Prof. Dr. Christian Sturm  
 **Datum:** Juni 2026
 
 ---
@@ -18,7 +18,7 @@ Graphische Benutzeroberflächen (GUIs) werden heute primär durch visuelle und w
 
 ## 2. Motivation & Problemstellung
 
-Empirische Belege für diese Lücke liefern DAS24 (HCEye): Unter kognitiver Doppelbelastung verändert sich das Blickverhalten fundamental — Nutzer:innen zeigen Tunnelblick, übersehen periphere UI-Elemente und bilden kürzere Scanpaths. AIM kann dieses Phänomen nicht vorhersagen. Gleichzeitig zeigt JIA23 (UEyes), dass UI-spezifische Aufmerksamkeitsmuster (z.B. starker Oben-Links-Bias) durch taskagnostische Salienzmodelle systematisch unterschätzt werden.
+Empirische Belege für diese Lücke liefern Das et al. (2024): Unter kognitiver Doppelbelastung verändert sich das Blickverhalten fundamental — Nutzer:innen zeigen Tunnelblick, übersehen periphere UI-Elemente und bilden kürzere Scanpaths. AIM kann dieses Phänomen nicht vorhersagen. Gleichzeitig zeigen Jiang et al. (2023), dass UI-spezifische Aufmerksamkeitsmuster (z.B. starker Oben-Links-Bias) durch taskagnostische Salienzmodelle systematisch unterschätzt werden.
 
 Die vorliegende Arbeit adressiert dieses Problem durch eine **zweistufige Erweiterungspipeline** für AIM, die kognitive Vorhersagemetriken integriert.
 
@@ -52,7 +52,7 @@ Zur Validierung werden zwei Datengrundlagen genutzt: (1) ein bestehender Pilotda
 
 ## 6. Zeitplan
 
-> *Hinweis: Implementierung (Stage 1+2, Flask-API, AIM-Integration, UMSI++ Saliency, Jokinen-Modell, HCEye-Features) ist bereits abgeschlossen.*
+> *Hinweis: Die gesamte Pipeline (Stage 1, Stage 2, API-Integration, Salienzmodell, kognitive Nutzermodelle) ist bereits vollständig implementiert. Die verbleibende Arbeit umfasst Datenerhebung, Modelltraining auf echten Daten und das Schreiben der Thesis.*
 
 | Phase | Inhalt | Zeitraum |
 |-------|--------|----------|
@@ -72,4 +72,4 @@ Die Arbeit beschränkt sich auf automotive HMI-Screenshots. Der Cognitive Load I
 
 ---
 
-*Schlüsselreferenzen: Oulasvirta et al. (2018, 2022), Das et al. (2024), Jiang et al. (2023), Jokinen et al. (2020)*
+*Schlüsselreferenzen: Oulasvirta et al. (2018, 2022), Das et al. (2024), Jiang et al. (2023), Jokinen et al. (2020), Langerak et al. (2024)*

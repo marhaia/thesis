@@ -2,8 +2,8 @@
 
 **Arbeitstitel:** Integrating Cognitive Predictive Metrics into the AIM Platform for Automated GUI Evaluation  
 **Verfasserin:** Hannah  
-**Studiengang:** Master HCI / [Studiengang eintragen]  
-**Betreuer:in:** [Name eintragen]  
+**Studiengang:** User Experience Design  
+**Betreuer:** Gerhard Graf und Prof. Dr. Christian Sturm  
 **Datum:** Juni 2026
 
 ---
@@ -159,7 +159,7 @@ Anhang
 
 ## 5. Zeitplan
 
-> *Hinweis: Implementierung (Stage 1+2, Flask-API auf Port 5001, UMSI++ Saliency-Modell mit pretrained Weights, Jokinen 2020 AFG, HCEye-Features, Coherence-Check, User Profile, Baseline-Scripts, End-to-End-Tests) ist bereits vollständig abgeschlossen. Die verbleibende Arbeit ist Datenerhebung, Auswertung und Schreiben.*
+> *Hinweis: Die gesamte Pipeline (Stage 1, Stage 2, API-Integration, Salienzmodell, kognitive Nutzermodelle, Coherence-Check, User Profile, Baseline-Scripts, End-to-End-Tests) ist bereits vollständig implementiert. Die verbleibende Arbeit umfasst Datenerhebung, Modelltraining auf echten Daten und das Schreiben der Thesis.*
 
 | Phase | Inhalt | Zeitraum | Deliverable |
 |-------|--------|----------|-------------|
@@ -179,7 +179,7 @@ Anhang
 1. **Domäne:** Automotive HMI-Screenshots; Generalisierung auf Mobile, Web oder Desktop erfordert eigene Validierung
 2. **Cognitive Load Index:** Berechneter Komplexitätsindikator — kein Ersatz für empirische NASA-TLX-Erhebungen; NASA-TLX-Subskalen ohne visuelles Korrelat (Physical Demand, Frustration) werden nicht modelliert
 3. **LLM-Simulation:** Nur stabile Persönlichkeitsmerkmale (Big Five Trait-Level); State-based Simulation (akuter Stress, Fatigue, Müdigkeit) ist nicht validiert und wird als harte Limitation deklariert (Kapania et al., 2025)
-4. **Pilotdatensatz:** Single-GUI-Design ohne Varianzdekomposition; GTA-imputierte TLX-Daten nur exploratorisch verwertbar
+4. **Pilotdatensatz:** Single-GUI-Design ohne Komplexitätsvariation; NASA-TLX-Daten aus einem einzelnen Interface-Zustand sind nur exploratorisch verwertbar, da keine Varianzdekomposition möglich ist
 5. **Stichprobengröße:** N≈30–35 für within-subjects Design; Power-Analyse ausstehend
 
 ---
@@ -217,4 +217,5 @@ Anhang
 - Todi, K. et al. (2016). Sketchplore. *CHI 2016*
 - Todi, K. et al. (2018). Familiarisation. *IUI 2018*
 - Todi, K. et al. (2019). Individualising Layouts. *IUI 2019*
+- Langerak, T. et al. (2024). MARLUI: Multi-Agent Reinforcement Learning for Adaptive Point-and-Click UIs. *ACM TOCHI 2024*
 - Wu, J. et al. (2024). UIClip. *UIST 2024*
