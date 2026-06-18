@@ -64,6 +64,11 @@ aim/frontend/node_modules/
 aim/
 ueyes/
 
+# UEyes full dataset (12.9 GB, downloaded from Zenodo record 8010312, do not commit)
+ueyes/dataset_full/
+UEyes_dataset.zip
+**/UEyes_dataset/
+
 # User uploads (runtime artefacts)
 stage1/data/uploads/
 
