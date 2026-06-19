@@ -50,6 +50,90 @@ _saliency_cache_max = 32          # max distinct images kept for saliency
 _visual_cache = OrderedDict()     # image_hash -> visual complexity results dict
 _visual_cache_max = 64            # max distinct images kept for visual features
 
+# Empirical GUI reference distribution (mean / std / percentiles per feature),
+# computed by build_feature_norms.py over 1,485 real GUI screenshots
+# (495 web + 495 mobile + 495 desktop). It lets the pipeline express each
+# feature value as a neutral z-score / percentile relative to the typical GUI.
+# Loaded lazily once and cached for the process lifetime.
+_FEATURE_NORMS_PATH = Path(__file__).parent / "data" / "results" / "feature_norms.json"
+_feature_norms = None
+
+
+def _load_feature_norms():
+    """Load the GUI reference distribution from disk (cached). Returns a dict
+    with ``meta`` and ``features`` keys; an empty structure if unavailable."""
+    global _feature_norms
+    if _feature_norms is None:
+        try:
+            with open(_FEATURE_NORMS_PATH) as f:
+                _feature_norms = json.load(f)
+        except (OSError, ValueError):
+            _feature_norms = {"meta": {}, "features": {}}
+    return _feature_norms
+
+
+def _empirical_percentile(stats, value):
+    """Estimate the percentile of ``value`` via piecewise-linear interpolation
+    over the stored reference quantiles (min, p5, p25, p50, p75, p95, max)."""
+    anchors = [
+        (stats["min"], 0.0), (stats["p5"], 5.0), (stats["p25"], 25.0),
+        (stats["p50"], 50.0), (stats["p75"], 75.0), (stats["p95"], 95.0),
+        (stats["max"], 100.0),
+    ]
+    if value <= anchors[0][0]:
+        return 0.0
+    if value >= anchors[-1][0]:
+        return 100.0
+    for (x0, p0), (x1, p1) in zip(anchors, anchors[1:]):
+        if x0 <= value <= x1:
+            if x1 == x0:
+                return p1
+            return p0 + (p1 - p0) * (value - x0) / (x1 - x0)
+    return 50.0
+
+
+def _comparison_band(z):
+    """Map a z-score to a neutral, direction-aware band label."""
+    az = abs(z)
+    if az < 1.0:
+        return "typical"
+    if az < 2.0:
+        return "above_typical" if z > 0 else "below_typical"
+    return "far_above_typical" if z > 0 else "far_below_typical"
+
+
+def compare_to_reference(feature_values):
+    """Compare measured feature values against the empirical GUI reference.
+
+    Args:
+        feature_values: mapping of ``feature_key -> value``. Keys without a
+            reference entry (or with zero std) are skipped.
+
+    Returns:
+        Mapping of ``feature_key -> {value, mean, std, z, percentile, band, n}``.
+    """
+    norms = _load_feature_norms().get("features", {})
+    out = {}
+    for key, value in feature_values.items():
+        stats = norms.get(key)
+        if not stats or not stats.get("std"):
+            continue
+        try:
+            v = float(value)
+        except (TypeError, ValueError):
+            continue
+        z = (v - stats["mean"]) / stats["std"]
+        out[key] = {
+            "value": v,
+            "mean": stats["mean"],
+            "std": stats["std"],
+            "z": z,
+            "percentile": _empirical_percentile(stats, v),
+            "band": _comparison_band(z),
+            "n": stats.get("n"),
+        }
+    return out
+
 
 def _as_bool(value, default=False):
     if value is None:
@@ -627,6 +711,14 @@ def cognitive_load():
             cognitive_load_score=adjusted_score,
         )
 
+        # Per-feature comparison against the empirical GUI reference distribution
+        # (z-score / percentile vs. the typical GUI over 1,485 screenshots).
+        reference_input = dict(vis_results)
+        if saliency_dict:
+            reference_input.update(saliency_dict)
+        reference = compare_to_reference(reference_input)
+        reference_meta = _load_feature_norms().get("meta", {})
+
         return jsonify({
             "filename": file.filename,
             "visual_features": vis_results,
@@ -650,6 +742,8 @@ def cognitive_load():
             "full_feature_vector": extended_vector,
             "vector_dimensions": f"v({len(v)}) + s(5) + h({len(h)}) + t({len(t)}) + p({len(p)}) = {len(extended_vector)}",
             "coherence": coherence,
+            "reference": reference,
+            "reference_meta": reference_meta,
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500

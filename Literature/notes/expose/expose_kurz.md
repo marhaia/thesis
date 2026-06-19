@@ -28,7 +28,7 @@ Die vorliegende Arbeit adressiert dieses Problem durch eine **zweistufige Erweit
 
 Die Pipeline gliedert sich in zwei Stufen:
 
-**Stage 1 — Task-unabhängige visuelle Komplexitätsextraktion:** Aus dem GUI-Screenshot wird ein 8-dimensionaler Feature-Vektor berechnet (Shannon Entropie, Edge Density, Information Clutter, Layout Symmetry, Chromatic Coherence, Visual Hierarchy, Interactive Element Density). Diese Stufe ist task- und nutzungsunabhängig und direkt in die AIM-Infrastruktur integrierbar.
+**Stage 1 — Task-unabhängige visuelle Komplexitätsextraktion:** Aus dem GUI-Screenshot wird ein 8-dimensionaler Feature-Vektor berechnet (Shannon Entropie, Edge Density, Feature Congestion, Subband Entropy, Layout Symmetry, Chromatic Coherence, Visual Hierarchy, Interactive Element Density). Diese Stufe ist task- und nutzungsunabhängig und direkt in die AIM-Infrastruktur integrierbar.
 
 **Stage 2 — Task-konditionierte Multi-Output-Vorhersage:** Der Feature-Vektor wird mit einem Task Descriptor und einem optionalen User Profile (Big Five Persönlichkeitsmerkmale) zu drei simultanen Outputs kombiniert: (1) Saliency Map, (2) Fixationsverteilung, (3) Cognitive Load Index (0–100). Die drei Heads werden durch einen Coherence-Term gekoppelt, der physikalisch inkonsistente Kombinationen bestraft.
 
@@ -38,7 +38,7 @@ Das theoretische Fundament bildet die **Computational Rationality** (CR) nach Ou
 
 ## 4. Empirische Validierung
 
-Zur Validierung werden zwei Datengrundlagen genutzt: (1) ein bestehender Pilotdatensatz (N=32, Eye-Tracking + NASA-TLX, automotive HMI, zwei Fahraufgaben) zur Kalibrierung von Stage 1; (2) eine geplante neue Studie (N≈30, within-subjects, 8–10 automotive GUI Screenshots, 2–3 Tasks pro Screenshot). Verglichen werden drei Baselines: Stage 1 allein (lineare Regression), Stage 2 ohne Coherence-Term, und ein Single-Output-Modell (nur Load).
+Zur Validierung werden zwei Datengrundlagen genutzt: (1) ein bestehender Pilotdatensatz (N=32, Eye-Tracking + NASA-TLX, automotive HMI, zwei Fahraufgaben) zur Kalibrierung von Stage 1; (2) eine geplante empirische Validierung, deren genaues Format noch offen ist: **Option A** (kontrollierte Nutzerstudie, N≈30, within-subjects, Eye-Tracking + NASA-TLX) oder **Option B** (strukturierte Experteninterviews, N≈8–12 UX-/HMI-Expert:innen, qualitatives Walkthrough-Protokoll). Verglichen werden drei Baselines: Stage 1 allein (lineare Regression), Stage 2 ohne Coherence-Term, und ein Single-Output-Modell (nur Load).
 
 ---
 

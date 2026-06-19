@@ -52,7 +52,7 @@ Kein existierendes System kombiniert: (a) task-unabhängige, erklärbare Komplex
 
 ### 3.1 Pipeline-Architektur
 
-**Stage 1:** Task-unabhängige visuelle Komplexitätsextraktion aus GUI-Screenshot → $v \in \mathbb{R}^8$ (Shannon Entropie, Edge Density, Information Clutter nach Rosenholtz et al. 2007, Layout Symmetry nach Miniukovich & De Angeli 2015, Chromatic Coherence, Visual Hierarchy, Element Density). Direkt in AIM integrierbar.
+**Stage 1:** Task-unabhängige visuelle Komplexitätsextraktion aus GUI-Screenshot → $v \in \mathbb{R}^8$ (Shannon Entropie, Edge Density, Feature Congestion nach Rosenholtz et al. 2007, Subband Entropy nach Rosenholtz et al. 2007, Layout Symmetry nach Miniukovich & De Angeli 2015, Chromatic Coherence nach Hasler & Süsstrunk 2003, Visual Hierarchy, Element Density). Direkt in AIM integrierbar.
 
 **Stage 2:** Input: $v$ + Task Descriptor + User Profile (optional) → 3 simultane Outputs:
 

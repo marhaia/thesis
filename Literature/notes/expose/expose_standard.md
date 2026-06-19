@@ -1,158 +1,190 @@
-# Exposé (Standardversion) — ~4 Seiten
+# Exposé (Standard Version) — ~4 Pages
 
-**Arbeitstitel:** Integrating Cognitive Predictive Metrics into the AIM Platform for Automated GUI Evaluation  
-**Verfasserin:** Hannah  
-**Studiengang:** User Experience Design  
-**Betreuer:** Gerhard Graf und Prof. Dr. Christian Sturm  
-**Datum:** Juni 2026
-
----
-
-## 1. Einleitung und Problemstellung
-
-Die automatisierte Bewertung von graphischen Benutzeroberflächen (GUIs) ist ein zentrales Problem der HCI-Forschung: Designer:innen benötigen skalierbare, reproduzierbare Qualitätsindikatoren, ohne für jede Designentscheidung eine aufwändige Nutzerstudie durchführen zu müssen. Mit der Aalto Interface Metrics (AIM) Plattform existiert ein etablierter Ansatz, der aus statischen Screenshots wahrnehmungsbasierte Metriken wie visuelle Unordnung (Clutter), Salienz und Symmetrie berechnet (Oulasvirta et al., 2018). Diese Metriken sind reproducierbar und objektiv — sie erfassen jedoch ausschließlich die physikalischen Eigenschaften des Bildes, nicht das Zusammenspiel aus Interfacestruktur, Nutzungskontext und kognitiver Kapazität der Nutzerin.
-
-Diese Lücke ist nicht trivial. Das et al. (2024) zeigen empirisch, dass kognitive Doppelbelastung (z.B. gleichzeitiges Fahren und Ablesen eines Dashboards) das Blickverhalten fundamental verändert: Nutzer:innen zeigen ausgeprägte Tunnelblick-Phänomene, übersehen periphere UI-Elemente und bilden verkürzte, ineffiziente Scanpaths. AIM kann dieses verhaltensrelevante Phänomen nicht vorhersagen, weil es keinen Task-Kontext und kein kognitives Modell enthält. Jiang et al. (2023) ergänzen, dass UI-spezifische Aufmerksamkeitsmuster — insbesondere ein starker Oben-Links-Bias in mobilen Interfaces — von taskagnostischen Salienzmodellen systematisch unterschätzt werden.
-
-Die vorliegende Masterarbeit fragt daher: **Does the integration of cognitive predictive metrics into the AIM platform improve the computational evaluation of GUIs?**
+**Working Title:** Integrating Cognitive Predictive Metrics into the AIM Platform for Automated GUI Evaluation  
+**Author:** Hannah  
+**Programme:** User Experience Design  
+**Supervisors:** Gerhard Graf and Prof. Dr. Christian Sturm  
+**Date:** June 2026
 
 ---
 
-## 2. Forschungsstand und theoretischer Rahmen
+## 1. Introduction and Problem Statement
 
-### 2.1 AIM und computationale GUI-Evaluation
+Automated evaluation of graphical user interfaces (GUIs) is a central challenge in HCI research: designers need scalable, reproducible quality indicators without having to conduct a costly user study for every design decision. This is particularly critical in safety-relevant contexts such as automotive HMI, where a poorly designed dashboard can increase cognitive load and compromise driver safety. The Aalto Interface Metrics (AIM) platform provides an established approach that computes perception-based metrics such as visual clutter, salience, and symmetry from static screenshots (Oulasvirta et al., 2018). These metrics are reproducible and objective — but they capture only the physical properties of the image, not the interplay between interface structure, usage context, and the user's cognitive capacity. Das et al. (2024) show empirically that cognitive dual-task load (e.g., simultaneously driving and reading a dashboard) fundamentally alters gaze behaviour: users exhibit pronounced tunnel vision, miss peripheral UI elements, and form shorter, less efficient scanpaths. AIM cannot predict this behaviourally relevant phenomenon because it contains neither task context nor a cognitive model. Jiang et al. (2023) further demonstrate that UI-specific attention patterns across interface types are systematically underestimated by task-agnostic saliency models.
 
-AIM (Oulasvirta et al., 2018) ist eine Open-Source-Plattform, die ca. 20 wahrnehmungsbasierte Metriken aus GUI-Screenshots berechnet. Ergänzende Arbeiten wie UiLab (Burny & Vanderdonckt, 2021) und Criticmate (Ko et al., 2026) erweitern den Evaluierungsrahmen um Konsistenz- und mehrstufige Kritikprozesse. UIClip (Wu et al., 2024) zeigt, dass datengetriebene CLIP-Modelle GUI-Qualitätsurteile erlernen können — liefern aber keinen mechanistischen Erklärungsrahmen und keine Verhaltensvorhersage.
-
-### 2.2 Computational Rationality als theoretische Grundlage
-
-Das Rahmenwerk der Computational Rationality (CR) nach Oulasvirta, Jokinen und Howes (2022) ersetzt regelbasierte Heuristiken (GOMS, ACT-R-Rezepte) durch sequentielle Entscheidungstheorie: Interaktion wird als optimale Kontrollpolitik modelliert, die kognitive, wahrnehmungsbasierte und motorische Grenzen balanciert. Formalisiert als Partially Observable Markov Decision Process (POMDP), gelöst via Reinforcement Learning, erklärt CR den Übergang von Novizen-geleiteter, bottom-up-Suche zu expert-geführtem, top-down-Memorabruf (Jokinen et al., 2020). Aktuelle CR-Anwendungen umfassen Gaze-basierte Selektion (Chen et al., 2021), Touchscreen-Tippen (Shi et al., 2024), task-konditionierte Scanpaths (Shi et al., 2025), Attention-Switching in Dual-Task-Szenarien (Lingler et al., 2024) sowie Adaptive UI via Multi-Agent RL (Langerak et al., 2024).
-
-### 2.3 Salienz, Scanpaths und Cognitive Load
-
-Scanpath-Vorhersage hat sich von taskagnostischen Salienzmodellen (DeepGaze II, Kümmerer et al., 2017) zu task-konditionierten Ansätzen entwickelt: SeekUI (Guo et al., 2026) und Chartist (Shi et al., 2025) zeigen, dass task-spezifische Konditionierung die Vorhersagequalität signifikant verbessert. EyeFormer (Jiang et al., 2024) demonstriert die Machbarkeit personalisierter Scanpaths durch Few-Shot-Konditionierung. Für die simultane Vorhersage mehrerer Outputs (Geschwindigkeit, Genauigkeit, Aufwand aus einem Modell) liefert Miazga et al. (2026) methodische Grundlagen.
-
-### 2.4 Lücke im Forschungsstand
-
-Keine existierende Arbeit kombiniert: (a) task-unabhängige Komplexitätsextraktion als erklärbare Eingangsschicht, (b) task-konditionierte Verhaltensvorhersage mit (c) einem expliziten Coherence-Term zwischen Salienz, Scanpaths und Cognitive Load — integriert in eine bestehende GUI-Evaluierungsplattform (AIM).
+The present master's thesis therefore asks: **Does the integration of cognitive predictive metrics into the AIM platform improve the computational evaluation of GUIs?**
 
 ---
 
-## 3. Forschungsdesign und Methodik
+## 2. Related Work and Theoretical Framework
 
-### 3.1 Architektur: Zweistufige Pipeline
+### 2.1 AIM and Computational GUI Evaluation
 
-**Stage 1 — Task-unabhängige Komplexitätsextraktion**
+AIM (Oulasvirta et al., 2018) is an open-source platform that computes a range of perception-based metrics from GUI screenshots. Related tools such as UiLab (Burny & Vanderdonckt, 2021) and Criticmate (Ko et al., 2026) extend the evaluation framework with consistency checks and multi-stage critique processes. UIClip (Wu et al., 2024) demonstrates that data-driven CLIP models can learn GUI quality judgements — but provide no mechanistic explanatory framework and no behavioural prediction. A systematic review of computational models specifically for automotive HMI design (Lorenz et al., 2024) finds that none of the 34 surveyed approaches operates on generic screenshots, and only one accounts for individual user characteristics — precisely the two gaps the present pipeline addresses.
 
-Input: GUI-Screenshot (automotive HMI). Output: Visueller Feature-Vektor $v \in \mathbb{R}^8$.
+### 2.2 Computational Rationality as Theoretical Foundation
 
-| Feature | Beschreibung | Referenz |
-|---------|-------------|---------|
-| Shannon Entropie | Informationsdichte (Graustufenhistogramm) | Shannon (1948) |
-| Edge Density | Anteil Kantenpixel via Canny | — |
-| Information Clutter | Feature Congestion + Subband Entropy | Rosenholtz et al. (2007) |
-| Layout Symmetry | Vertikale/horizontale Balance | Miniukovich & De Angeli (2015) |
-| Chromatic Coherence | Farbpaletten-Varianz | — |
-| Visual Hierarchy | Größengradient, Kontrast, Gruppenstruktur | Tuch et al. (2009) |
-| Element Density | Anzahl interaktiver Elemente pro Fläche | — |
+The Computational Rationality (CR) framework by Oulasvirta, Jokinen, and Howes (2022) replaces rule-based engineering models (such as GOMS or ACT-R, which describe interaction as fixed rule sequences) with sequential decision theory: interaction is modelled as an optimal control policy that balances cognitive, perceptual, and motor constraints. Formalised as a Partially Observable Markov Decision Process (POMDP) and solved via Reinforcement Learning, CR explains the transition from novice-driven, bottom-up search to expert-guided, top-down memory retrieval (Jokinen et al., 2020). Current CR applications include gaze-based selection (Chen et al., 2021), touchscreen typing (Shi et al., 2024), task-conditioned scanpaths (Shi et al., 2025), attention switching in dual-task scenarios (Lingler et al., 2024), adaptive UI via multi-agent RL (Langerak et al., 2024), driver adaptation to assistance systems (Jokinen & Kujala, 2021), and dual-task attention allocation on head-mounted displays (Bai et al., 2024) — the latter two directly establishing the automotive dual-task context as a CR-tractable problem.
 
-Stage 1 ist taskagnostisch und direkt in die bestehende AIM-Infrastruktur integrierbar.
+### 2.3 Saliency, Scanpaths, and Cognitive Load
 
-**Stage 2 — Task-konditionierte Multi-Output-Vorhersage**
+Scanpath prediction has evolved from task-agnostic saliency models (DeepGaze II, Kümmerer et al., 2017) towards task-conditioned approaches: SeekUI (Guo et al., 2026) and Chartist (Shi et al., 2025) show that task-specific conditioning significantly improves prediction quality. EyeFormer (Jiang et al., 2024) demonstrates the feasibility of personalised scanpaths through few-shot conditioning. That cognitive load measurably reshapes scanpaths is empirically established by Krejtz et al. (2018), who show that fixation-based pupillometry and microsaccade magnitude reliably discriminate task difficulty (η²≈0.16–0.17) — validating eye-tracking as a cognitive load measure for both the HCEye dataset and the planned user study. Das et al. (2024) provide the most direct empirical precedent for the pipeline's target domain: in automotive dual-task conditions, cognitive load produces tunnel vision, shorter fixations, and missed peripheral elements — the exact behavioural pattern Stage 2 is trained to predict. Cognitive load itself is most commonly operationalised via the NASA Task Load Index (Hart & Staveland, 1988), a multi-dimensional subjective workload measure that serves as the validation target for Head 3 of Stage 2. For the simultaneous prediction of multiple outputs (speed, accuracy, effort from one model), Miazga et al. (2026) provide methodological foundations.
 
-Input: $v$ (Stage 1) + Task Descriptor (kategorial) + User Profile (Big Five, optional).  
-Output: Drei simultane Heads mit Mutual Coherence Constraints.
+### 2.4 Research Gap
 
-$$L = \lambda_1 L_\text{sal} + \lambda_2 L_\text{fix} + \lambda_3 L_\text{load} + \lambda_\text{coh} \cdot L_\text{coherence}$$
+No existing work combines: (a) task-independent complexity extraction as an interpretable input layer, (b) task-conditioned behavioural prediction with (c) an explicit post-prediction cross-validation layer to check the behavioural coherence between structural, attentional, and cognitive load outputs — integrated into an established GUI evaluation platform (AIM).
 
-| Head | Output | Validierungsmetrik |
-|------|--------|-------------------|
-| Head 1 | Saliency Map | AUC-Judd, NSS, SIM, CC |
-| Head 2 | Fixationsverteilung / Scanpath-Entropie | DTW, TDE |
-| Head 3 | Cognitive Load Index (0–100) | Korrelation mit NASA-TLX |
+---
 
-Der **Coherence-Term** $L_\text{coherence}$ bestraft physikalisch inkonsistente Ausgaben (z.B. hohe Salienz-Dispersion bei gleichzeitig niedriger Fixationsanzahl). Die Kopplung der drei Heads ist das methodische Novum der Arbeit.
+## 3. Research Design and Methodology
 
-**User Profile:** LLM-basierte Simulation auf Big-Five-Trait-Level ist methodisch vertretbar (Serapio-García et al., 2023; Argyle et al., 2023). State-based Simulation (akuter Stress, Fatigue) wird explizit als nicht-validiert deklariert (Kapania et al., 2025).
+### 3.1 Architecture: Two-Stage Pipeline
 
-### 3.2 Empirische Validierung
+The pipeline converts a GUI screenshot into three behavioural estimates. Figure 1 shows the overall data flow. A screenshot is processed by two parallel modules — a task-agnostic visual complexity extractor (Stage 1) and a deep saliency model (UMSI) — whose outputs are combined into an extended feature vector. This vector is then passed to Stage 2, which uses task context and an optional user profile to predict three interaction quality indicators. In the current training-free implementation, Stage 2 predictions are derived from HCEye-calibrated empirical coefficients; once validation study data are available, a trained regression model replaces this component. The decoupled architecture ensures that Stage 1 outputs are reusable across task contexts and that each module can be updated independently.
 
-**Datenbasis 1 — Pilotdatensatz (bereits vorhanden):**
-- N=32, Eye-Tracking + NASA-TLX
-- Automotive HMI, zwei Fahraufgaben (Lane-Change, Emergency Braking)
-- Verwendung: Kalibrierung Stage 1; explorativ für Stage 2
+**Stage 1 — Task-Independent Visual Complexity Extraction**
 
-**Datenbasis 2 — Geplante Nutzerstudie:**
-- N≈30–35, within-subjects Design
-- 8–10 automotive GUI Screenshots (Komplexitätsvariation: minimalistisch → informationsdicht)
-- 2–3 Tasks pro Screenshot (Visual Search, Monitoring, Navigation)
-- Highway-Szenario bei Konstantgeschwindigkeit (reduzierter Driving-Load)
-- ~24 Zellen/Teilnehmer
+Stage 1 computes eight perceptual features from a raw screenshot using established image-analysis models from the GUI evaluation and visual perception literature; the majority are implemented within the open-source AIM framework (Oulasvirta et al., 2018). Output: visual complexity vector $v \in \mathbb{R}^8$.
 
-**Baseline-Vergleiche:**
+| Feature | Description | Source |
+|---------|-------------|--------|
+| Shannon Entropy | Information density (greyscale histogram) | Shannon (1948) |
+| Edge Density | Proportion of edge pixels via Canny | Standard image processing |
+| Feature Congestion | Multi-channel clutter: colour, contrast, orientation | Rosenholtz et al. (2007) |
+| Subband Entropy | Redundancy via steerable pyramid decomposition | Rosenholtz et al. (2007) |
+| Layout Symmetry | Vertical/horizontal balance of elements | Miniukovich & De Angeli (2015) |
+| Chromatic Coherence | Colour palette variance | Hasler & Süsstrunk (2003) |
+| Visual Hierarchy | Size gradient, contrast, grouping structure | Tuch et al. (2009) |
+| Element Density | Number of interactive controls per area | AIM framework |
 
-| Baseline | Beschreibung |
+**Saliency Module (UMSI) — Spatial Attention Prediction**
+
+In parallel, the original screenshot is passed through the UMSI deep saliency model (a CNN-based architecture), which produces a 2D saliency map. Five scalar features are extracted from this map ($s \in \mathbb{R}^5$: dispersion, peak count, centre bias, entropy, coverage) and appended to $v$. The saliency map is delivered directly by UMSI (zero-shot, no retraining); it constitutes the pipeline's spatial attention output and is validated against eye-tracking fixation densities to assess how well the pre-trained model transfers to BMW HMI screenshots. Stage 2 does not retrain or modify UMSI; it operates on the derived scalar features only.
+
+**Stage 2 — Task-Conditioned Prediction**
+
+Stage 2 converts $x \in \mathbb{R}^{19}$ = [$v \in \mathbb{R}^8$ | $s \in \mathbb{R}^5$ | $h \in \mathbb{R}^6$] + Task Descriptor + User Profile into three interaction quality scores. Note: $h$ is computed directly from the screenshot image using empirical sensitivity coefficients derived from the HCEye dataset — no participant eye-tracking data is required at inference time.
+
+**Current implementation (training-free):** Predictions are derived directly from the HCEye-calibrated sensitivity features $h \in \mathbb{R}^6$ via empirically grounded coefficient mappings (Das et al., 2024). This requires no training data and is fully functional as a screening tool from day one. Task Descriptor and User Profile apply ordinal modifiers on top of the base prediction.
+
+**Planned extension (requires validation study data):** Once empirical ground-truth labels are available from the validation study (Option A or C), the coefficient-based predictions are replaced by a trained multi-output regression model (Ridge Regression as baseline, Random Forest and XGBoost as primary estimators, cross-validated). The model architecture is already implemented and the feature vector $x \in \mathbb{R}^{19}$ serves as its input unchanged.
+
+| Output | Source | Validation Metric |
+|--------|--------|-------------------|
+| Saliency Map (2D, spatial attention) | UMSI — pre-trained, zero-shot | AUC-Judd, NSS, SIM, CC (domain transfer) |
+| Search Efficiency + Attention Demand (scalars) | HCEye rule-based (current) / Stage 2 regression (planned) | Correlation with eye-tracking AOI metrics |
+| Cognitive Load Index (0–100) | HCEye rule-based (current) / Stage 2 regression (planned) | Correlation with NASA-TLX |
+
+*UMSI is applied without retraining. Stage 2 regression is activated only after validation study data are collected.*
+
+**Coherence Check**
+
+After prediction, a rule-based coherence check flags physically inconsistent output combinations. Three rules are implemented, each grounded in empirical literature: (1) high saliency dispersion with implausibly low fixation count (Rosenholtz et al., 2007; Jokinen et al., 2020); (2) concentrated saliency with high cognitive load (Das et al., 2024; Tuch et al., 2009); (3) high predicted search time with low cognitive load index (Hart & Staveland, 1988). Incoherent combinations are flagged as warnings; they do not invalidate the prediction but indicate the input is at the boundary of the model's calibration range. This rule-based consistency layer is the structural novelty of the pipeline: no existing GUI evaluation tool cross-validates its outputs across multiple behavioural dimensions.
+
+**User Profile:** Big Five trait-level presets (Neutral, Focused/Conscientious, Exploratory/Open, Social/Extraverted, Stress-Sensitive) modulate the Stage 2 prediction via ordinal weight adjustments. LLM-based simulation at trait level is methodologically defensible (Serapio-García et al., 2023; Argyle et al., 2023). State-based simulation (acute stress, fatigue) is explicitly declared as non-validated (Kapania et al., 2025).
+
+### 3.2 Empirical Validation
+
+**Data Source 1 — HCEye Dataset (Das et al., 2024; publicly available):**
+- N=27, eye-tracking + dual-task cognitive load manipulation, 150 web UI screenshots
+- Use: exploratory calibration of Stage 1 feature norms; benchmark for saliency prediction (Head 1)
+- Limitation: web UIs, not automotive HMI — transferability to the target domain is an open question
+
+**Data Source 2 — Planned Empirical Validation:**
+
+> **Open question — supervisor input requested:** The form of empirical validation has not yet been decided. The following options are under consideration; the final choice depends on feasibility, lab access, and timing, which I would like to discuss.
+>
+> - **Option A — User Study** (N≈15–30, within-subjects, eye-tracking + NASA-TLX, automotive HMI simulator): provides quantitative validation of predictive accuracy and enables the variance decomposition between Stage 1 and Stage 2.
+> - **Option B — Expert Interviews** (N≈5–12 automotive UX/HMI practitioners, structured walkthrough protocol): assesses plausibility and practical utility of the pipeline outputs from a design perspective.
+> - **Option C — Sequential Mixed Methods** (reduced user study + focused expert panel): combines quantitative prediction validation with qualitative practitioner assessment, at the cost of greater organisational effort.
+>
+> No decision has been made. I would welcome your guidance on which approach is most appropriate given the timeline and available resources.
+
+**Baseline Comparisons** *(require Option A or C — quantitative data collection):*
+
+| Baseline | Description |
 |---------|-------------|
-| B1 | Stage 1 allein + lineare Regression |
-| B2 | Stage 2 ohne Coherence-Term ($\lambda_\text{coh} = 0$) |
-| B3 | Single-Output-Modell (nur Head 3: Load) |
+| B1 | Stage 1 alone + linear regression |
+| B2 | Stage 2 without coherence check |
+| B3 | Single-output model (Head 3: load only) |
 
-**Kernauswertung:**
-- Varianzdekomposition: Welchen Anteil erklärt Stage 1 allein? Was bringt Stage 2 zusätzlich?
-- Coherence-Gewinn: B2 vs. vollständiges Stage 2
-- Null-Ergebnisse werden explizit publiziert
+**Core Analysis** *(require Option A or C):*
+- Variance decomposition: how much does Stage 1 explain alone? What does Stage 2 add?
+- Coherence gain: B2 vs. full Stage 2
+- Null results will be reported explicitly
 
----
-
-## 4. Erwartete Beiträge
-
-**Technisch:** Erste Integration eines Cognitive Load Predictors in die AIM-Pipeline — als Open-Source-Erweiterung, Web-App oder Figma-Plugin.
-
-**Empirisch:** Varianzdekomposition task-unabhängiger Komplexität (Stage 1) vs. task-konditionierter Verhaltensvorhersage (Stage 2) in einem kontrollierten Automotive-HMI-Setting.
-
-**Theoretisch:** Überprüfung der CR-These, dass kognitive Belastung als Outcome einer optimalen Kontrollpolitik über visuelle Interface-Eigenschaften vorhergesagt werden kann.
-
-**Praktisch:** Screening-Werkzeug für frühe Designphasen — kein Ersatz für Nutzerstudien, aber skalierbare erste Einschätzung.
+If Option B (expert interviews) is chosen, baseline comparisons and quantitative model evaluation are replaced by a structured practitioner assessment of prediction plausibility and design utility.
 
 ---
 
-## 5. Zeitplan
+## 4. Expected Contributions
 
-> *Hinweis: Die gesamte Pipeline (Stage 1, Stage 2, API-Integration, Salienzmodell, kognitive Nutzermodelle, Coherence-Check, User Profile) ist bereits vollständig implementiert. Die verbleibende Arbeit umfasst Datenerhebung, Modelltraining auf echten Daten und das Schreiben der Thesis.*
+### Academic Contributions
 
-| Phase | Inhalt | Zeitraum |
-|-------|--------|----------|
-| ~~Implementierung~~ | Stage 1+2, Flask-API, AIM-Integration | ✅ abgeschlossen |
-| Literatur | Tier 1+2 Paper lesen, Lücken schließen | Juni 2026 |
-| Studie (Vorbereitung) | Rekrutierung, Ethikantrag, Stimulusmaterial, Pilottest | Juli 2026 |
-| Studie (Erhebung) | Haupterhebung N≈30–35, Eye-Tracking + NASA-TLX | Aug 2026 |
-| Auswertung | Eye-Tracking-Prozessierung, Varianzdekomposition Stage 1 vs. Stage 2 | Sep 2026 |
-| Modell-Training | Training auf echten Daten, Baseline-Vergleiche (B1–B3) | Okt 2026 |
-| Schreiben | Thesis-Kapitel 1–7 verfassen | Nov 2026 |
-| Abgabe | — | **Dez 2026** |
+**Theoretical:** Empirical test of the Computational Rationality hypothesis that cognitive load can be predicted as the outcome of an optimal control policy over visual interface properties.
 
----
+**Empirical** *(contingent on validation Option A or C):* Variance decomposition of task-independent visual complexity (Stage 1) vs. task-conditioned behavioural prediction (Stage 2) in a controlled automotive HMI setting — establishing which layer of the pipeline carries explanatory weight. If Option B (expert interviews) is chosen instead, this contribution is replaced by a qualitative plausibility assessment of the pipeline outputs from a practitioner perspective.
 
-## 6. Eingrenzungen und Limitationen
+**Methodological:** First integration of a multi-dimensional GUI evaluation pipeline that cross-validates structural, attentional, and cognitive load estimates through a post-prediction, rule-based coherence layer — making divergent model outputs visible as design warnings rather than silently absorbing them into a joint loss.
 
-- Domänenbeschränkung: ausschließlich automotive HMI-Screenshots; keine Generalisierung auf andere UI-Typen ohne eigene Validierung
-- Cognitive Load Index ≠ NASA-TLX; der Output ist ein berechneter Interaktionskomplexitäts-Index
-- LLM User Simulation: nur Trait-Level (Big Five), kein State-Level (Fatigue, Stress)
-- Pilotdatensatz: Single-GUI-Design ohne Varianzdekomposition; nur für Kalibrierung geeignet
+### Practical Deliverables
+
+**Two-Stage Pipeline:** The pipeline itself is the primary deliverable — functioning as a pre-deployment screening tool for automotive HMI designers. It provides a scalable first estimate of cognitive load risk at the layout stage, without requiring eye-tracking infrastructure or a user study.
+
+**Open-Source AIM Extension:** The implementation is released as an AIM-compatible module, enabling adoption as a web service or design tool integration.
 
 ---
 
-## 7. Literatur (Auswahl)
+## 5. Timeline
 
-- Oulasvirta, A. et al. (2018). Aalto Interface Metrics (AIM). *UIST 2018*
-- Oulasvirta, A. et al. (2022). Computational Rationality as a Theory of Interaction. *ACM TOCHI*
-- Das, D. et al. (2024). HCEye: Dynamics of Visual Highlighting and Cognitive Load. *CHI 2024*
-- Jiang, M. et al. (2023). UEyes: Understanding Visual Saliency across UI Types. *CHI 2023*
-- Jokinen, J. et al. (2020). Adaptive Feature Guidance. *CHI 2020*
-- Guo, Z. et al. (2026). SeekUI. *CHI 2026*
-- Ko, J. et al. (2026). Criticmate. *CHI 2026*
-- Wu, J. et al. (2024). UIClip. *UIST 2024*
-- Shi, D. et al. (2024). CRTypist. *CHI 2024*
-- Shi, D. et al. (2025). Chartist. *CHI 2025*
-- Kapania, S. et al. (2025). Simulacrum of Stories. *CHI 2025*
-- Langerak, T. et al. (2024). MARLUI: Multi-Agent Reinforcement Learning for Adaptive Point-and-Click UIs. *ACM TOCHI 2024*
+> *Implementation will make use of AI-assisted development (large language model coding tools) throughout, in line with current practice in computational HCI research.*
+
+| Phase | Content | Period |
+|-------|---------|--------|
+| Exposé | Finalise and submit exposé; supervisor meeting | June 2026 |
+| Literature | Finalize reading, close remaining gaps | June 2026 |
+| Registration | Official thesis registration | July 2026 |
+| Implementation (finalization) | Complete remaining 10%, integration testing, AIM compatibility | July 2026 |
+| Study (Preparation) | Ethics approval (parallel), recruitment, stimuli, pilot test | July–Aug 2026 |
+| Study (Data Collection) | Main study N≈15–30 (form TBD, see Section 3.2) | Aug–Sep 2026 |
+| Analysis & Training | Eye-tracking processing, model training, baseline comparisons B1–B3 *(if Option A or C; replaced by expert interview analysis if Option B)* | Sep–Oct 2026 |
+| Writing | Thesis chapters 1–7 (begins in parallel with analysis) | Oct–Nov 2026 |
+| Submission | — | **End of Dec 2026** |
+
+---
+
+## 6. Scope and Limitations
+
+- Domain restriction: automotive HMI screenshots only; generalisation to other UI types requires separate validation
+- Cognitive Load Index ≠ NASA-TLX; the output is a computed interaction complexity indicator
+- LLM user simulation: trait-level only (Big Five); state-based simulation (fatigue, acute stress) is not validated and should not be interpreted as such — the User Profile feature is exploratory; core validation rests on the structural and task-based inputs to Stage 2 (Kapania et al., 2025)
+- Pilot dataset: single-GUI design without complexity variation; suitable for calibration only
+
+---
+
+## 7. References
+
+- Oulasvirta, A. et al. (2018). Aalto Interface Metrics (AIM). *UIST 2018 Adjunct*.
+- Oulasvirta, A. et al. (2022). Computational Rationality as a Theory of Interaction. *ACM TOCHI*.
+- Das, D. et al. (2024). HCEye: Dynamics of Visual Highlighting and Cognitive Load. *ETRA 2024*.
+- Jiang, M. et al. (2023). UEyes: Understanding Visual Saliency across UI Types. *CHI 2023*.
+- Jokinen, J. et al. (2020). Adaptive Feature Guidance: Visual Search with Graphical Layouts. *CHI 2020*.
+- Jokinen, J.P.P. & Kujala, T. (2021). Modelling Drivers' Adaptation to Assistance Systems. *AutomotiveUI 2021*.
+- Lorenz, M. et al. (2024). Computational Models for In-Vehicle UI Design. *AutomotiveUI 2024*.
+- Krejtz, K. et al. (2018). Eye Tracking Cognitive Load Using Pupil Diameter and Microsaccades. *PLOS ONE*.
+- Guo, Z. et al. (2026). SeekUI. *CHI 2026*.
+- Shi, D. et al. (2024). CRTypist: Simulating Touchscreen Typing via Computational Rationality. *CHI 2024*.
+- Shi, D. et al. (2025). Chartist: Task-driven Eye Movement Control for Charts. *CHI 2025*.
+- Bai, Y. et al. (2024). Heads-Up Multitasker: Simulating Attention Switching on Optical HMDs. *CHI 2024*.
+- Langerak, T. et al. (2024). MARLUI: Multi-Agent Reinforcement Learning for Adaptive UIs. *ACM TOCHI*.
+- Wu, J. et al. (2024). UIClip. *UIST 2024*.
+- Ko, J. et al. (2026). Criticmate. *CHI 2026*.
+- Kapania, S. et al. (2025). Simulacrum of Stories. *CHI 2025*.
+- Miazga, M.P. et al. (2026). Log2Motion. *CHI 2026*.
+- Hart, S.G. & Staveland, L.E. (1988). Development of NASA-TLX. *Human Mental Workload*.
+- Hasler, D. & Süsstrunk, S.E. (2003). Measuring Colourfulness in Natural Images. *SPIE HVEI VIII*.
+- Miniukovich, A. & De Angeli, A. (2015). Computation of Interface Aesthetics. *CHI 2015*.
+- Rosenholtz, R. et al. (2007). Measuring Visual Clutter. *Journal of Vision*.
+- Tuch, A.N. et al. (2009). Visual Complexity of Websites. *CHI 2009*.
+- Serapio-García, G. et al. (2023). Personality Traits in LLMs. *arXiv*.
+- Argyle, L.P. et al. (2023). Out of One, Many. *Political Analysis*.
