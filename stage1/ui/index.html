@@ -615,6 +615,13 @@
         .feature-ref-badge.typical   { background: rgba(120,130,150,.18); color: var(--text-dim); }
         .feature-ref-badge.mild      { background: rgba(245,200,66,.12);  color: #f5c842; }
         .feature-ref-badge.strong    { background: rgba(245,144,59,.16);  color: #f5903b; }
+        .feature-ref-pct { color: var(--text); font-weight: 500; }
+        .feature-ref-z {
+            font-size: 10px;
+            opacity: .5;
+            font-variant-numeric: tabular-nums;
+            cursor: help;
+        }
         /* Design diagnosis box */
         .design-diagnosis {
             background: var(--surface2);
@@ -1604,25 +1611,58 @@
             return { ok:'#34c87a', warn:'#f5c842', high:'#f5903b', crit:'#f54b4b' }[sig.cls];
         }
 
+        // Classify a feature by its empirical rank in the reference set.
+        // Bands are based on the percentile (not the z-score) so the badge
+        // always agrees with the percentile shown next to it. The middle 50%
+        // of real GUIs counts as "typical"; the rest is mild / strong deviation.
+        function referenceBand(percentile) {
+            const pct = Math.round(percentile);
+            if (pct >= 90)      return { cls: 'strong',  word: 'well above typical' };
+            if (pct >= 75)      return { cls: 'mild',    word: 'above typical' };
+            if (pct >= 25)      return { cls: 'typical', word: 'typical' };
+            if (pct >= 10)      return { cls: 'mild',    word: 'below typical' };
+            return { cls: 'strong', word: 'well below typical' };
+        }
+
+        // Neutral bar colour for the reference percentile (no good/bad valence):
+        // grey = typical, amber = mild deviation, orange = strong deviation.
+        function refBandColor(percentile) {
+            const pct = Math.round(percentile);
+            if (pct >= 90 || pct < 10) return '#f5903b';
+            if (pct >= 75 || pct < 25) return '#f5c842';
+            return '#8a93a6';
+        }
+
+        // Turn a percentile rank into a plain-language sentence that needs no
+        // statistics knowledge. We avoid the word "percentile" and the awkward
+        // "0th / 3th" ordinals entirely. "reference GUIs" = the screenshots in
+        // our comparison set, not every GUI in existence. Examples:
+        //   pct 52 -> "higher than 52% of the reference GUIs"
+        //   pct  4 -> "lower than 96% of the reference GUIs"
+        //   pct  0 -> "among the lowest in the reference set"
+        //   pct 100-> "among the highest in the reference set"
+        function referenceComparison(percentile) {
+            const pct = Math.round(percentile);
+            if (pct <= 2)  return 'among the lowest in the reference set';
+            if (pct >= 98) return 'among the highest in the reference set';
+            if (pct >= 50) return `higher than ${pct}% of the reference GUIs`;
+            return `lower than ${100 - pct}% of the reference GUIs`;
+        }
+
         // Render the empirical reference comparison line for one feature.
         // `ref` is the per-feature object from the API: {z, percentile, n, ...}.
-        // Expresses how the analysed GUI compares to the typical GUI in the
-        // 1,485-screenshot reference set (neutral z-score + percentile).
+        // Leads with a plain-language badge + comparison sentence; the z-score
+        // (the raw standard-deviation distance) is kept small as a secondary detail.
         function referenceLine(ref) {
             if (!ref || ref.z === undefined || ref.z === null) return '';
             const z = ref.z;
-            const az = Math.abs(z);
             const pct = Math.round(ref.percentile);
-            let cls, word;
-            if (az < 1)      { cls = 'typical'; word = 'typical'; }
-            else if (az < 2) { cls = 'mild';    word = z > 0 ? 'above typical' : 'below typical'; }
-            else             { cls = 'strong';  word = z > 0 ? 'well above typical' : 'well below typical'; }
+            const band = referenceBand(pct);
             const zStr = (z >= 0 ? '+' : '') + z.toFixed(2);
             return `<div class="feature-ref">
-                <span class="feature-ref-badge ${cls}">${word}</span>
-                <span>z = ${zStr}</span>
-                <span style="opacity:.6;">·</span>
-                <span>${pct}th percentile vs. typical GUI</span>
+                <span class="feature-ref-badge ${band.cls}">${band.word}</span>
+                <span class="feature-ref-pct">${referenceComparison(pct)}</span>
+                <span class="feature-ref-z" title="z-score: standard deviations from the average GUI">z ${zStr}</span>
             </div>`;
         }
 
@@ -2074,7 +2114,7 @@
                 const meta = data.reference_meta || {};
                 if (data.reference && Object.keys(data.reference).length && meta.num_images) {
                     const cats = (meta.categories_included || []).join(' + ');
-                    provEl.innerHTML = `Each feature is compared to a reference distribution of <strong>${meta.num_images.toLocaleString()} real GUI screenshots</strong>${cats ? ` (${cats})` : ''}. <span style="opacity:.8;">z = standard deviations from the typical GUI; percentile = rank within the reference set.</span>`;
+                    provEl.innerHTML = `Each bar shows where this screen ranks among a reference set of <strong>${meta.num_images.toLocaleString()} GUI screenshots</strong>${cats ? ` (${cats})` : ''}. <span style="opacity:.8;"><em>Typical</em> = within the middle half of the reference set. The small "z" is the same distance measured in standard deviations.</span>`;
                     provEl.style.display = '';
                 } else {
                     provEl.style.display = 'none';
@@ -2085,9 +2125,23 @@
                 const info = featuresInfo.find(f => f.key === key) || {};
                 const val  = data.visual_features[key];
                 const norm = FEATURE_NORMS[key];
-                const pct  = Math.min(100, ((val - norm.min) / (norm.max - norm.min)) * 100);
-                const sig  = featureSignal(key, pct);
-                const col  = barColor(key, pct);
+                const ref  = data.reference ? data.reference[key] : null;
+                const hasRef = ref && ref.z !== undefined && ref.z !== null;
+                // When we have the empirical reference, it is the single source
+                // of truth: the bar shows the percentile rank among real GUIs and
+                // the old heuristic "Within range" badge is dropped to avoid two
+                // competing signals. Otherwise fall back to the range heuristic.
+                let barPct, col, signalBadge;
+                if (hasRef) {
+                    barPct = Math.max(2, Math.min(100, Math.round(ref.percentile)));
+                    col = refBandColor(ref.percentile);
+                    signalBadge = '';
+                } else {
+                    barPct = Math.min(100, ((val - norm.min) / (norm.max - norm.min)) * 100);
+                    col = barColor(key, barPct);
+                    const sig = featureSignal(key, barPct);
+                    signalBadge = `<span class="feature-signal ${sig.cls}">${sig.label}</span>`;
+                }
                 const dir  = FEATURE_DIRECTION[key] === 'higher_is_better'
                     ? '<span style="font-size:10px;color:var(--text-dim);">↑ higher = better</span>'
                     : '<span style="font-size:10px;color:var(--text-dim);">↑ higher = more load</span>';
@@ -2097,18 +2151,18 @@
                 const descText = info.description
                     ? `<div class="feature-desc">${info.description}${refText}</div>`
                     : '';
-                const refLine = referenceLine(data.reference ? data.reference[key] : null);
+                const refLine = referenceLine(ref);
                 return `
                     <div class="feature-row">
                         <div class="feature-info">
                             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                                 <div class="feature-name">${info.name || key}</div>
-                                <span class="feature-signal ${sig.cls}">${sig.label}</span>
+                                ${signalBadge}
                                 ${dir}
                             </div>
                             ${descText}
                             <div class="feature-bar-bg">
-                                <div class="feature-bar" style="width:${pct}%; background:${col};"></div>
+                                <div class="feature-bar" style="width:${barPct}%; background:${col};"></div>
                             </div>
                             ${refLine}
                         </div>
