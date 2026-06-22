@@ -168,7 +168,7 @@ If Option B (expert interviews) is chosen, baseline comparisons and quantitative
 - Oulasvirta, A. et al. (2022). Computational Rationality as a Theory of Interaction. *ACM TOCHI*.
 - Das, D. et al. (2024). HCEye: Dynamics of Visual Highlighting and Cognitive Load. *ETRA 2024*.
 - Jiang, M. et al. (2023). UEyes: Understanding Visual Saliency across UI Types. *CHI 2023*.
-- Jokinen, J. et al. (2020). Adaptive Feature Guidance: Visual Search with Graphical Layouts. *CHI 2020*.
+- Jokinen, J. et al. (2020). Adaptive Feature Guidance: Modelling Visual Search with Graphical Layouts. *International Journal of Human-Computer Studies, 136*, 102376.
 - Jokinen, J.P.P. & Kujala, T. (2021). Modelling Drivers' Adaptation to Assistance Systems. *AutomotiveUI 2021*.
 - Lorenz, M. et al. (2024). Computational Models for In-Vehicle UI Design. *AutomotiveUI 2024*.
 - Krejtz, K. et al. (2018). Eye Tracking Cognitive Load Using Pupil Diameter and Microsaccades. *PLOS ONE*.

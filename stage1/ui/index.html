@@ -213,6 +213,12 @@
             margin-bottom: 2px;
             font-size: 13px;
         }
+        .ref-item a.ref-doi {
+            color: var(--accent);
+            text-decoration: none;
+            word-break: break-all;
+        }
+        .ref-item a.ref-doi:hover { text-decoration: underline; }
         /* Contact */
         .contact-card {
             background: var(--surface);
@@ -248,7 +254,7 @@
         /* Layout */
         .grid-inputs {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
             gap: 24px;
             margin-bottom: 24px;
         }
@@ -561,6 +567,14 @@
             margin-left: 0;
             min-width: 88px;
             text-align: right;
+        }
+        /* Secondary raw measurement shown under the signed delta headline. */
+        .feature-value-raw {
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--text-dim);
+            opacity: .7;
+            margin-top: 2px;
         }
         #featureSection,
         #featureRows {
@@ -998,6 +1012,33 @@
             padding: 8px 10px;
             background: var(--surface2);
         }
+        /* Full-width Analyze action bar (runs Step 1 + Step 2). */
+        .analyze-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .analyze-bar-text {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 240px;
+            flex: 1 1 320px;
+        }
+        .analyze-bar-text strong { font-size: 15px; }
+        .analyze-bar-text span { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+        .analyze-bar-action {
+            flex: 0 0 auto;
+            min-width: 260px;
+        }
+        .analyze-bar-action .btn { margin-top: 0; }
+        .analyze-bar .analyze-status { margin-top: 4px; }
+        @media (max-width: 640px) {
+            .analyze-bar-action { width: 100%; min-width: 0; }
+        }
         @media (max-width: 900px) {
             .decision-summary-grid { grid-template-columns: 1fr 1fr; }
         }
@@ -1073,6 +1114,36 @@
             flex-shrink: 0;
         }
         .step-heading h2 { margin: 0; }
+        /* Step 1 becomes a green "gate": once a screenshot is uploaded the card
+           border turns green and the badge shows a check, giving the "earned"
+           feedback without blocking the optional Step 2. */
+        .card.step-done {
+            border-color: var(--success);
+        }
+        .step-badge.done {
+            background: var(--success);
+        }
+        /* Inline status shown in a step heading (e.g. "Uploaded",
+           "Neutral baseline" / "Custom context"). */
+        .step-status {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 999px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: rgba(100,116,139,.14);
+            color: var(--text-dim);
+            margin-left: auto;
+        }
+        .step-status.done {
+            background: rgba(34,197,94,.15);
+            color: var(--success);
+        }
+        .step-status.custom {
+            background: rgba(59,130,246,.14);
+            color: var(--accent);
+        }
         .tag-required {
             font-size: 10px;
             font-weight: 700;
@@ -1098,6 +1169,13 @@
             color: var(--text-dim);
             margin-top: 4px;
             line-height: 1.4;
+        }
+        /* Inline "if unsure / default" guidance appended to a field hint. */
+        .field-hint-default {
+            display: block;
+            margin-top: 3px;
+            color: var(--accent);
+            opacity: .85;
         }
         /* Upload error */
         .upload-error {
@@ -1225,11 +1303,12 @@
         <div class="grid-inputs">
 
             <!-- Step 1: Upload -->
-            <div class="card">
+            <div class="card" id="step1Card">
                 <div class="step-heading">
-                    <span class="step-badge">1</span>
+                    <span class="step-badge" id="step1Badge">1</span>
                     <h2>Upload Screenshot</h2>
                     <span class="tag-required">Required</span>
+                    <span class="step-status done" id="step1Status" style="display:none;">✓ Uploaded</span>
                 </div>
                 <p class="field-hint" style="margin-bottom:12px;">Upload a GUI screenshot (PNG, JPG, BMP, TIFF). The file is processed locally on your machine — nothing is stored permanently.</p>
                 <div class="drop-zone" id="dropZone">
@@ -1253,10 +1332,6 @@
                 </div>
                 <div class="upload-error" id="uploadError"></div>
                 <div class="preview-container" id="previewContainer"></div>
-                <button class="btn btn-primary" id="analyzeBtn" disabled>
-                    Analyze Screenshot
-                </button>
-                <div class="analyze-status" id="analyzeStatus"></div>
             </div>
 
             <!-- Step 2: Task Context -->
@@ -1265,68 +1340,86 @@
                     <span class="step-badge">2</span>
                     <h2>Task Context</h2>
                     <span class="tag-optional">Optional</span>
+                    <span class="step-status" id="step2Status">Neutral baseline</span>
                 </div>
                 <p class="field-hint" style="margin-bottom:14px;">Adjust before clicking Analyze. These parameters shift the score to reflect how a user is actually interacting with this screen. Defaults give a neutral baseline.</p>
                 <div class="control-grid">
                     <div class="field">
                         <label for="taskType">Task Type</label>
                         <select id="taskType">
-                            <option value="search" selected>Search</option>
+                            <option value="search" selected>Search — default</option>
                             <option value="navigation">Navigation</option>
                             <option value="monitoring">Monitoring</option>
                             <option value="data_entry">Data Entry</option>
                             <option value="decision">Decision Making</option>
                         </select>
-                        <div class="field-hint">What is the user's primary activity on this screen?</div>
+                        <div class="field-hint">What is the user's primary activity on this screen? <span class="field-hint-default">e.g. locating a specific control = <em>Search</em>. If unsure, keep <em>Search</em>.</span></div>
                     </div>
                     <div class="field">
                         <label for="searchMode">Search Mode</label>
                         <select id="searchMode">
-                            <option value="known_item" selected>Known Item</option>
+                            <option value="known_item" selected>Known Item — default</option>
                             <option value="comparative">Comparative</option>
                             <option value="exploratory">Exploratory</option>
                         </select>
-                        <div class="field-hint">Does the user know exactly what to look for, or are they browsing?</div>
+                        <div class="field-hint">Does the user know exactly what to look for, or are they browsing? <span class="field-hint-default">e.g. tapping a known menu item = <em>Known Item</em>. If unsure, keep <em>Known Item</em>.</span></div>
                     </div>
                     <div class="field">
                         <label for="targetSpecificity">Target Specificity</label>
                         <select id="targetSpecificity">
                             <option value="high">High — target well defined</option>
-                            <option value="medium" selected>Medium</option>
+                            <option value="medium" selected>Medium — default</option>
                             <option value="low">Low — vague or open-ended</option>
                         </select>
-                        <div class="field-hint">How precisely is the target defined? High specificity reduces search load.</div>
+                        <div class="field-hint">How precisely is the target defined? High specificity reduces search load. <span class="field-hint-default">If unsure, keep <em>Medium</em>.</span></div>
                     </div>
                     <div class="field">
                         <label for="timePressure">Time Pressure</label>
                         <select id="timePressure">
                             <option value="low">Low — ample time</option>
-                            <option value="medium" selected>Medium</option>
+                            <option value="medium" selected>Medium — default</option>
                             <option value="high">High — time-critical</option>
                         </select>
-                        <div class="field-hint">Time constraints directly increase cognitive load (Kahneman, 1973).</div>
+                        <div class="field-hint">Time constraints directly increase cognitive load (Kahneman, 1973). <span class="field-hint-default">If unsure, keep <em>Medium</em>.</span></div>
                     </div>
                 </div>
                 <div class="field" style="margin-top: 12px;">
                     <label for="profilePreset">User Profile <span class="tag-optional" style="vertical-align:middle;margin-left:6px;">Optional</span></label>
                     <select id="profilePreset">
-                        <option value="neutral" selected>Neutral — no adjustment</option>
+                        <option value="neutral" selected>Neutral — no adjustment (default)</option>
                         <option value="focused">Focused / Conscientious</option>
                         <option value="exploratory">Exploratory / Open</option>
                         <option value="social">Social / Extraverted</option>
                         <option value="stress_sensitive">Stress-Sensitive</option>
                     </select>
-                    <div class="field-hint">Big Five personality preset that applies a small modifier to the score. Leave on Neutral to evaluate the interface independent of a specific user type (Costa &amp; McCrae, 1992).</div>
+                    <div class="field-hint">Big Five personality preset that applies a small modifier to the score. Leave on Neutral to evaluate the interface independent of a specific user type (Costa &amp; McCrae, 1992). <span class="field-hint-default">If unsure, keep <em>Neutral</em>.</span></div>
                 </div>
                 <div id="contextHint" class="context-hint">Tip: choose context first, then click Analyze Screenshot once. After results, use What-if for fast local simulation.</div>
             </div>
 
         </div><!-- end grid-inputs -->
 
-        <!-- Step 3: Results — full width -->
+        <!-- Analyze action: runs Step 1 + Step 2 together. Placed below both
+             cards so the natural top-to-bottom flow is Upload -> Task Context
+             -> Analyze, instead of the button sitting inside Step 1 where it
+             tempted users to skip the task context. -->
+        <div class="card analyze-bar">
+            <div class="analyze-bar-text">
+                <strong>Step 3 · Run the analysis</strong>
+                <span id="analyzeBarHint">Upload a screenshot in Step 1 to enable the analysis. The task context in Step 2 is optional — defaults give a neutral baseline.</span>
+                <div class="analyze-status" id="analyzeStatus"></div>
+            </div>
+            <div class="analyze-bar-action">
+                <button class="btn btn-primary" id="analyzeBtn" disabled>
+                    Analyze Screenshot
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 4: Results — full width -->
         <div class="card" style="margin-top:24px;">
             <div class="step-heading">
-                <span class="step-badge">3</span>
+                <span class="step-badge">4</span>
                 <h2>Pipeline Results</h2>
             </div>
 
@@ -1519,21 +1612,25 @@
                 </div>
                 <div class="pipeline-node">
                     <div class="pipeline-node-title">UMSI++ Saliency Validation</div>
-                    <div class="pipeline-node-desc">Validated against UEyes human fixation ground truth (62 participants, 1,980 UI screenshots). CC = 0.896, SIM = 0.806 — above published SOTA range (CC: 0.40–0.70).</div>
+                    <div class="pipeline-node-desc">Internal sanity check on a UEyes sample: predicted maps reproduce the human-fixation ground truth with CC around 0.90 and SIM around 0.81 on the sampled images. These are in-house figures on a non-standard split and are <em>not</em> directly comparable to the published UEyes benchmark (UMSI++: CC = 0.833, SIM = 0.733; Jiang et al., 2023), so they should be read as a consistency check rather than a state-of-the-art claim.</div>
                     <div class="pipeline-node-ref">Jiang et al. CHI 2023 · Bylinskii et al. (2018)</div>
                 </div>
             </div>
 
             <div class="pipeline-section-title" style="margin-top:32px;">Key References</div>
             <div class="ref-list">
-                <div class="ref-item"><strong>Das et al. (2024)</strong> HCEye: Eye Tracking Under Cognitive Load. ETRA 2024.</div>
-                <div class="ref-item"><strong>Jiang et al. (2023)</strong> UEyes: Understanding Visual Saliency Across UI Paradigms. CHI 2023.</div>
-                <div class="ref-item"><strong>Jokinen et al. (2020)</strong> Adaptive Feature Guidance. International Journal of Human-Computer Studies.</div>
-                <div class="ref-item"><strong>Rosenholtz et al. (2007)</strong> Measuring Visual Clutter. Journal of Vision, 7(2):17.</div>
-                <div class="ref-item"><strong>Shannon (1948)</strong> A Mathematical Theory of Communication. Bell System Technical Journal, 27(3).</div>
-                <div class="ref-item"><strong>Kahneman (1973)</strong> Attention and Effort. Prentice-Hall.</div>
-                <div class="ref-item"><strong>Costa &amp; McCrae (1992)</strong> Revised NEO Personality Inventory (NEO PI-R). PAR.</div>
-                <div class="ref-item"><strong>Breiman (2001)</strong> Random Forests. Machine Learning, 45(1).</div>
+                <div class="ref-item"><strong>Das et al. (2024)</strong> Shifting Focus with HCEye: Exploring the Dynamics of Visual Highlighting and Cognitive Load on User Attention and Saliency Prediction. Proc. ACM Hum.-Comput. Interact. (ETRA 2024). <a class="ref-doi" href="https://doi.org/10.1145/3655610" target="_blank" rel="noopener">doi:10.1145/3655610</a></div>
+                <div class="ref-item"><strong>Jiang, Leiva, Rezazadegan Tavakoli, Houssel, Kylmälä &amp; Oulasvirta (2023)</strong> UEyes: Understanding Visual Saliency across User Interface Types. CHI 2023. <a class="ref-doi" href="https://doi.org/10.1145/3544548.3581096" target="_blank" rel="noopener">doi:10.1145/3544548.3581096</a></div>
+                <div class="ref-item"><strong>Jokinen, Sarcar, Oulasvirta, Silpasuwanchai, Wang &amp; Ren (2020)</strong> Adaptive feature guidance: Modelling visual search with graphical layouts. International Journal of Human-Computer Studies, 136. <a class="ref-doi" href="https://doi.org/10.1016/j.ijhcs.2019.102376" target="_blank" rel="noopener">doi:10.1016/j.ijhcs.2019.102376</a></div>
+                <div class="ref-item"><strong>Rosenholtz, Li &amp; Nakano (2007)</strong> Measuring visual clutter. Journal of Vision, 7(2):17. <a class="ref-doi" href="https://doi.org/10.1167/7.2.17" target="_blank" rel="noopener">doi:10.1167/7.2.17</a></div>
+                <div class="ref-item"><strong>Tuch et al. (2009)</strong> Visual complexity of websites: Effects on users’ experience, physiology, performance, and memory. International Journal of Human-Computer Studies, 67(9). <a class="ref-doi" href="https://doi.org/10.1016/j.ijhcs.2009.04.002" target="_blank" rel="noopener">doi:10.1016/j.ijhcs.2009.04.002</a></div>
+                <div class="ref-item"><strong>Miniukovich &amp; De Angeli (2015)</strong> Computation of Interface Aesthetics. CHI 2015. <a class="ref-doi" href="https://doi.org/10.1145/2702123.2702575" target="_blank" rel="noopener">doi:10.1145/2702123.2702575</a></div>
+                <div class="ref-item"><strong>Hasler &amp; Süsstrunk (2003)</strong> Measuring colorfulness in natural images. Proc. SPIE 5007, Human Vision and Electronic Imaging VIII. <a class="ref-doi" href="https://doi.org/10.1117/12.477378" target="_blank" rel="noopener">doi:10.1117/12.477378</a></div>
+                <div class="ref-item"><strong>Itti &amp; Koch (2001)</strong> Computational modelling of visual attention. Nature Reviews Neuroscience, 2(3). <a class="ref-doi" href="https://doi.org/10.1038/35058500" target="_blank" rel="noopener">doi:10.1038/35058500</a></div>
+                <div class="ref-item"><strong>Shannon (1948)</strong> A Mathematical Theory of Communication. Bell System Technical Journal, 27(3). <a class="ref-doi" href="https://doi.org/10.1002/j.1538-7305.1948.tb01338.x" target="_blank" rel="noopener">doi:10.1002/j.1538-7305.1948.tb01338.x</a></div>
+                <div class="ref-item"><strong>Breiman (2001)</strong> Random Forests. Machine Learning, 45(1). <a class="ref-doi" href="https://doi.org/10.1023/A:1010933404324" target="_blank" rel="noopener">doi:10.1023/A:1010933404324</a></div>
+                <div class="ref-item"><strong>Kahneman (1973)</strong> Attention and Effort. Prentice-Hall. (Book — no DOI)</div>
+                <div class="ref-item"><strong>Costa &amp; McCrae (1992)</strong> Revised NEO Personality Inventory (NEO PI-R). Psychological Assessment Resources. (Test manual — no DOI)</div>
             </div>
         </div><!-- end view-pipeline -->
 
@@ -1606,6 +1703,20 @@
             return { cls: 'ok', label: 'Within range' };
         }
 
+        // Load signal derived from the empirical reference percentile, so the
+        // Design Diagnosis uses the SAME source of truth as the per-feature
+        // bars (no more "typical" in the bar but "critical" in the diagnosis).
+        // We turn the neutral rank into a load rank by inverting it for
+        // higher-is-better features, then flag only clear deviations in the
+        // load-increasing direction (outside the middle 50% of real GUIs).
+        function featureSignalFromRef(key, percentile) {
+            const dir = FEATURE_DIRECTION[key];
+            const loadPct = dir === 'higher_is_better' ? 100 - percentile : percentile;
+            if (loadPct >= 90) return { cls: 'crit', label: 'High load impact' };
+            if (loadPct >= 75) return { cls: 'high', label: 'Elevated' };
+            return { cls: 'ok', label: 'Within range' };
+        }
+
         function barColor(key, pct) {
             const sig = featureSignal(key, pct);
             return { ok:'#34c87a', warn:'#f5c842', high:'#f5903b', crit:'#f54b4b' }[sig.cls];
@@ -1666,13 +1777,23 @@
             </div>`;
         }
 
-        function buildDesignDiagnosis(vf) {
-            // Compute normalised pct + signal for all features
+        function buildDesignDiagnosis(vf, reference) {
+            // Compute the load signal for every feature. When an empirical
+            // reference exists for a feature we use it (same source as the
+            // bars); otherwise we fall back to the min/max range heuristic.
             const items = FEATURE_KEYS.map(key => {
                 const val  = vf[key];
                 const norm = FEATURE_NORMS[key];
-                const pct  = Math.min(100, ((val - norm.min) / (norm.max - norm.min)) * 100);
-                const sig  = featureSignal(key, pct);
+                const ref  = reference ? reference[key] : null;
+                const hasRef = ref && ref.percentile !== undefined && ref.percentile !== null;
+                let pct, sig;
+                if (hasRef) {
+                    pct = ref.percentile;
+                    sig = featureSignalFromRef(key, pct);
+                } else {
+                    pct = Math.min(100, ((val - norm.min) / (norm.max - norm.min)) * 100);
+                    sig = featureSignal(key, pct);
+                }
                 return { key, pct, sig };
             });
 
@@ -1784,6 +1905,46 @@
             contextHint.textContent = "Context ready. Click Analyze Screenshot to compute a new baseline, or adjust later in What-if.";
         }
 
+        // Default (neutral baseline) values for the optional Task Context fields.
+        // Used to decide whether Step 2 is still on defaults or has been customised.
+        const CONTEXT_DEFAULTS = {
+            taskType: "search",
+            searchMode: "known_item",
+            targetSpecificity: "medium",
+            timePressure: "medium",
+            profilePreset: "neutral",
+        };
+
+        // Reflects Step 2's state without ever blocking it: a neutral grey pill
+        // while on defaults, an accent pill once the user customises the context.
+        // Also drives the speaking text in the Step 3 analyze bar so the button
+        // guides instead of gates (context stays optional).
+        function isContextCustom() {
+            return Object.entries(CONTEXT_DEFAULTS).some(([id, def]) => {
+                const el = document.getElementById(id);
+                return el && el.value !== def;
+            });
+        }
+
+        function updateContextStatus() {
+            const custom = isContextCustom();
+            const step2Status = document.getElementById("step2Status");
+            if (step2Status) {
+                step2Status.textContent = custom ? "Custom context" : "Neutral baseline";
+                step2Status.classList.toggle("custom", custom);
+            }
+            const barHint = document.getElementById("analyzeBarHint");
+            if (barHint) {
+                if (!selectedFile) {
+                    barHint.textContent = "Upload a screenshot in Step 1 to enable the analysis. The task context in Step 2 is optional — defaults give a neutral baseline.";
+                } else if (custom) {
+                    barHint.textContent = "Ready with your custom task context. Click Analyze to compute the baseline.";
+                } else {
+                    barHint.textContent = "Will run with the neutral default context. Adjust Step 2 above for a more realistic, task-specific result — or click Analyze for the neutral baseline.";
+                }
+            }
+        }
+
         // "Change image" button — opens file picker and resets drop zone state
         document.getElementById("changeImageBtn").addEventListener("click", (e) => {
             e.stopPropagation(); // don't bubble to label/dropzone
@@ -1792,7 +1953,14 @@
             analyzeBtn.disabled = true;
             analyzeStatus.textContent = "";
             fileInput.value = "";
+            // Reset the Step 1 green gate.
+            document.getElementById("step1Card")?.classList.remove("step-done");
+            const step1Badge = document.getElementById("step1Badge");
+            if (step1Badge) { step1Badge.textContent = "1"; step1Badge.classList.remove("done"); }
+            const step1Status = document.getElementById("step1Status");
+            if (step1Status) step1Status.style.display = "none";
             updateContextHint();
+            updateContextStatus();
             fileInput.click();
         });
 
@@ -1879,7 +2047,15 @@
             analyzeBtn.disabled = false;
             analyzeStatus.textContent = "Image ready — click Analyze Screenshot to run the pipeline.";
             analyzeStatus.className = "analyze-status";
+            // Step 1 is the only gate: mark it complete (green gate) so the
+            // "earned" state is visible, then refresh the speaking status/bar.
+            document.getElementById("step1Card")?.classList.add("step-done");
+            const step1Badge = document.getElementById("step1Badge");
+            if (step1Badge) { step1Badge.textContent = "✓"; step1Badge.classList.add("done"); }
+            const step1Status = document.getElementById("step1Status");
+            if (step1Status) step1Status.style.display = "";
             updateContextHint();
+            updateContextStatus();
         }
 
         function formatSize(bytes) {
@@ -2106,7 +2282,7 @@
 
             // Design diagnosis (3 bullets above feature table)
             const diagnosisEl = document.getElementById('featureDiagnosis');
-            if (diagnosisEl) diagnosisEl.innerHTML = buildDesignDiagnosis(data.visual_features);
+            if (diagnosisEl) diagnosisEl.innerHTML = buildDesignDiagnosis(data.visual_features, data.reference);
 
             // Provenance note for the empirical reference comparison.
             const provEl = document.getElementById('featureRefProvenance');
@@ -2152,6 +2328,19 @@
                     ? `<div class="feature-desc">${info.description}${refText}</div>`
                     : '';
                 const refLine = referenceLine(ref);
+                // Headline number: signed change vs the reference baseline
+                // (the typical GUI) when we have an empirical reference, e.g.
+                // "+19%" / "-12%". This keeps direction visible and is far
+                // easier to read than the raw measurement, which is kept as a
+                // small secondary detail. Falls back to the raw value when no
+                // reference exists for this feature.
+                const hasDelta = hasRef && ref.delta_pct !== undefined && ref.delta_pct !== null;
+                const headline = hasDelta
+                    ? `${ref.delta_pct >= 0 ? '+' : ''}${Math.round(ref.delta_pct)}%`
+                    : val.toFixed(4);
+                const rawLine = hasDelta
+                    ? `<div class="feature-value-raw" title="raw measured value">raw ${val.toFixed(4)}</div>`
+                    : '';
                 return `
                     <div class="feature-row">
                         <div class="feature-info">
@@ -2166,7 +2355,7 @@
                             </div>
                             ${refLine}
                         </div>
-                        <div class="feature-value" style="color:${col};">${val.toFixed(4)}</div>
+                        <div class="feature-value" style="color:${col};" title="${hasDelta ? 'Signed change vs the typical GUI in the reference set' : ''}">${headline}${rawLine}</div>
                     </div>
                 `;
             }).join("");
@@ -3129,13 +3318,17 @@
         }
         loadFeatures();
         ["taskType", "searchMode", "targetSpecificity", "timePressure", "profilePreset"]
-            .forEach(id => document.getElementById(id).addEventListener("change", updateContextHint));
+            .forEach(id => document.getElementById(id).addEventListener("change", () => {
+                updateContextHint();
+                updateContextStatus();
+            }));
         window.addEventListener("resize", () => {
             if (window._latestVisualFeatures && document.getElementById("radarPanel").style.display !== "none") {
                 drawRadar(window._latestVisualFeatures);
             }
         });
         updateContextHint();
+        updateContextStatus();
     </script>
 </body>
 </html>

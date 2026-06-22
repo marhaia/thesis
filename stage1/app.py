@@ -123,11 +123,17 @@ def compare_to_reference(feature_values):
         except (TypeError, ValueError):
             continue
         z = (v - stats["mean"]) / stats["std"]
+        # Signed change relative to the reference baseline (the typical GUI).
+        # Positive = this screen is above the reference mean, negative = below.
+        # This keeps direction/sign visible, unlike a 0-100 % range mapping.
+        mean = stats["mean"]
+        delta_pct = ((v - mean) / mean * 100.0) if mean else None
         out[key] = {
             "value": v,
-            "mean": stats["mean"],
+            "mean": mean,
             "std": stats["std"],
             "z": z,
+            "delta_pct": delta_pct,
             "percentile": _empirical_percentile(stats, v),
             "band": _comparison_band(z),
             "n": stats.get("n"),
