@@ -695,6 +695,47 @@ def scanpath_to_target():
             image_shape=img.shape[:2],
         )
 
+        # Target-relative cognitive load (Gigi's key point): the Jokinen model
+        # already estimates a search cost PER element; until now those costs were
+        # only averaged into a layout-wide mean. Selecting a target lets us use
+        # that element's specific search cost instead of the average, so the load
+        # reflects a concrete top-down task ("find THIS button") rather than the
+        # layout in general. We express it as a SIGNED modifier (in score points)
+        # relative to the layout's mean search time: a target that is harder to
+        # find than average raises the load, an easier one lowers it.
+        target_load = None
+        search_res = jokinen.predict_search_times(
+            elements=elements,
+            saliency_map=saliency_map,
+            image_shape=img.shape[:2],
+        )
+        mean_time = float(search_res.get("mean_search_time_s", 0.0) or 0.0)
+        per_elem = search_res.get("per_element", [])
+        target_time = None
+        if 0 <= target_idx < len(per_elem):
+            target_time = float(per_elem[target_idx].get("search_time_s", 0.0))
+        if target_time is not None and mean_time > 0:
+            # Signed fractional deviation from the layout mean, then mapped to
+            # bounded score points. POINTS_PER_UNIT and MODIFIER_CAP are chosen
+            # so a target that takes ~50% longer than average adds ~+12 points
+            # while staying within a readable +/-15 point envelope.
+            POINTS_PER_UNIT = 25.0
+            MODIFIER_CAP = 15.0
+            deviation = (target_time - mean_time) / mean_time
+            search_load_modifier = float(
+                max(-MODIFIER_CAP, min(MODIFIER_CAP, POINTS_PER_UNIT * deviation))
+            )
+            target_load = {
+                "mean_search_time_s": round(mean_time, 4),
+                "target_search_time_s": round(target_time, 4),
+                # >1 = harder to find than average, <1 = easier.
+                "relative_difficulty": round(target_time / mean_time, 3),
+                # Signed % deviation vs the layout mean (for readable display).
+                "deviation_pct": round(deviation * 100.0, 1),
+                # Signed modifier in score points to apply to the base load.
+                "search_load_modifier": round(search_load_modifier, 2),
+            }
+
         target_elem = elements[target_idx]
         return jsonify({
             "filename": file.filename,
@@ -704,6 +745,7 @@ def scanpath_to_target():
             "target_bbox": list(target_elem.get("bbox", [])),
             "saliency_used": saliency_map is not None,
             "scanpath": scanpath,
+            "target_load": target_load,
         })
 
     except Exception as e:

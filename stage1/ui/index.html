@@ -1545,6 +1545,18 @@
                         <img id="scanpathImg" src="" alt="Screenshot for target selection" style="display:block; width:100%;">
                         <canvas id="scanpathCanvas" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></canvas>
                     </div>
+                    <!-- Task-relative cognitive load for the clicked target. Shown
+                         LOCALLY here (not in the main score card on top) so the two
+                         ideas stay separate: the path is the visual-search sequence,
+                         this line is how hard THIS target is to find vs the layout. -->
+                    <div id="scanpathLoadLine" style="display:none; margin-top:12px; padding:12px 14px; border-radius:8px; border:1px solid var(--border); background:var(--surface2);">
+                        <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+                            <span style="font-size:11px; color:var(--text-dim);">Task-relative load for this target</span>
+                            <span id="scanpathLoadValue" style="font-size:20px; font-weight:600;"></span>
+                            <span id="scanpathLoadDelta" style="font-size:12px; font-weight:600;"></span>
+                        </div>
+                        <div id="scanpathLoadMeta" style="font-size:11px; color:var(--text-dim); margin-top:4px;"></div>
+                    </div>
                 </div>
 
                 <!-- 5. Feature Vector Table -->
@@ -2321,6 +2333,44 @@
         // the canvas is sized to the image's intrinsic resolution and CSS scales
         // both image and canvas together.
         let _scanpathLastData = null;  // most recent scanpath response (for download)
+        let _layoutLoadScore = null;   // layout-baseline cognitive load score (0-100)
+
+        // Show the task-relative load for the clicked target LOCALLY inside the
+        // search-path panel. This is deliberately kept SEPARATE from the main
+        // Cognitive Load Score card on top (which stays the stable layout value):
+        // the path = the visual-search sequence, this line = how hard THIS target
+        // is to find relative to the layout. Selecting a different target updates
+        // only this local line, so the top score never jumps around.
+        function showTargetLoad(targetLoad, targetId) {
+            const box = document.getElementById('scanpathLoadLine');
+            const valEl = document.getElementById('scanpathLoadValue');
+            const deltaEl = document.getElementById('scanpathLoadDelta');
+            const metaEl = document.getElementById('scanpathLoadMeta');
+            if (!box || !valEl || !deltaEl || !metaEl) return;
+            if (!targetLoad || _layoutLoadScore === null) {
+                box.style.display = 'none';
+                return;
+            }
+            const mod = targetLoad.search_load_modifier;
+            const targetScore = Math.max(0, Math.min(100, _layoutLoadScore + mod));
+            const sign = mod >= 0 ? '+' : '';
+            const harder = targetLoad.deviation_pct >= 0;
+            valEl.textContent = targetScore.toFixed(1);
+            deltaEl.textContent = `${sign}${mod.toFixed(1)} vs layout`;
+            deltaEl.style.color = harder ? 'var(--danger)' : 'var(--success)';
+            metaEl.textContent =
+                `Target #${targetId}. Layout baseline ${_layoutLoadScore.toFixed(1)} · ` +
+                `this element is ${Math.abs(targetLoad.deviation_pct).toFixed(0)}% ` +
+                `${harder ? 'harder' : 'easier'} to find than the layout average. ` +
+                `The main Cognitive Load Score above stays the layout value.`;
+            box.style.display = 'block';
+        }
+
+        // Hide the local task-relative load line (e.g. after Clear).
+        function hideTargetLoad() {
+            const box = document.getElementById('scanpathLoadLine');
+            if (box) box.style.display = 'none';
+        }
 
         function renderTargetScanpath() {
             const panel = document.getElementById('targetScanpathPanel');
@@ -2340,6 +2390,7 @@
             clearBtn.style.display = 'none';
             dlBtn.style.display = 'none';
             _scanpathLastData = null;
+            hideTargetLoad();
 
             // Load the uploaded screenshot as the base image.
             img.onload = () => {
@@ -2414,6 +2465,7 @@
                     _scanpathLastData = data;
                     drawScanpath(data.scanpath);
                     const sp = data.scanpath;
+                    showTargetLoad(data.target_load, data.target_id);
                     statusEl.textContent =
                         `Target element #${data.target_id}: ${sp.n_fixations} fixations, ` +
                         `${sp.total_time_s.toFixed(2)} s predicted search time.`;
@@ -2442,6 +2494,7 @@
                 clearBtn.style.display = 'none';
                 dlBtn.style.display = 'none';
                 _scanpathLastData = null;
+                hideTargetLoad();
             };
 
             dlBtn.onclick = () => {
@@ -2467,6 +2520,10 @@
 
             const base = data.base_prediction || {};
             const adjusted = data.adjusted_prediction || {};
+            // Remember the layout-baseline load score so the search-path panel can
+            // show a SEPARATE task-relative load line for a clicked target. The
+            // main score card below stays the stable layout value and never jumps.
+            _layoutLoadScore = adjusted.cognitive_load_score;
             summaryGrid.innerHTML = `
                 <div class="summary-card">
                     <div class="summary-label">Cognitive Load Score</div>
