@@ -318,6 +318,107 @@ class JokinenSearchModel:
             "n_simulations": self.params.n_simulations,
         }
 
+    def predict_scanpath_to_target(
+        self,
+        target_idx: int,
+        elements: List[Dict],
+        saliency_map: Optional[np.ndarray] = None,
+        image_shape: Optional[Tuple[int, int]] = None,
+        screen_width_cm: float = 37.0,
+        screen_height_cm: float = 23.0,
+        viewing_distance_cm: float = 60.0,
+    ) -> Dict:
+        """
+        Predict a single, representative visual-search scanpath toward a target.
+
+        Unlike predict_search_times (which only keeps aggregate timing), this
+        returns the actual fixation sequence the Adaptive Feature Guidance model
+        traverses while a novice searches for elements[target_idx], starting from
+        the screen center. This is a TASK-DRIVEN scanpath (goal-directed search to
+        a chosen target), NOT a free-viewing scanpath.
+
+        Because the simulation is stochastic (logistic activation noise), we run
+        several Monte Carlo trials and return the one whose fixation count is the
+        median, so the displayed path is typical rather than an outlier.
+
+        Parameters
+        ----------
+        target_idx : int
+            Index into `elements` of the element the user selected as the target.
+        (other parameters as in predict_search_times)
+
+        Returns
+        -------
+        Dict with keys:
+            'target_id'        : id of the target element
+            'target_index'     : target_idx
+            'fixations'        : List[Dict] — the scanpath, each fixation having
+                                 'x', 'y', 'order', 't_cumulative_s',
+                                 'step_time_s', 'element_id', 'is_target'
+            'total_time_s'     : total predicted search time for this path
+            'n_fixations'      : number of fixations (excluding the start point)
+            'image_height'     : height in px used for coordinates
+            'image_width'      : width in px used for coordinates
+            'basis'            : 'jokinen_search_model'
+            'is_target_driven' : True (goal-directed search, not free-viewing)
+        """
+        if len(elements) == 0 or target_idx < 0 or target_idx >= len(elements):
+            return {}
+
+        # Reuse the exact activation pipeline of predict_search_times so the
+        # scanpath is consistent with the reported search times.
+        element_saliency = self._compute_element_saliency(
+            elements, saliency_map, image_shape
+        )
+        feature_activations = self._compute_feature_activations(elements)
+        combined_activations = self._combine_activations(
+            feature_activations, element_saliency
+        )
+
+        if image_shape is not None:
+            img_h, img_w = image_shape
+        elif saliency_map is not None:
+            img_h, img_w = saliency_map.shape[:2]
+        else:
+            max_x = max(e["bbox"][0] + e["bbox"][2] for e in elements)
+            max_y = max(e["bbox"][1] + e["bbox"][3] for e in elements)
+            img_w, img_h = int(max_x * 1.1), int(max_y * 1.1)
+
+        px_per_cm = img_w / screen_width_cm
+        deg_per_px = np.degrees(np.arctan(1.0 / (px_per_cm * viewing_distance_cm)))
+        start_fixation = (img_w / 2.0, img_h / 2.0)
+
+        # Run several trials and keep the median-length one as representative.
+        trials = []
+        for _ in range(self.params.n_simulations):
+            t, n_fix, path = self._simulate_single_search(
+                target_idx=target_idx,
+                elements=elements,
+                combined_activations=combined_activations,
+                start_fixation=start_fixation,
+                deg_per_px=deg_per_px,
+                return_path=True,
+            )
+            trials.append((n_fix, t, path))
+
+        # Median by fixation count (ties broken by closeness to median time).
+        trials.sort(key=lambda tr: tr[0])
+        median_trial = trials[len(trials) // 2]
+        rep_n_fix, rep_time, rep_path = median_trial
+
+        target_elem = elements[target_idx]
+        return {
+            "target_id": target_elem.get("id"),
+            "target_index": target_idx,
+            "fixations": rep_path,
+            "total_time_s": round(float(rep_time), 4),
+            "n_fixations": int(rep_n_fix),
+            "image_height": int(img_h),
+            "image_width": int(img_w),
+            "basis": "jokinen_search_model",
+            "is_target_driven": True,
+        }
+
     # ===================================================================
     # SIMULATION CORE
     # ===================================================================
@@ -329,7 +430,8 @@ class JokinenSearchModel:
         combined_activations: np.ndarray,
         start_fixation: Tuple[float, float],
         deg_per_px: float,
-    ) -> Tuple[float, int]:
+        return_path: bool = False,
+    ):
         """
         Simulate a single visual search trial.
 
@@ -348,9 +450,21 @@ class JokinenSearchModel:
         eccentricity (near 0), NOT the pre-saccade distance. This is why search
         times are typically 0.2-0.5s per fixation, not 10+ seconds.
 
+        Parameters
+        ----------
+        return_path : bool
+            When True, also return the fixation sequence (the scanpath) the
+            model traversed while searching for the target. Each fixation is a
+            dict with pixel coordinates and cumulative timing. Defaults to False
+            so existing callers keep the (time, n_fixations) two-tuple contract.
+
         Returns
         -------
-        (total_time_s, n_fixations)
+        (total_time_s, n_fixations)                         if return_path is False
+        (total_time_s, n_fixations, path: List[Dict])       if return_path is True
+            where each path item is:
+                {'x', 'y', 'order', 't_cumulative_s', 'step_time_s',
+                 'element_id', 'is_target'}
         """
         p = self.params
         n_elements = len(elements)
@@ -360,6 +474,21 @@ class JokinenSearchModel:
 
         total_time = 0.0
         n_fixations = 0
+
+        # Record the scanpath (only populated when return_path is True). The
+        # first fixation is the starting gaze position (screen center), which
+        # carries no encoding time.
+        path: List[Dict] = []
+        if return_path:
+            path.append({
+                "x": float(start_fixation[0]),
+                "y": float(start_fixation[1]),
+                "order": 0,
+                "t_cumulative_s": 0.0,
+                "step_time_s": 0.0,
+                "element_id": None,
+                "is_target": False,
+            })
 
         for step in range(p.max_fixations):
             # --- Compute activation with noise ---
@@ -411,8 +540,22 @@ class JokinenSearchModel:
             # --- Update fixation position (eye now on selected element) ---
             current_fix = sel_center.copy()
 
+            is_target = (selected_idx == target_idx)
+            if return_path:
+                path.append({
+                    "x": float(sel_center[0]),
+                    "y": float(sel_center[1]),
+                    "order": n_fixations,
+                    "t_cumulative_s": float(total_time),
+                    "step_time_s": float(step_time),
+                    "element_id": selected_elem.get("id"),
+                    "is_target": is_target,
+                })
+
             # --- Check if target found ---
-            if selected_idx == target_idx:
+            if is_target:
+                if return_path:
+                    return (total_time, n_fixations, path)
                 return (total_time, n_fixations)
 
             # --- Update VSTM (inhibition of return) ---
@@ -425,6 +568,8 @@ class JokinenSearchModel:
                 vstm.discard(oldest)
 
         # If we reach max_fixations without finding target
+        if return_path:
+            return (total_time, n_fixations, path)
         return (total_time, n_fixations)
 
     # ===================================================================

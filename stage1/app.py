@@ -169,6 +169,50 @@ def _hash_upload(file_storage):
     return hashlib.sha256(data).hexdigest(), data
 
 
+def _resolve_target_index(elements, target_id, target_x, target_y):
+    """Resolve a target element index from selection parameters.
+
+    Selection precedence:
+      1. ``target_id`` (exact element id match), when provided.
+      2. ``(target_x, target_y)`` click position in original-image pixels:
+         prefer the element whose bounding box contains the point; otherwise
+         fall back to the element with the nearest center.
+
+    Returns the element index, or ``None`` if no target can be resolved.
+    """
+    # 1. Explicit element id.
+    if target_id is not None:
+        for idx, el in enumerate(elements):
+            if el.get("id") == target_id:
+                return idx
+        return None
+
+    if target_x is None or target_y is None:
+        return None
+
+    # 2a. Point-in-bbox hit test.
+    for idx, el in enumerate(elements):
+        bbox = el.get("bbox")
+        if not bbox or len(bbox) < 4:
+            continue
+        bx, by, bw, bh = bbox[0], bbox[1], bbox[2], bbox[3]
+        if bx <= target_x <= bx + bw and by <= target_y <= by + bh:
+            return idx
+
+    # 2b. Nearest-center fallback.
+    best_idx = None
+    best_dist = None
+    for idx, el in enumerate(elements):
+        center = el.get("center")
+        if not center or len(center) < 2:
+            continue
+        dist = (center[0] - target_x) ** 2 + (center[1] - target_y) ** 2
+        if best_dist is None or dist < best_dist:
+            best_dist = dist
+            best_idx = idx
+    return best_idx
+
+
 def _predict_saliency_cached(image_hash, image_path):
     """Run UMSI++ saliency prediction with an LRU hash cache.
 
@@ -533,6 +577,142 @@ def search_time():
             filepath.unlink()
 
 
+@app.route("/api/scanpath-to-target", methods=["POST"])
+def scanpath_to_target():
+    """
+    Predict the visual-search scanpath toward a user-selected target element.
+
+    The user picks a target on the screenshot (by click position or element id);
+    this endpoint returns the fixation sequence the Jokinen 2020 Adaptive Feature
+    Guidance model traverses while a novice searches for that target, starting
+    from the screen center. This is a TASK-DRIVEN scanpath (goal-directed search),
+    not a free-viewing scanpath.
+
+    Reference:
+        Jokinen, J.P.P. et al. (2020). Adaptive feature guidance: Modelling
+        visual search with graphical layouts. IJHCS, 136, 102376.
+
+    Request:
+        POST multipart/form-data with field "image" (PNG/JPG screenshot).
+        Target selection (one of):
+            - target_x, target_y (float, query params): click position in
+              ORIGINAL-image pixel coordinates. The element whose bounding box
+              contains the point is used; otherwise the element with the nearest
+              center is chosen.
+            - target_id (int, query param): id of a previously detected element.
+        Optional:
+            n_simulations (int): Monte Carlo trials (default: 100).
+            use_saliency (bool): use UMSI++ saliency (default: true).
+
+    Response JSON:
+        {
+            "filename": str,
+            "n_elements": int,
+            "target_id": int,
+            "target_center": [cx, cy],
+            "target_bbox": [x, y, w, h],
+            "scanpath": {
+                "fixations": [
+                    {"x","y","order","t_cumulative_s","step_time_s",
+                     "element_id","is_target"}, ...
+                ],
+                "total_time_s": float,
+                "n_fixations": int,
+                "image_width": int,
+                "image_height": int,
+                "basis": "jokinen_search_model",
+                "is_target_driven": true
+            }
+        }
+    """
+    if "image" not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+
+    file = request.files["image"]
+    if file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+
+    ext = Path(file.filename).suffix.lower()
+    if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
+        return jsonify({"error": f"Unsupported format: {ext}"}), 400
+
+    # Target selection params.
+    target_x = request.args.get("target_x", default=None, type=float)
+    target_y = request.args.get("target_y", default=None, type=float)
+    target_id = request.args.get("target_id", default=None, type=int)
+    if target_id is None and (target_x is None or target_y is None):
+        return jsonify({
+            "error": "Provide either target_id or both target_x and target_y"
+        }), 400
+
+    n_simulations = request.args.get("n_simulations", 100, type=int)
+    use_saliency = request.args.get("use_saliency", "true").lower() != "false"
+
+    image_hash, image_bytes = _hash_upload(file)
+    filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
+    filepath = UPLOAD_DIR / filename
+    filepath.write_bytes(image_bytes)
+
+    try:
+        import cv2
+        from cognitive.element_detector import detect_elements
+        from cognitive.jokinen_model import JokinenSearchModel, JokinenParams
+
+        img = cv2.imread(str(filepath))
+        if img is None:
+            return jsonify({"error": "Cannot read image"}), 400
+
+        elements = detect_elements(img)
+        if len(elements) == 0:
+            return jsonify({
+                "filename": file.filename,
+                "error": "No UI elements detected",
+                "n_elements": 0,
+            }), 200
+
+        # Resolve the target element index from the selection params.
+        target_idx = _resolve_target_index(elements, target_id, target_x, target_y)
+        if target_idx is None:
+            return jsonify({"error": "Could not resolve target element"}), 400
+
+        # Saliency (optional) so the scanpath matches the search-time pipeline.
+        saliency_map = None
+        if use_saliency:
+            try:
+                saliency_map, _, _ = _predict_saliency_cached(image_hash, filepath)
+            except Exception as e:
+                print(f"[Scanpath] Saliency unavailable, feature-only mode: {e!r}")
+
+        params = JokinenParams(
+            n_simulations=min(n_simulations, 500),
+            random_seed=42,
+        )
+        jokinen = JokinenSearchModel(params)
+        scanpath = jokinen.predict_scanpath_to_target(
+            target_idx=target_idx,
+            elements=elements,
+            saliency_map=saliency_map,
+            image_shape=img.shape[:2],
+        )
+
+        target_elem = elements[target_idx]
+        return jsonify({
+            "filename": file.filename,
+            "n_elements": len(elements),
+            "target_id": target_elem.get("id"),
+            "target_center": list(target_elem.get("center", [])),
+            "target_bbox": list(target_elem.get("bbox", [])),
+            "saliency_used": saliency_map is not None,
+            "scanpath": scanpath,
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if filepath.exists():
+            filepath.unlink()
+
+
 @app.route("/api/cognitive-load", methods=["POST"])
 def cognitive_load():
     """
@@ -618,29 +798,44 @@ def cognitive_load():
                 saliency_dict["saliency_peak_count"],
                 saliency_dict["saliency_center_bias"],
             ], dtype=np.float32)
-
-            # Build colored overlay: original image blended with JET-colormap heatmap.
-            # Alpha blend: 0.55 original + 0.45 heatmap (warm-on-dark, readable on
-            # both light and dark UIs). JET colormap: blue=low, red=high saliency.
-            # The overlay is returned as JPEG (quality 85) to keep response size
-            # manageable; PNG would be ~3–5× larger for typical screenshot dimensions.
-            # Reference for JET colormap in saliency visualization:
-            #   Itti, L. & Koch, C. (2001). Computational modelling of visual
-            #   attention. Nature Reviews Neuroscience, 2(3), 194–203.
-            orig = cv2.imread(str(filepath))
-            if orig is not None:
-                heat_u8 = (heatmap * 255).astype(np.uint8)
-                heat_colored = cv2.applyColorMap(heat_u8, cv2.COLORMAP_JET)
-                heat_resized = cv2.resize(
-                    heat_colored, (orig.shape[1], orig.shape[0]),
-                    interpolation=cv2.INTER_LINEAR,
-                )
-                overlay = cv2.addWeighted(orig, 0.55, heat_resized, 0.45, 0)
-                _, buf = cv2.imencode(".jpg", overlay, [cv2.IMWRITE_JPEG_QUALITY, 85])
-                saliency_overlay_b64 = base64.b64encode(buf).decode("utf-8")
-        except Exception:
+        except Exception as e:
+            # Do NOT fail silently: the cognitive-load model degrades to image-only
+            # features (s=None) when saliency is missing. Log loudly so a broken
+            # saliency stage is visible during the study instead of silently
+            # producing a partial result that still looks "green".
             cache_hit = False
-            pass  # Saliency optional
+            s = None
+            saliency_dict = {}
+            print(f"[Saliency] Saliency features unavailable: {e!r}")
+
+        # Build colored overlay: original image blended with JET-colormap heatmap.
+        # This is purely cosmetic (visualization only) and is kept in a SEPARATE
+        # try-block so that a failure here can never discard the real saliency
+        # features computed above.
+        # Alpha blend: 0.55 original + 0.45 heatmap (warm-on-dark, readable on
+        # both light and dark UIs). JET colormap: blue=low, red=high saliency.
+        # The overlay is returned as JPEG (quality 85) to keep response size
+        # manageable; PNG would be ~3–5× larger for typical screenshot dimensions.
+        # Reference for JET colormap in saliency visualization:
+        #   Itti, L. & Koch, C. (2001). Computational modelling of visual
+        #   attention. Nature Reviews Neuroscience, 2(3), 194–203.
+        if s is not None:
+            try:
+                import base64, cv2
+                orig = cv2.imread(str(filepath))
+                if orig is not None:
+                    heat_u8 = (heatmap * 255).astype(np.uint8)
+                    heat_colored = cv2.applyColorMap(heat_u8, cv2.COLORMAP_JET)
+                    heat_resized = cv2.resize(
+                        heat_colored, (orig.shape[1], orig.shape[0]),
+                        interpolation=cv2.INTER_LINEAR,
+                    )
+                    overlay = cv2.addWeighted(orig, 0.55, heat_resized, 0.45, 0)
+                    _, buf = cv2.imencode(".jpg", overlay, [cv2.IMWRITE_JPEG_QUALITY, 85])
+                    saliency_overlay_b64 = base64.b64encode(buf).decode("utf-8")
+            except Exception as e:
+                # Cosmetic only: real features are unaffected. Log, don't crash.
+                print(f"[Saliency] Overlay rendering failed (features unaffected): {e!r}")
 
         # Step 3: HCEye cognitive load features (h∈ℝ⁶)
         lookup_path = Path(__file__).parent.parent / "hceye" / "sensitivity_lookup.json"
@@ -698,16 +893,36 @@ def cognitive_load():
         mean_search_time_s: float | None = None
         estimated_fixation_count: float | None = None
         try:
+            import cv2
             from cognitive.jokinen_model import JokinenSearchModel, JokinenParams
             from cognitive.element_detector import detect_elements
-            img_path_str = str(filepath)  # filepath still exists at this point
-            elements = detect_elements(img_path_str)
+            # detect_elements expects a BGR image array (cv2.imread), not a path.
+            jokinen_img = cv2.imread(str(filepath))
+            if jokinen_img is None:
+                raise ValueError(f"Cannot read image for Jokinen search model: {filepath}")
+            elements = detect_elements(jokinen_img)
+            # Reuse the already-computed UMSI++ heatmap when saliency succeeded
+            # (avoids re-running the slow saliency step). s is not None implies
+            # the saliency block ran past the heatmap assignment above.
+            jokinen_saliency = heatmap if s is not None else None
             jokinen_model = JokinenSearchModel(JokinenParams())
-            jresult = jokinen_model.predict(elements)
-            mean_search_time_s = float(jresult.get("mean_search_time", jresult.get("mean_time", 0)))
-            estimated_fixation_count = float(jresult.get("mean_fixations", jresult.get("fixations", 0)))
-        except Exception:
-            pass  # Jokinen metrics are optional for coherence check
+            jresult = jokinen_model.predict_search_times(
+                elements=elements,
+                saliency_map=jokinen_saliency,
+                image_shape=jokinen_img.shape[:2],
+            )
+            mean_search_time_s = float(jresult["mean_search_time_s"])
+            # The model returns per-element fixation counts; aggregate to a
+            # layout-wide mean for the coherence check (no aggregate key exists).
+            per_elem = jresult.get("per_element", [])
+            if per_elem:
+                estimated_fixation_count = float(
+                    sum(e["fixation_count"] for e in per_elem) / len(per_elem)
+                )
+        except Exception as e:
+            # Do NOT fail silently: the coherence check depends on these values.
+            # Log loudly so a broken search model is visible during the study.
+            print(f"[Jokinen] Search model unavailable for coherence check: {e!r}")
 
         saliency_spread = saliency_dict.get("saliency_dispersion") if saliency_dict else None
         coherence = run_coherence_check(

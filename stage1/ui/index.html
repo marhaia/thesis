@@ -179,6 +179,18 @@
             border-top: 1px solid var(--border);
             padding-top: 6px;
         }
+        /* Inline citation links inside the stage cards: subtle dotted underline,
+           accent on hover, so each source is clickable without looking cluttered. */
+        .pipeline-node-ref a {
+            color: inherit;
+            text-decoration: none;
+            border-bottom: 1px dotted var(--text-dim);
+            transition: color .15s, border-color .15s;
+        }
+        .pipeline-node-ref a:hover {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
         .pipeline-arrow {
             text-align: center;
             color: var(--text-dim);
@@ -1012,6 +1024,31 @@
             padding: 8px 10px;
             background: var(--surface2);
         }
+        /* "Analyzed with" context summary shown above the interpretation, so the
+           declared task context stays visible alongside the results. */
+        .context-summary {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin: 16px 0 4px;
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+        .context-summary .cs-label {
+            font-weight: 600;
+            color: var(--text);
+        }
+        .context-summary .cs-chip {
+            padding: 3px 9px;
+            border-radius: 999px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        .context-summary .cs-chip.cs-default {
+            color: var(--text-dim);
+        }
         /* Full-width Analyze action bar (runs Step 1 + Step 2). */
         .analyze-bar {
             display: flex;
@@ -1308,14 +1345,14 @@
                     <span class="step-badge" id="step1Badge">1</span>
                     <h2>Upload Screenshot</h2>
                     <span class="tag-required">Required</span>
-                    <span class="step-status done" id="step1Status" style="display:none;">✓ Uploaded</span>
+                    <span class="step-status done" id="step1Status" style="display:none;">Uploaded</span>
                 </div>
                 <p class="field-hint" style="margin-bottom:12px;">Upload a GUI screenshot (PNG, JPG, BMP, TIFF). The file is processed locally on your machine — nothing is stored permanently.</p>
                 <div class="drop-zone" id="dropZone">
                     <input type="file" id="fileInput"
                            accept="image/png,image/jpeg,image/jpg,image/bmp,image/tiff,image/webp">
                     <label for="fileInput" aria-label="Click to select a screenshot or drop one here"></label>
-                    <div class="drop-zone-icon">🖼</div>
+                    <div class="drop-zone-icon" aria-hidden="true"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-dim);"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
                     <div class="drop-zone-text">
                         Drag &amp; drop your screenshot here<br>
                         or <strong style="color:var(--accent);">browse files</strong>
@@ -1347,7 +1384,7 @@
                     <div class="field">
                         <label for="taskType">Task Type</label>
                         <select id="taskType">
-                            <option value="search" selected>Search — default</option>
+                            <option value="search" selected>Search — neutral default</option>
                             <option value="navigation">Navigation</option>
                             <option value="monitoring">Monitoring</option>
                             <option value="data_entry">Data Entry</option>
@@ -1358,7 +1395,7 @@
                     <div class="field">
                         <label for="searchMode">Search Mode</label>
                         <select id="searchMode">
-                            <option value="known_item" selected>Known Item — default</option>
+                            <option value="known_item" selected>Known Item — neutral default</option>
                             <option value="comparative">Comparative</option>
                             <option value="exploratory">Exploratory</option>
                         </select>
@@ -1368,7 +1405,7 @@
                         <label for="targetSpecificity">Target Specificity</label>
                         <select id="targetSpecificity">
                             <option value="high">High — target well defined</option>
-                            <option value="medium" selected>Medium — default</option>
+                            <option value="medium" selected>Medium — neutral default</option>
                             <option value="low">Low — vague or open-ended</option>
                         </select>
                         <div class="field-hint">How precisely is the target defined? High specificity reduces search load. <span class="field-hint-default">If unsure, keep <em>Medium</em>.</span></div>
@@ -1377,7 +1414,7 @@
                         <label for="timePressure">Time Pressure</label>
                         <select id="timePressure">
                             <option value="low">Low — ample time</option>
-                            <option value="medium" selected>Medium — default</option>
+                            <option value="medium" selected>Medium — neutral default</option>
                             <option value="high">High — time-critical</option>
                         </select>
                         <div class="field-hint">Time constraints directly increase cognitive load (Kahneman, 1973). <span class="field-hint-default">If unsure, keep <em>Medium</em>.</span></div>
@@ -1386,7 +1423,7 @@
                 <div class="field" style="margin-top: 12px;">
                     <label for="profilePreset">User Profile <span class="tag-optional" style="vertical-align:middle;margin-left:6px;">Optional</span></label>
                     <select id="profilePreset">
-                        <option value="neutral" selected>Neutral — no adjustment (default)</option>
+                        <option value="neutral" selected>Neutral — neutral default (no adjustment)</option>
                         <option value="focused">Focused / Conscientious</option>
                         <option value="exploratory">Exploratory / Open</option>
                         <option value="social">Social / Extraverted</option>
@@ -1399,13 +1436,11 @@
 
         </div><!-- end grid-inputs -->
 
-        <!-- Analyze action: runs Step 1 + Step 2 together. Placed below both
-             cards so the natural top-to-bottom flow is Upload -> Task Context
-             -> Analyze, instead of the button sitting inside Step 1 where it
-             tempted users to skip the task context. -->
-        <div class="card analyze-bar">
+        <!-- Analyze action: a lightweight right-aligned row sitting directly
+             under Step 2 (not its own numbered step), so the flow stays simple:
+             Upload -> Task Context -> Analyze -> Results. -->
+        <div class="analyze-bar">
             <div class="analyze-bar-text">
-                <strong>Step 3 · Run the analysis</strong>
                 <span id="analyzeBarHint">Upload a screenshot in Step 1 to enable the analysis. The task context in Step 2 is optional — defaults give a neutral baseline.</span>
                 <div class="analyze-status" id="analyzeStatus"></div>
             </div>
@@ -1416,10 +1451,10 @@
             </div>
         </div>
 
-        <!-- Step 4: Results — full width -->
+        <!-- Step 3: Results — full width -->
         <div class="card" style="margin-top:24px;">
             <div class="step-heading">
-                <span class="step-badge">4</span>
+                <span class="step-badge">3</span>
                 <h2>Pipeline Results</h2>
             </div>
 
@@ -1459,6 +1494,11 @@
                 <!-- 2. Score summary -->
                 <div class="summary-grid" id="summaryGrid"></div>
 
+                <!-- 2b. Context summary: shows exactly which task context the
+                     score was computed with, so the declared mode stays visible
+                     after analysis (not hidden in the Step 2 dropdowns). -->
+                <div id="contextSummary" class="context-summary"></div>
+
                 <!-- 3. Interpretation -->
                 <div id="interpretationPanel"></div>
 
@@ -1485,6 +1525,25 @@
                             <canvas id="radarChart" width="900" height="900"></canvas>
                         </div>
                         <div id="radarInterpretation" class="radar-interpretation"></div>
+                    </div>
+                </div>
+
+                <!-- 4b. Predicted search path to a clicked target (Jokinen model).
+                     The user clicks any element on the screenshot; the tool draws
+                     the goal-directed visual-search scanpath the model predicts a
+                     novice would follow to reach that target. Task-driven (not
+                     free-viewing), computed from the existing Jokinen search model. -->
+                <div id="targetScanpathPanel" style="display:none; margin-top:24px;">
+                    <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <span style="font-size:13px; font-weight:600;">Predicted Search Path</span>
+                        <span id="scanpathStatus" style="font-size:11px; color:var(--text-dim);"></span>
+                        <button id="clearScanpathBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0; display:none;">Clear</button>
+                        <button id="downloadScanpathBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0; display:none;">Download</button>
+                    </div>
+                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;"><strong>Click any element</strong> on the screenshot to see the predicted order in which a first-time user would look while searching for it. This is a <strong>model estimate</strong> of goal-directed search (Jokinen et al., 2020), not measured eye-tracking.</p>
+                    <div id="scanpathContainer" style="position:relative; width:100%; border-radius:8px; border:1px solid var(--border); overflow:hidden; cursor:crosshair;">
+                        <img id="scanpathImg" src="" alt="Screenshot for target selection" style="display:block; width:100%;">
+                        <canvas id="scanpathCanvas" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></canvas>
                     </div>
                 </div>
 
@@ -1546,21 +1605,21 @@
                     <div class="pipeline-node-title">Visual Complexity</div>
                     <div class="pipeline-node-dim">v ∈ ℝ⁸</div>
                     <div class="pipeline-node-desc">8 image-derived features: Shannon entropy, edge density, feature congestion, subband entropy, layout symmetry, chromatic coherence, visual hierarchy, interactive element density.</div>
-                    <div class="pipeline-node-ref">Rosenholtz et al. (2007) · Shannon (1948) · Tuch et al. (2009)</div>
+                    <div class="pipeline-node-ref"><a href="https://doi.org/10.1167/7.2.17" target="_blank" rel="noopener">Rosenholtz et al. (2007)</a> · <a href="https://doi.org/10.1002/j.1538-7305.1948.tb01338.x" target="_blank" rel="noopener">Shannon (1948)</a> · <a href="https://doi.org/10.1016/j.ijhcs.2009.04.002" target="_blank" rel="noopener">Tuch et al. (2009)</a></div>
                 </div>
                 <div class="pipeline-node">
                     <div class="pipeline-node-label">Stage 1b</div>
                     <div class="pipeline-node-title">Saliency Features</div>
                     <div class="pipeline-node-dim">s ∈ ℝ⁵</div>
                     <div class="pipeline-node-desc">UMSI++ deep-learning saliency model predicts where users look. Five summary statistics: dispersion, entropy, coverage, peak count, center bias.</div>
-                    <div class="pipeline-node-ref">Jiang et al. CHI 2023 · Itti &amp; Koch (2001) · Tatler (2007)</div>
+                    <div class="pipeline-node-ref"><a href="https://doi.org/10.1145/3544548.3581096" target="_blank" rel="noopener">Jiang et al. CHI 2023</a> · <a href="https://doi.org/10.1038/35058500" target="_blank" rel="noopener">Itti &amp; Koch (2001)</a> · <a href="https://doi.org/10.1167/7.14.4" target="_blank" rel="noopener">Tatler (2007)</a></div>
                 </div>
                 <div class="pipeline-node">
                     <div class="pipeline-node-label">Stage 1c</div>
                     <div class="pipeline-node-title">Search Time Model</div>
                     <div class="pipeline-node-dim">Jokinen 2020</div>
                     <div class="pipeline-node-desc">Cognitive search time estimated via Jokinen’s adaptive feature guidance model, integrating EMMA eye-movement parameters and ACT-R memory decay.</div>
-                    <div class="pipeline-node-ref">Jokinen et al. (2020) · Salvucci (2001) · Anderson et al. (2004)</div>
+                    <div class="pipeline-node-ref"><a href="https://doi.org/10.1016/j.ijhcs.2019.102376" target="_blank" rel="noopener">Jokinen et al. (2020)</a> · <a href="https://doi.org/10.1016/S1389-0417(00)00015-2" target="_blank" rel="noopener">Salvucci (2001)</a> · <a href="https://doi.org/10.1037/0033-295X.111.4.1036" target="_blank" rel="noopener">Anderson et al. (2004)</a></div>
                 </div>
             </div>
 
@@ -1573,21 +1632,21 @@
                     <div class="pipeline-node-title">Eye-Tracking Features</div>
                     <div class="pipeline-node-dim">h ∈ ℝ⁶</div>
                     <div class="pipeline-node-desc">Rule-based sensitivity model derived from HCEye dataset (27 participants, 150 web pages, 3 cognitive load conditions via dual-task paradigm).</div>
-                    <div class="pipeline-node-ref">Das et al. ETRA 2024</div>
+                    <div class="pipeline-node-ref"><a href="https://doi.org/10.1145/3655610" target="_blank" rel="noopener">Das et al. ETRA 2024</a></div>
                 </div>
                 <div class="pipeline-node">
                     <div class="pipeline-node-label">Task Descriptor</div>
                     <div class="pipeline-node-title">Task Context</div>
                     <div class="pipeline-node-dim">t ∈ ℝ⁶</div>
                     <div class="pipeline-node-desc">Task type, search mode, target specificity, time pressure, and search mode are encoded as a weighted vector that modifies the base score.</div>
-                    <div class="pipeline-node-ref">Kahneman (1973) · Wickens (2008) · Treisman &amp; Gelade (1980)</div>
+                    <div class="pipeline-node-ref">Kahneman (1973) · <a href="https://doi.org/10.1518/001872008X288394" target="_blank" rel="noopener">Wickens (2008)</a> · <a href="https://doi.org/10.1016/0010-0285(80)90005-5" target="_blank" rel="noopener">Treisman &amp; Gelade (1980)</a></div>
                 </div>
                 <div class="pipeline-node">
                     <div class="pipeline-node-label">User Profile</div>
                     <div class="pipeline-node-title">Big Five Personality</div>
                     <div class="pipeline-node-dim">p ∈ ℝ⁵</div>
                     <div class="pipeline-node-desc">Optional Big Five personality preset (Costa &amp; McCrae, 1992) applies a small modifier based on neuroticism, conscientiousness, and openness.</div>
-                    <div class="pipeline-node-ref">Serapio-García et al. (2023) · Taubman-Ben-Ari et al. (2004)</div>
+                    <div class="pipeline-node-ref"><a href="https://doi.org/10.48550/arXiv.2307.00184" target="_blank" rel="noopener">Serapio-García et al. (2023)</a> · <a href="https://doi.org/10.1016/S0001-4575(03)00010-1" target="_blank" rel="noopener">Taubman-Ben-Ari et al. (2004)</a></div>
                 </div>
             </div>
 
@@ -1599,7 +1658,7 @@
                     <div class="pipeline-node-title">Multi-Output Prediction</div>
                     <div class="pipeline-node-dim">x = [v, s, h, t, p] ∈ ℝ³⁰</div>
                     <div class="pipeline-node-desc">The concatenated vector is passed to the regression model (HCEye rule-based by default, optional trained Random Forest). Three simultaneous outputs: Cognitive Load Score (0–100), Search Efficiency (0–1), Attention Demand (0–1). A mutual coherence check flags implausible combinations.</div>
-                    <div class="pipeline-node-ref">Breiman (2001) Random Forest · Borchani et al. (2015) Multi-Output Regression · Rosenholtz et al. (2007) Coherence</div>
+                    <div class="pipeline-node-ref"><a href="https://doi.org/10.1023/A:1010933404324" target="_blank" rel="noopener">Breiman (2001)</a> Random Forest · <a href="https://doi.org/10.1002/widm.1157" target="_blank" rel="noopener">Borchani et al. (2015)</a> Multi-Output Regression · <a href="https://doi.org/10.1167/7.2.17" target="_blank" rel="noopener">Rosenholtz et al. (2007)</a> Coherence</div>
                 </div>
             </div>
 
@@ -1608,12 +1667,12 @@
                 <div class="pipeline-node">
                     <div class="pipeline-node-title">HCEye Behavioral Validation</div>
                     <div class="pipeline-node-desc">H1 (fewer fixations under high load): p = 2.55×10⁻²⁸, Cohen’s d = 1.47 (large effect). Model prediction deviation: 0.6% from observed ratio.</div>
-                    <div class="pipeline-node-ref">Das et al. ETRA 2024</div>
+                    <div class="pipeline-node-ref"><a href="https://doi.org/10.1145/3655610" target="_blank" rel="noopener">Das et al. ETRA 2024</a></div>
                 </div>
                 <div class="pipeline-node">
                     <div class="pipeline-node-title">UMSI++ Saliency Validation</div>
                     <div class="pipeline-node-desc">Internal sanity check on a UEyes sample: predicted maps reproduce the human-fixation ground truth with CC around 0.90 and SIM around 0.81 on the sampled images. These are in-house figures on a non-standard split and are <em>not</em> directly comparable to the published UEyes benchmark (UMSI++: CC = 0.833, SIM = 0.733; Jiang et al., 2023), so they should be read as a consistency check rather than a state-of-the-art claim.</div>
-                    <div class="pipeline-node-ref">Jiang et al. CHI 2023 · Bylinskii et al. (2018)</div>
+                    <div class="pipeline-node-ref"><a href="https://doi.org/10.1145/3544548.3581096" target="_blank" rel="noopener">Jiang et al. CHI 2023</a> · <a href="https://doi.org/10.1109/TPAMI.2018.2815601" target="_blank" rel="noopener">Bylinskii et al. (2018)</a></div>
                 </div>
             </div>
 
@@ -1629,6 +1688,15 @@
                 <div class="ref-item"><strong>Itti &amp; Koch (2001)</strong> Computational modelling of visual attention. Nature Reviews Neuroscience, 2(3). <a class="ref-doi" href="https://doi.org/10.1038/35058500" target="_blank" rel="noopener">doi:10.1038/35058500</a></div>
                 <div class="ref-item"><strong>Shannon (1948)</strong> A Mathematical Theory of Communication. Bell System Technical Journal, 27(3). <a class="ref-doi" href="https://doi.org/10.1002/j.1538-7305.1948.tb01338.x" target="_blank" rel="noopener">doi:10.1002/j.1538-7305.1948.tb01338.x</a></div>
                 <div class="ref-item"><strong>Breiman (2001)</strong> Random Forests. Machine Learning, 45(1). <a class="ref-doi" href="https://doi.org/10.1023/A:1010933404324" target="_blank" rel="noopener">doi:10.1023/A:1010933404324</a></div>
+                <div class="ref-item"><strong>Tatler (2007)</strong> The central fixation bias in scene viewing: Selecting an optimal viewing position independently of motor biases and image feature distributions. Journal of Vision, 7(14):4. <a class="ref-doi" href="https://doi.org/10.1167/7.14.4" target="_blank" rel="noopener">doi:10.1167/7.14.4</a></div>
+                <div class="ref-item"><strong>Salvucci (2001)</strong> An integrated model of eye movements and visual encoding. Cognitive Systems Research, 1(4). <a class="ref-doi" href="https://doi.org/10.1016/S1389-0417(00)00015-2" target="_blank" rel="noopener">doi:10.1016/S1389-0417(00)00015-2</a></div>
+                <div class="ref-item"><strong>Anderson, Bothell, Byrne, Douglass, Lebiere &amp; Qin (2004)</strong> An integrated theory of the mind. Psychological Review, 111(4). <a class="ref-doi" href="https://doi.org/10.1037/0033-295X.111.4.1036" target="_blank" rel="noopener">doi:10.1037/0033-295X.111.4.1036</a></div>
+                <div class="ref-item"><strong>Treisman &amp; Gelade (1980)</strong> A feature-integration theory of attention. Cognitive Psychology, 12(1). <a class="ref-doi" href="https://doi.org/10.1016/0010-0285(80)90005-5" target="_blank" rel="noopener">doi:10.1016/0010-0285(80)90005-5</a></div>
+                <div class="ref-item"><strong>Wickens (2008)</strong> Multiple resources and mental workload. Human Factors, 50(3). <a class="ref-doi" href="https://doi.org/10.1518/001872008X288394" target="_blank" rel="noopener">doi:10.1518/001872008X288394</a></div>
+                <div class="ref-item"><strong>Taubman-Ben-Ari, Mikulincer &amp; Gillath (2004)</strong> The multidimensional driving style inventory — scale construct and validation. Accident Analysis &amp; Prevention, 36(3). <a class="ref-doi" href="https://doi.org/10.1016/S0001-4575(03)00010-1" target="_blank" rel="noopener">doi:10.1016/S0001-4575(03)00010-1</a></div>
+                <div class="ref-item"><strong>Borchani, Varando, Bielza &amp; Larrañaga (2015)</strong> A survey on multi-output regression. WIREs Data Mining and Knowledge Discovery, 5(5). <a class="ref-doi" href="https://doi.org/10.1002/widm.1157" target="_blank" rel="noopener">doi:10.1002/widm.1157</a></div>
+                <div class="ref-item"><strong>Bylinskii, Judd, Oliva, Torralba &amp; Durand (2018)</strong> What do different evaluation metrics tell us about saliency models? IEEE Transactions on Pattern Analysis and Machine Intelligence, 41(3). <a class="ref-doi" href="https://doi.org/10.1109/TPAMI.2018.2815601" target="_blank" rel="noopener">doi:10.1109/TPAMI.2018.2815601</a></div>
+                <div class="ref-item"><strong>Serapio-García, Safdari, Crepy, Sun, Fitz, Romero, Abdulhai, Faust &amp; Matarić (2023)</strong> Personality Traits in Large Language Models. arXiv preprint. <a class="ref-doi" href="https://doi.org/10.48550/arXiv.2307.00184" target="_blank" rel="noopener">doi:10.48550/arXiv.2307.00184</a></div>
                 <div class="ref-item"><strong>Kahneman (1973)</strong> Attention and Effort. Prentice-Hall. (Book — no DOI)</div>
                 <div class="ref-item"><strong>Costa &amp; McCrae (1992)</strong> Revised NEO Personality Inventory (NEO PI-R). Psychological Assessment Resources. (Test manual — no DOI)</div>
             </div>
@@ -1777,7 +1845,7 @@
             </div>`;
         }
 
-        function buildDesignDiagnosis(vf, reference) {
+        function buildDesignDiagnosis(vf, reference, loadScore) {
             // Compute the load signal for every feature. When an empirical
             // reference exists for a feature we use it (same source as the
             // bars); otherwise we fall back to the min/max range heuristic.
@@ -1810,6 +1878,19 @@
 
             const bullets = [];
 
+            // Reconciled summary that always accounts for ALL features, so the
+            // numbers can never appear to contradict (e.g. "6 of 8" while one
+            // feature is critical and one is unlisted). critical + elevated +
+            // within-range always sums to FEATURE_KEYS.length.
+            const summaryParts = [];
+            if (crits.length) summaryParts.push(`${crits.length} critical`);
+            if (highs.length) summaryParts.push(`${highs.length} elevated`);
+            summaryParts.push(`${oks.length} within typical range`);
+            bullets.push({
+                cls: crits.length ? 'crit' : highs.length ? 'high' : 'ok',
+                text: `<strong>Across all ${FEATURE_KEYS.length} design features:</strong> ${summaryParts.join(' · ')}.`
+            });
+
             if (crits.length) {
                 bullets.push({ cls:'crit', text: `<strong>Critical load drivers:</strong> ${crits.map(i=>NAMES[i.key]).join(', ')} — address these first.` });
             }
@@ -1817,9 +1898,15 @@
                 bullets.push({ cls:'high', text: `<strong>Elevated:</strong> ${highs.map(i=>NAMES[i.key]).join(', ')} — worth reviewing in context.` });
             }
             if (oks.length === FEATURE_KEYS.length) {
-                bullets.push({ cls:'ok', text: 'All 8 features are within expected range — no single feature is driving the load score.' });
-            } else if (oks.length >= 5) {
-                bullets.push({ cls:'ok', text: `${oks.length} of 8 features are within range (${oks.map(i=>NAMES[i.key]).join(', ')}).` });
+                bullets.push({ cls:'ok', text: 'No single feature is driving the load score.' });
+            }
+
+            // Explain the common case where the overall load is high while most
+            // individual features look typical: the load score is a bottom-up
+            // prediction (saliency + eye-movement model) plus task context, not
+            // an average of these structural features.
+            if (loadScore >= 50 && (crits.length + highs.length) <= 2) {
+                bullets.push({ cls:'high', text: 'Why is the load high if most features are typical? The load score is a bottom-up prediction (predicted saliency + eye-movement model) shaped by the task context — it is driven by the flagged feature(s) above, not by all 8 structural features being jointly atypical. Structural typicality and predicted attentional load are complementary, not the same.' });
             }
 
             // Specific actionable hints
@@ -1917,7 +2004,7 @@
 
         // Reflects Step 2's state without ever blocking it: a neutral grey pill
         // while on defaults, an accent pill once the user customises the context.
-        // Also drives the speaking text in the Step 3 analyze bar so the button
+        // Also drives the speaking text in the analyze bar so the button
         // guides instead of gates (context stays optional).
         function isContextCustom() {
             return Object.entries(CONTEXT_DEFAULTS).some(([id, def]) => {
@@ -2051,7 +2138,7 @@
             // "earned" state is visible, then refresh the speaking status/bar.
             document.getElementById("step1Card")?.classList.add("step-done");
             const step1Badge = document.getElementById("step1Badge");
-            if (step1Badge) { step1Badge.textContent = "✓"; step1Badge.classList.add("done"); }
+            if (step1Badge) { step1Badge.classList.add("done"); }
             const step1Status = document.getElementById("step1Status");
             if (step1Status) step1Status.style.display = "";
             updateContextHint();
@@ -2149,13 +2236,13 @@
 
                 clearInterval(stageInterval);
                 timerEl.textContent = elapsed + 's';
-                titleEl.textContent = '✓ Done — rendering results…';
+                titleEl.textContent = 'Done — rendering results…';
                 for (const s of STAGES) {
                     const el = document.getElementById(s.id);
                     if (el) el.className = 'loading-stage stage-done';
                 }
 
-                analyzeStatus.textContent = `✓ Analysis complete. (${elapsed}s)`;
+                analyzeStatus.textContent = `Analysis complete. (${elapsed}s)`;
                 analyzeStatus.className = "analyze-status success";
                 playDoneChime();
                 notifyAnalysisComplete(data, elapsed);
@@ -2201,6 +2288,179 @@
 
 
         // ─── Render Results ───
+        // Builds the "Analyzed with" context summary so the declared task
+        // context stays visible next to the results. Each factor becomes a chip;
+        // chips still on their neutral default are marked subtly so the user can
+        // see at a glance what was assumed vs. customised.
+        function renderContextSummary() {
+            const el = document.getElementById("contextSummary");
+            if (!el) return;
+            const fields = [
+                "taskType", "searchMode", "targetSpecificity",
+                "timePressure", "profilePreset",
+            ];
+            const chips = fields.map((id) => {
+                const sel = document.getElementById(id);
+                if (!sel) return "";
+                // Use the visible option label, stripped of the "— … default" suffix.
+                const label = sel.options[sel.selectedIndex].text.split("—")[0].trim();
+                const isDefault = sel.value === CONTEXT_DEFAULTS[id];
+                return `<span class="cs-chip${isDefault ? " cs-default" : ""}">${label}</span>`;
+            }).join("");
+            const allDefault = !isContextCustom();
+            el.innerHTML =
+                `<span class="cs-label">Analyzed with:</span>${chips}` +
+                `<span>${allDefault ? "(neutral default context)" : "(custom context)"}</span>`;
+        }
+
+        // Predicted search-path overlay (Jokinen task-driven scanpath).
+        // After an analysis, the user clicks any element on the screenshot; we
+        // ask the backend for the goal-directed search scanpath toward that
+        // target and draw it (numbered fixations + connecting path) over the
+        // image. Coordinates from the backend are in original-image pixels, so
+        // the canvas is sized to the image's intrinsic resolution and CSS scales
+        // both image and canvas together.
+        let _scanpathLastData = null;  // most recent scanpath response (for download)
+
+        function renderTargetScanpath() {
+            const panel = document.getElementById('targetScanpathPanel');
+            const img = document.getElementById('scanpathImg');
+            const canvas = document.getElementById('scanpathCanvas');
+            const container = document.getElementById('scanpathContainer');
+            const statusEl = document.getElementById('scanpathStatus');
+            const clearBtn = document.getElementById('clearScanpathBtn');
+            const dlBtn = document.getElementById('downloadScanpathBtn');
+            if (!panel || !img || !canvas || !selectedFile) {
+                if (panel) panel.style.display = 'none';
+                return;
+            }
+
+            panel.style.display = 'block';
+            statusEl.textContent = 'Click an element to predict the search path.';
+            clearBtn.style.display = 'none';
+            dlBtn.style.display = 'none';
+            _scanpathLastData = null;
+
+            // Load the uploaded screenshot as the base image.
+            img.onload = () => {
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            };
+            img.src = URL.createObjectURL(selectedFile);
+
+            // Draw a scanpath payload (the `scanpath` object from the backend).
+            const drawScanpath = (sp) => {
+                const w = sp.image_width || img.naturalWidth;
+                const h = sp.image_height || img.naturalHeight;
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, w, h);
+
+                const pts = sp.fixations || [];
+                if (pts.length === 0) return;
+                const r = Math.max(13, Math.round(Math.min(w, h) * 0.020));
+                const lineW = Math.max(2, Math.round(Math.min(w, h) * 0.004));
+
+                // Connecting path between consecutive fixations.
+                ctx.strokeStyle = 'rgba(59,130,246,0.85)';
+                ctx.lineWidth = lineW;
+                ctx.lineJoin = 'round';
+                ctx.setLineDash([lineW * 3, lineW * 2]);
+                ctx.beginPath();
+                pts.forEach((p, i) => {
+                    if (i === 0) ctx.moveTo(p.x, p.y);
+                    else ctx.lineTo(p.x, p.y);
+                });
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Numbered fixation dots; the target gets a distinct color.
+                ctx.font = `700 ${Math.round(r * 1.05)}px -apple-system, sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                pts.forEach((p) => {
+                    const isTarget = p.is_target === true;
+                    const isStart = p.order === 0;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, isTarget ? r * 1.25 : r, 0, Math.PI * 2);
+                    ctx.fillStyle = isTarget ? '#22c55e' : (isStart ? '#64748b' : '#3b82f6');
+                    ctx.fill();
+                    ctx.lineWidth = Math.max(2, Math.round(r * 0.14));
+                    ctx.strokeStyle = '#fff';
+                    ctx.stroke();
+                    ctx.fillStyle = '#fff';
+                    ctx.fillText(isStart ? 'S' : String(p.order), p.x, p.y);
+                });
+            };
+
+            // Convert a click on the displayed image to original-image pixels.
+            const requestScanpath = async (origX, origY) => {
+                statusEl.textContent = 'Predicting search path…';
+                const formData = new FormData();
+                formData.append('image', selectedFile);
+                try {
+                    const res = await fetch(
+                        `/api/scanpath-to-target?target_x=${Math.round(origX)}&target_y=${Math.round(origY)}`,
+                        { method: 'POST', body: formData }
+                    );
+                    const data = await res.json();
+                    if (data.error || !data.scanpath) {
+                        statusEl.textContent = 'Error: ' + (data.error || 'no path returned');
+                        return;
+                    }
+                    _scanpathLastData = data;
+                    drawScanpath(data.scanpath);
+                    const sp = data.scanpath;
+                    statusEl.textContent =
+                        `Target element #${data.target_id}: ${sp.n_fixations} fixations, ` +
+                        `${sp.total_time_s.toFixed(2)} s predicted search time.`;
+                    clearBtn.style.display = '';
+                    dlBtn.style.display = '';
+                } catch (e) {
+                    statusEl.textContent = 'Error predicting search path.';
+                }
+            };
+
+            // Click handler: map display coords -> original-image coords.
+            container.onclick = (ev) => {
+                const rect = img.getBoundingClientRect();
+                const dispX = ev.clientX - rect.left;
+                const dispY = ev.clientY - rect.top;
+                if (dispX < 0 || dispY < 0 || dispX > rect.width || dispY > rect.height) return;
+                const scaleX = (img.naturalWidth || 1) / rect.width;
+                const scaleY = (img.naturalHeight || 1) / rect.height;
+                requestScanpath(dispX * scaleX, dispY * scaleY);
+            };
+
+            clearBtn.onclick = () => {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                statusEl.textContent = 'Click an element to predict the search path.';
+                clearBtn.style.display = 'none';
+                dlBtn.style.display = 'none';
+                _scanpathLastData = null;
+            };
+
+            dlBtn.onclick = () => {
+                // Composite screenshot + overlay into one downloadable PNG.
+                const out = document.createElement('canvas');
+                out.width = canvas.width;
+                out.height = canvas.height;
+                const octx = out.getContext('2d');
+                octx.drawImage(img, 0, 0, out.width, out.height);
+                octx.drawImage(canvas, 0, 0);
+                const a = document.createElement('a');
+                a.href = out.toDataURL('image/png');
+                a.download = 'predicted_search_path.png';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            };
+        }
+
         function renderResults(data) {
             results.classList.add("visible");
             emptyState.style.display = "none";
@@ -2224,6 +2484,8 @@
                     <div class="summary-meta">Higher = more attentional resources required</div>
                 </div>
             `;
+
+            renderContextSummary();
 
             renderInterpretation(data);
 
@@ -2277,12 +2539,15 @@
                 a.remove();
             };
 
+            // ── Predicted search path (click a target) ────────────────────
+            renderTargetScanpath();
+
             // ── Feature Vector Table ──────────────────────────────────────
             document.getElementById('featureSection').style.display = 'block';
 
             // Design diagnosis (3 bullets above feature table)
             const diagnosisEl = document.getElementById('featureDiagnosis');
-            if (diagnosisEl) diagnosisEl.innerHTML = buildDesignDiagnosis(data.visual_features, data.reference);
+            if (diagnosisEl) diagnosisEl.innerHTML = buildDesignDiagnosis(data.visual_features, data.reference, data.adjusted_prediction && data.adjusted_prediction.cognitive_load_score);
 
             // Provenance note for the empirical reference comparison.
             const provEl = document.getElementById('featureRefProvenance');
@@ -2705,7 +2970,7 @@
                 `<div class="coherence-warning-item">&rsaquo; ${w}</div>`
             ).join('');
             el.innerHTML = `
-                <div class="coherence-warning-title">⚠️ Coherence Check — ${coherence.flags.length} inconsistenc${coherence.flags.length === 1 ? 'y' : 'ies'} detected</div>
+                <div class="coherence-warning-title">Coherence Check — ${coherence.flags.length} inconsistenc${coherence.flags.length === 1 ? 'y' : 'ies'} detected</div>
                 ${items}
                 <div style="margin-top:8px; font-size:11px; color: var(--text-dim);">These are diagnostic flags, not errors. The prediction is still valid but may be at the boundary of the model’s calibration range.</div>
             `;
@@ -2716,6 +2981,7 @@
         function renderInterpretation(data) {
             renderCoherence(data.coherence);
             const score = data.adjusted_prediction.cognitive_load_score;
+            const baseScore = (data.base_prediction && data.base_prediction.cognitive_load_score) || 0;
             const searchEff = data.adjusted_prediction.search_efficiency;
             const attnDem  = data.adjusted_prediction.attention_demand;
             const hcEyeIdx = (data.cognitive_load_features && data.cognitive_load_features.cognitive_load_index) || 0;
@@ -2736,7 +3002,7 @@
             } else if (score < 75) {
                 level = 'HIGH'; badge = 'High Load'; badgeClass = 'badge-high'; levelClass = 'level-high';
                 title = 'Elevated cognitive demand detected';
-                body = `This screen is estimated to cause <strong>notable attentional strain</strong>. Based on HCEye data, users under cognitive load show ~12% fewer fixations and ~8% longer fixation duration — meaning they take in less while processing each element more effortfully.`;
+                body = `This screen is estimated to cause <strong>notable attentional strain</strong>. Based on HCEye data, users under cognitive load make fewer but longer fixations — they take in less of the interface while processing each element more effortfully. The estimated effect for this screen is quantified below.`;
             } else {
                 level = 'VERY_HIGH'; badge = 'Very High Load'; badgeClass = 'badge-very-high'; levelClass = 'level-very-high';
                 title = 'Critical cognitive overload risk';
@@ -2749,24 +3015,28 @@
             const items = [];
 
             if (fixPct > 3)
-                items.push(`📍 Under cognitive load, users are estimated to make <strong>~${fixPct}% fewer fixations</strong> on this screen — they see less of the interface.`);
+                items.push(`Under cognitive load, users are estimated to make <strong>~${fixPct}% fewer fixations</strong> on this screen — they see less of the interface.`);
 
             if (durPct > 3)
-                items.push(`⏱ Fixation duration is estimated to increase by <strong>~${durPct}%</strong> — each element requires more processing effort.`);
+                items.push(`Fixation duration is estimated to increase by <strong>~${durPct}%</strong> — each element requires more processing effort.`);
 
             if (searchEff < 0.5)
-                items.push(`🔍 <strong>Search efficiency is low (${searchEff.toFixed(2)})</strong> — users may have difficulty finding specific targets, especially under time pressure.`);
+                items.push(`<strong>Search efficiency is low (${searchEff.toFixed(2)})</strong> — users may have difficulty finding specific targets, especially under time pressure.`);
             else if (searchEff > 0.75)
-                items.push(`🔍 <strong>Search efficiency is good (${searchEff.toFixed(2)})</strong> — targets should be findable without excessive visual scanning.`);
+                items.push(`<strong>Search efficiency is good (${searchEff.toFixed(2)})</strong> — targets should be findable without excessive visual scanning.`);
 
             if (hlEff > 0.7)
-                items.push(`✨ <strong>Dynamic highlighting would be highly effective</strong> on this screen — it can compensate well for attention loss under load (HCEye: +${Math.round(hlEff*100)}% AOI retention with dynamic highlights).`);
+                items.push(`<strong>Dynamic highlighting would be highly effective</strong> on this screen — it can compensate well for attention loss under load (HCEye: +${Math.round(hlEff*100)}% AOI retention with dynamic highlights).`);
 
             const taskMod = data.task_descriptor && data.task_descriptor.modifier || 0;
+            // Express the task modifier relative to the base score so the headline
+            // number is a percentage; keep the raw points in parentheses for
+            // traceability (same pattern as the signed delta% feature headlines).
+            const taskPct = baseScore ? Math.round(Math.abs(taskMod) / baseScore * 100) : 0;
             if (taskMod > 4)
-                items.push(`⚠️ The selected <strong>task type adds ${taskMod.toFixed(1)} points</strong> to the score — exploratory or decision tasks amplify cognitive demand.`);
+                items.push(`The selected <strong>task type raises the score by ~${taskPct}%</strong> (+${taskMod.toFixed(1)} points) — exploratory or decision tasks amplify cognitive demand.`);
             else if (taskMod < -2)
-                items.push(`✅ The selected <strong>task type reduces the score by ${Math.abs(taskMod).toFixed(1)} points</strong> — navigation tasks tend to be less demanding.`);
+                items.push(`The selected <strong>task type lowers the score by ~${taskPct}%</strong> (−${Math.abs(taskMod).toFixed(1)} points) — navigation tasks tend to be less demanding.`);
 
             const panel = document.getElementById('interpretationPanel');
             panel.innerHTML = `
@@ -2966,12 +3236,12 @@
         document.getElementById("exportPdfBtn").addEventListener("click", async () => {
             if (history.length === 0) return;
             const btn = document.getElementById("exportPdfBtn");
-            btn.textContent = "⏳ Generating…";
+            btn.textContent = "Generating…";
             btn.disabled = true;
             try {
                 await exportPDF(history[history.length - 1]);
             } finally {
-                btn.textContent = "📄 Download PDF Report";
+                btn.textContent = "Download PDF Report";
                 btn.disabled = false;
             }
         });
@@ -3274,7 +3544,7 @@
             }
 
             // Fallback when notifications are blocked/unsupported.
-            flashTitleOnce("✓ Your analysis is ready");
+            flashTitleOnce("Your analysis is ready");
         }
 
         // ─── Done Chime (Web Audio API — no external file needed) ───
