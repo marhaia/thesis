@@ -219,7 +219,8 @@ class JokinenSearchModel:
         -------
         Dict with keys:
             'per_element': List[Dict] — per-element results:
-                'id', 'search_time_s', 'fixation_count', 'bbox', 'center'
+                'id', 'search_time_s', 'search_time_std_s', 'fixation_count',
+                'bbox', 'center'
             'mean_search_time_s': float — layout-wide average
             'max_search_time_s': float — worst-case element
             'min_search_time_s': float — best-case element
@@ -287,10 +288,18 @@ class JokinenSearchModel:
 
             mean_time = float(np.mean(search_times))
             mean_fix = float(np.mean(fixation_counts))
+            # Per-target Monte Carlo uncertainty: the standard deviation across
+            # the n_simulations trials for THIS target. This quantifies how much
+            # the predicted search time varies from run to run (model noise +
+            # stochastic saccade selection), and is the genuine uncertainty of
+            # the per-element estimate (distinct from "search_time_std_s" below,
+            # which is the spread of mean search times ACROSS different targets).
+            std_time = float(np.std(search_times))
 
             per_element_results.append({
                 "id": target_elem["id"],
                 "search_time_s": round(mean_time, 4),
+                "search_time_std_s": round(std_time, 4),
                 "fixation_count": round(mean_fix, 2),
                 "bbox": target_elem["bbox"],
                 "center": target_elem["center"],

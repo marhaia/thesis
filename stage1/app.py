@@ -648,6 +648,10 @@ def scanpath_to_target():
     n_simulations = request.args.get("n_simulations", 100, type=int)
     use_saliency = request.args.get("use_saliency", "true").lower() != "false"
 
+    # Physical display geometry (affects search timing via angular size).
+    (screen_w_cm, screen_h_cm,
+     viewing_cm, display_preset_meta) = _resolve_display_preset(request)
+
     image_hash, image_bytes = _hash_upload(file)
     filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
     filepath = UPLOAD_DIR / filename
@@ -693,6 +697,9 @@ def scanpath_to_target():
             elements=elements,
             saliency_map=saliency_map,
             image_shape=img.shape[:2],
+            screen_width_cm=screen_w_cm,
+            screen_height_cm=screen_h_cm,
+            viewing_distance_cm=viewing_cm,
         )
 
         # Target-relative cognitive load (Gigi's key point): the Jokinen model
@@ -708,12 +715,17 @@ def scanpath_to_target():
             elements=elements,
             saliency_map=saliency_map,
             image_shape=img.shape[:2],
+            screen_width_cm=screen_w_cm,
+            screen_height_cm=screen_h_cm,
+            viewing_distance_cm=viewing_cm,
         )
         mean_time = float(search_res.get("mean_search_time_s", 0.0) or 0.0)
         per_elem = search_res.get("per_element", [])
         target_time = None
+        target_time_std = None
         if 0 <= target_idx < len(per_elem):
             target_time = float(per_elem[target_idx].get("search_time_s", 0.0))
+            target_time_std = float(per_elem[target_idx].get("search_time_std_s", 0.0))
         if target_time is not None and mean_time > 0:
             # Signed fractional deviation from the layout mean, then mapped to
             # bounded score points. POINTS_PER_UNIT and MODIFIER_CAP are chosen
@@ -728,6 +740,10 @@ def scanpath_to_target():
             target_load = {
                 "mean_search_time_s": round(mean_time, 4),
                 "target_search_time_s": round(target_time, 4),
+                # Per-target Monte Carlo uncertainty (1 standard deviation over
+                # the simulation trials) for an honest "T +/- s" display.
+                "target_search_time_std_s": round(target_time_std, 4)
+                if target_time_std is not None else None,
                 # >1 = harder to find than average, <1 = easier.
                 "relative_difficulty": round(target_time / mean_time, 3),
                 # Signed % deviation vs the layout mean (for readable display).
@@ -746,6 +762,7 @@ def scanpath_to_target():
             "saliency_used": saliency_map is not None,
             "scanpath": scanpath,
             "target_load": target_load,
+            "display_preset": display_preset_meta,
         })
 
     except Exception as e:
@@ -753,6 +770,50 @@ def scanpath_to_target():
     finally:
         if filepath.exists():
             filepath.unlink()
+
+
+# Physical display presets for the Jokinen search model. Pixel-based features
+# are display-independent, but visual search timing depends on PHYSICAL angular
+# size (a 12 cm IVI viewed at 75 cm subtends a different angle than a 37 cm
+# desktop monitor at 60 cm). Each preset gives the active screen area in cm and
+# a typical viewing distance in cm. Values are nominal 16:9 active areas for the
+# named diagonal; automotive viewing distances follow common HMI design guidance
+# (driver eye to display). "desktop" is the model's default and matches the
+# defaults in JokinenSearchModel.predict_search_times.
+DISPLAY_PRESETS = {
+    "desktop":   {"label": "Desktop monitor (default)", "width_cm": 37.0, "height_cm": 23.0, "viewing_distance_cm": 60.0},
+    "ivi_8":     {"label": "IVI 8\"",                    "width_cm": 17.7, "height_cm": 10.0, "viewing_distance_cm": 70.0},
+    "ivi_10":    {"label": "IVI 10.25\"",                "width_cm": 22.7, "height_cm": 12.7, "viewing_distance_cm": 72.0},
+    "ivi_12":    {"label": "IVI 12.3\"",                 "width_cm": 27.2, "height_cm": 15.3, "viewing_distance_cm": 75.0},
+    "ivi_15":    {"label": "IVI 15\"",                   "width_cm": 33.2, "height_cm": 18.7, "viewing_distance_cm": 75.0},
+    "cluster":   {"label": "Instrument cluster 12.3\"",  "width_cm": 27.2, "height_cm": 15.3, "viewing_distance_cm": 80.0},
+    "hud":       {"label": "Head-up display",            "width_cm": 30.0, "height_cm": 12.0, "viewing_distance_cm": 220.0},
+}
+
+
+def _resolve_display_preset(req):
+    """Resolve the physical display geometry from the request.
+
+    Looks for a ``display_preset`` key (form or query). Falls back to the
+    ``desktop`` preset (which matches the Jokinen model defaults) when the key
+    is missing or unknown. Returns ``(width_cm, height_cm, viewing_distance_cm,
+    preset_meta)`` where ``preset_meta`` is a dict suitable for the API response.
+    """
+    key = (req.form.get("display_preset")
+           or req.args.get("display_preset")
+           or "desktop").strip().lower()
+    if key not in DISPLAY_PRESETS:
+        key = "desktop"
+    preset = DISPLAY_PRESETS[key]
+    meta = {
+        "key": key,
+        "label": preset["label"],
+        "width_cm": preset["width_cm"],
+        "height_cm": preset["height_cm"],
+        "viewing_distance_cm": preset["viewing_distance_cm"],
+    }
+    return (preset["width_cm"], preset["height_cm"],
+            preset["viewing_distance_cm"], meta)
 
 
 @app.route("/api/cognitive-load", methods=["POST"])
@@ -810,6 +871,11 @@ def cognitive_load():
         )
         profile = get_profile(request.form.get("profile_preset", "neutral"))
 
+        # Physical display geometry for the Jokinen search model (affects the
+        # coherence check's search-time estimate; pixel features are unaffected).
+        (screen_w_cm, screen_h_cm,
+         viewing_cm, display_preset_meta) = _resolve_display_preset(request)
+
         # Step 1: Visual complexity (v∈ℝ⁸)
         vis_results, visual_cache_hit = _compute_visual_cached(image_hash, filepath)
         vis_results = dict(vis_results)
@@ -828,10 +894,11 @@ def cognitive_load():
         s = None
         saliency_dict = {}
         saliency_overlay_b64 = None
+        design_classification = None
         try:
             import base64, cv2
             from saliency.saliency_features import extract_saliency_features
-            heatmap, _, cache_hit = _predict_saliency_cached(image_hash, filepath)
+            heatmap, classif, cache_hit = _predict_saliency_cached(image_hash, filepath)
             saliency_dict = extract_saliency_features(heatmap)
             s = np.array([
                 saliency_dict["saliency_dispersion"],
@@ -840,6 +907,34 @@ def cognitive_load():
                 saliency_dict["saliency_peak_count"],
                 saliency_dict["saliency_center_bias"],
             ], dtype=np.float32)
+            # UMSI++ 6-class design-type head (Jiang et al., CHI 2023). The model
+            # was trained on UEyes; if it classifies the screenshot as something
+            # other than a desktop/automotive-style UI (e.g. "mobile_ui" or
+            # "web_page"), the saliency prediction is out of its training domain
+            # and the downstream load estimate should be read with caution.
+            try:
+                sal_model = _get_saliency_model()
+                classif_probs = [float(p) for p in classif]
+                top_idx = int(np.argmax(classif_probs))
+                predicted_class = sal_model.DESIGN_CLASSES[top_idx]
+                # Classes that indicate the screenshot is outside the
+                # automotive/desktop-style domain this thesis targets.
+                OUT_OF_DOMAIN = {"mobile_ui", "web_page", "poster",
+                                 "infographic", "natural_image"}
+                design_classification = {
+                    "predicted_class": predicted_class,
+                    "confidence": round(classif_probs[top_idx], 4),
+                    "probabilities": {
+                        cls: round(prob, 4)
+                        for cls, prob in zip(sal_model.DESIGN_CLASSES,
+                                             classif_probs)
+                    },
+                    "out_of_domain": predicted_class in OUT_OF_DOMAIN,
+                }
+            except Exception as ce:
+                # Classification is a non-critical add-on; never fail the
+                # analysis because of it.
+                print(f"[Saliency] Design classification unavailable: {ce!r}")
         except Exception as e:
             # Do NOT fail silently: the cognitive-load model degrades to image-only
             # features (s=None) when saliency is missing. Log loudly so a broken
@@ -952,6 +1047,9 @@ def cognitive_load():
                 elements=elements,
                 saliency_map=jokinen_saliency,
                 image_shape=jokinen_img.shape[:2],
+                screen_width_cm=screen_w_cm,
+                screen_height_cm=screen_h_cm,
+                viewing_distance_cm=viewing_cm,
             )
             mean_search_time_s = float(jresult["mean_search_time_s"])
             # The model returns per-element fixation counts; aggregate to a
@@ -989,6 +1087,7 @@ def cognitive_load():
             "saliency_features": saliency_dict,
             "saliency_overlay_b64": saliency_overlay_b64,
             "saliency_cache_hit": cache_hit,
+            "design_classification": design_classification,
             "cognitive_load_features": cog_dict,
             "task_descriptor": t_dict,
             "big_five_profile": profile,
@@ -1007,6 +1106,7 @@ def cognitive_load():
             "coherence": coherence,
             "reference": reference,
             "reference_meta": reference_meta,
+            "display_preset": display_preset_meta,
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500

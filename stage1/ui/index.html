@@ -1431,6 +1431,19 @@
                     </select>
                     <div class="field-hint">Big Five personality preset that applies a small modifier to the score. Leave on Neutral to evaluate the interface independent of a specific user type (Costa &amp; McCrae, 1992). <span class="field-hint-default">If unsure, keep <em>Neutral</em>.</span></div>
                 </div>
+                <div class="field" style="margin-top: 12px;">
+                    <label for="displayPreset">Display <span class="tag-optional" style="vertical-align:middle;margin-left:6px;">Optional</span></label>
+                    <select id="displayPreset">
+                        <option value="desktop" selected>Desktop monitor — neutral default</option>
+                        <option value="ivi_8">Automotive IVI 8"</option>
+                        <option value="ivi_10">Automotive IVI 10.25"</option>
+                        <option value="ivi_12">Automotive IVI 12.3"</option>
+                        <option value="ivi_15">Automotive IVI 15"</option>
+                        <option value="cluster">Instrument cluster 12.3"</option>
+                        <option value="hud">Head-up display</option>
+                    </select>
+                    <div class="field-hint">Physical screen size and viewing distance. Visual search timing depends on the real angular size of elements, so a small in-vehicle display viewed at arm's length differs from a desktop monitor. <span class="field-hint-default">If unsure, keep <em>Desktop</em>.</span></div>
+                </div>
                 <div id="contextHint" class="context-hint">Tip: choose context first, then click Analyze Screenshot once. After results, use What-if for fast local simulation.</div>
             </div>
 
@@ -1493,6 +1506,11 @@
 
                 <!-- 2. Score summary -->
                 <div class="summary-grid" id="summaryGrid"></div>
+
+                <!-- 2a. UMSI++ design-type classification (6-class head). Shows a
+                     caution banner when the screenshot is classified outside the
+                     desktop/automotive UI domain the saliency model targets. -->
+                <div id="designClassBanner" style="display:none;"></div>
 
                 <!-- 2b. Context summary: shows exactly which task context the
                      score was computed with, so the declared mode stays visible
@@ -2230,6 +2248,7 @@
             formData.append("time_pressure", document.getElementById("timePressure").value);
             formData.append("search_mode", document.getElementById("searchMode").value);
             formData.append("profile_preset", document.getElementById("profilePreset").value);
+            formData.append("display_preset", document.getElementById("displayPreset").value);
             formData.append("use_trained_model", "false");
 
             try {
@@ -2358,11 +2377,23 @@
             valEl.textContent = targetScore.toFixed(1);
             deltaEl.textContent = `${sign}${mod.toFixed(1)} vs layout`;
             deltaEl.style.color = harder ? 'var(--danger)' : 'var(--success)';
+            // Honest "T +/- s" search-time estimate from the Monte Carlo trials.
+            // The +/- is the per-target standard deviation across simulations,
+            // i.e. the model's own uncertainty for this element.
+            let timeStr = '';
+            if (typeof targetLoad.target_search_time_s === 'number') {
+                const std = targetLoad.target_search_time_std_s;
+                timeStr = (typeof std === 'number')
+                    ? ` Predicted search time ${targetLoad.target_search_time_s.toFixed(1)} ` +
+                      `\u00B1 ${std.toFixed(1)} s (model uncertainty over simulations).`
+                    : ` Predicted search time ${targetLoad.target_search_time_s.toFixed(1)} s.`;
+            }
             metaEl.textContent =
                 `Target #${targetId}. Layout baseline ${_layoutLoadScore.toFixed(1)} · ` +
                 `this element is ${Math.abs(targetLoad.deviation_pct).toFixed(0)}% ` +
                 `${harder ? 'harder' : 'easier'} to find than the layout average. ` +
-                `The main Cognitive Load Score above stays the layout value.`;
+                `The main Cognitive Load Score above stays the layout value.` +
+                timeStr;
             box.style.display = 'block';
         }
 
@@ -2452,9 +2483,12 @@
                 statusEl.textContent = 'Predicting search path…';
                 const formData = new FormData();
                 formData.append('image', selectedFile);
+                // Match the display geometry used for the main analysis so the
+                // search-path timing is consistent with the score above.
+                const displayPreset = (document.getElementById('displayPreset') || {}).value || 'desktop';
                 try {
                     const res = await fetch(
-                        `/api/scanpath-to-target?target_x=${Math.round(origX)}&target_y=${Math.round(origY)}`,
+                        `/api/scanpath-to-target?target_x=${Math.round(origX)}&target_y=${Math.round(origY)}&display_preset=${encodeURIComponent(displayPreset)}`,
                         { method: 'POST', body: formData }
                     );
                     const data = await res.json();
@@ -2541,6 +2575,42 @@
                     <div class="summary-meta">Higher = more attentional resources required</div>
                 </div>
             `;
+
+            // ── UMSI++ design-type classification banner (Item 12) ───────────
+            // The saliency model has a 6-class design-type head. If it classifies
+            // the screenshot as something other than a desktop/automotive UI, the
+            // saliency prediction (and everything downstream) is out of domain and
+            // should be read with caution. Always show the detected type; switch
+            // to a caution style only when out_of_domain is true.
+            const dcBanner = document.getElementById('designClassBanner');
+            if (dcBanner) {
+                const dc = data.design_classification;
+                if (dc && dc.predicted_class) {
+                    const label = dc.predicted_class.replace(/_/g, ' ');
+                    const conf = Math.round((dc.confidence || 0) * 100);
+                    if (dc.out_of_domain) {
+                        dcBanner.style.cssText =
+                            'display:block; margin-bottom:16px; padding:10px 14px; border-radius:8px; ' +
+                            'border:1px solid var(--warning, #d97706); background:rgba(217,119,6,0.12); ' +
+                            'font-size:12px; color:var(--text);';
+                        dcBanner.innerHTML =
+                            `<strong>Caution:</strong> the saliency model classifies this screenshot as ` +
+                            `<strong>${label}</strong> (${conf}% confidence), which is outside the ` +
+                            `desktop/automotive UI domain it was trained for. The saliency map and the ` +
+                            `cognitive-load score may be less reliable for this image.`;
+                    } else {
+                        dcBanner.style.cssText =
+                            'display:block; margin-bottom:16px; padding:8px 14px; border-radius:8px; ' +
+                            'border:1px solid var(--border); background:var(--surface2); ' +
+                            'font-size:11px; color:var(--text-dim);';
+                        dcBanner.innerHTML =
+                            `Detected design type: <strong>${label}</strong> (${conf}% confidence) — ` +
+                            `within the model's intended UI domain.`;
+                    }
+                } else {
+                    dcBanner.style.display = 'none';
+                }
+            }
 
             renderContextSummary();
 
