@@ -1029,6 +1029,7 @@ def cognitive_load():
         # Extract Jokinen search metrics if available (computed on-demand here).
         mean_search_time_s: float | None = None
         estimated_fixation_count: float | None = None
+        search_feedback = None
         try:
             import cv2
             from cognitive.jokinen_model import JokinenSearchModel, JokinenParams
@@ -1059,6 +1060,42 @@ def cognitive_load():
                 estimated_fixation_count = float(
                     sum(e["fixation_count"] for e in per_elem) / len(per_elem)
                 )
+
+                # Generative feedback (diagnosis -> design): turn the per-element
+                # search costs into a ranked list of "bottleneck" elements so the
+                # designer sees WHICH elements are hardest to find, not just an
+                # aggregate score. The hardest elements are the ones whose
+                # predicted search time is well above the layout mean.
+                mean_t = mean_search_time_s if mean_search_time_s else 0.0
+                ranked = sorted(
+                    per_elem, key=lambda e: e["search_time_s"], reverse=True
+                )
+                bottlenecks = []
+                for e in ranked[:5]:
+                    t_e = float(e["search_time_s"])
+                    deviation_pct = (
+                        round((t_e - mean_t) / mean_t * 100.0, 1)
+                        if mean_t > 0 else 0.0
+                    )
+                    bottlenecks.append({
+                        "id": e["id"],
+                        "search_time_s": round(t_e, 3),
+                        "search_time_std_s": round(
+                            float(e.get("search_time_std_s", 0.0)), 3
+                        ),
+                        "fixation_count": round(float(e["fixation_count"]), 1),
+                        "bbox": e["bbox"],
+                        "center": e["center"],
+                        "color_category": e.get("color_category", "unknown"),
+                        # Signed % vs the layout mean: positive = harder to find.
+                        "deviation_pct": deviation_pct,
+                    })
+                search_feedback = {
+                    "mean_search_time_s": round(mean_t, 3),
+                    "n_elements": len(per_elem),
+                    # Elements ranked hardest-to-find first (top 5).
+                    "bottlenecks": bottlenecks,
+                }
         except Exception as e:
             # Do NOT fail silently: the coherence check depends on these values.
             # Log loudly so a broken search model is visible during the study.
@@ -1107,6 +1144,7 @@ def cognitive_load():
             "reference": reference,
             "reference_meta": reference_meta,
             "display_preset": display_preset_meta,
+            "search_feedback": search_feedback,
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500

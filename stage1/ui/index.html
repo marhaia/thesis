@@ -1577,6 +1577,17 @@
                     </div>
                 </div>
 
+                <!-- 4c. Generative feedback: which elements are the search
+                     bottlenecks (hardest to find), ranked by predicted search
+                     time. Turns the aggregate score into concrete design advice. -->
+                <div id="searchFeedbackPanel" style="display:none; margin-top:24px;">
+                    <div style="margin-bottom:8px;">
+                        <span style="font-size:13px; font-weight:600;">Search Bottlenecks</span>
+                    </div>
+                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Elements ranked by predicted visual-search time (Jokinen et al., 2020). The elements at the top take a first-time user the longest to find and are the best candidates for redesign (e.g. higher contrast, more salient placement, clearer grouping). Times are <strong>model estimates</strong>, not measured eye-tracking.</p>
+                    <div id="searchFeedbackList"></div>
+                </div>
+
                 <!-- 5. Feature Vector Table -->
                 <div class="result-section" id="featureSection" style="display:none;">
                     <h3>Visual Feature Vector <span style="font-size:11px; font-weight:400; color:var(--text-dim);">v ∈ ℝ⁸ — companion view to the profile above</span></h3>
@@ -2403,6 +2414,51 @@
             if (box) box.style.display = 'none';
         }
 
+        // Generative feedback: render the ranked search-bottleneck elements so
+        // the designer sees which elements are hardest to find (diagnosis ->
+        // design). Expects data.search_feedback = {mean_search_time_s,
+        // n_elements, bottlenecks:[{id, search_time_s, search_time_std_s,
+        // fixation_count, deviation_pct, ...}]}.
+        function renderSearchFeedback(feedback) {
+            const panel = document.getElementById('searchFeedbackPanel');
+            const list = document.getElementById('searchFeedbackList');
+            if (!panel || !list) return;
+            const items = feedback && Array.isArray(feedback.bottlenecks)
+                ? feedback.bottlenecks : [];
+            if (items.length === 0) {
+                panel.style.display = 'none';
+                list.innerHTML = '';
+                return;
+            }
+            const mean = feedback.mean_search_time_s;
+            const rows = items.map((e, i) => {
+                const harder = e.deviation_pct >= 0;
+                const sign = harder ? '+' : '';
+                const deltaColor = harder ? 'var(--danger)' : 'var(--success)';
+                const stdStr = (typeof e.search_time_std_s === 'number' && e.search_time_std_s > 0)
+                    ? ` \u00B1 ${e.search_time_std_s.toFixed(1)}` : '';
+                // Highlight the single worst element as the primary bottleneck.
+                const isTop = i === 0;
+                return `
+                    <div style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); margin-bottom:8px;">
+                        <span style="flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; background:${isTop ? 'var(--danger)' : 'var(--surface)'}; color:${isTop ? '#fff' : 'var(--text-dim)'};">${i + 1}</span>
+                        <div style="flex:1 1 auto; min-width:0;">
+                            <div style="font-size:13px; font-weight:600;">Element #${e.id}${isTop ? ' \u2014 main bottleneck' : ''}</div>
+                            <div style="font-size:11px; color:var(--text-dim);">${e.fixation_count.toFixed(1)} fixations \u00B7 ${e.color_category} region</div>
+                        </div>
+                        <div style="flex:0 0 auto; text-align:right;">
+                            <div style="font-size:15px; font-weight:600;">${e.search_time_s.toFixed(1)}${stdStr} s</div>
+                            <div style="font-size:11px; font-weight:600; color:${deltaColor};">${sign}${e.deviation_pct.toFixed(0)}% vs average</div>
+                        </div>
+                    </div>`;
+            }).join('');
+            const caption = (typeof mean === 'number')
+                ? `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Layout average search time: ${mean.toFixed(1)} s across ${feedback.n_elements} elements.</div>`
+                : '';
+            list.innerHTML = rows + caption;
+            panel.style.display = 'block';
+        }
+
         function renderTargetScanpath() {
             const panel = document.getElementById('targetScanpathPanel');
             const img = document.getElementById('scanpathImg');
@@ -2615,6 +2671,8 @@
             renderContextSummary();
 
             renderInterpretation(data);
+
+            renderSearchFeedback(data.search_feedback);
 
             // ── Saliency heatmap overlay ──────────────────────────────────
             const saliencyPanel = document.getElementById('saliencyPanel');
