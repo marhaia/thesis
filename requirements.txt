@@ -14,6 +14,9 @@ pillow==11.3.0
 # Machine learning
 scikit-learn==1.6.1
 
+# Model interpretation (used by scripts/feature_ablation_shap.py)
+shap==0.49.1
+
 # Deep learning (saliency model — UMSI++)
 # On Apple Silicon, tensorflow-macos is installed automatically as a dependency.
 tensorflow==2.16.2
