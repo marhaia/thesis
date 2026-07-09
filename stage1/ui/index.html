@@ -1575,6 +1575,19 @@
                         </div>
                         <div id="scanpathLoadMeta" style="font-size:11px; color:var(--text-dim); margin-top:4px;"></div>
                     </div>
+
+                    <!-- 4b-2. Glance-based automotive check (NHTSA 2013 / ISO 15008):
+                         only shown for in-vehicle display presets. Splits the
+                         predicted search into eyes-off-road glances and compares
+                         them to the single-glance (<=2 s) and cumulative (<=12 s)
+                         limits. -->
+                    <div id="glanceMetricsLine" style="display:none; margin-top:12px; padding:12px 14px; border-radius:8px; border:1px solid var(--border); background:var(--surface2);">
+                        <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+                            <span style="font-size:11px; color:var(--text-dim);">Driver glance check (NHTSA / ISO 15008)</span>
+                            <span id="glanceStatusBadge" style="font-size:12px; font-weight:700; padding:2px 8px; border-radius:6px;"></span>
+                        </div>
+                        <div id="glanceMetricsBody" style="font-size:12px; margin-top:6px; line-height:1.5;"></div>
+                    </div>
                 </div>
 
                 <!-- 4c. Generative feedback: which elements are the search
@@ -2414,6 +2427,50 @@
             if (box) box.style.display = 'none';
         }
 
+        // Render the driver-glance compliance check (NHTSA 2013 / ISO 15008).
+        // Only populated when the backend returns glance_metrics (i.e. an
+        // in-vehicle display preset). Splits the predicted search into
+        // eyes-off-road glances and compares them to the single-glance (2 s)
+        // and cumulative (12 s) limits.
+        function showGlanceMetrics(gm) {
+            const box = document.getElementById('glanceMetricsLine');
+            const badge = document.getElementById('glanceStatusBadge');
+            const body = document.getElementById('glanceMetricsBody');
+            if (!box || !badge || !body) return;
+            if (!gm || gm.n_glances === 0) {
+                box.style.display = 'none';
+                return;
+            }
+            if (gm.compliant) {
+                badge.textContent = 'within limits';
+                badge.style.background = 'var(--success)';
+                badge.style.color = '#fff';
+            } else {
+                badge.textContent = 'exceeds limit';
+                badge.style.background = 'var(--danger)';
+                badge.style.color = '#fff';
+            }
+            const singleColor = gm.exceeds_single_glance ? 'var(--danger)' : 'var(--text)';
+            const cumColor = gm.exceeds_cumulative ? 'var(--danger)' : 'var(--text)';
+            body.innerHTML =
+                `The predicted search would take <b>${gm.n_glances}</b> ` +
+                `glance${gm.n_glances === 1 ? '' : 's'} at the display ` +
+                `(budget ${gm.glance_budget_s.toFixed(1)} s each).<br>` +
+                `Longest single glance: <b style="color:${singleColor}">` +
+                `${gm.max_single_glance_s.toFixed(1)} s</b> ` +
+                `(limit ${gm.single_glance_limit_s.toFixed(1)} s).<br>` +
+                `Total eyes-off-road time: <b style="color:${cumColor}">` +
+                `${gm.total_eyes_off_road_s.toFixed(1)} s</b> ` +
+                `(limit ${gm.cumulative_limit_s.toFixed(1)} s).`;
+            box.style.display = 'block';
+        }
+
+        // Hide the glance-metrics line (e.g. after Clear or for desktop preset).
+        function hideGlanceMetrics() {
+            const box = document.getElementById('glanceMetricsLine');
+            if (box) box.style.display = 'none';
+        }
+
         // Generative feedback: render the ranked search-bottleneck elements so
         // the designer sees which elements are hardest to find (diagnosis ->
         // design). Expects data.search_feedback = {mean_search_time_s,
@@ -2478,6 +2535,7 @@
             dlBtn.style.display = 'none';
             _scanpathLastData = null;
             hideTargetLoad();
+            hideGlanceMetrics();
 
             // Load the uploaded screenshot as the base image.
             img.onload = () => {
@@ -2556,6 +2614,7 @@
                     drawScanpath(data.scanpath);
                     const sp = data.scanpath;
                     showTargetLoad(data.target_load, data.target_id);
+                    showGlanceMetrics(data.glance_metrics);
                     statusEl.textContent =
                         `Target element #${data.target_id}: ${sp.n_fixations} fixations, ` +
                         `${sp.total_time_s.toFixed(2)} s predicted search time.`;
@@ -2585,6 +2644,7 @@
                 dlBtn.style.display = 'none';
                 _scanpathLastData = null;
                 hideTargetLoad();
+                hideGlanceMetrics();
             };
 
             dlBtn.onclick = () => {

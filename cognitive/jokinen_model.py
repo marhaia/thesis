@@ -873,3 +873,120 @@ def predict_search_time(
         saliency_map=saliency_map,
         image_shape=image_shape,
     )
+
+
+# ===========================================================================
+# Glance-based metrics (automotive: NHTSA 2013 / ISO 15008)
+# ===========================================================================
+
+def compute_glance_metrics(
+    fixations: List[Dict],
+    glance_budget_s: float = 1.5,
+    single_glance_limit_s: float = 2.0,
+    cumulative_limit_s: float = 12.0,
+) -> Dict:
+    """
+    Break a predicted search scanpath into in-vehicle "glances" and check it
+    against automotive eyes-off-road guidelines.
+
+    Rationale
+    ---------
+    When a GUI is an in-vehicle display, a driver cannot keep looking at it: they
+    time-share attention, glancing at the display for a short period and then
+    returning their eyes to the road. We approximate this by packing the model's
+    predicted fixations into glances of at most ``glance_budget_s`` seconds each
+    (a driver ends a glance and looks back once the budget is used up). The
+    resulting glance profile is then compared to the accepted limits:
+
+      - single glance <= 2.0 s   (NHTSA Visual-Manual Guidelines, 2013;
+                                   also AAM/ISO 15007 practice)
+      - cumulative eyes-off-road time <= 12.0 s for the whole task (NHTSA, 2013)
+
+    These are DESIGN guidelines applied to a MODEL estimate of goal-directed
+    search, not measured eye-tracking; they flag layouts whose predicted search
+    would push a driver over the safe glance budget.
+
+    Parameters
+    ----------
+    fixations : list of dict
+        Scanpath fixations, each with a numeric 'step_time_s' (as produced by
+        predict_scanpath_to_target). The leading start point (order 0,
+        step_time_s = 0) is ignored.
+    glance_budget_s : float
+        Maximum duration of a single modelled glance before the driver looks
+        back to the road (default 1.5 s, a common design target below the 2 s
+        limit).
+    single_glance_limit_s : float
+        Regulatory single-glance limit (default 2.0 s, NHTSA 2013).
+    cumulative_limit_s : float
+        Regulatory cumulative eyes-off-road limit for the task (default 12.0 s).
+
+    Returns
+    -------
+    Dict with keys:
+        'glances'                 : list of per-glance durations (s)
+        'n_glances'               : number of glances
+        'max_single_glance_s'     : longest single glance (s)
+        'total_eyes_off_road_s'   : sum of all glance durations (s)
+        'mean_glance_s'           : mean glance duration (s)
+        'glance_budget_s'         : the budget used for chunking
+        'single_glance_limit_s'   : the applied single-glance limit
+        'cumulative_limit_s'      : the applied cumulative limit
+        'exceeds_single_glance'   : bool, any glance > single_glance_limit_s
+        'exceeds_cumulative'      : bool, total > cumulative_limit_s
+        'compliant'               : bool, neither limit exceeded
+    """
+    # Keep only real fixations with a positive encoding/saccade time.
+    steps = [
+        float(f.get("step_time_s", 0.0))
+        for f in fixations
+        if float(f.get("step_time_s", 0.0)) > 0.0
+    ]
+
+    if not steps:
+        return {
+            "glances": [],
+            "n_glances": 0,
+            "max_single_glance_s": 0.0,
+            "total_eyes_off_road_s": 0.0,
+            "mean_glance_s": 0.0,
+            "glance_budget_s": round(glance_budget_s, 3),
+            "single_glance_limit_s": round(single_glance_limit_s, 3),
+            "cumulative_limit_s": round(cumulative_limit_s, 3),
+            "exceeds_single_glance": False,
+            "exceeds_cumulative": False,
+            "compliant": True,
+        }
+
+    # Greedy packing: fill the current glance until adding the next fixation
+    # would exceed the budget, then start a new glance (eyes back to road).
+    # A single fixation longer than the budget forms its own (over-budget) glance.
+    glances: List[float] = []
+    current = 0.0
+    for step in steps:
+        if current > 0.0 and current + step > glance_budget_s:
+            glances.append(current)
+            current = step
+        else:
+            current += step
+    if current > 0.0:
+        glances.append(current)
+
+    total = float(sum(glances))
+    max_single = float(max(glances))
+    exceeds_single = max_single > single_glance_limit_s
+    exceeds_cumulative = total > cumulative_limit_s
+
+    return {
+        "glances": [round(g, 3) for g in glances],
+        "n_glances": len(glances),
+        "max_single_glance_s": round(max_single, 3),
+        "total_eyes_off_road_s": round(total, 3),
+        "mean_glance_s": round(total / len(glances), 3),
+        "glance_budget_s": round(glance_budget_s, 3),
+        "single_glance_limit_s": round(single_glance_limit_s, 3),
+        "cumulative_limit_s": round(cumulative_limit_s, 3),
+        "exceeds_single_glance": bool(exceeds_single),
+        "exceeds_cumulative": bool(exceeds_cumulative),
+        "compliant": bool(not exceeds_single and not exceeds_cumulative),
+    }

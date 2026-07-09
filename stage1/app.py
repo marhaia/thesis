@@ -660,7 +660,11 @@ def scanpath_to_target():
     try:
         import cv2
         from cognitive.element_detector import detect_elements
-        from cognitive.jokinen_model import JokinenSearchModel, JokinenParams
+        from cognitive.jokinen_model import (
+            JokinenSearchModel,
+            JokinenParams,
+            compute_glance_metrics,
+        )
 
         img = cv2.imread(str(filepath))
         if img is None:
@@ -702,7 +706,18 @@ def scanpath_to_target():
             viewing_distance_cm=viewing_cm,
         )
 
-        # Target-relative cognitive load (Gigi's key point): the Jokinen model
+        # Glance-based automotive metrics (NHTSA 2013 / ISO 15008): split the
+        # predicted search scanpath into eyes-off-road glances and check it
+        # against the single-glance (<=2 s) and cumulative (<=12 s) limits. Only
+        # meaningful for in-vehicle displays, so we skip it for the desktop
+        # preset (where the guidelines do not apply).
+        glance_metrics = None
+        if display_preset_meta.get("key") != "desktop":
+            fixations = (scanpath or {}).get("fixations", [])
+            if fixations:
+                glance_metrics = compute_glance_metrics(fixations)
+
+
         # already estimates a search cost PER element; until now those costs were
         # only averaged into a layout-wide mean. Selecting a target lets us use
         # that element's specific search cost instead of the average, so the load
@@ -763,6 +778,7 @@ def scanpath_to_target():
             "scanpath": scanpath,
             "target_load": target_load,
             "display_preset": display_preset_meta,
+            "glance_metrics": glance_metrics,
         })
 
     except Exception as e:
