@@ -109,6 +109,15 @@ class JokinenParams:
     a_size: float = 0.142       # Quadratic term — size
     b_size: float = 0.96        # Linear term  — size
 
+    # Penalty applied to the activation of an element that is below the visual
+    # acuity threshold (Eq. 1) at its current eccentricity. It is a finite
+    # penalty (not -inf) so a below-threshold element can still eventually be
+    # found once the eye moves closer or all other elements are inhibited,
+    # which guarantees the search terminates. Chosen large relative to the
+    # normalised activations ([0,1]) + logistic noise (sigma_TA=0.376) so a
+    # peripherally invisible element is very unlikely to be selected.
+    visibility_penalty: float = 5.0
+
     # === Memory (ACT-R) — used only in expert mode ===
     # Based on Anderson et al. (2004). An integrated theory of the mind.
     # Psychological Review, 111(4), 1036–1060.  Fitted in Jokinen 2020 grid search.
@@ -481,6 +490,20 @@ class JokinenSearchModel:
         vstm = set()  # Indices of recently visited elements
         vstm_order = []  # FIFO queue for VSTM decay
 
+        # Precompute element geometry once (does not change during the search).
+        # Centers as an array (for vectorised eccentricity), and each element's
+        # angular size (deg) from its bbox diagonal using the SAME deg_per_px as
+        # the eccentricity, so the visibility gate respects the display preset
+        # (a small in-vehicle display makes elements angularly smaller).
+        centers_arr = np.array(
+            [e["center"] for e in elements], dtype=np.float64
+        )
+        elem_diag_px = np.array(
+            [np.hypot(e["bbox"][2], e["bbox"][3]) for e in elements],
+            dtype=np.float64,
+        )
+        elem_angular_size = elem_diag_px * deg_per_px
+
         total_time = 0.0
         n_fixations = 0
 
@@ -506,6 +529,18 @@ class JokinenSearchModel:
             # Add logistic noise (Jokinen 2020: σ_TA = 0.376)
             noise = self.rng.logistic(0, p.sigma_TA, size=n_elements)
             activations += noise
+
+            # --- Visual acuity gate (Jokinen 2020, Eq. 1) ---
+            # An element at eccentricity ε (deg) from the current fixation is
+            # only peripherally visible if its angular size exceeds the acuity
+            # threshold a·ε² + b·ε (using the size-feature coefficients). Elements
+            # below this limit are hard to detect from where the eye currently
+            # is, so their activation is penalised; they become selectable again
+            # once a later fixation lands closer to them (smaller ε).
+            ecc_deg = np.linalg.norm(centers_arr - current_fix, axis=1) * deg_per_px
+            acuity_threshold = p.a_size * ecc_deg ** 2 + p.b_size * ecc_deg
+            below_threshold = elem_angular_size < acuity_threshold
+            activations[below_threshold] -= p.visibility_penalty
 
             # VSTM inhibition: set visited elements to -∞
             for visited_idx in vstm:
@@ -654,11 +689,18 @@ class JokinenSearchModel:
 
         BA_i = Σ_j Σ_k dissim(v_ik, v_jk) / d_ij
 
-        dissim = 1 if features differ, 0 if same.
-        d_ij = sqrt(Euclidean distance between element centers).
+        The paper sums the dissimilarity over several feature dimensions k.
+        We use two dimensions here:
+          - colour   : categorical, dissim = 1 if the colour categories differ,
+                       else 0 (as in the legacy AIM approach).
+          - size     : continuous, dissim = |A_i - A_j| / (A_i + A_j) using the
+                       element areas. This is 0 for equally sized elements and
+                       approaches 1 when one element is far larger than the other.
+                       A large, unique element "pops out" and is easier to find,
+                       which raises its bottom-up activation.
 
-        For our purpose, we use 'color_category' as the primary feature
-        (following the legacy AIM approach and Jokinen's model).
+        The per-pair dissimilarity is the (equally weighted) sum of the colour
+        and size terms, consistent with the sum over feature dimensions k.
 
         Returns
         -------
@@ -670,9 +712,14 @@ class JokinenSearchModel:
 
         activations = np.zeros(n, dtype=np.float64)
 
-        # Extract centers and colours
+        # Extract centers, colours and areas
         centers = np.array([e["center"] for e in elements], dtype=np.float64)
         colors = [e.get("color_category", "gray") for e in elements]
+        # Area falls back to the bbox area when the detector did not provide one.
+        areas = np.array([
+            float(e.get("area") or (e["bbox"][2] * e["bbox"][3]))
+            for e in elements
+        ], dtype=np.float64)
 
         for i in range(n):
             ba_i = 0.0
@@ -684,11 +731,19 @@ class JokinenSearchModel:
                 d_ij = np.linalg.norm(centers[i] - centers[j])
                 d_ij = max(d_ij, 1.0)  # Avoid division by zero
 
-                # Feature dissimilarity: colour
+                # Feature dissimilarity: colour (categorical, 0 or 1)
                 dissim_color = 0.0 if colors[i] == colors[j] else 1.0
 
-                # Accumulate (Eq. 2): dissimilarity / sqrt(distance)
-                ba_i += dissim_color / np.sqrt(d_ij)
+                # Feature dissimilarity: size (continuous, in [0, 1]).
+                # Symmetric relative area difference; 0 when equal, ->1 when very
+                # different. Guard against two zero-area elements.
+                area_sum = areas[i] + areas[j]
+                dissim_size = (
+                    abs(areas[i] - areas[j]) / area_sum if area_sum > 0 else 0.0
+                )
+
+                # Accumulate (Eq. 2): sum of feature dissimilarities / sqrt(dist)
+                ba_i += (dissim_color + dissim_size) / np.sqrt(d_ij)
 
             activations[i] = ba_i
 
