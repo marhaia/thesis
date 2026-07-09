@@ -1046,6 +1046,7 @@ def cognitive_load():
         mean_search_time_s: float | None = None
         estimated_fixation_count: float | None = None
         search_feedback = None
+        contrast_report = None
         try:
             import cv2
             from cognitive.jokinen_model import JokinenSearchModel, JokinenParams
@@ -1112,6 +1113,39 @@ def cognitive_load():
                     # Elements ranked hardest-to-find first (top 5).
                     "bottlenecks": bottlenecks,
                 }
+
+            # Accessibility / legibility report (WCAG 2.1, ISO 15008): the
+            # element detector already measures a per-element contrast ratio.
+            # Here we summarise it and list the worst offenders so the designer
+            # sees WHICH elements are hard to read, not just an average. We use
+            # the 3:1 threshold (WCAG AA for large text / non-text UI elements,
+            # also the common ISO 15008 in-vehicle minimum).
+            if elements:
+                wcag_threshold = 3.0
+                ratios = [float(e.get("contrast_ratio", 1.0)) for e in elements]
+                failing = sorted(
+                    (e for e in elements
+                     if float(e.get("contrast_ratio", 1.0)) < wcag_threshold),
+                    key=lambda e: float(e.get("contrast_ratio", 1.0)),
+                )
+                low_contrast = [{
+                    "id": e["id"],
+                    "contrast_ratio": round(float(e.get("contrast_ratio", 1.0)), 2),
+                    "bbox": e["bbox"],
+                    "center": e["center"],
+                    "color_category": e.get("color_category", "unknown"),
+                } for e in failing[:5]]
+                n_pass = sum(1 for r in ratios if r >= wcag_threshold)
+                contrast_report = {
+                    "wcag_threshold": wcag_threshold,
+                    "n_elements": len(elements),
+                    "n_pass": n_pass,
+                    "n_fail": len(elements) - n_pass,
+                    "min_contrast_ratio": round(min(ratios), 2),
+                    "mean_contrast_ratio": round(float(sum(ratios) / len(ratios)), 2),
+                    # Lowest-contrast (hardest to read) elements first (top 5).
+                    "low_contrast_elements": low_contrast,
+                }
         except Exception as e:
             # Do NOT fail silently: the coherence check depends on these values.
             # Log loudly so a broken search model is visible during the study.
@@ -1161,6 +1195,7 @@ def cognitive_load():
             "reference_meta": reference_meta,
             "display_preset": display_preset_meta,
             "search_feedback": search_feedback,
+            "contrast_report": contrast_report,
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500

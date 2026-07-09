@@ -1601,6 +1601,18 @@
                     <div id="searchFeedbackList"></div>
                 </div>
 
+                <!-- 4d. Accessibility / legibility: per-element WCAG 2.1 /
+                     ISO 15008 contrast. Lists the lowest-contrast elements so
+                     the designer sees which parts are hard to read. -->
+                <div id="contrastPanel" style="display:none; margin-top:24px;">
+                    <div style="margin-bottom:8px;">
+                        <span style="font-size:13px; font-weight:600;">Contrast &amp; Legibility (WCAG 2.1 / ISO 15008)</span>
+                        <span id="contrastSummaryBadge" style="font-size:12px; font-weight:700; padding:2px 8px; border-radius:6px; margin-left:8px;"></span>
+                    </div>
+                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Per-element foreground/background contrast ratio, estimated from the pixels (WCAG 2.1 definition). The 3:1 threshold is WCAG AA for large text / non-text UI elements and the common ISO 15008 in-vehicle minimum. Higher is easier to read.</p>
+                    <div id="contrastList"></div>
+                </div>
+
                 <!-- 5. Feature Vector Table -->
                 <div class="result-section" id="featureSection" style="display:none;">
                     <h3>Visual Feature Vector <span style="font-size:11px; font-weight:400; color:var(--text-dim);">v ∈ ℝ⁸ — companion view to the profile above</span></h3>
@@ -2516,6 +2528,57 @@
             panel.style.display = 'block';
         }
 
+        // Accessibility / legibility: render the WCAG 2.1 / ISO 15008 contrast
+        // report. Expects data.contrast_report = {wcag_threshold, n_elements,
+        // n_pass, n_fail, min_contrast_ratio, mean_contrast_ratio,
+        // low_contrast_elements:[{id, contrast_ratio, color_category, ...}]}.
+        function renderContrastReport(report) {
+            const panel = document.getElementById('contrastPanel');
+            const badge = document.getElementById('contrastSummaryBadge');
+            const list = document.getElementById('contrastList');
+            if (!panel || !badge || !list) return;
+            if (!report || typeof report.n_elements !== 'number' || report.n_elements === 0) {
+                panel.style.display = 'none';
+                list.innerHTML = '';
+                return;
+            }
+            const allPass = report.n_fail === 0;
+            badge.textContent = allPass
+                ? 'all elements >= 3:1'
+                : `${report.n_fail} of ${report.n_elements} below 3:1`;
+            badge.style.background = allPass ? 'var(--success)' : 'var(--danger)';
+            badge.style.color = '#fff';
+
+            const failing = Array.isArray(report.low_contrast_elements)
+                ? report.low_contrast_elements : [];
+            const rows = failing.map((e, i) => {
+                const isWorst = i === 0;
+                return `
+                    <div style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); margin-bottom:8px;">
+                        <span style="flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; background:${isWorst ? 'var(--danger)' : 'var(--surface)'}; color:${isWorst ? '#fff' : 'var(--text-dim)'};">${i + 1}</span>
+                        <div style="flex:1 1 auto; min-width:0;">
+                            <div style="font-size:13px; font-weight:600;">Element #${e.id}${isWorst ? ' \u2014 lowest contrast' : ''}</div>
+                            <div style="font-size:11px; color:var(--text-dim);">${e.color_category} region</div>
+                        </div>
+                        <div style="flex:0 0 auto; text-align:right;">
+                            <div style="font-size:15px; font-weight:600; color:var(--danger);">${e.contrast_ratio.toFixed(1)}:1</div>
+                            <div style="font-size:11px; color:var(--text-dim);">below 3:1</div>
+                        </div>
+                    </div>`;
+            }).join('');
+            const caption =
+                `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">` +
+                `Lowest contrast ${report.min_contrast_ratio.toFixed(1)}:1 \u00B7 ` +
+                `average ${report.mean_contrast_ratio.toFixed(1)}:1 \u00B7 ` +
+                `${report.n_pass} of ${report.n_elements} elements meet 3:1.</div>`;
+            const body = allPass
+                ? `<div style="font-size:12px; color:var(--text-dim);">` +
+                  `All ${report.n_elements} detected elements meet the 3:1 minimum. </div>` + caption
+                : rows + caption;
+            list.innerHTML = body;
+            panel.style.display = 'block';
+        }
+
         function renderTargetScanpath() {
             const panel = document.getElementById('targetScanpathPanel');
             const img = document.getElementById('scanpathImg');
@@ -2733,6 +2796,8 @@
             renderInterpretation(data);
 
             renderSearchFeedback(data.search_feedback);
+
+            renderContrastReport(data.contrast_report);
 
             // ── Saliency heatmap overlay ──────────────────────────────────
             const saliencyPanel = document.getElementById('saliencyPanel');

@@ -19,6 +19,8 @@
 #   - area: int (pixels²)
 #   - dominant_color_hsv: (H, S, V) — dominant colour cluster
 #   - angular_size: float (degrees visual angle, assuming 60cm viewing dist)
+#   - contrast_ratio: float (WCAG 2.1 / ISO 15008 legibility contrast, 1..21)
+#   - wcag_aa_pass: bool (contrast_ratio >= 3:1, WCAG AA for large/UI elements)
 #
 # Reference:
 #   Jokinen et al. (2020), Section 3.1: "We assume the modeller defines the
@@ -88,7 +90,7 @@ def detect_elements(
     -------
     List[Dict]
         Each dict has keys: id, bbox, center, area, dominant_color_hsv,
-        angular_size, color_category.
+        angular_size, color_category, contrast_ratio, wcag_aa_pass.
     """
     h_img, w_img = image.shape[:2]
 
@@ -164,6 +166,9 @@ def detect_elements(
         # Colour category (Jokinen: "red", "green", "blue" — simplified)
         color_cat = _hsv_to_category(dom_hsv)
 
+        # WCAG 2.1 / ISO 15008 legibility contrast inside the element.
+        contrast_ratio = compute_contrast_ratio(roi)
+
         # Angular size in degrees visual angle
         # Use the diagonal as "size" of the element
         diag_px = np.sqrt(w**2 + h**2)
@@ -180,6 +185,8 @@ def detect_elements(
             "dominant_color_hsv": (float(dom_hsv[0]), float(dom_hsv[1]), float(dom_hsv[2])),
             "color_category": color_cat,
             "angular_size": float(angular_size_deg),
+            "contrast_ratio": float(contrast_ratio),
+            "wcag_aa_pass": bool(contrast_ratio >= WCAG_AA_LARGE),
         })
 
     return elements
@@ -264,6 +271,91 @@ def _dominant_color_hsv(roi: np.ndarray) -> Tuple[float, float, float]:
 
     # OpenCV HSV: H in [0,180], S in [0,255], V in [0,255]
     return (float(dom[0] * 2), float(dom[1] / 255.0), float(dom[2] / 255.0))
+
+
+# ---------------------------------------------------------------------------
+# WCAG / ISO 15008 contrast
+# ---------------------------------------------------------------------------
+
+# WCAG 2.1 success-criterion thresholds (contrast ratio, 1:1 .. 21:1).
+WCAG_AA_NORMAL = 4.5   # 1.4.3 AA, normal-size text
+WCAG_AA_LARGE = 3.0    # 1.4.3 AA, large text (>=18pt or 14pt bold) / UI graphics
+WCAG_AAA_NORMAL = 7.0  # 1.4.6 AAA, normal-size text
+
+
+def _srgb_to_linear(channel: np.ndarray) -> np.ndarray:
+    """Convert an sRGB channel in [0, 1] to linear light (WCAG 2.1 formula)."""
+    return np.where(
+        channel <= 0.03928,
+        channel / 12.92,
+        ((channel + 0.055) / 1.055) ** 2.4,
+    )
+
+
+def _relative_luminance(roi_bgr: np.ndarray) -> np.ndarray:
+    """
+    Per-pixel WCAG 2.1 relative luminance L for a BGR ROI.
+
+    L = 0.2126 R + 0.7152 G + 0.0722 B on linearised sRGB channels.
+    Returns a float array with values in [0, 1].
+    """
+    rgb = roi_bgr[:, :, ::-1].astype(np.float64) / 255.0  # BGR -> RGB, [0,1]
+    lin = _srgb_to_linear(rgb)
+    return (
+        0.2126 * lin[:, :, 0]
+        + 0.7152 * lin[:, :, 1]
+        + 0.0722 * lin[:, :, 2]
+    )
+
+
+def compute_contrast_ratio(roi_bgr: np.ndarray) -> float:
+    """
+    Estimate the foreground/background luminance contrast ratio inside an
+    element, following the WCAG 2.1 definition.
+
+    Because we do not run OCR, we approximate "foreground" (e.g. text/icon ink)
+    and "background" by splitting the element's pixels into a darker and a
+    lighter group with Otsu's method, then applying the WCAG contrast formula
+    to the two group luminances:
+
+        contrast = (L_light + 0.05) / (L_dark + 0.05)
+
+    The result lies in [1.0, 21.0]; higher is easier to read. This is the
+    quantity WCAG 2.1 (1.4.3) and ISO 15008 use to judge legibility.
+
+    Parameters
+    ----------
+    roi_bgr : np.ndarray
+        Element image region in BGR (OpenCV) order.
+
+    Returns
+    -------
+    float
+        WCAG contrast ratio, rounded to two decimals. Returns 1.0 (no contrast)
+        for empty or single-tone regions.
+    """
+    if roi_bgr is None or roi_bgr.size == 0:
+        return 1.0
+
+    lum = _relative_luminance(roi_bgr)
+    lum_flat = lum.reshape(-1)
+    if lum_flat.size < 2:
+        return 1.0
+
+    # Otsu split on an 8-bit version of the luminance to separate ink/paper.
+    lum_u8 = np.clip(lum * 255.0, 0, 255).astype(np.uint8)
+    if lum_u8.min() == lum_u8.max():
+        return 1.0  # flat region, no internal contrast
+    otsu_t, _ = cv2.threshold(lum_u8, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    dark_mask = lum_u8 <= otsu_t
+    light_mask = ~dark_mask
+    if not dark_mask.any() or not light_mask.any():
+        return 1.0
+
+    l_dark = float(lum_flat[dark_mask.reshape(-1)].mean())
+    l_light = float(lum_flat[light_mask.reshape(-1)].mean())
+    ratio = (l_light + 0.05) / (l_dark + 0.05)
+    return round(float(ratio), 2)
 
 
 def _hsv_to_category(hsv: Tuple[float, float, float]) -> str:
