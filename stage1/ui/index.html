@@ -1613,6 +1613,18 @@
                     <div id="contrastList"></div>
                 </div>
 
+                <!-- 4e. Text reading cost (OCR, optional): labelled controls
+                     carry a reading cost that a plain icon does not. Lists the
+                     most text-heavy elements and the estimated reading time. -->
+                <div id="readabilityPanel" style="display:none; margin-top:24px;">
+                    <div style="margin-bottom:8px;">
+                        <span style="font-size:13px; font-weight:600;">Text &amp; Reading Cost</span>
+                        <span id="readabilitySummaryBadge" style="font-size:12px; font-weight:700; padding:2px 8px; border-radius:6px; margin-left:8px;"></span>
+                    </div>
+                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Text found in each element (OCR) and an estimated silent reading time at 238 words/min (Brysbaert, 2019). A labelled control costs reading time that a plain icon does not. Reading time is a <strong>first-order estimate</strong>, not measured.</p>
+                    <div id="readabilityList"></div>
+                </div>
+
                 <!-- 5. Feature Vector Table -->
                 <div class="result-section" id="featureSection" style="display:none;">
                     <h3>Visual Feature Vector <span style="font-size:11px; font-weight:400; color:var(--text-dim);">v ∈ ℝ⁸ — companion view to the profile above</span></h3>
@@ -2579,6 +2591,61 @@
             panel.style.display = 'block';
         }
 
+        // Text reading cost (OCR, optional): render the most text-heavy
+        // elements and the estimated reading time. Expects
+        // data.readability_report = {words_per_minute, n_elements,
+        // n_text_elements, total_words, total_reading_time_s,
+        // text_elements:[{id, text, n_words, reading_time_s, color_category}]}.
+        // The report is null when OCR is not installed -> panel stays hidden.
+        function renderReadabilityReport(report) {
+            const panel = document.getElementById('readabilityPanel');
+            const badge = document.getElementById('readabilitySummaryBadge');
+            const list = document.getElementById('readabilityList');
+            if (!panel || !badge || !list) return;
+            if (!report || typeof report.n_text_elements !== 'number') {
+                panel.style.display = 'none';
+                list.innerHTML = '';
+                return;
+            }
+            badge.textContent =
+                `${report.n_text_elements} of ${report.n_elements} carry text`;
+            badge.style.background = 'var(--surface)';
+            badge.style.color = 'var(--text-dim)';
+
+            const items = Array.isArray(report.text_elements)
+                ? report.text_elements : [];
+            if (items.length === 0) {
+                list.innerHTML =
+                    `<div style="font-size:12px; color:var(--text-dim);">` +
+                    `No readable text detected in the elements.</div>`;
+                panel.style.display = 'block';
+                return;
+            }
+            const rows = items.map((e, i) => {
+                const isTop = i === 0;
+                const label = (e.text || '').slice(0, 40);
+                return `
+                    <div style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); margin-bottom:8px;">
+                        <span style="flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; background:${isTop ? 'var(--accent, #3b82f6)' : 'var(--surface)'}; color:${isTop ? '#fff' : 'var(--text-dim)'};">${i + 1}</span>
+                        <div style="flex:1 1 auto; min-width:0;">
+                            <div style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Element #${e.id}: \u201C${label}\u201D</div>
+                            <div style="font-size:11px; color:var(--text-dim);">${e.n_words} word${e.n_words === 1 ? '' : 's'} \u00B7 ${e.color_category} region</div>
+                        </div>
+                        <div style="flex:0 0 auto; text-align:right;">
+                            <div style="font-size:15px; font-weight:600;">${e.reading_time_s.toFixed(2)} s</div>
+                            <div style="font-size:11px; color:var(--text-dim);">read time</div>
+                        </div>
+                    </div>`;
+            }).join('');
+            const caption =
+                `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">` +
+                `${report.total_words} words total \u00B7 ` +
+                `~${report.total_reading_time_s.toFixed(1)} s to read at ` +
+                `${report.words_per_minute} wpm.</div>`;
+            list.innerHTML = rows + caption;
+            panel.style.display = 'block';
+        }
+
         function renderTargetScanpath() {
             const panel = document.getElementById('targetScanpathPanel');
             const img = document.getElementById('scanpathImg');
@@ -2798,6 +2865,8 @@
             renderSearchFeedback(data.search_feedback);
 
             renderContrastReport(data.contrast_report);
+
+            renderReadabilityReport(data.readability_report);
 
             // ── Saliency heatmap overlay ──────────────────────────────────
             const saliencyPanel = document.getElementById('saliencyPanel');

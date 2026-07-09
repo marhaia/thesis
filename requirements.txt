@@ -22,5 +22,11 @@ shap==0.49.1
 tensorflow==2.16.2
 keras==3.10.0
 
+# Optional OCR for text reading-cost analysis (cognitive/text_reader.py).
+# Pulls in torch. IMPORTANT: keep numpy pinned to 1.26.4 above — newer easyocr
+# stacks try to upgrade numpy to >=2.0, which breaks TensorFlow 2.16.2. The
+# feature degrades gracefully if this package is absent.
+easyocr==1.7.2
+
 # Plotting (optional, used by analysis scripts)
 matplotlib==3.9.4

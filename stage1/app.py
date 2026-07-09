@@ -1047,6 +1047,7 @@ def cognitive_load():
         estimated_fixation_count: float | None = None
         search_feedback = None
         contrast_report = None
+        readability_report = None
         try:
             import cv2
             from cognitive.jokinen_model import JokinenSearchModel, JokinenParams
@@ -1146,6 +1147,18 @@ def cognitive_load():
                     # Lowest-contrast (hardest to read) elements first (top 5).
                     "low_contrast_elements": low_contrast,
                 }
+
+            # Text reading cost (OCR, optional): a labelled control should not
+            # be treated like a plain icon. compute_readability runs OCR once,
+            # maps text to elements and estimates a silent reading time. It
+            # returns None if OCR (EasyOCR/torch) is not installed, so the rest
+            # of the pipeline is unaffected.
+            if elements:
+                try:
+                    from cognitive.text_reader import compute_readability
+                    readability_report = compute_readability(jokinen_img, elements)
+                except Exception as ocr_exc:
+                    print(f"[Readability] OCR step skipped: {ocr_exc!r}")
         except Exception as e:
             # Do NOT fail silently: the coherence check depends on these values.
             # Log loudly so a broken search model is visible during the study.
@@ -1196,6 +1209,7 @@ def cognitive_load():
             "display_preset": display_preset_meta,
             "search_feedback": search_feedback,
             "contrast_report": contrast_report,
+            "readability_report": readability_report,
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
