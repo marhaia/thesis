@@ -1,0 +1,80 @@
+"""Decisive spike test: run UIED's CNN element-type classifier on the
+automotive screenshots and report the predicted-class distribution.
+
+Answers the key question: does the Rico/Android-trained classifier produce
+meaningful UI types on automotive HMIs, or does the domain gap make it
+unusable (which would justify item 4 as future work)?
+
+Run this AFTER spike_cv_only.py (it reuses the detection JSONs).
+See README.md in this folder for the full setup recipe.
+"""
+import json
+import os
+from collections import Counter
+
+import cv2
+import numpy as np
+import tf_keras
+
+MODEL_PATH = "models/cnn-rico-1.h5"
+
+# The 15 element classes the Rico/Android classifier was trained on.
+CLASS_MAP = [
+    "Button", "CheckBox", "Chronometer", "EditText", "ImageButton",
+    "ImageView", "ProgressBar", "RadioButton", "RatingBar", "SeekBar",
+    "Spinner", "Switch", "ToggleButton", "VideoView", "TextView",
+]
+
+# Point these at the same screenshots used in spike_cv_only.py.
+TEST_IMAGES = {
+    "test_hmi": "test_hmi.png",
+    "bmw_route": "bmw_route.png",
+}
+
+
+def classify_components(model, img, compos):
+    """Classify each detected component ROI; return (label, confidence) list."""
+    results = []
+    for c in compos:
+        x1, y1 = c["column_min"], c["row_min"]
+        x2, y2 = c["column_max"], c["row_max"]
+        roi = img[y1:y2, x1:x2]
+        if roi.size == 0:
+            continue
+        # Same preprocessing as UIED's own cnn/CNN.py: resize 64x64, /255, BGR.
+        roi_resized = cv2.resize(roi, (64, 64)).astype("float32") / 255.0
+        pred = model.predict(roi_resized[np.newaxis, ...], verbose=0)[0]
+        idx = int(np.argmax(pred))
+        results.append((CLASS_MAP[idx], float(pred[idx])))
+    return results
+
+
+def main():
+    print("Loading classifier ...")
+    # tf_keras (Keras 2 API) is required: Keras 3 cannot load this old .h5.
+    model = tf_keras.models.load_model(MODEL_PATH)
+
+    for name, img_path in TEST_IMAGES.items():
+        json_path = f"data/output/ip/{name}.json"
+        if not os.path.exists(json_path) or not os.path.exists(img_path):
+            print(f"[skip] {name}: missing detection json or image")
+            continue
+        img = cv2.imread(img_path)
+        compos = json.load(open(json_path))["compos"]
+        results = classify_components(model, img, compos)
+
+        labels = [r[0] for r in results]
+        confs = [r[1] for r in results]
+        dist = Counter(labels)
+        mean_conf = float(np.mean(confs)) if confs else 0.0
+
+        print(f"\n=== {name} ({len(results)} components) ===")
+        print(f"  mean confidence: {mean_conf:.2f}")
+        for label, count in dist.most_common():
+            # Mean confidence for this class.
+            cls_conf = np.mean([c for l, c in results if l == label])
+            print(f"  {label:<14} {count:>3}  (mean conf {cls_conf:.2f})")
+
+
+if __name__ == "__main__":
+    main()
