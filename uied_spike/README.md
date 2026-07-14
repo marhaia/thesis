@@ -72,7 +72,9 @@ Copy all `spike_*.py` scripts (from this folder) into the root of the
 - For `spike_classify.py`: put your automotive screenshots next to the scripts
   (e.g. `test_hmi.png`, `bmw_route.png`), or edit the `TEST_IMAGES` paths.
 - For `spike_automotive_batch.py`: create a folder `automotive_sample/` and drop
-  your automotive screenshots in it.
+  your automotive screenshots in it. (The exact BMW screenshots we used are
+  internal and are NOT in this repo; they are shared separately as a zip - just
+  unzip them into `automotive_sample/`.)
 - For `spike_positive_control.py`: create a folder `ueyes_sample/` and drop in a
   handful of web/mobile UI images (we used 10 images from the UEyes dataset).
 
