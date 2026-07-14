@@ -1,15 +1,16 @@
-"""Positive-control spike: run UIED's CV detection + Rico/Android CNN type
-classifier on real web/mobile/desktop UIs (UEyes sample), the domain the
-classifier WAS trained for.
+"""Batch spike: run UIED CV detection + Rico type classifier on a folder of
+automotive GUI screenshots, with CORRECT ROI cropping (crop from the image
+resized to the detection img_shape, not the original resolution).
 
-Purpose: rule out "it's just the automotive image". If the classifier produces
-varied types with clearly higher confidence here than on automotive HMIs, that
-proves the earlier collapse is a domain gap, not a broken setup or one bad image.
+Prints, per image, the predicted-type distribution and mean confidence, plus an
+overall summary. This is a plausibility check for item 4 (does an off-the-shelf
+detector give stable, varied types on automotive HMIs?). It does NOT measure
+type accuracy - that would need hand-labelled ground truth.
 
-Isolated: runs inside the uied_spike clone + its own venv, never touches the
-thesis project.
+Isolated: runs inside the uied_spike clone + its own venv.
 """
 import glob
+import json
 import os
 from collections import Counter
 
@@ -26,8 +27,8 @@ CLASS_MAP = [
     "Spinner", "Switch", "ToggleButton", "VideoView", "TextView",
 ]
 
-SAMPLE_DIR = "ueyes_sample"
-OUTPUT_ROOT = "data/output_ueyes"
+SAMPLE_DIR = "automotive_sample"
+OUTPUT_ROOT = "data/output_automotive"
 
 KEY_PARAMS = {
     "min-grad": 10,
@@ -48,7 +49,6 @@ def resize_height_by_longest_edge(img_path, resize_length=800):
 
 
 def detect(img_path):
-    """Run UIED CV region proposal; return path to the components JSON."""
     resized_height = resize_height_by_longest_edge(img_path)
     os.makedirs(os.path.join(OUTPUT_ROOT, "ip"), exist_ok=True)
     ip.compo_detection(
@@ -76,14 +76,12 @@ def classify(model, img, compos):
 
 
 def main():
-    import json
-
     print("Loading classifier ...")
     model = tf_keras.models.load_model(MODEL_PATH)
 
     images = sorted(glob.glob(os.path.join(SAMPLE_DIR, "*.png"))
                     + glob.glob(os.path.join(SAMPLE_DIR, "*.jpg")))
-    print(f"Found {len(images)} UEyes sample images\n")
+    print(f"Found {len(images)} automotive images\n")
 
     all_conf = []
     all_labels = []
@@ -92,17 +90,16 @@ def main():
     for img_path in images:
         json_path = detect(img_path)
         if not os.path.exists(json_path):
-            print(f"[skip] {img_path}: no detection json")
+            print(f"[skip] {os.path.basename(img_path)}: no detection json")
             continue
         img = cv2.imread(img_path)
         data = json.load(open(json_path))
-        # Detection ran on a resized image; coords are in that space.
-        # Resize the original to the detection shape before cropping ROIs.
+        # Crop from the image resized to the detection space (coords match it).
         h, w = data["img_shape"][:2]
         img = cv2.resize(img, (w, h))
-        compos = data["compos"]
-        results = classify(model, img, compos)
+        results = classify(model, img, data["compos"])
         if not results:
+            print(f"{os.path.basename(img_path):<45} 0 compos")
             continue
         labels = [r[0] for r in results]
         confs = [r[1] for r in results]
@@ -111,11 +108,13 @@ def main():
         per_image_unique.append(len(set(labels)))
         dist = Counter(labels)
         top = dist.most_common(1)[0]
-        print(f"{os.path.basename(img_path):<14} "
-              f"{len(results):>3} compos | {len(set(labels))} distinct types | "
-              f"mean conf {np.mean(confs):.2f} | top: {top[0]} ({top[1]})")
+        types_str = ", ".join(f"{k}:{v}" for k, v in dist.most_common())
+        print(f"{os.path.basename(img_path):<45} "
+              f"{len(results):>3} compos | mean conf {np.mean(confs):.2f} | "
+              f"{len(set(labels))} types | {types_str}")
 
-    print("\n=== POSITIVE-CONTROL SUMMARY (web/mobile/desktop UIs) ===")
+    print("\n=== AUTOMOTIVE SUMMARY ===")
+    print(f"  images processed:            {len(per_image_unique)}")
     print(f"  total components classified: {len(all_conf)}")
     print(f"  overall mean confidence:     {np.mean(all_conf):.2f}")
     print(f"  distinct classes overall:    {len(set(all_labels))} / 15")
