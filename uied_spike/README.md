@@ -128,6 +128,28 @@ mkdir -p models
 .uied_venv/bin/python spike_visualize.py IDX_CID180_LHD_Media_Browser
 ```
 
+### Optional: preprocessing sanity checks (debug_*.py)
+
+Because a preprocessing bug already flipped our result once (the ROI bug), we
+checked the other likely suspects too:
+
+```bash
+# Does channel order matter? (BGR as UIED feeds it vs RGB)
+.uied_venv/bin/python debug_bgr_vs_rgb.py
+
+# Does the input normalization matter? (/255 vs raw vs ImageNet-mean vs [-1,1])
+.uied_venv/bin/python debug_normalization.py
+
+# Reality-check: the alternative normalizations hit ~1.0 confidence but are wrong
+.uied_venv/bin/python debug_caffemean_visual.py IDX_CID180_LHD_MyMode_Menu_PersonalDark
+```
+
+Findings: channel order barely matters (labels change on ~4% of boxes). The
+alternative normalizations reach near-1.0 confidence but a visual check shows
+they are simply *confidently wrong* (they label photo tiles as `TextView 1.00`),
+so UIED's own `/255` is the correct choice. Conclusion: the coarse result is not
+a preprocessing artefact - high confidence is not correctness.
+
 ---
 
 ## What we observed (corrected, after the ROI bug fix)
