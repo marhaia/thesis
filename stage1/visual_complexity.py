@@ -990,10 +990,11 @@ def visual_hierarchy(image: np.ndarray) -> float:
        - Count edge pixels at each level.
        - Compute a weighted decay score: edges that persist to high
          thresholds indicate strong contrast boundaries.
-       - Formula: fg = Σₖ (count[k] - count[k+1]) × (1 - k/6)
+       - Formula: fg = Σₖ (count[k] - count[k+1]) × (k/6)
                        / (count[0] - count[-1])
        - A UI where all edges vanish at low thresholds has weak
-         figure-ground separation (fg ≈ 0).
+         figure-ground separation (fg ≈ 0); a UI whose edges persist
+         to the highest thresholds has strong separation (fg ≈ 1).
 
     B) Size Gradient
        - Binarize with Otsu's threshold.
@@ -1030,14 +1031,21 @@ def visual_hierarchy(image: np.ndarray) -> float:
         low = int(0.4 * high)           # lower = 40% of upper (standard ratio)
         edges = cv2.Canny(blurred, low, max(high, 1))
         edge_counts.append(np.count_nonzero(edges))
-    # Weighted decay: edges that survive at higher thresholds are weighted more
+    # Weighted decay: edges that survive to HIGHER thresholds (larger k, i.e.
+    # stronger contrast boundaries) are weighted more. Edges that drop out at
+    # step k are weighted by k/6, so the weakest edges (k=0) contribute nothing
+    # and the strongest surviving edges dominate the score.
     denom = edge_counts[0] - edge_counts[-1]
     if denom > 0:
         fg_contrast = sum(
-            (edge_counts[k] - edge_counts[k + 1]) * (1 - k / 6) for k in range(6)
+            (edge_counts[k] - edge_counts[k + 1]) * (k / 6) for k in range(6)
         ) / denom
     else:
-        fg_contrast = 0.0  # all thresholds give same count
+        # All thresholds give the same count. Two degenerate cases:
+        #  - edges persist even through the highest threshold -> strongest
+        #    possible figure-ground separation -> fg = 1.0
+        #  - there are no edges at all -> no separation -> fg = 0.0
+        fg_contrast = 1.0 if edge_counts[-1] > 0 else 0.0
 
     # =================================================================
     # B) Size Gradient (dominant component area ratio)
