@@ -19,6 +19,14 @@ Training Data:
     Uses HCEye empirical data (150 webpages × 27 participants × 3 load conditions)
     as ground truth for how cognitive load affects gaze behavior.
 
+    NOTE: the current `build_training_data` helper is a SCAFFOLD only. Its (X, y)
+    pairs are circular (the targets leak from the h block that is part of x) and
+    its v/s features are fabricated from gaze statistics rather than extracted
+    from images. See the warning in that function: no R^2/SHAP result from it may
+    be reported as evidence. The trained path is off by default and no model file
+    is shipped; the deployed cognitive-load score comes from the HCEye rule block
+    (h[5]), not from this regressor.
+
 Architecture Decision:
     Classical regression per pipeline_guide.md §4.2 (adapted from neural multi-head).
     Ridge as baseline, XGBoost as primary model. Cross-validated.
@@ -319,16 +327,48 @@ def build_training_data(hceye_csv_path: str,
                         sensitivity_lookup_path: str) -> Tuple[np.ndarray, np.ndarray]:
     """
     Build training data from HCEye empirical measurements.
-    
+
     Creates (X, y) pairs where:
         X = simulated feature vectors based on HCEye image properties
         y = ground-truth cognitive load effects from the study
-        
+
     Returns:
         X: (n_samples, 19) feature matrix
         y: (n_samples, 3) target matrix
+
+    WARNING — this training set is CIRCULAR and must not be used as evidence.
+    ---------------------------------------------------------------------------
+    The audit (2026-07) confirmed two problems that make any metric computed on
+    this data scientifically invalid:
+
+    1. Target leakage. The feature vector is x = [v(8), s(5), h(6)], so the
+       HCEye block h occupies x[13..18]. The targets are direct functions of
+       that same block:
+           y1 = sens['cognitive_load_index'] * 100        == x[18] * 100
+           y2 = affine(sens['fixation_reduction'])         from x[13]
+           y3 = affine(sens['duration_increase'])          from x[14]
+       The model is therefore trained to predict values that are already part
+       of its own input. Any R^2, RMSE, cross-validation score, feature
+       ablation or SHAP result from this data is near-tautological.
+
+    2. Fabricated inputs. The v and s blocks are NOT extracted from images here;
+       they are synthesised from per-image gaze statistics (see below), so they
+       do not correspond to the pixel-based features used at inference time.
+
+    Consequently this function exists only as a scaffold/placeholder. It is off
+    by default in the pipeline (use_trained_model=False, no model file shipped)
+    and NO number derived from it may appear in the thesis as evidence about the
+    pipeline's predictive validity. A valid Stage-2 model needs real per-image
+    v/s features and targets that are independent of the h block.
     """
     import pandas as pd
+
+    print(
+        "[Stage2] WARNING: build_training_data() produces CIRCULAR training data "
+        "(targets leak from the h block in x, v/s are fabricated from gaze stats). "
+        "Any R^2/RMSE/SHAP from it is tautological and must NOT be reported as "
+        "evidence. Scaffold only."
+    )
     
     df = pd.read_csv(hceye_csv_path)
     

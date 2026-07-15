@@ -28,9 +28,16 @@ In the current Stage 2 training data the visual (v) and saliency (s) feature
 vectors are SIMULATED from HCEye gaze proxies (see
 stage2/regression_model.build_training_data), while the HCEye block (h) and the
 regression targets (y) are both derived from the same empirical sensitivity
-lookup. The h block is therefore expected to dominate almost by construction.
-This ablation is thus a diagnostic of the CURRENT model, not yet evidence about
-saliency in general; a fair test needs real image-derived v and s features.
+lookup. Worse than mere dominance, this is direct TARGET LEAKAGE: with
+x = [v(8), s(5), h(6)], the targets are functions of the h block that is part
+of x itself —
+    y1 = cognitive_load_index * 100  == x[18] * 100
+    y2 = affine(fixation_reduction)  from x[13]
+    y3 = affine(duration_increase)   from x[14]
+so the model predicts values already contained in its input. Any R^2, ablation
+delta or SHAP ranking from this data is therefore near-tautological and must NOT
+be reported as evidence about saliency (or any block) in general; a fair test
+needs real image-derived v and s features and targets independent of h.
 
 Usage
 -----
