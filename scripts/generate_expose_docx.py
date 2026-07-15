@@ -7,8 +7,10 @@ from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 import os
 
-OUT = "/Users/Q682780/Thesis_G/Literature/notes/expose/expose_standard.docx"
-IMG = "/Users/Q682780/Thesis_G/Literature/notes/pipeline-architecture3.png"
+# Resolve paths relative to the repository root so the script is portable.
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.path.join(_REPO_ROOT, "Literature", "notes", "expose", "expose_standard.docx")
+IMG = os.path.join(_REPO_ROOT, "Literature", "notes", "pipeline-architecture3.png")
 
 doc = Document()
 

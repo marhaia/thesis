@@ -5,7 +5,9 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import warnings
 warnings.filterwarnings('ignore')
 import sys
-sys.path.insert(0, '/Users/Q682780/Thesis_G')
+
+# Resolve the repository root relative to this file so the script is portable.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 import cv2

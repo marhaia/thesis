@@ -1,5 +1,6 @@
 """Generate a pipeline architecture figure for the exposé."""
 
+import os
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -120,6 +121,6 @@ text(ax, 7.0, 1.5,
      7.5, color="#555", ha="left")
 
 plt.tight_layout(pad=0.5)
-out_path = "/Users/Q682780/Thesis_G/scripts/pipeline_figure.png"
+out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pipeline_figure.png")
 plt.savefig(out_path, dpi=180, bbox_inches="tight", facecolor="white")
 print(f"Saved: {out_path}")

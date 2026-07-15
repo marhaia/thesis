@@ -2,8 +2,11 @@
 Test script: Jokinen 2020 Visual Search Model
 Tests element detection and search time prediction on bmw_route.png.
 """
+import os
 import sys
-sys.path.insert(0, "/Users/Q682780/Thesis_G")
+
+# Resolve the repository root relative to this file so the script is portable.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import cv2
 import numpy as np

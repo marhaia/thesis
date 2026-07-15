@@ -4,7 +4,9 @@ import json
 import os
 
 headers = {'Accept': 'application/json'}
-BASE = '/Users/Q682780/Thesis_G/hceye'
+# Resolve paths relative to the repository root so the script is portable.
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE = os.path.join(_REPO_ROOT, 'hceye')
 os.makedirs(BASE, exist_ok=True)
 
 def list_folder(url, prefix=""):
