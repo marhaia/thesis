@@ -990,10 +990,61 @@ def cognitive_load():
                 # Cosmetic only: real features are unaffected. Log, don't crash.
                 print(f"[Saliency] Overlay rendering failed (features unaffected): {e!r}")
 
+        # Step 2.5: Element-derived measurements for the HCEye stage.
+        # Detect UI elements ONCE here (reused later by the Jokinen block) and
+        # derive two real measurements the HCEye rules need:
+        #   - whitespace_ratio: 1 - (union area of element bboxes / image area).
+        #     A binary mask is used so overlapping boxes are not double-counted
+        #     (a plain area sum could saturate whitespace to 0).
+        #   - text_density: share of detected elements that carry text (OCR).
+        #     OCR is optional (EasyOCR/torch); if unavailable, text_density stays
+        #     None (a neutral value is used downstream) and the source is flagged.
+        import cv2
+        jokinen_img = cv2.imread(str(filepath))
+        elements = None
+        whitespace_ratio = None
+        text_density = None
+        text_density_source = "fallback_neutral"
+        readability_report = None
+        if jokinen_img is not None:
+            try:
+                from cognitive.element_detector import detect_elements
+                elements = detect_elements(jokinen_img)
+                h_img, w_img = jokinen_img.shape[:2]
+                img_area = float(h_img * w_img) or 1.0
+                mask = np.zeros((h_img, w_img), dtype=np.uint8)
+                for e in elements:
+                    x, y, bw, bh = e["bbox"]
+                    mask[int(y):int(y + bh), int(x):int(x + bw)] = 1
+                whitespace_ratio = float(
+                    np.clip(1.0 - float(mask.sum()) / img_area, 0.0, 1.0)
+                )
+            except Exception as e:
+                print(f"[HCEye] Whitespace/element measurement unavailable: {e!r}")
+            try:
+                # OCR runs ONCE here; the full report is reused for the
+                # readability_report below (no second, expensive OCR pass).
+                from cognitive.text_reader import compute_readability
+                if elements:
+                    readability_report = compute_readability(jokinen_img, elements)
+                    rr = readability_report
+                    if rr and rr.get("n_elements"):
+                        text_density = float(rr["n_text_elements"]) / float(
+                            max(rr["n_elements"], 1)
+                        )
+                        text_density_source = "ocr"
+            except Exception as e:
+                print(f"[HCEye] OCR text density unavailable (neutral fallback): {e!r}")
+
         # Step 3: HCEye cognitive load features (h∈ℝ⁶)
         lookup_path = Path(__file__).parent.parent / "hceye" / "sensitivity_lookup.json"
         extractor = HCEyeFeatureExtractor(str(lookup_path))
-        h = extractor.extract_features(v, s)
+        h = extractor.extract_features(
+            vis_results,
+            saliency_features=(saliency_dict or None),
+            whitespace_ratio=whitespace_ratio,
+            text_density=text_density,
+        )
         cog_names = extractor.get_feature_names()
         cog_dict = dict(zip(cog_names, h.tolist()))
 
@@ -1047,16 +1098,18 @@ def cognitive_load():
         estimated_fixation_count: float | None = None
         search_feedback = None
         contrast_report = None
-        readability_report = None
         try:
             import cv2
             from cognitive.jokinen_model import JokinenSearchModel, JokinenParams
             from cognitive.element_detector import detect_elements
-            # detect_elements expects a BGR image array (cv2.imread), not a path.
-            jokinen_img = cv2.imread(str(filepath))
+            # Reuse the image and element boxes already loaded in Step 2.5.
+            # Only re-read/re-detect if that earlier step failed for any reason.
+            if jokinen_img is None:
+                jokinen_img = cv2.imread(str(filepath))
             if jokinen_img is None:
                 raise ValueError(f"Cannot read image for Jokinen search model: {filepath}")
-            elements = detect_elements(jokinen_img)
+            if elements is None:
+                elements = detect_elements(jokinen_img)
             # Reuse the already-computed UMSI++ heatmap when saliency succeeded
             # (avoids re-running the slow saliency step). s is not None implies
             # the saliency block ran past the heatmap assignment above.
@@ -1148,17 +1201,6 @@ def cognitive_load():
                     "low_contrast_elements": low_contrast,
                 }
 
-            # Text reading cost (OCR, optional): a labelled control should not
-            # be treated like a plain icon. compute_readability runs OCR once,
-            # maps text to elements and estimates a silent reading time. It
-            # returns None if OCR (EasyOCR/torch) is not installed, so the rest
-            # of the pipeline is unaffected.
-            if elements:
-                try:
-                    from cognitive.text_reader import compute_readability
-                    readability_report = compute_readability(jokinen_img, elements)
-                except Exception as ocr_exc:
-                    print(f"[Readability] OCR step skipped: {ocr_exc!r}")
         except Exception as e:
             # Do NOT fail silently: the coherence check depends on these values.
             # Log loudly so a broken search model is visible during the study.
@@ -1189,6 +1231,14 @@ def cognitive_load():
             "saliency_cache_hit": cache_hit,
             "design_classification": design_classification,
             "cognitive_load_features": cog_dict,
+            "hceye_inputs": {
+                # Real element-derived measurements fed into the HCEye rules.
+                # text_density_source flags whether OCR ran or a neutral fallback
+                # was used (mirrors the saliency "missing weights" transparency).
+                "whitespace_ratio": whitespace_ratio,
+                "text_density": text_density,
+                "text_density_source": text_density_source,
+            },
             "task_descriptor": t_dict,
             "big_five_profile": profile,
             "base_prediction": predictions,

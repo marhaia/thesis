@@ -69,6 +69,20 @@ HCEYE_COEFFICIENTS = {
 }
 
 
+# Mapping from the concept each HCEye rule needs to the Stage-1 feature that
+# supplies it. "equal" = same construct; "proxy" = closest available stand-in.
+# whitespace_ratio and text_density are measured separately (element bounding
+# boxes / OCR); color_count is intentionally omitted because no rule uses it.
+# See the thesis methods section "Feature Mapping: Justification and Limits".
+HCEYE_FEATURE_MAP = {
+    "edge_density":      ("edge_density", "equal"),
+    "layout_complexity": ("feature_congestion", "proxy"),   # both measure clutter
+    "element_count":     ("interactive_element_density", "equal"),
+    "symmetry":          ("layout_symmetry", "equal"),
+    "grid_quality":      ("visual_hierarchy", "proxy"),      # layout order; valid after Bug-2 fix
+}
+
+
 class HCEyeFeatureExtractor:
     """
     Extracts cognitive-load sensitivity features for GUI screenshots.
@@ -78,13 +92,19 @@ class HCEyeFeatureExtractor:
     For new images (not in HCEye), estimates sensitivity from visual features.
     """
     
-    def __init__(self, lookup_path: Optional[str] = None):
+    def __init__(self, lookup_path: Optional[str] = None,
+                 feature_norms_path: Optional[str] = None):
         """
         Initialize the HCEye feature extractor.
         
         Args:
             lookup_path: Path to pre-computed per-image sensitivity data.
                         If None, uses visual-feature-based estimation.
+            feature_norms_path: Path to feature_norms.json (the empirical
+                        reference distribution over 1,485 GUI screenshots).
+                        Used to percentile-normalise each Stage-1 feature so
+                        that no slot saturates. If None, the default location
+                        stage1/data/results/feature_norms.json is used.
         """
         self.coefficients = HCEYE_COEFFICIENTS
         self.sensitivity_lookup = {}
@@ -92,31 +112,58 @@ class HCEyeFeatureExtractor:
         if lookup_path and os.path.exists(lookup_path):
             with open(lookup_path, 'r') as f:
                 self.sensitivity_lookup = json.load(f)
+
+        # Load the empirical reference distribution (percentiles per feature).
+        # Percentile normalisation replaces the old fixed hand-ranges, which
+        # saturated features whose real range did not match the guessed range.
+        if feature_norms_path is None:
+            feature_norms_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "stage1", "data", "results", "feature_norms.json",
+            )
+        self.feature_norms = {}
+        if os.path.exists(feature_norms_path):
+            with open(feature_norms_path, 'r') as f:
+                self.feature_norms = json.load(f).get("features", {})
+
     
-    def extract_features(self, 
-                         visual_features: np.ndarray,
-                         saliency_features: Optional[np.ndarray] = None,
+    def extract_features(self,
+                         visual_features: Dict[str, float],
+                         saliency_features: Optional[Dict[str, float]] = None,
+                         whitespace_ratio: Optional[float] = None,
+                         text_density: Optional[float] = None,
                          image_name: Optional[str] = None) -> np.ndarray:
         """
-        Extract cognitive load features for a GUI.
-        
+        Extract cognitive-load sensitivity features (h ∈ ℝ⁶) for a GUI.
+
+        Named-field interface (not array positions): the caller passes the
+        Stage-1 feature dicts directly, which makes the feature→concept mapping
+        explicit and structurally rules out the position-mismatch bug this
+        method previously had.
+
         Args:
-            visual_features: Stage 1 visual complexity vector (v ∈ ℝ⁸)
-                [edge_density, color_count, layout_complexity, whitespace_ratio,
-                 text_density, element_count, symmetry, grid_quality]
-            saliency_features: Saliency features (s ∈ ℝ⁵) if available
-                [peak_sal, mean_sal, sal_spread, hotspot_count, coverage]
-            image_name: Optional name to check against HCEye lookup table
-            
+            visual_features: Stage-1 visual complexity dict with keys
+                {shannon_entropy, edge_density, feature_congestion,
+                 subband_entropy, layout_symmetry, chromatic_coherence,
+                 visual_hierarchy, interactive_element_density}.
+            saliency_features: Optional saliency dict with keys
+                {saliency_dispersion, saliency_coverage, ...}.
+            whitespace_ratio: Optional real whitespace ratio in [0, 1]
+                (1 − covered_area / image_area) measured from the element
+                bounding boxes. If None, it is derived from element density.
+            text_density: Optional real text density in [0, 1] from OCR. If
+                None, a neutral value (0.5) is used (the caller flags the
+                source in the API response).
+            image_name: Optional name to check against the HCEye lookup table.
+
         Returns:
-            h ∈ ℝ⁶ cognitive load feature vector
+            h ∈ ℝ⁶ cognitive load feature vector.
         """
-        # Check if we have empirical data for this specific image
         if image_name and image_name in self.sensitivity_lookup:
             return self._from_lookup(image_name)
-        
-        # Otherwise, estimate from visual features
-        return self._estimate_from_features(visual_features, saliency_features)
+        return self._estimate_from_features(
+            visual_features, saliency_features, whitespace_ratio, text_density,
+        )
     
     def _from_lookup(self, image_name: str) -> np.ndarray:
         """Use pre-computed sensitivity from HCEye empirical data."""
@@ -130,95 +177,96 @@ class HCEyeFeatureExtractor:
             data['cognitive_load_index'],
         ], dtype=np.float32)
     
-    def _estimate_from_features(self, 
-                                 visual_features: np.ndarray,
-                                 saliency_features: Optional[np.ndarray] = None) -> np.ndarray:
+    def _estimate_from_features(self,
+                                visual_features: Dict[str, float],
+                                saliency_features: Optional[Dict[str, float]] = None,
+                                whitespace_ratio: Optional[float] = None,
+                                text_density: Optional[float] = None) -> np.ndarray:
         """
-        Estimate cognitive load sensitivity from visual complexity features.
-        
-        The estimation is based on empirical findings from HCEye:
-        - More complex GUIs → greater fixation reduction under load
-        - Higher saliency spread → more exploration reduction
-        - More elements → highlights become more effective
+        Estimate cognitive-load sensitivity from Stage-1 features.
+
+        Each Stage-1 feature is percentile-normalised against the empirical
+        reference distribution (feature_norms.json), so its value becomes
+        "where this screen sits relative to a typical GUI" in [0, 1]. This
+        removes the saturation that fixed hand-ranges caused.
+
+        The HCEye effect coefficients (Das et al., 2024) are unchanged; only
+        the mapping of features onto them is a purpose-built, literature-guided
+        heuristic (direction motivated by Rosenholtz 2007 / Rayner 1998; the
+        exact weighting is not empirically calibrated and is examined by the
+        user study).
         """
-        # Unpack visual features (v ∈ ℝ⁸)
-        # [edge_density, color_count, layout_complexity, whitespace_ratio,
-        #  text_density, element_count, symmetry, grid_quality]
-        v = np.asarray(visual_features, dtype=np.float32)
-        
-        # Normalize visual features to [0, 1] range
-        # Using typical ranges from our Stage 1 extractor
-        v_norm = self._normalize_visual(v)
-        
-        # 1. Cognitive Fixation Reduction
-        # More complex GUIs see greater reduction in fixation count under load
-        # Complexity proxy: edge_density + element_count - whitespace
-        complexity = (v_norm[0] + v_norm[5] + v_norm[2]) / 3.0  # edge, elements, layout
-        simplicity = v_norm[3]  # whitespace ratio
-        
+        vf = visual_features or {}
+
+        def concept(name: str) -> float:
+            """Percentile-normalised value of the Stage-1 feature mapped onto a
+            given HCEye concept (see HCEYE_FEATURE_MAP)."""
+            stage1_key, _kind = HCEYE_FEATURE_MAP[name]
+            return self._percentile_normalize(vf.get(stage1_key), stage1_key)
+
+        edge = concept("edge_density")
+        layout_complexity = concept("layout_complexity")
+        element_count = concept("element_count")
+        symmetry = concept("symmetry")
+        grid_quality = concept("grid_quality")
+
+        # whitespace_ratio: real measurement in [0, 1]; fall back to the inverse
+        # of element density only if it was not supplied.
+        if whitespace_ratio is None:
+            whitespace = float(np.clip(1.0 - element_count, 0.0, 1.0))
+        else:
+            whitespace = float(np.clip(whitespace_ratio, 0.0, 1.0))
+
+        # text_density: real OCR measurement in [0, 1]; neutral fallback = 0.5.
+        text = 0.5 if text_density is None else float(np.clip(text_density, 0.0, 1.0))
+
+        # 1. Cognitive Fixation Reduction — more complex GUIs reduce fixations more.
+        complexity = (edge + element_count + layout_complexity) / 3.0
+        simplicity = whitespace
         fixation_reduction = self.coefficients['fixation_reduction_mean'] - \
-            0.05 * (complexity - simplicity)  # More complex = more reduction
-        fixation_reduction = np.clip(fixation_reduction, 0.6, 1.1)
-        
-        # 2. Cognitive Duration Increase
-        # Under load, fixations get longer (more processing per fixation)
-        # Higher text density and more elements → longer processing needed
-        processing_demand = (v_norm[4] + v_norm[5]) / 2.0  # text + elements
-        
+            0.05 * (complexity - simplicity)
+        fixation_reduction = float(np.clip(fixation_reduction, 0.6, 1.1))
+
+        # 2. Cognitive Duration Increase — more text/elements → longer processing.
+        processing_demand = (text + element_count) / 2.0
         duration_increase = self.coefficients['duration_increase_mean'] + \
             0.1 * processing_demand
-        duration_increase = np.clip(duration_increase, 0.8, 1.5)
-        
-        # 3. Exploration Reduction
-        # Under load, users explore less of the interface
-        # Lower symmetry and grid quality → less predictable layout → more reduction
-        layout_quality = (v_norm[6] + v_norm[7]) / 2.0  # symmetry + grid
-        
+        duration_increase = float(np.clip(duration_increase, 0.8, 1.5))
+
+        # 3. Exploration Reduction — less predictable layout → more reduction.
+        layout_quality = (symmetry + grid_quality) / 2.0
         exploration_reduction = self.coefficients['frequency_reduction_mean'] - \
             0.04 * (1.0 - layout_quality)
-        exploration_reduction = np.clip(exploration_reduction, 0.7, 1.0)
-        
-        # 4. AOI Sensitivity
-        # How much does cognitive load reduce attention to key areas
-        # More visual clutter → greater AOI attention loss
-        clutter = 1.0 - v_norm[3]  # inverse of whitespace
-        
+        exploration_reduction = float(np.clip(exploration_reduction, 0.7, 1.0))
+
+        # 4. AOI Sensitivity — more visual clutter → greater AOI attention loss.
+        clutter = 1.0 - whitespace
         aoi_baseline = self.coefficients['aoi_hit_absent_no_hl']
         aoi_loaded = self.coefficients['aoi_hit_high_no_hl']
         aoi_drop = (aoi_baseline - aoi_loaded) / aoi_baseline  # ~40% drop
-        
-        aoi_sensitivity = aoi_drop * (0.7 + 0.6 * clutter)
-        aoi_sensitivity = np.clip(aoi_sensitivity, 0.0, 1.0)
-        
-        # 5. Highlight Effectiveness
-        # How much would dynamic highlighting help under cognitive load
-        # More elements and lower current saliency focus → highlighting helps more
-        if saliency_features is not None:
-            s = np.asarray(saliency_features, dtype=np.float32)
-            sal_spread = s[2] if len(s) > 2 else 0.5  # saliency spread
-            coverage = s[4] if len(s) > 4 else 0.5    # coverage
-            # High spread + low coverage = highlighting would help
+        aoi_sensitivity = float(np.clip(aoi_drop * (0.7 + 0.6 * clutter), 0.0, 1.0))
+
+        # 5. Highlight Effectiveness — high saliency spread + low coverage → helps.
+        if saliency_features:
+            sal_spread = self._percentile_normalize(
+                saliency_features.get("saliency_dispersion"), "saliency_dispersion")
+            coverage = self._percentile_normalize(
+                saliency_features.get("saliency_coverage"), "saliency_coverage")
             highlight_need = (sal_spread + (1.0 - coverage)) / 2.0
         else:
             highlight_need = complexity  # fallback to complexity
-        
-        # Empirical: dynamic highlighting maintains ~69% AOI hit vs 6.9% without
-        hl_effectiveness = 0.5 + 0.4 * highlight_need
-        hl_effectiveness = np.clip(hl_effectiveness, 0.0, 1.0)
-        
-        # 6. Combined Cognitive Load Index (0-1)
-        # Overall vulnerability to cognitive load
-        # Weighted combination of all factors
+        hl_effectiveness = float(np.clip(0.5 + 0.4 * highlight_need, 0.0, 1.0))
+
+        # 6. Combined Cognitive Load Index (0–1) — weighted combination.
         cognitive_load_index = (
             0.30 * (1.0 - fixation_reduction) +       # More reduction = higher index
             0.20 * (duration_increase - 1.0) +         # More increase = higher index
             0.20 * (1.0 - exploration_reduction) +     # More reduction = higher index
             0.15 * aoi_sensitivity +                    # Higher sensitivity = higher index
-            0.15 * (1.0 - hl_effectiveness)            # Lower effectiveness = higher index (paradox: we flip)
+            0.15 * (1.0 - hl_effectiveness)            # Lower effectiveness = higher index
         )
-        # Normalize to 0-1
-        cognitive_load_index = np.clip(cognitive_load_index / 0.3, 0.0, 1.0)
-        
+        cognitive_load_index = float(np.clip(cognitive_load_index / 0.3, 0.0, 1.0))
+
         return np.array([
             fixation_reduction,
             duration_increase,
@@ -227,34 +275,53 @@ class HCEyeFeatureExtractor:
             hl_effectiveness,
             cognitive_load_index,
         ], dtype=np.float32)
-    
-    def _normalize_visual(self, v: np.ndarray) -> np.ndarray:
+
+    def _percentile_normalize(self, value: Optional[float], feature_key: str) -> float:
         """
-        Normalize visual features to [0, 1] using typical ranges.
-        
-        Expected input order:
-        [edge_density, color_count, layout_complexity, whitespace_ratio,
-         text_density, element_count, symmetry, grid_quality]
+        Map a raw feature value to [0, 1] by its position in the empirical
+        reference distribution (feature_norms.json).
+
+        Piecewise-linear interpolation across the reference anchors
+        min < p5 < p25 < p50 < p75 < p95 < max, mapped to
+        0.0 < 0.05 < 0.25 < 0.50 < 0.75 < 0.95 < 1.0.
+
+        Including the empirical min/max (not only p5/p95) matters for screens
+        that sit in the extreme tails of the reference distribution: automotive
+        HMIs are much sparser than the web/mobile GUIs the reference was built
+        from, so several of their features fall below p5. Anchoring on min/max
+        keeps those tail values ordered (a slightly cleaner screen still scores
+        lower) instead of hard-clamping every tail value to the same 0.05 floor.
+        Values below min / above max clamp to 0.0 / 1.0. If the feature has no
+        reference entry, or the value is missing, returns a neutral 0.5.
         """
-        # Typical ranges from Stage 1 visual complexity extractor
-        ranges = np.array([
-            [0.0, 0.5],     # edge_density: 0-0.5
-            [0.0, 1000.0],  # color_count: 0-1000 
-            [0.0, 1.0],     # layout_complexity: already 0-1
-            [0.0, 1.0],     # whitespace_ratio: already 0-1
-            [0.0, 0.5],     # text_density: 0-0.5
-            [0.0, 100.0],   # element_count: 0-100
-            [0.0, 1.0],     # symmetry: already 0-1
-            [0.0, 1.0],     # grid_quality: already 0-1
-        ], dtype=np.float32)
-        
-        # Pad if fewer features provided
-        if len(v) < 8:
-            v = np.pad(v, (0, 8 - len(v)), constant_values=0.5)
-        
-        v_norm = (v[:8] - ranges[:, 0]) / (ranges[:, 1] - ranges[:, 0] + 1e-8)
-        return np.clip(v_norm, 0.0, 1.0)
-    
+        if value is None:
+            return 0.5
+        norms = self.feature_norms.get(feature_key)
+        if not norms:
+            return 0.5
+        anchors = [
+            (norms.get("min"), 0.0),
+            (norms.get("p5"), 0.05),
+            (norms.get("p25"), 0.25),
+            (norms.get("p50"), 0.50),
+            (norms.get("p75"), 0.75),
+            (norms.get("p95"), 0.95),
+            (norms.get("max"), 1.0),
+        ]
+        # Keep only strictly increasing x-anchors so np.interp is well defined
+        # (some features have degenerate anchors, e.g. min == p5 == 0).
+        xs: list = []
+        ys: list = []
+        for x, y in anchors:
+            if x is None:
+                continue
+            if not xs or float(x) > xs[-1]:
+                xs.append(float(x))
+                ys.append(y)
+        if not xs:
+            return 0.5
+        return float(np.interp(float(value), xs, ys))
+
     def get_feature_names(self) -> list:
         """Return names of the 6 cognitive load features."""
         return [
@@ -389,17 +456,27 @@ if __name__ == '__main__':
     if args.test:
         print("\n=== Test: Estimate from visual features ===")
         extractor = HCEyeFeatureExtractor()
-        
-        # Simulate a complex GUI
-        complex_gui = np.array([0.35, 800, 0.8, 0.15, 0.3, 75, 0.4, 0.3])
-        h_complex = extractor.extract_features(complex_gui)
+
+        # Simulate a complex GUI (named Stage-1 features).
+        complex_gui = {
+            "shannon_entropy": 6.5, "edge_density": 0.09, "feature_congestion": 7.0,
+            "subband_entropy": 3.8, "layout_symmetry": 0.15,
+            "chromatic_coherence": 0.6, "visual_hierarchy": 0.30,
+            "interactive_element_density": 0.9,
+        }
+        h_complex = extractor.extract_features(complex_gui, whitespace_ratio=0.15)
         print(f"Complex GUI: {dict(zip(extractor.get_feature_names(), h_complex))}")
-        
-        # Simulate a simple GUI
-        simple_gui = np.array([0.08, 50, 0.2, 0.7, 0.05, 10, 0.9, 0.85])
-        h_simple = extractor.extract_features(simple_gui)
+
+        # Simulate a simple GUI.
+        simple_gui = {
+            "shannon_entropy": 2.5, "edge_density": 0.02, "feature_congestion": 2.5,
+            "subband_entropy": 1.8, "layout_symmetry": 0.7,
+            "chromatic_coherence": 0.4, "visual_hierarchy": 0.85,
+            "interactive_element_density": 0.1,
+        }
+        h_simple = extractor.extract_features(simple_gui, whitespace_ratio=0.7)
         print(f"Simple GUI:  {dict(zip(extractor.get_feature_names(), h_simple))}")
-        
+
         print(f"\nComplex GUI Load Index: {h_complex[5]:.3f}")
         print(f"Simple GUI Load Index:  {h_simple[5]:.3f}")
         print(f"Difference: {h_complex[5] - h_simple[5]:.3f} (complex more vulnerable)")

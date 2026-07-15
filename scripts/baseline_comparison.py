@@ -115,17 +115,6 @@ def score_baseline_a(v: dict) -> dict:
     }
 
 
-_V_KEYS = [
-    "shannon_entropy", "edge_density", "feature_congestion", "subband_entropy",
-    "layout_symmetry", "chromatic_coherence", "visual_hierarchy",
-    "interactive_element_density",
-]
-
-def _v_array(v: dict) -> np.ndarray:
-    """Convert visual-complexity dict to numpy array in canonical order."""
-    return np.array([float(v[k]) for k in _V_KEYS], dtype=np.float32)
-
-
 # ── Baseline-B: visual + HCEye rule-based ────────────────────────────────────
 def score_baseline_b(v: dict, extractor: HCEyeFeatureExtractor) -> dict:
     """
@@ -135,7 +124,7 @@ def score_baseline_b(v: dict, extractor: HCEyeFeatureExtractor) -> dict:
     and uses h[5] (cognitive_load_index) as the primary score, calibrated
     against Das et al. (2024) gaze observations.
     """
-    h = extractor.extract_features(_v_array(v), saliency_features=None)
+    h = extractor.extract_features(v, saliency_features=None)
     cog_idx = float(h[5])  # cognitive_load_index (0-1)
     score = float(np.clip(cog_idx * 100.0, 0.0, 100.0))
     return {
@@ -161,7 +150,7 @@ def score_full(
     Adds task descriptor modifier (t∈ℝ⁶) and optional Big Five preset (p∈ℝ⁵).
     Saliency features (s∈ℝ⁵) are included if available; zeroed otherwise.
     """
-    h = extractor.extract_features(_v_array(v), saliency_features=s)
+    h = extractor.extract_features(v, saliency_features=s)
     cog_idx = float(h[5])
     base_score = float(np.clip(cog_idx * 100.0, 0.0, 100.0))
     base_search = float(np.clip(1.0 - float(h[3]), 0.0, 1.0))

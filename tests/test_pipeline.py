@@ -42,7 +42,8 @@ def test_full_pipeline(image_path: str):
     print("\n[2/3] HCEye Cognitive Load Features (h ∈ ℝ⁶)...")
     lookup_path = "hceye/sensitivity_lookup.json"
     extractor = HCEyeFeatureExtractor(lookup_path)
-    h = extractor.extract_features(v)
+    # extract_features now takes the named visual-feature dict directly.
+    h = extractor.extract_features(vis)
     feature_names = extractor.get_feature_names()
     print(f"  h = {h}")
     for name, val in zip(feature_names, h):
@@ -103,12 +104,18 @@ if __name__ == '__main__':
         extractor = HCEyeFeatureExtractor("hceye/sensitivity_lookup.json")
         model = Stage2Model(model_path="stage2/models/stage2_model.pkl")
         
+        _v_keys = [
+            "shannon_entropy", "edge_density", "feature_congestion",
+            "subband_entropy", "layout_symmetry", "chromatic_coherence",
+            "visual_hierarchy", "interactive_element_density",
+        ]
         for name, v in [
             ("Complex Dashboard", np.array([7.2, 0.35, 0.75, 3.2, 0.3, 0.7, 0.4, 65.0])),
             ("Simple Settings",   np.array([4.5, 0.08, 0.15, 0.8, 0.85, 0.2, 0.8, 8.0])),
             ("Medium Form",       np.array([5.8, 0.18, 0.40, 1.5, 0.6, 0.4, 0.6, 25.0])),
         ]:
-            h = extractor.extract_features(v)
+            vis = dict(zip(_v_keys, v.tolist()))
+            h = extractor.extract_features(vis)
             x = np.concatenate([v, np.zeros(5), h])
             pred = model.predict(x)
             print(f"  {name:25s}  CLI={pred['cognitive_load_score']:5.1f}  "
