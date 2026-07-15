@@ -33,3 +33,6 @@ easyocr==1.7.2
 
 # Plotting (optional, used by analysis scripts)
 matplotlib==3.9.4
+
+# Testing (the README documents `python3 -m pytest tests/`)
+pytest==8.4.2

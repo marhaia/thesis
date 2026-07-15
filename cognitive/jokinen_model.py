@@ -53,32 +53,45 @@ class JokinenParams:
     All parameters of the Adaptive Feature Guidance model.
     Defaults are from Jokinen et al. (2020), Table 1.
 
+    IMPLEMENTATION SCOPE (honest note): the current pipeline implements a
+    bottom-up, novice-mode simulation — feature dissimilarity (colour + size),
+    a size-based visual acuity gate, UMSI++ saliency, EMMA timing, and
+    inhibition of return. Three blocks are declared with their literature
+    citations for reference / a possible future extension but are NOT read
+    anywhere in the current code and are marked "[NOT USED]" below: the top-down
+    guidance weight (W_TA), the ACT-R memory block, and the utility-learning
+    block. In particular there is no top-down (goal-directed) guidance yet, so
+    the model ranks bottom-up conspicuity rather than simulating "search for X";
+    see the module docstring / thesis for the resulting limitation. The colour
+    and shape acuity coefficients are also unused — the acuity gate uses only the
+    size coefficients (a_size, b_size).
+
     Literature-based (fixed):
-        K           : EMMA encoding constant (Salvucci, 2001)
-        k           : EMMA encoding exponent
-        t_prep      : Saccade preparation time (s)
-        t_exec      : Saccade execution time per degree (s/deg)
-        t_sacc      : Additional saccade constant (s)
-        W_BA        : Bottom-up activation weight
-        W_TA        : Top-down activation weight
-        sigma_TA    : Noise SD for activation (logistic)
-        a_color     : Visual threshold param a for colour
-        b_color     : Visual threshold param b for colour
-        a_shape     : Visual threshold param a for shape
-        b_shape     : Visual threshold param b for shape
-        a_size      : Visual threshold param a for size
-        b_size      : Visual threshold param b for size
-        freq        : Element frequency (default 0.1)
+        K           : EMMA encoding constant (Salvucci, 2001)          [USED]
+        k           : EMMA encoding exponent                           [USED]
+        t_prep      : Saccade preparation time (s)                     [USED]
+        t_exec      : Saccade execution time per degree (s/deg)        [USED]
+        t_sacc      : Additional saccade constant (s)                  [USED]
+        W_BA        : Bottom-up activation weight                      [USED]
+        W_TA        : Top-down activation weight                       [NOT USED]
+        sigma_TA    : Noise SD for activation (logistic)              [USED]
+        a_color     : Visual threshold param a for colour             [NOT USED]
+        b_color     : Visual threshold param b for colour             [NOT USED]
+        a_shape     : Visual threshold param a for shape              [NOT USED]
+        b_shape     : Visual threshold param b for shape              [NOT USED]
+        a_size      : Visual threshold param a for size               [USED]
+        b_size      : Visual threshold param b for size               [USED]
+        freq        : Element frequency (default 0.1)                  [USED]
 
     Fitted (from grid search in paper):
-        B_bl        : Base-level activation constant
-        F_mem       : Memory retrieval scaling constant
-        f_mem       : Memory retrieval exponent
-        sigma_M     : Memory noise SD
-        alpha       : Utility learning rate
-        sigma_U     : Utility noise SD
-        B_sa        : Source activation for LTM
-        tau_vstm    : VSTM decay time (number of steps)
+        B_bl        : Base-level activation constant                  [NOT USED]
+        F_mem       : Memory retrieval scaling constant               [NOT USED]
+        f_mem       : Memory retrieval exponent                       [NOT USED]
+        sigma_M     : Memory noise SD                                 [NOT USED]
+        alpha       : Utility learning rate                           [NOT USED]
+        sigma_U     : Utility noise SD                                [NOT USED]
+        B_sa        : Source activation for LTM                       [NOT USED]
+        tau_vstm    : VSTM decay time (number of steps)               [USED]
     """
     # === EMMA Eye Movement Model (Salvucci, 2001) ===
     # Salvucci, D.D. (2001). An integrated model of eye movements and visual
@@ -95,19 +108,22 @@ class JokinenParams:
 
     # === Activation Weights (Jokinen 2020, Table 1 — fitted) ===
     W_BA: float = 1.1           # Bottom-up (saliency) activation weight
-    W_TA: float = 0.45          # Top-down (task relevance) activation weight
+    W_TA: float = 0.45          # [NOT USED] Top-down (task relevance) weight —
+                                # no top-down guidance is implemented (see class docstring)
     sigma_TA: float = 0.376     # Logistic noise SD on activation (fitted)
 
     # === Visual Threshold Parameters (Jokinen 2020, Table 1; Eq. 1) ===
     # A feature at eccentricity ε (deg) is visible if its angular size exceeds:
     #   threshold(ε) = a · ε² + b · ε
     # Values from perceptual acuity literature, adapted in Jokinen 2020 Table 1.
-    a_color: float = 0.104      # Quadratic term — colour (deg⁻¹)
-    b_color: float = 0.85       # Linear term  — colour (dimensionless)
-    a_shape: float = 0.14       # Quadratic term — shape
-    b_shape: float = 0.96       # Linear term  — shape
-    a_size: float = 0.142       # Quadratic term — size
-    b_size: float = 0.96        # Linear term  — size
+    # NOTE: the acuity gate uses ONLY the size coefficients; the colour and
+    # shape coefficients below are declared for reference but never read.
+    a_color: float = 0.104      # [NOT USED] Quadratic term — colour (deg⁻¹)
+    b_color: float = 0.85       # [NOT USED] Linear term  — colour (dimensionless)
+    a_shape: float = 0.14       # [NOT USED] Quadratic term — shape
+    b_shape: float = 0.96       # [NOT USED] Linear term  — shape
+    a_size: float = 0.142       # Quadratic term — size (used by the acuity gate)
+    b_size: float = 0.96        # Linear term  — size (used by the acuity gate)
 
     # Penalty applied to the activation of an element that is below the visual
     # acuity threshold (Eq. 1) at its current eccentricity. It is a finite
@@ -118,20 +134,21 @@ class JokinenParams:
     # peripherally invisible element is very unlikely to be selected.
     visibility_penalty: float = 5.0
 
-    # === Memory (ACT-R) — used only in expert mode ===
+    # === Memory (ACT-R) — [NOT USED] declared for a future expert-mode extension ===
     # Based on Anderson et al. (2004). An integrated theory of the mind.
     # Psychological Review, 111(4), 1036–1060.  Fitted in Jokinen 2020 grid search.
-    B_bl: float = 6.0           # Base-level activation constant (fitted)
-    F_mem: float = 0.65         # Retrieval time scaling factor (fitted)
-    f_mem: float = 1.0          # Retrieval time exponent (fitted)
-    sigma_M: float = 0.4        # Memory retrieval noise SD (fitted)
+    # None of these are read anywhere in the current novice-mode implementation.
+    B_bl: float = 6.0           # [NOT USED] Base-level activation constant (fitted)
+    F_mem: float = 0.65         # [NOT USED] Retrieval time scaling factor (fitted)
+    f_mem: float = 1.0          # [NOT USED] Retrieval time exponent (fitted)
+    sigma_M: float = 0.4        # [NOT USED] Memory retrieval noise SD (fitted)
 
-    # === Utility Learning ===
+    # === Utility Learning — [NOT USED] declared for a future expert-mode extension ===
     # Reinforcement-learning component for expert users (Jokinen 2020, §3.3).
     # Not used in novice mode (our pipeline assumes novice / first-time users).
-    alpha: float = 0.2          # Learning rate (fitted)
-    sigma_U: float = 0.4        # Utility noise SD (fitted)
-    B_sa: float = 2.0           # Source activation for LTM spreading (fitted)
+    alpha: float = 0.2          # [NOT USED] Learning rate (fitted)
+    sigma_U: float = 0.4        # [NOT USED] Utility noise SD (fitted)
+    B_sa: float = 2.0           # [NOT USED] Source activation for LTM spreading (fitted)
 
     # === Visual Short-Term Memory (Inhibition of Return) ===
     # VSTM capacity ~4 items (Cowan, 2001; Luck & Vogel, 1997).

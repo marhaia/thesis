@@ -509,15 +509,22 @@ class UMSIPlus:
                 "model_weights.zip"
             )
         # Load the pretrained weights.
-        # Try by_name first (more robust across TF versions),
-        # fall back to positional loading.
+        # We load positionally (skip_mismatch=False) so that ANY architecture
+        # mismatch fails loudly. A silent skip_mismatch=True fallback is
+        # deliberately NOT used: it would leave mismatched layers randomly
+        # initialised while still serving predictions labelled "UMSI++", which
+        # would invalidate every downstream saliency result without warning.
         try:
             self.model.load_weights(str(weights_path), skip_mismatch=False)
             print(f"[UMSI++] Weights loaded (positional): {weights_path}")
         except Exception as e:
-            print(f"[UMSI++] Positional load failed ({e}), trying by_name...")
-            self.model.load_weights(str(weights_path), skip_mismatch=True)
-            print(f"[UMSI++] Weights loaded (by_name): {weights_path}")
+            raise RuntimeError(
+                f"UMSI++ weights at {weights_path} do not match the model "
+                f"architecture (positional load failed: {e!r}). Refusing to "
+                "fall back to a partial load, which would silently random-"
+                "initialise mismatched layers. Verify the weight file is the "
+                "UEyes-trained UMSI++ checkpoint."
+            ) from e
 
     def predict_saliency(self, image_path: Union[str, Path],
                          return_classif: bool = False

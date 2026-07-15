@@ -548,8 +548,11 @@ def search_time():
         if use_saliency:
             try:
                 saliency_map, _, _ = _predict_saliency_cached(image_hash, filepath)
-            except Exception:
-                pass  # Fall back to feature-only mode
+            except Exception as e:
+                # Degrade to feature-only mode, but do NOT fail silently: log
+                # loudly so a broken saliency stage is visible instead of a
+                # partial result that still looks valid.
+                print(f"[Saliency] Saliency map unavailable, using feature-only mode: {e!r}")
 
         # Step 3: Run Jokinen model
         params = JokinenParams(

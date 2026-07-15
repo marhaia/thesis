@@ -155,12 +155,20 @@ class HCEyeFeatureExtractor:
                 None, a neutral value (0.5) is used (the caller flags the
                 source in the API response).
             image_name: Optional name to check against the HCEye lookup table.
+                NOTE: the lookup only contains HCEye's own study images, so this
+                branch is used exclusively by offline analysis scripts on those
+                images. The live Flask app never passes image_name (a user's
+                novel screenshot can never be in the lookup), so it always takes
+                the feature-estimate path below. This is intended behaviour, not
+                a missing wiring.
 
         Returns:
             h ∈ ℝ⁶ cognitive load feature vector.
         """
+        # Lookup path: only reachable for HCEye study images via offline scripts.
         if image_name and image_name in self.sensitivity_lookup:
             return self._from_lookup(image_name)
+        # Estimate path: always taken by the live app (novel screenshots).
         return self._estimate_from_features(
             visual_features, saliency_features, whitespace_ratio, text_density,
         )
