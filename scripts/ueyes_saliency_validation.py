@@ -275,8 +275,11 @@ def print_results(rows: list[dict]) -> None:
     print("  NSS requires binary fixation point maps (not available in this sample).")
     print("  Full validation with binary fixation maps requires the complete UEyes")
     print("  dataset (Zenodo:8010312) — use paths_1s/ or paths_3s/ scanpath files.")
-    print("  CC = 0.896 indicates very strong spatial correspondence between UMSI++")
-    print("  predictions and human fixation density — exceeds published baselines.")
+    _cc = cc_vals.mean()
+    _verdict = ("exceeds" if _cc > 0.70 else "is within" if _cc >= 0.40
+                else "is below") + " the typical published CC range (0.40–0.70)"
+    print(f"  CC = {_cc:.3f} indicates the spatial correspondence between UMSI++")
+    print(f"  predictions and human fixation density {_verdict}.")
 
 
 def main() -> None:

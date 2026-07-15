@@ -109,10 +109,14 @@ if __name__ == '__main__':
             "subband_entropy", "layout_symmetry", "chromatic_coherence",
             "visual_hierarchy", "interactive_element_density",
         ]
+        # Synthetic values use REALISTIC Stage-1 ranges (matching feature_norms:
+        # feature_congestion ~1.3-9.7, edge_density ~0.01-0.12,
+        # interactive_element_density ~0-1.9). Out-of-range values would clamp to
+        # the percentile floor/ceiling and mask the demo's intended contrast.
         for name, v in [
-            ("Complex Dashboard", np.array([7.2, 0.35, 0.75, 3.2, 0.3, 0.7, 0.4, 65.0])),
-            ("Simple Settings",   np.array([4.5, 0.08, 0.15, 0.8, 0.85, 0.2, 0.8, 8.0])),
-            ("Medium Form",       np.array([5.8, 0.18, 0.40, 1.5, 0.6, 0.4, 0.6, 25.0])),
+            ("Complex Dashboard", np.array([7.2, 0.09, 7.5, 3.2, 0.30, 0.7, 0.30, 1.6])),
+            ("Simple Settings",   np.array([4.5, 0.02, 2.0, 0.8, 0.85, 0.2, 0.80, 0.2])),
+            ("Medium Form",       np.array([5.8, 0.05, 4.0, 1.5, 0.60, 0.4, 0.55, 0.7])),
         ]:
             vis = dict(zip(_v_keys, v.tolist()))
             h = extractor.extract_features(vis)

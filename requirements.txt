@@ -10,6 +10,9 @@ pandas==2.3.3
 opencv-python==4.13.0.92
 scikit-image==0.24.0
 pillow==11.3.0
+# Steerable pyramid for the subband-entropy visual-complexity metric
+# (hard import in stage1/visual_complexity.py). Required for Stage 1.
+pyrtools==1.0.10
 
 # Machine learning
 scikit-learn==1.6.1

@@ -104,7 +104,7 @@ def _rgb2lab(im: np.ndarray) -> np.ndarray:
     # Step 3: Normalize by D65 white point reference values
     xyz[:, :, 0] /= 95.047   # Xn
     xyz[:, :, 1] /= 100.000  # Yn
-    xyz[:, :, 2] /= 108.833  # Zn
+    xyz[:, :, 2] /= 108.883  # Zn
 
     # Step 4: CIE nonlinear companding (cube-root or linear segment)
     mask = xyz >= 0.008856              # threshold = (6/29)^3
