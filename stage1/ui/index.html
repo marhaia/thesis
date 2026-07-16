@@ -2601,7 +2601,13 @@
                    `background:var(--surface2);">` +
                    `<img alt="Screenshot with the listed elements outlined and numbered" ` +
                    `style="display:block; width:100%;">` +
-                   `<div class="el-overlay" style="position:absolute; inset:0; pointer-events:none;"></div>` +
+                   `<div class="el-overlay" style="position:absolute; inset:0; pointer-events:none;">` +
+                   `<div class="el-tip" style="position:absolute; display:none; z-index:5; ` +
+                   `max-width:60%; padding:6px 9px; border-radius:6px; font-size:11px; ` +
+                   `line-height:1.35; color:#fff; background:rgba(15,23,42,0.94); ` +
+                   `box-shadow:0 2px 10px rgba(0,0,0,.45); pointer-events:none; ` +
+                   `white-space:normal;"></div>` +
+                   `</div>` +
                    `</div>`;
         }
 
@@ -2620,13 +2626,16 @@
                 im.src = img.src;
                 const nw = img.naturalWidth, nh = img.naturalHeight;
                 if (!nw || !nh) return;
+                // Keep the floating info card; clear only the drawn boxes/badges.
+                const tip = overlay.querySelector('.el-tip');
                 overlay.innerHTML = '';
+                if (tip) overlay.appendChild(tip);
                 const byRank = {};
                 listEl.querySelectorAll('.el-row').forEach((row) => {
                     const bbox = (row.getAttribute('data-bbox') || '').split(',').map(Number);
                     const rank = row.getAttribute('data-rank');
                     if (bbox.length !== 4 || rank == null) return;
-                    const tip = row.getAttribute('data-tip') || `Element ${rank}`;
+                    const tipText = row.getAttribute('data-tip') || `Element ${rank}`;
                     const [x, y, w, h] = bbox;
                     const box = document.createElement('div');
                     box.style.cssText =
@@ -2634,10 +2643,8 @@
                         `width:${w / nw * 100}%; height:${h / nh * 100}%; box-sizing:border-box; ` +
                         `border:2px solid ${accent}; border-radius:4px; pointer-events:auto; ` +
                         `cursor:pointer; transition:box-shadow .12s, border-width .12s;`;
-                    box.title = tip;
                     const badge = document.createElement('div');
                     badge.textContent = rank;
-                    badge.title = tip;
                     badge.style.cssText =
                         `position:absolute; left:${x / nw * 100}%; top:${y / nh * 100}%; ` +
                         `transform:translate(-50%,-50%); min-width:20px; height:20px; padding:0 5px; ` +
@@ -2647,8 +2654,29 @@
                         `transition:transform .12s;`;
                     overlay.appendChild(box);
                     overlay.appendChild(badge);
-                    byRank[rank] = { box, badge, row };
+                    byRank[rank] = { box, badge, row, bbox, tipText };
                 });
+                // Show the floating info card directly at the element. Placed
+                // above the box, or below it when the box sits near the top.
+                const showTip = (rank) => {
+                    if (!tip) return;
+                    const b = byRank[rank];
+                    if (!b) return;
+                    const [x, y, w, h] = b.bbox;
+                    tip.textContent = b.tipText;
+                    tip.style.borderLeft = `3px solid ${accent}`;
+                    tip.style.left = `${(x + w / 2) / nw * 100}%`;
+                    const near = (y / nh) < 0.16;
+                    if (near) {
+                        tip.style.top = `${(y + h) / nh * 100}%`;
+                        tip.style.transform = 'translate(-50%, 8px)';
+                    } else {
+                        tip.style.top = `${y / nh * 100}%`;
+                        tip.style.transform = 'translate(-50%, calc(-100% - 8px))';
+                    }
+                    tip.style.display = 'block';
+                };
+                const hideTip = () => { if (tip) tip.style.display = 'none'; };
                 const setHi = (rank, on) => {
                     const b = byRank[rank];
                     if (!b) return;
@@ -2662,17 +2690,18 @@
                 };
                 Object.keys(byRank).forEach((rank) => {
                     const { box, badge, row } = byRank[rank];
-                    const on = () => setHi(rank, true);
-                    const off = () => setHi(rank, false);
+                    const on = () => { setHi(rank, true); showTip(rank); };
+                    const off = () => { setHi(rank, false); hideTip(); };
                     box.onmouseenter = on; box.onmouseleave = off;
                     badge.onmouseenter = on; badge.onmouseleave = off;
                     row.onmouseenter = on; row.onmouseleave = off;
-                    // Tapping a row scrolls the annotated image into view
-                    // (useful on touch devices where hover is unavailable).
+                    // Tapping a row scrolls the annotated image into view and
+                    // flashes the highlight + info card (useful on touch, where
+                    // hover is unavailable).
                     row.onclick = () => {
                         overview.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                        setHi(rank, true);
-                        setTimeout(() => setHi(rank, false), 1200);
+                        setHi(rank, true); showTip(rank);
+                        setTimeout(() => { setHi(rank, false); hideTip(); }, 1600);
                     };
                 });
             });
