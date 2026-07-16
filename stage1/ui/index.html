@@ -1621,6 +1621,8 @@
                         <span style="font-size:13px; font-weight:600;">Contrast &amp; Legibility (WCAG 2.1 / ISO 15008)</span>
                         <span id="contrastSummaryBadge" style="font-size:12px; font-weight:700; padding:2px 8px; border-radius:6px; margin-left:8px;"></span>
                     </div>
+                    <!-- Plain-language headline result for non-expert users. -->
+                    <div id="contrastMainStatement" style="font-size:13px; font-weight:600; margin:0 0 8px 0;"></div>
                     <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Per-element foreground/background contrast ratio, estimated from the pixels (WCAG 2.1 definition). The 3:1 threshold is WCAG AA for large text / non-text UI elements and the common ISO 15008 in-vehicle minimum. Higher is easier to read.</p>
                     <div id="contrastList"></div>
                 </div>
@@ -1633,6 +1635,8 @@
                         <span style="font-size:13px; font-weight:600;">Text &amp; Reading Cost</span>
                         <span id="readabilitySummaryBadge" style="font-size:12px; font-weight:700; padding:2px 8px; border-radius:6px; margin-left:8px;"></span>
                     </div>
+                    <!-- Plain-language headline result for non-expert users. -->
+                    <div id="readabilityMainStatement" style="font-size:13px; font-weight:600; margin:0 0 8px 0;"></div>
                     <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Text found in each element (OCR) and an estimated silent reading time at 238 words/min (Brysbaert, 2019). A labelled control costs reading time that a plain icon does not. Reading time is a <strong>first-order estimate</strong>, not measured.</p>
                     <div id="readabilityList"></div>
                 </div>
@@ -2771,10 +2775,28 @@
             }
             const allPass = report.n_fail === 0;
             badge.textContent = allPass
-                ? 'all elements >= 3:1'
-                : `${report.n_fail} of ${report.n_elements} below 3:1`;
+                ? `all ${report.n_elements} readable`
+                : `${report.n_fail} of ${report.n_elements} too low`;
             badge.style.background = allPass ? 'var(--success)' : 'var(--danger)';
             badge.style.color = '#fff';
+
+            // Plain-language headline result for non-expert users.
+            const mainEl = document.getElementById('contrastMainStatement');
+            if (mainEl) {
+                if (allPass) {
+                    mainEl.textContent =
+                        `Good: all ${report.n_elements} detected elements have enough ` +
+                        `colour contrast to be easy to read.`;
+                    mainEl.style.color = 'var(--success)';
+                } else {
+                    const word = report.n_fail === 1 ? 'element is' : 'elements are';
+                    mainEl.textContent =
+                        `${report.n_fail} of the ${report.n_elements} detected ${word} too low in ` +
+                        `colour contrast and may be hard to read — they need stronger colours. ` +
+                        `The other ${report.n_pass} are fine.`;
+                    mainEl.style.color = 'var(--danger)';
+                }
+            }
 
             const failing = Array.isArray(report.low_contrast_elements)
                 ? report.low_contrast_elements : [];
@@ -2829,9 +2851,29 @@
                 return;
             }
             badge.textContent =
-                `${report.n_text_elements} of ${report.n_elements} carry text`;
+                `${report.n_text_elements} of ${report.n_elements} have text`;
             badge.style.background = 'var(--surface)';
             badge.style.color = 'var(--text-dim)';
+
+            // Plain-language headline result for non-expert users.
+            const mainEl = document.getElementById('readabilityMainStatement');
+            if (mainEl) {
+                const noText = report.n_elements - report.n_text_elements;
+                const totalTime = (typeof report.total_reading_time_s === 'number')
+                    ? report.total_reading_time_s.toFixed(1) : '?';
+                if (report.n_text_elements === 0) {
+                    mainEl.textContent =
+                        `None of the ${report.n_elements} detected elements contain readable ` +
+                        `text — the screen relies on icons and shapes only.`;
+                } else {
+                    const word = report.n_text_elements === 1 ? 'element carries' : 'elements carry';
+                    mainEl.textContent =
+                        `${report.n_text_elements} of the ${report.n_elements} detected ${word} written ` +
+                        `text (the other ${noText} are icons or shapes). Reading all of it takes a ` +
+                        `user about ${totalTime} s — that is extra time an icon would not cost.`;
+                }
+                mainEl.style.color = 'var(--text)';
+            }
 
             const items = Array.isArray(report.text_elements)
                 ? report.text_elements : [];
