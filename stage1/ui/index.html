@@ -401,8 +401,8 @@
         .results-visual-row {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 18px;
-            margin-top: 24px;
+            gap: 24px;
+            margin-top: 32px;
         }
         .results-visual-row > div {
             width: 100%;
@@ -546,25 +546,54 @@
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.1s, box-shadow 0.2s;
             margin-top: 16px;
+        }
+        .btn:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
         }
         .btn-primary {
             background: var(--accent);
             color: white;
         }
-        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.28);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
         .btn-primary:disabled {
             background: var(--surface2);
             color: var(--text-dim);
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
         .btn-secondary {
             background: var(--surface2);
             color: var(--text);
             border: 1px solid var(--border);
         }
-        .btn-secondary:hover { background: var(--border); }
+        .btn-secondary:hover {
+            background: var(--border);
+            border-color: var(--accent);
+        }
+        .btn-secondary:active { transform: translateY(1px); }
+        /* Tertiary: quiet ghost action, lowest emphasis in the hierarchy. */
+        .btn-tertiary {
+            background: transparent;
+            color: var(--text-dim);
+            border: 1px solid transparent;
+        }
+        .btn-tertiary:hover {
+            background: var(--surface2);
+            color: var(--text);
+            border-color: var(--border);
+        }
 
         /* Loading */
         .loading {
@@ -703,7 +732,7 @@
             color: var(--text-dim);
             font-size: 10px;
             font-style: italic;
-            font-weight: 700;
+            font-weight: 600;
             font-family: Georgia, "Times New Roman", serif;
             cursor: help;
             flex-shrink: 0;
@@ -736,7 +765,7 @@
         /* Structured hierarchy inside a feature hover card. */
         .hover-tip .tip-title {
             font-size: 13px;
-            font-weight: 700;
+            font-weight: 600;
             color: var(--text);
             margin-bottom: 5px;
         }
@@ -748,7 +777,7 @@
         .hover-tip .tip-label {
             display: block;
             font-size: 9.5px;
-            font-weight: 700;
+            font-weight: 600;
             text-transform: uppercase;
             letter-spacing: .06em;
             color: var(--text-dim);
@@ -770,6 +799,9 @@
         .hover-tip a.tip-src:hover {
             text-decoration: underline;
         }
+        .hover-tip strong {
+            font-weight: 600;
+        }
         .feature-desc {
             font-size: 12px;
             color: var(--text-dim);
@@ -777,7 +809,7 @@
         }
         .feature-value {
             font-size: 18px;
-            font-weight: 700;
+            font-weight: 600;
             font-variant-numeric: tabular-nums;
             margin-left: 0;
             min-width: 88px;
@@ -925,11 +957,21 @@
             margin-top: 4px;
         }
         .radar-interpretation {
-            margin-top: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
             max-width: 68ch;
             color: var(--text-dim);
             font-size: 12px;
             line-height: 1.65;
+        }
+        .radar-interpretation-head {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--text-dim);
+            margin-bottom: 8px;
         }
         .radar-interpretation-list {
             margin: 0;
@@ -1030,11 +1072,18 @@
 
         .field select {
             width: 100%;
-            padding: 10px 36px 10px 12px;
+            padding: 12px 40px 12px 12px;
             border-radius: 8px;
             border: 1px solid var(--border);
-            background: var(--surface2);
             color: var(--text);
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-color: var(--surface2);
+            background-image: url("data:image/svg+xml;utf8,<svg%20xmlns='http://www.w3.org/2000/svg'%20width='12'%20height='12'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%238b8fa3'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'><polyline%20points='6%209%2012%2015%2018%209'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            background-size: 12px;
         }
 
         .summary-grid {
@@ -1061,7 +1110,7 @@
 
         .summary-value {
             font-size: 26px;
-            font-weight: 700;
+            font-weight: 600;
             font-variant-numeric: tabular-nums;
         }
 
@@ -1124,7 +1173,7 @@
         }
         .score-breakdown-title {
             font-size: 11px;
-            font-weight: 700;
+            font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.07em;
             color: var(--text-dim);
@@ -1145,7 +1194,7 @@
         }
         .score-flow-value {
             font-size: 20px;
-            font-weight: 700;
+            font-weight: 600;
             color: var(--text);
         }
         .score-flow-label {
@@ -1162,7 +1211,7 @@
         .score-flow-delta {
             display: inline-block;
             font-size: 18px;
-            font-weight: 700;
+            font-weight: 600;
             line-height: 1;
             padding-bottom: 0;
             font-variant-numeric: tabular-nums;
@@ -1197,15 +1246,22 @@
         }
         .bd-select {
             width: 100%;
-            background: var(--surface2);
             border: 1px solid var(--border);
             border-radius: 5px;
             color: var(--text);
             font-size: 12px;
-            font-weight: 600;
-            padding: 4px 24px 4px 8px;
+            font-weight: 500;
+            padding: 4px 28px 4px 8px;
             cursor: pointer;
             outline: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-color: var(--surface2);
+            background-image: url("data:image/svg+xml;utf8,<svg%20xmlns='http://www.w3.org/2000/svg'%20width='10'%20height='10'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%238b8fa3'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'><polyline%20points='6%209%2012%2015%2018%209'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 10px;
         }
         .bd-select:hover { border-color: var(--accent); }
         .bd-select:focus { border-color: var(--accent); }
@@ -1230,11 +1286,14 @@
             font-size: 11px;
             padding: 4px 10px;
             cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
         }
         .preset-btn:hover {
             border-color: var(--accent);
             color: var(--text);
+            background: var(--border);
         }
+        .preset-btn:active { transform: translateY(1px); }
         .decision-summary {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -1414,7 +1473,7 @@
            "Neutral baseline" / "Custom context"). */
         .step-status {
             font-size: 10px;
-            font-weight: 700;
+            font-weight: 600;
             padding: 2px 8px;
             border-radius: 999px;
             text-transform: uppercase;
@@ -1433,7 +1492,7 @@
         }
         .tag-required {
             font-size: 10px;
-            font-weight: 700;
+            font-weight: 600;
             padding: 2px 7px;
             border-radius: 999px;
             background: rgba(239,68,68,.12);
@@ -1443,7 +1502,7 @@
         }
         .tag-optional {
             font-size: 10px;
-            font-weight: 700;
+            font-weight: 600;
             padding: 2px 7px;
             border-radius: 999px;
             background: rgba(100,116,139,.12);
@@ -1501,7 +1560,7 @@
         }
         .coherence-warning.visible { display: block; }
         .coherence-warning-title {
-            font-weight: 700;
+            font-weight: 600;
             color: var(--warning);
             margin-bottom: 6px;
             font-size: 13px;
@@ -1523,7 +1582,7 @@
         }
         .interpretation-badge {
             font-size: 11px;
-            font-weight: 700;
+            font-weight: 600;
             padding: 3px 9px;
             border-radius: 999px;
             text-transform: uppercase;
@@ -1638,15 +1697,15 @@
                 <p class="field-hint" style="margin-bottom:14px;">Adjust before clicking Analyze. These parameters shift the score to reflect how a user is actually interacting with this screen. Defaults give a neutral baseline.</p>
                 <div class="control-grid">
                     <div class="field">
-                        <label for="taskType">Task Type <span class="feature-i" tabindex="0" aria-label="Explanation of Task Type options" data-tip="<div class='tip-title'>Task Type</div><div class='tip-body'><strong>Search</strong> &mdash; locating a specific control or item<br><strong>Navigation</strong> &mdash; moving between screens or menus<br><strong>Monitoring</strong> &mdash; watching the screen for changes or status<br><strong>Data Entry</strong> &mdash; typing or filling in fields<br><strong>Decision Making</strong> &mdash; comparing options to choose one</div>">i</span></label>
+                        <label for="taskType">Task Type <span class="feature-i" tabindex="0" aria-label="Explanation of Task Type options" data-tip="<div class='tip-title'>Task Type</div><div class='tip-body'><strong>Find a specific item</strong> &mdash; locating one known control or item<br><strong>Move between screens</strong> &mdash; stepping through menus or pages<br><strong>Watch for changes</strong> &mdash; keeping an eye on status or updates<br><strong>Enter or edit data</strong> &mdash; typing or filling in fields<br><strong>Compare &amp; choose</strong> &mdash; weighing several options to pick one</div>">i</span></label>
                         <select id="taskType">
-                            <option value="search" selected>Search — neutral default</option>
-                            <option value="navigation">Navigation</option>
-                            <option value="monitoring">Monitoring</option>
-                            <option value="data_entry">Data Entry</option>
-                            <option value="decision">Decision Making</option>
+                            <option value="search" selected>Find a specific item &mdash; neutral default</option>
+                            <option value="navigation">Move between screens or menus</option>
+                            <option value="monitoring">Watch for changes or status</option>
+                            <option value="data_entry">Enter or edit data</option>
+                            <option value="decision">Compare &amp; choose an option</option>
                         </select>
-                        <div class="field-hint">What is the user's primary activity on this screen? <span class="field-hint-default">e.g. locating a specific control = <em>Search</em>. If unsure, keep <em>Search</em>.</span></div>
+                        <div class="field-hint">What is the user's primary activity on this screen? <span class="field-hint-default">e.g. locating a specific control = <em>Find a specific item</em>. If unsure, keep the default.</span></div>
                     </div>
                     <div class="field">
                         <label for="searchMode">Search Mode <span class="feature-i" tabindex="0" aria-label="Explanation of Search Mode options" data-tip="<div class='tip-title'>Search Mode</div><div class='tip-body'><strong>Known Item</strong> &mdash; the user knows exactly what to look for<br><strong>Comparative</strong> &mdash; weighing several items against each other<br><strong>Exploratory</strong> &mdash; browsing without a fixed target in mind</div>">i</span></label>
@@ -1688,11 +1747,11 @@
                     <div class="field-hint">Big Five personality preset that applies a small modifier to the score. Leave on Neutral to evaluate the interface independent of a specific user type (Costa &amp; McCrae, 1992). <span class="field-hint-default">If unsure, keep <em>Neutral</em>.</span></div>
                 </div>
                 <div class="field" style="margin-top: 12px;">
-                    <label for="displayPreset">Display <span class="feature-i" tabindex="0" aria-label="Explanation of Display options" data-tip="<div class='tip-title'>Display</div><div class='tip-body'>Physical screen size and viewing distance, which set the real angular size of elements.<br><strong>Phone</strong> &mdash; ~6.1&Prime;, held ~30 cm away<br><strong>Laptop</strong> &mdash; 14&Prime;, ~50 cm away<br><strong>Desktop monitor</strong> &mdash; 17&Prime;, ~60 cm away</div>">i</span> <span class="tag-optional" style="vertical-align:middle;margin-left:6px;">Optional</span></label>
+                    <label for="displayPreset">Display <span class="feature-i" tabindex="0" aria-label="Explanation of Display options" data-tip="<div class='tip-title'>Display</div><div class='tip-body'>Physical screen size and viewing distance, which set the real angular size of elements.<br><strong>Phone</strong> &mdash; ~6.1&Prime;, held close<br><strong>Laptop</strong> &mdash; 14&Prime;, at desk distance<br><strong>Desktop monitor</strong> &mdash; 17&Prime;, at desk distance</div>">i</span> <span class="tag-optional" style="vertical-align:middle;margin-left:6px;">Optional</span></label>
                     <select id="displayPreset">
-                        <option value="phone">Phone — ~6.1" (7 × 15 cm), ~30 cm away</option>
-                        <option value="laptop">Laptop — 14" (30.9 × 17.4 cm), ~50 cm away</option>
-                        <option value="desktop" selected>Desktop monitor — 17" (37 × 23 cm), ~60 cm away</option>
+                        <option value="phone">Phone &mdash; ~6.1&Prime;, held close</option>
+                        <option value="laptop">Laptop &mdash; 14&Prime;, at desk distance</option>
+                        <option value="desktop" selected>Desktop monitor &mdash; 17&Prime;, at desk distance</option>
                     </select>
                     <div class="field-hint">Physical screen size and viewing distance. Visual search timing depends on the real angular size of elements, so a small phone held close differs from a monitor on a desk. <span class="field-hint-default">If unsure, keep <em>Desktop monitor</em>.</span></div>
                 </div>
@@ -1761,7 +1820,7 @@
 
                 <!-- 2a. UMSI++ design-type classification (6-class head). Shows a
                      caution banner when the screenshot is classified outside the
-                     desktop/automotive UI domain the saliency model targets. -->
+                     general GUI domain the saliency model targets. -->
                 <div id="designClassBanner" style="display:none;"></div>
 
                 <!-- 2b. Context summary: shows exactly which task context the
@@ -1798,9 +1857,9 @@
                     <div id="radarPanel" style="display:none;">
                         <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                             <span style="font-size:13px; font-weight:600;">Visual Feature Profile</span>
-                            <button id="downloadRadarBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0;">Download Profile</button>
+                            <button id="downloadRadarBtn" class="btn btn-tertiary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0;">Download Profile</button>
                         </div>
-                        <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Radar chart of the 8 visual complexity features v∈ℝ⁸. Each axis is normalized to its empirical range. Hover a point or label for its value and meaning.</p>
+                        <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Radar chart of the 8 visual complexity features v∈ℝ⁸. Each axis is normalized to its empirical range. Hover a point for its value, or an outer label for what it means — a plain-language reading of this profile is shown below.</p>
                         <div class="radar-container">
                             <canvas id="radarChart" width="900" height="900"></canvas>
                         </div>
@@ -1813,7 +1872,7 @@
                      the goal-directed visual-search scanpath the model predicts a
                      novice would follow to reach that target. Task-driven (not
                      free-viewing), computed from the existing Jokinen search model. -->
-                <div id="targetScanpathPanel" style="display:none; margin-top:24px;">
+                <div id="targetScanpathPanel" style="display:none; margin-top:32px;">
                     <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                         <span style="font-size:13px; font-weight:600;">Predicted Search Path</span>
                         <span id="scanpathStatus" style="font-size:11px; color:var(--text-dim);"></span>
@@ -1867,7 +1926,7 @@
                 <!-- 4c. Generative feedback: which elements are the search
                      bottlenecks (hardest to find), ranked by predicted search
                      time. Turns the aggregate score into concrete design advice. -->
-                <div id="searchFeedbackPanel" style="display:none; margin-top:24px;">
+                <div id="searchFeedbackPanel" style="display:none; margin-top:32px;">
                     <div style="margin-bottom:8px;">
                         <span style="font-size:13px; font-weight:600;">Search Bottlenecks</span>
                     </div>
@@ -1875,24 +1934,24 @@
                     <div id="searchFeedbackList"></div>
                 </div>
 
-                <!-- 4d. Accessibility / legibility: per-element WCAG 2.1 /
-                     ISO 15008 contrast. Lists the lowest-contrast elements so
+                <!-- 4d. Accessibility / legibility: per-element WCAG 2.1
+                     contrast. Lists the lowest-contrast elements so
                      the designer sees which parts are hard to read. -->
-                <div id="contrastPanel" style="display:none; margin-top:24px;">
+                <div id="contrastPanel" style="display:none; margin-top:32px;">
                     <div style="margin-bottom:8px;">
-                        <span style="font-size:13px; font-weight:600;">Contrast &amp; Legibility (WCAG 2.1 / ISO 15008)</span>
+                        <span style="font-size:13px; font-weight:600;">Contrast &amp; Legibility (WCAG 2.1)</span>
                         <span id="contrastSummaryBadge" style="font-size:12px; font-weight:700; padding:2px 8px; border-radius:6px; margin-left:8px;"></span>
                     </div>
                     <!-- Plain-language headline result for non-expert users. -->
                     <div id="contrastMainStatement" style="font-size:13px; font-weight:600; margin:0 0 8px 0;"></div>
-                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Per-element foreground/background contrast ratio, estimated from the pixels (WCAG 2.1 definition). The 3:1 threshold is WCAG AA for large text / non-text UI elements and the common ISO 15008 in-vehicle minimum. Higher is easier to read.</p>
+                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Per-element foreground/background contrast ratio, estimated from the pixels (WCAG 2.1 definition). The 3:1 threshold is WCAG AA for large text and non-text UI elements. Higher is easier to read.</p>
                     <div id="contrastList"></div>
                 </div>
 
                 <!-- 4e. Text reading cost (OCR, optional): labelled controls
                      carry a reading cost that a plain icon does not. Lists the
                      most text-heavy elements and the estimated reading time. -->
-                <div id="readabilityPanel" style="display:none; margin-top:24px;">
+                <div id="readabilityPanel" style="display:none; margin-top:32px;">
                     <div style="margin-bottom:8px;">
                         <span style="font-size:13px; font-weight:600;">Text &amp; Reading Cost</span>
                         <span id="readabilitySummaryBadge" style="font-size:12px; font-weight:700; padding:2px 8px; border-radius:6px; margin-left:8px;"></span>
@@ -2033,21 +2092,15 @@
             <div class="pipeline-row">
                 <div class="pipeline-node">
                     <div class="pipeline-node-label">Contrast</div>
-                    <div class="pipeline-node-title">WCAG / ISO 15008 Contrast</div>
+                    <div class="pipeline-node-title">WCAG Contrast</div>
                     <div class="pipeline-node-desc">Per-element foreground/background luminance contrast ratio (WCAG 2.1 formula with an Otsu ink/paper split). Elements below the 3:1 legibility minimum are flagged.</div>
-                    <div class="pipeline-node-ref"><a href="https://www.w3.org/TR/WCAG21/" target="_blank" rel="noopener">WCAG 2.1 (W3C)</a> · ISO 15008:2017</div>
+                    <div class="pipeline-node-ref"><a href="https://www.w3.org/TR/WCAG21/" target="_blank" rel="noopener">WCAG 2.1 (W3C)</a></div>
                 </div>
                 <div class="pipeline-node">
                     <div class="pipeline-node-label">Readability</div>
                     <div class="pipeline-node-title">OCR Reading Time</div>
                     <div class="pipeline-node-desc">Text is read per element (OCR) and a silent reading time is estimated at 238 words/min. A labelled control costs reading time that a plain icon does not.</div>
                     <div class="pipeline-node-ref"><a href="https://doi.org/10.1016/j.jml.2019.104047" target="_blank" rel="noopener">Brysbaert (2019)</a></div>
-                </div>
-                <div class="pipeline-node">
-                    <div class="pipeline-node-label">Glance</div>
-                    <div class="pipeline-node-title">Eyes-off-road Glances</div>
-                    <div class="pipeline-node-desc">For in-vehicle displays the predicted fixations are packed into glances and checked against the NHTSA / ISO 15008 single-glance (2 s) and cumulative (12 s) limits.</div>
-                    <div class="pipeline-node-ref">NHTSA (2013) Visual-Manual Guidelines · ISO 15008:2017</div>
                 </div>
             </div>
 
@@ -3879,7 +3932,7 @@
                         dcBanner.innerHTML =
                             `<strong>Caution:</strong> the saliency model classifies this screenshot as ` +
                             `<strong>${label}</strong> (${conf}% confidence), which is outside the ` +
-                            `desktop/automotive UI domain it was trained for. The saliency map and the ` +
+                            `general GUI domain it was trained for. The saliency map and the ` +
                             `cognitive-load score may be less reliable for this image.`;
                     } else {
                         dcBanner.style.cssText =
@@ -4206,8 +4259,16 @@
 
             document.getElementById('scoreBreakdown').innerHTML = `
                 <div class="score-breakdown">
-                    <div class="score-block">
-                        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--text-dim); margin-bottom:4px;">
+                    <!-- Baseline and What-if now live together in one collapsible panel. -->
+                    <details class="whatif-details">
+                        <summary class="whatif-summary">
+                            <span class="whatif-summary-title">Baseline &amp; What-if simulation</span>
+                            <span class="whatif-summary-hint">See the locked baseline, then adjust the context to simulate live</span>
+                            <span class="whatif-summary-chevron" aria-hidden="true">&rsaquo;</span>
+                        </summary>
+                    <!-- Locked baseline: the original result of this run, kept read-only. -->
+                    <div class="score-block" style="margin:12px 0 10px;">
+                        <div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-dim); margin-bottom:4px;">
                             Baseline (locked, from your uploaded image)
                         </div>
                         <div style="display:flex; align-items:end; justify-content:space-between; gap:8px; flex-wrap:wrap;">
@@ -4217,7 +4278,7 @@
                             </div>
                             <div style="text-align:right;">
                                 <span class="interpretation-badge ${scoreBand(final).cls}">${scoreBand(final).label}</span>
-                                <div style="font-size:11px; color:var(--text-dim); margin-top:6px;">This score never changes in What-if.</div>
+                                <div style="font-size:11px; color:var(--text-dim); margin-top:6px;">This score never changes while you simulate below.</div>
                             </div>
                         </div>
                         <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;">
@@ -4230,25 +4291,10 @@
                             Baseline = the original result from this exact run (image + selected task/profile at analysis time). It is read-only and kept as your reference point.
                         </div>
                     </div>
-
-                    <!-- ── Section B: What-if simulation (interactive, collapsible) ── -->
                     <div class="section-separator"></div>
-                    <details class="whatif-details">
-                        <summary class="whatif-summary">
-                            <span class="whatif-summary-title">What-if simulation</span>
-                            <span class="whatif-summary-hint">Try it — adjust the context and see the score change live</span>
-                            <span class="whatif-summary-chevron" aria-hidden="true">&rsaquo;</span>
-                        </summary>
-                    <!-- Locked baseline reference, always visible inside What-if so the
-                         user can compare the simulated score against the fixed original. -->
-                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--surface); border:1px dashed var(--border); border-radius:8px; padding:8px 12px; margin:12px 0 4px; font-size:12px;">
-                        <span style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim);">Baseline (locked)</span>
-                        <span style="font-size:18px; font-weight:700;">${final.toFixed(1)}</span>
-                        <span style="color:var(--text-dim);">This reference never changes while you simulate — only the simulated score below moves.</span>
-                    </div>
                     <div style="display:flex; gap:8px; align-items:center; margin:12px 0 10px; flex-wrap:wrap;">
                         <div id="bd-sim-state" class="pill">Original context selected (no simulation change).</div>
-                        <button id="bd-reset" class="btn btn-secondary" style="width:auto; margin:0; padding:6px 10px; font-size:11px;">Reset to original</button>
+                        <button id="bd-reset" class="btn btn-tertiary" style="width:auto; margin:0; padding:6px 10px; font-size:11px;">Reset to original</button>
                         <button id="bd-run-analysis" class="btn btn-secondary" style="width:auto; margin:0; padding:6px 10px; font-size:11px;">Run new analysis with these settings</button>
                     </div>
                     <div class="preset-row">
@@ -4310,11 +4356,11 @@
                         <div class="task-context-item">
                             <div class="task-context-key">Task Type</div>
                             <select id="bd-taskType" class="bd-select">
-                                <option value="navigation" ${td.task_type==='navigation'?'selected':''}>Navigation</option>
-                                <option value="search"     ${td.task_type==='search'?'selected':''}>Search</option>
-                                <option value="monitoring" ${td.task_type==='monitoring'?'selected':''}>Monitoring</option>
-                                <option value="data_entry" ${td.task_type==='data_entry'?'selected':''}>Data Entry</option>
-                                <option value="decision"   ${td.task_type==='decision'?'selected':''}>Decision Making</option>
+                                <option value="navigation" ${td.task_type==='navigation'?'selected':''}>Move between screens or menus</option>
+                                <option value="search"     ${td.task_type==='search'?'selected':''}>Find a specific item</option>
+                                <option value="monitoring" ${td.task_type==='monitoring'?'selected':''}>Watch for changes or status</option>
+                                <option value="data_entry" ${td.task_type==='data_entry'?'selected':''}>Enter or edit data</option>
+                                <option value="decision"   ${td.task_type==='decision'?'selected':''}>Compare &amp; choose an option</option>
                             </select>
                             <div id="bd-desc-task" class="bd-desc">${TASK_DESC[td.task_type]||''}</div>
                         </div>
@@ -4546,7 +4592,7 @@
             if (findings.length === 0)
                 findings.push('Feature profile is balanced — no single dimension is dominant or critically low.');
 
-            el.innerHTML = `<ul class="radar-interpretation-list">${findings.map(f => `<li>${f}</li>`).join('')}</ul>`;
+            el.innerHTML = `<div class="radar-interpretation-head">What this profile means</div><ul class="radar-interpretation-list">${findings.map(f => `<li>${f}</li>`).join('')}</ul>`;
         }
 
         // ─── Radar Chart ───
@@ -4672,24 +4718,37 @@
                     ctx.fill();
                 }
 
-                // Collect a hover hit-target for this point (and its axis label),
-                // so hovering either shows the measured value + interpretation.
+                // Collect a hover hit-target for this point (and its axis label).
+                // Hovering the DOT shows the measured value; hovering the outer
+                // LABEL shows the same general feature description as the "i" in
+                // the feature list, so both stay consistent.
                 const key = FEATURE_KEYS[i];
                 const info = featuresInfo.find(f => f.key === key) || {};
                 const dir = FEATURE_DIRECTION[key] === 'higher_is_better'
                     ? 'Better when high'
                     : 'Better when low (high = more load)';
+                const dirFull = FEATURE_DIRECTION[key] === 'higher_is_better'
+                    ? 'Better when this value is HIGH'
+                    : 'Better when this value is LOW (high = more load)';
                 const pct = Math.round(values[i] * 100);
                 const raw = (typeof data[key] === 'number') ? data[key].toFixed(4) : '-';
-                const tipHtml =
-                    `<strong>${info.name || shortNamesDots[i]}</strong><br>` +
-                    `Measured value: ${raw}<br>` +
-                    `Position on axis: ${pct}% of its range<br>` +
-                    `${dir}`;
+                const dotTip =
+                    `<div class="tip-title">${info.name || shortNamesDots[i]}</div>` +
+                    `<div class="tip-body">Measured value: ${raw}<br>Position on axis: ${pct}% of its range</div>` +
+                    `<div class="tip-dir">${dir}</div>`;
+                const doi = (typeof FEATURE_DOI !== 'undefined') ? FEATURE_DOI[key] : null;
+                const labelSrc = doi
+                    ? `<a class="tip-src" href="https://doi.org/${doi}" target="_blank" rel="noopener">Source: ${info.reference || 'reference'} &#8599;</a>`
+                    : (info.reference ? `<div class="tip-src">Source: ${info.reference}</div>` : '');
+                const labelTip =
+                    `<div class="tip-title">${info.name || shortNamesDots[i]}</div>` +
+                    (info.description ? `<div class="tip-body"><span class="tip-label">What it measures</span> ${info.description}</div>` : '') +
+                    `<div class="tip-dir">${dirFull}</div>` +
+                    labelSrc;
                 const labelA = i * angleStep - Math.PI / 2;
                 const labelR = R + 28;
-                hits.push({ x: dotX, y: dotY, rDot: 12, tip: tipHtml });
-                hits.push({ x: cx + labelR * Math.cos(labelA), y: cy + labelR * Math.sin(labelA), rDot: 26, tip: tipHtml });
+                hits.push({ x: dotX, y: dotY, rDot: 12, tip: dotTip });
+                hits.push({ x: cx + labelR * Math.cos(labelA), y: cy + labelR * Math.sin(labelA), rDot: 26, tip: labelTip });
             }
 
             // Attach the hover handler once. It hit-tests the mouse (in CSS px)
