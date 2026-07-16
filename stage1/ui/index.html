@@ -925,6 +925,28 @@
             border-bottom: 1px solid var(--border);
             font-variant-numeric: tabular-nums;
         }
+        .comparison-summary {
+            margin-top: 12px;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface2);
+            font-size: 13px;
+            color: var(--text);
+        }
+        .comparison-summary-empty {
+            color: var(--text-dim);
+        }
+        .comparison-summary-metrics {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+            color: var(--text-dim);
+        }
+        .comparison-summary-metrics b {
+            color: var(--text);
+        }
         .history-empty {
             text-align: center;
             padding: 24px;
@@ -2672,6 +2694,7 @@
                 history.push({
                     filename: data.filename,
                     score: data.adjusted_prediction.cognitive_load_score,
+                    included: true,
                     base_score: data.base_prediction.cognitive_load_score,
                     search_efficiency: data.adjusted_prediction.search_efficiency,
                     attention_demand: data.adjusted_prediction.attention_demand,
@@ -4605,12 +4628,15 @@
 
             const shortKeys = ["Score", "Search", "Attn", "Task", "Profile"];
             let html = `<div style="overflow-x: auto;"><table class="history-table"><tr>
+                <th title="Include this analysis in the overall comparison"><input type="checkbox" id="historySelectAll"></th>
                 <th>File</th>
                 ${shortKeys.map(k => `<th>${k}</th>`).join("")}
             </tr>`;
 
-            history.forEach(row => {
+            history.forEach((row, i) => {
+                const checked = row.included !== false ? "checked" : "";
                 html += `<tr>
+                    <td><input type="checkbox" class="history-select" data-idx="${i}" ${checked}></td>
                     <td style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
                         title="${row.filename}">${row.filename}</td>
                     <td>${row.score.toFixed(1)}</td>
@@ -4622,9 +4648,67 @@
             });
 
             html += "</table></div>";
+            // Overall comparison summary over the selected (checkbox) rows.
+            html += `<div id="comparisonSummary" class="comparison-summary"></div>`;
             content.innerHTML = html;
+
+            // Wire the checkboxes: each one toggles whether its analysis counts
+            // toward the overall comparison; the header box selects/clears all.
+            content.querySelectorAll(".history-select").forEach(cb => {
+                cb.addEventListener("change", () => {
+                    const idx = parseInt(cb.dataset.idx, 10);
+                    if (history[idx]) history[idx].included = cb.checked;
+                    updateComparisonSummary();
+                    syncSelectAll();
+                });
+            });
+            const selectAll = document.getElementById("historySelectAll");
+            if (selectAll) {
+                selectAll.addEventListener("change", () => {
+                    history.forEach(r => { r.included = selectAll.checked; });
+                    content.querySelectorAll(".history-select").forEach(cb => { cb.checked = selectAll.checked; });
+                    updateComparisonSummary();
+                });
+            }
+            syncSelectAll();
+            updateComparisonSummary();
+
             document.getElementById("exportHistoryBtn").style.display = "block";
             document.getElementById("clearHistoryBtn").style.display = "block";
+        }
+
+        // Reflect the per-row selection in the header "select all" checkbox
+        // (checked when all selected, indeterminate when only some are).
+        function syncSelectAll() {
+            const selectAll = document.getElementById("historySelectAll");
+            if (!selectAll) return;
+            const total = history.length;
+            const sel = history.filter(r => r.included !== false).length;
+            selectAll.checked = total > 0 && sel === total;
+            selectAll.indeterminate = sel > 0 && sel < total;
+        }
+
+        // Overall comparison over the selected analyses only (pure display of
+        // already-computed scores; no model or math change).
+        function updateComparisonSummary() {
+            const el = document.getElementById("comparisonSummary");
+            if (!el) return;
+            const sel = history.filter(r => r.included !== false);
+            if (sel.length === 0) {
+                el.innerHTML = `<span class="comparison-summary-empty">No analyses selected for the overall comparison. Tick a box to include one.</span>`;
+                return;
+            }
+            const scores = sel.map(r => r.score);
+            const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+            const min = Math.min(...scores);
+            const max = Math.max(...scores);
+            el.innerHTML =
+                `<strong>Overall comparison</strong> — ${sel.length} of ${history.length} analyses selected` +
+                `<div class="comparison-summary-metrics">` +
+                `<span>Average score <b>${avg.toFixed(1)}</b></span>` +
+                `<span>Lowest <b>${min.toFixed(1)}</b></span>` +
+                `<span>Highest <b>${max.toFixed(1)}</b></span>` +
+                `</div>`;
         }
 
         // ─── PDF Export (button removed from UI; exportPDF kept unused) ───
