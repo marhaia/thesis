@@ -5,7 +5,7 @@
 **Thesis:** *Two-Stage Multi-Output Pipeline: Computational Estimation of Interactional Complexity from GUI Screenshots*  
 **Author:** Hannah Mueller (Q682780)  
 **Module:** `stage1/visual_complexity.py` + `saliency/umsi_model.py`  
-**Version:** 2.6 (26.05.2026)
+**Version:** 2.7 (16.07.2026)
 
 ---
 
@@ -29,6 +29,11 @@
 | 06.05.2026 | 2.5 | Monte-Carlo-Simulation (50–500 Trials pro Element, EMMA, VSTM) |
 | 26.05.2026 | 2.6 | `/api/cognitive-load` standardmäßig auf **HCEye-Regeln + Descriptor/Profile-Modifikatoren** gestellt |
 | 26.05.2026 | 2.6 | Trainiertes Stage-2-Modell nur noch als **explizites experimentelles Opt-in** |
+| 16.07.2026 | 2.7 | **Web-UI/UX-Überarbeitung** (nur Darstellung/Copy, keine Scoring-Änderung): konsistente Info-„i"-Icons inkl. Tooltips für Cognitive Load Score, Search Efficiency & Attention Demand; einheitliche Trennlinien zwischen Ergebnis-Blöcken |
+| 16.07.2026 | 2.7 | Comparison-History: Spalte „Attn" → **„Attention"** ausgeschrieben; CSV-Export-Button dynamisch **„Export all / Export selected (N)"** und exportiert nur ausgewählte Zeilen |
+| 16.07.2026 | 2.7 | Navigation: Burger-Menü durch **Einstellungs-Zahnrad-Icon** ersetzt (nur „Alerts"); Contact in den **Footer** verschoben; Footer-Platzhalter für **GitHub / OSF / DOI** ergänzt |
+| 16.07.2026 | 2.7 | Display-Preset-Wording vereinfacht (Phone / Laptop 14″ / Desktop 17″, „at desk distance" entfernt); alle Emoji-Feature-Icons aus `/api/features` entfernt (waren ungenutzt) |
+| 16.07.2026 | 2.7 | **Quellen-Audit:** Feature-DOIs mit dem angezeigten Referenztext abgeglichen — Edge Density → **Canny (1986)**, Visual Hierarchy → **Tuch et al. (2009)**; Out-of-Domain-Warnung mit wissenschaftlichem Beleg zur Dataset-Shift-Problematik versehen (**Torralba & Efros 2011**, **Jiang et al. 2023**) |
 
 ---
 
