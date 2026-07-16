@@ -134,6 +134,22 @@ class JokinenParams:
     # peripherally invisible element is very unlikely to be selected.
     visibility_penalty: float = 5.0
 
+    # === Contrast legibility gate (our extension; ISO 15008 / WCAG 2.1) ===
+    # The size acuity gate above answers "is the element big enough to resolve
+    # at this eccentricity?" but ignores CONTRAST. A low-contrast control is
+    # harder to detect, especially in peripheral vision. We add a graded
+    # penalty proportional to how far an element's WCAG contrast ratio falls
+    # BELOW the AA large-text / UI threshold (3:1): elements at or above 3:1 get
+    # no penalty; the penalty grows linearly toward W_contrast as the ratio
+    # approaches 1:1 (no contrast). This reuses the per-element contrast_ratio
+    # already computed by element_detector.compute_contrast_ratio.
+    #
+    # CAVEAT: W_contrast is a declared weight, NOT calibrated against human
+    # detection data. Set W_contrast = 0.0 to recover the pure size-only gate
+    # (the pre-contrast baseline) for reproducibility.
+    W_contrast: float = 3.0     # Max activation penalty for a zero-contrast element (NEEDS CALIBRATION)
+    contrast_aa_threshold: float = 3.0   # WCAG 2.1 AA large-text / UI-graphics ratio
+
     # === Memory (ACT-R) — [NOT USED] declared for a future expert-mode extension ===
     # Based on Anderson et al. (2004). An integrated theory of the mind.
     # Psychological Review, 111(4), 1036–1060.  Fitted in Jokinen 2020 grid search.
@@ -493,6 +509,171 @@ class JokinenSearchModel:
             ),
         }
 
+    def predict_product_learning(
+        self,
+        element_sets: List[List[Dict]],
+        consistency_score: float,
+        image_shapes: Optional[List[Tuple[int, int]]] = None,
+        saliency_maps: Optional[List[Optional[np.ndarray]]] = None,
+        total_uses: Optional[List[int]] = None,
+        screen_width_cm: float = 37.0,
+        screen_height_cm: float = 23.0,
+        viewing_distance_cm: float = 60.0,
+    ) -> Dict:
+        """
+        Predict the steady-state learning of a whole multi-screen product.
+
+        This couples the two extensions (time and space axes):
+          - the per-screen learning curve (predict_learning_curve), and
+          - the inter-screen consistency of the product (a geometric score in
+            [0, 1] computed elsewhere, e.g. stage2.screen_consistency).
+
+        Idea (grounded in transfer of learning / spatial memory): in a spatially
+        CONSISTENT product, practising one screen transfers to the others
+        (recurring controls sit in the same place), so the product as a whole is
+        learned almost as fast as a single screen. In an INCONSISTENT product,
+        each of the N screens must be learned largely on its own, so a fixed
+        number of product uses is effectively split across the screens and the
+        steady-state residual load stays higher.
+
+        We model this with an effective-exposure interpolation. For `total`
+        product uses, N screens and consistency C:
+
+            effective_exposures_per_screen = total * (C + (1 - C) / N)
+
+          - C = 1 (fully consistent): eff = total   -> full transfer
+          - C = 0 (fully inconsistent): eff = total / N -> no transfer
+
+        Each screen's search time is then simulated at that effective exposure
+        count and averaged across screens.
+
+        HONESTY NOTE: this is a FIRST, unvalidated coupling. Both the learning
+        rate (W_memory) and the linear transfer interpolation are declared
+        modelling choices, NOT calibrated against real multi-screen usage data
+        (needs the user study). Only the direction and shape are defensible:
+        more consistent -> lower steady-state load.
+
+        Parameters
+        ----------
+        element_sets : list of (list of dict)
+            Detected elements for each screen of the product, in navigation
+            order.
+        consistency_score : float
+            Inter-screen consistency in [0, 1] (e.g. from
+            stage2.screen_consistency.compute_screen_set_consistency).
+        image_shapes : list of (H, W), optional
+            Per-screen image shape (for pixel->degree conversion). If omitted,
+            each screen falls back to the model default.
+        saliency_maps : list, optional
+            Optional per-screen saliency map (aligned with element_sets).
+        total_uses : list of int, optional
+            Product-level use counts to evaluate. Defaults to [1, 10, 100].
+        screen_*_cm, viewing_distance_cm :
+            Physical display geometry, passed through to the simulation.
+
+        Returns
+        -------
+        dict with keys:
+            n_screens, consistency_score,
+            curve : list of {total_uses, effective_exposures_per_screen,
+                mean_search_time_s} averaged over the product's screens,
+            steady_state_time_s : mean search time at the largest total_uses
+                (the actual, consistency-aware value),
+            steady_state_time_no_transfer_s / steady_state_time_full_transfer_s :
+                the C=0 and C=1 bounds at the largest total_uses, so the value
+                of the product's actual consistency is visible,
+            consistency_benefit : fraction of steady-state search time saved by
+                the product's actual consistency versus a fully inconsistent
+                product (0 = no benefit, 1 = fully eliminated),
+            calibration_note : str.
+        """
+        n_screens = len(element_sets)
+        if n_screens == 0:
+            raise ValueError("element_sets must contain at least one screen")
+        C = float(np.clip(consistency_score, 0.0, 1.0))
+        if total_uses is None:
+            total_uses = [1, 10, 100]
+        totals = sorted({int(t) for t in total_uses if int(t) >= 1})
+        if not totals:
+            raise ValueError("total_uses must contain at least one value >= 1")
+
+        if image_shapes is None:
+            image_shapes = [None] * n_screens
+        if saliency_maps is None:
+            saliency_maps = [None] * n_screens
+
+        original_n = self.params.n_exposures
+
+        def _mean_time_at_exposure(eff: int) -> float:
+            """Average mean search time across the product's screens at a given
+            (integer) effective exposure count per screen."""
+            eff_int = max(1, int(round(eff)))
+            per_screen_times: List[float] = []
+            for elements, shape, smap in zip(element_sets, image_shapes, saliency_maps):
+                if not elements:
+                    continue
+                self.params.n_exposures = eff_int
+                self.rng = np.random.default_rng(self.params.random_seed)
+                res = self.predict_search_times(
+                    elements,
+                    saliency_map=smap,
+                    image_shape=shape,
+                    screen_width_cm=screen_width_cm,
+                    screen_height_cm=screen_height_cm,
+                    viewing_distance_cm=viewing_distance_cm,
+                )
+                per_screen_times.append(res["mean_search_time_s"])
+            return float(np.mean(per_screen_times)) if per_screen_times else 0.0
+
+        try:
+            curve: List[Dict] = []
+            for total in totals:
+                eff_actual = total * (C + (1.0 - C) / n_screens)
+                curve.append({
+                    "total_uses": total,
+                    "effective_exposures_per_screen": round(eff_actual, 3),
+                    "mean_search_time_s": round(_mean_time_at_exposure(eff_actual), 4),
+                })
+
+            # At steady state (largest total) also compute the C=0 and C=1
+            # bounds so the benefit of the product's actual consistency is
+            # explicit.
+            steady_total = totals[-1]
+            steady_actual = curve[-1]["mean_search_time_s"]
+            steady_no_transfer = round(
+                _mean_time_at_exposure(steady_total / n_screens), 4
+            )
+            steady_full_transfer = round(
+                _mean_time_at_exposure(steady_total), 4
+            )
+        finally:
+            self.params.n_exposures = original_n
+            self.rng = np.random.default_rng(self.params.random_seed)
+
+        if steady_no_transfer > 0:
+            benefit = float(np.clip(
+                (steady_no_transfer - steady_actual) / steady_no_transfer, 0.0, 1.0
+            ))
+        else:
+            benefit = 0.0
+
+        return {
+            "n_screens": n_screens,
+            "consistency_score": round(C, 4),
+            "curve": curve,
+            "steady_state_time_s": steady_actual,
+            "steady_state_time_no_transfer_s": steady_no_transfer,
+            "steady_state_time_full_transfer_s": steady_full_transfer,
+            "consistency_benefit": round(benefit, 4),
+            "calibration_note": (
+                "First unvalidated coupling of learning (time) and inter-screen "
+                "consistency (space): both the learning rate (W_memory) and the "
+                "linear transfer interpolation are declared modelling choices, "
+                "NOT calibrated. Only the direction is defensible: a more "
+                "consistent product reaches a lower steady-state load."
+            ),
+        }
+
     def predict_scanpath_to_target(
         self,
         target_idx: int,
@@ -661,6 +842,20 @@ class JokinenSearchModel:
         )
         elem_angular_size = elem_diag_px * deg_per_px
 
+        # Per-element contrast deficit for the contrast legibility gate (0 for
+        # elements at/above the WCAG AA threshold, rising to 1.0 as the contrast
+        # ratio approaches 1:1). Computed once; elements without a contrast_ratio
+        # (e.g. synthetic inputs) default to fully legible (deficit 0).
+        thr = p.contrast_aa_threshold
+        contrast_deficit = np.array(
+            [
+                np.clip((thr - float(e.get("contrast_ratio", thr))) / (thr - 1.0), 0.0, 1.0)
+                if thr > 1.0 else 0.0
+                for e in elements
+            ],
+            dtype=np.float64,
+        )
+
         total_time = 0.0
         n_fixations = 0
 
@@ -698,6 +893,14 @@ class JokinenSearchModel:
             acuity_threshold = p.a_size * ecc_deg ** 2 + p.b_size * ecc_deg
             below_threshold = elem_angular_size < acuity_threshold
             activations[below_threshold] -= p.visibility_penalty
+
+            # --- Contrast legibility gate (ISO 15008 / WCAG 2.1) ---
+            # Low-contrast elements are harder to detect. Apply a graded penalty
+            # proportional to how far each element falls below the AA contrast
+            # threshold (precomputed contrast_deficit in [0, 1]). At W_contrast=0
+            # this term vanishes and the pure size gate is recovered.
+            if p.W_contrast > 0.0:
+                activations -= p.W_contrast * contrast_deficit
 
             # --- Learning-curve memory guidance (optional, off at n_exposures=1) ---
             # A practiced user has learned the target's location and directs

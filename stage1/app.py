@@ -1484,6 +1484,85 @@ def learning_curve():
             filepath.unlink()
 
 
+@app.route("/api/product-learning", methods=["POST"])
+def product_learning():
+    """
+    Predict steady-state learning for a whole multi-screen product.
+
+    Couples the two axes: the per-screen learning curve (time) and the
+    inter-screen consistency (space). A spatially consistent product transfers
+    learning across screens, so it reaches a lower steady-state search load.
+
+    Input: several files under "images", OR one animated GIF under "image"
+    (one frame per screen). Optional ?total_uses=1,10,100.
+
+    NOTE (honesty): first unvalidated coupling; the transfer model and the
+    learning rate are declared modelling choices, not calibrated.
+    """
+    try:
+        frames, names = _read_screen_set(request)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+    if len(frames) < 2:
+        return jsonify({
+            "error": "Need at least 2 screens to model a multi-screen product",
+            "n_screens": len(frames),
+        }), 400
+
+    total_uses_arg = request.args.get("total_uses", default=None)
+    if total_uses_arg:
+        try:
+            total_uses = [int(x) for x in total_uses_arg.split(",") if x.strip()]
+        except ValueError:
+            return jsonify({"error": "total_uses must be a comma-separated list of integers"}), 400
+    else:
+        total_uses = [1, 10, 100]
+
+    n_simulations = request.args.get("n_simulations", 100, type=int)
+    (screen_w_cm, screen_h_cm,
+     viewing_cm, display_preset_meta) = _resolve_display_preset(request)
+
+    try:
+        from cognitive.element_detector import detect_elements
+        from cognitive.jokinen_model import JokinenSearchModel, JokinenParams
+        from stage2.screen_consistency import compute_screen_set_consistency
+
+        element_sets = []
+        image_shapes = []
+        per_screen = []
+        for name, img in zip(names, frames):
+            elements = detect_elements(img)
+            element_sets.append(elements)
+            image_shapes.append(img.shape[:2])
+            per_screen.append({"screen": name, "n_elements": len(elements)})
+
+        # Space axis: geometric inter-screen consistency.
+        consistency = compute_screen_set_consistency(element_sets, image_shapes)
+
+        # Time axis, coupled with space: product-level learning curve.
+        params = JokinenParams(
+            n_simulations=min(n_simulations, 500),
+            random_seed=42,
+        )
+        jokinen = JokinenSearchModel(params)
+        product = jokinen.predict_product_learning(
+            element_sets=element_sets,
+            consistency_score=consistency["consistency_score"],
+            image_shapes=image_shapes,
+            total_uses=total_uses,
+            screen_width_cm=screen_w_cm,
+            screen_height_cm=screen_h_cm,
+            viewing_distance_cm=viewing_cm,
+        )
+        product["screens"] = per_screen
+        product["display_preset"] = display_preset_meta
+        product["inter_screen_consistency"] = consistency
+        return jsonify(product)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
     print("\n" + "=" * 50)
     print("  Stage 1 — Visual Complexity Analyzer")
@@ -1494,6 +1573,7 @@ if __name__ == "__main__":
     print("    POST /api/cognitive-load   → h∈ℝ⁶ + full vector ℝ¹⁹")
     print("    POST /api/screen-consistency → inter-screen consistency")
     print("    POST /api/learning-curve  → novice→expert learning curve")
+    print("    POST /api/product-learning → product-level learning (time × space)")
     print("  Open: http://localhost:5001")
     print("=" * 50 + "\n")
     # Prime the UMSI++ model before accepting traffic so the first real
