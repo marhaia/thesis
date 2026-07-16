@@ -346,6 +346,12 @@
             word-break: break-all;
         }
         .ref-item a.ref-doi:hover { text-decoration: underline; }
+        /* Inline citation link (clickable source -> paper DOI / ACM page) */
+        a.cite-link {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        a.cite-link:hover { text-decoration: underline; }
         /* Contact */
         .contact-card {
             background: var(--surface);
@@ -1718,7 +1724,7 @@
                             <button id="downloadSaliencyBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0;">Download Map</button>
                             <button id="downloadOriginalBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0;">Download Original</button>
                         </div>
-                        <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">UMSI++ deep-learning saliency overlay (Jiang et al., CHI 2023). The colours show the predicted probability that a user looks at each area within the first few seconds. Used as saliency feature vector s∈ℝ⁵.</p>
+                        <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">UMSI++ deep-learning saliency overlay (<a class="cite-link" href="https://doi.org/10.1145/3544548.3581096" target="_blank" rel="noopener">Jiang et al., CHI 2023</a>). The colours show the predicted probability that a user looks at each area within the first few seconds. Used as saliency feature vector s∈ℝ⁵.</p>
                         <img id="saliencyImg" src="" alt="Saliency heatmap"
                              style="width:100%; border-radius:8px; border:1px solid var(--border);">
                         <!-- Colour legend (matches the JET colormap used for the
@@ -1759,7 +1765,7 @@
                         <button id="clearScanpathBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0; display:none;">Clear all</button>
                         <button id="downloadScanpathBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0; display:none;">Download</button>
                     </div>
-                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 6px 0;"><strong>Drag a box</strong> around the area a user would search for &mdash; or <strong>tap a highlighted element</strong> &mdash; to see the predicted order a first-time user would look while searching for it. Add several targets to compare them. This is a <strong>model estimate</strong> of goal-directed search (Jokinen et al., 2020), not measured eye-tracking.</p>
+                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 6px 0;"><strong>Drag a box</strong> around the area a user would search for &mdash; or <strong>tap a highlighted element</strong> &mdash; to see the predicted order a first-time user would look while searching for it. Add several targets to compare them. This is a <strong>model estimate</strong> of goal-directed search (<a class="cite-link" href="https://doi.org/10.1016/j.ijhcs.2019.102376" target="_blank" rel="noopener">Jokinen et al., 2020</a>), not measured eye-tracking.</p>
                     <!-- One-line onboarding hint (idea 9): a compact how-to shown
                          above the canvas so first-time users know what to do. -->
                     <div id="scanpathOnboard" style="display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text-dim); background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:6px 10px; margin:0 0 10px 0;">
@@ -1809,7 +1815,7 @@
                     <div style="margin-bottom:8px;">
                         <span style="font-size:13px; font-weight:600;">Search Bottlenecks</span>
                     </div>
-                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Elements ranked by predicted visual-search time (Jokinen et al., 2020). The elements at the top take a first-time user the longest to find and are the best candidates for redesign (e.g. higher contrast, more salient placement, clearer grouping). Times are <strong>model estimates</strong>, not measured eye-tracking.</p>
+                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Elements ranked by predicted visual-search time (<a class="cite-link" href="https://doi.org/10.1016/j.ijhcs.2019.102376" target="_blank" rel="noopener">Jokinen et al., 2020</a>). The elements at the top take a first-time user the longest to find and are the best candidates for redesign (e.g. higher contrast, more salient placement, clearer grouping). Times are <strong>model estimates</strong>, not measured eye-tracking.</p>
                     <div id="searchFeedbackList"></div>
                 </div>
 
@@ -1837,7 +1843,7 @@
                     </div>
                     <!-- Plain-language headline result for non-expert users. -->
                     <div id="readabilityMainStatement" style="font-size:13px; font-weight:600; margin:0 0 8px 0;"></div>
-                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Text found in each element (OCR) and an estimated silent reading time at 238 words/min (Brysbaert, 2019). A labelled control costs reading time that a plain icon does not. Reading time is a <strong>first-order estimate</strong>, not measured.</p>
+                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Text found in each element (OCR) and an estimated silent reading time at 238 words/min (<a class="cite-link" href="https://doi.org/10.1016/j.jml.2019.104047" target="_blank" rel="noopener">Brysbaert, 2019</a>). A labelled control costs reading time that a plain icon does not. Reading time is a <strong>first-order estimate</strong>, not measured.</p>
                     <div id="readabilityList"></div>
                 </div>
 
@@ -1967,6 +1973,28 @@
                 </div>
             </div>
 
+            <div class="pipeline-section-title" style="margin-top:32px;">Per-Element Diagnostics (applied to the detected elements)</div>
+            <div class="pipeline-row">
+                <div class="pipeline-node">
+                    <div class="pipeline-node-label">Contrast</div>
+                    <div class="pipeline-node-title">WCAG / ISO 15008 Contrast</div>
+                    <div class="pipeline-node-desc">Per-element foreground/background luminance contrast ratio (WCAG 2.1 formula with an Otsu ink/paper split). Elements below the 3:1 legibility minimum are flagged.</div>
+                    <div class="pipeline-node-ref"><a href="https://www.w3.org/TR/WCAG21/" target="_blank" rel="noopener">WCAG 2.1 (W3C)</a> · ISO 15008:2017</div>
+                </div>
+                <div class="pipeline-node">
+                    <div class="pipeline-node-label">Readability</div>
+                    <div class="pipeline-node-title">OCR Reading Time</div>
+                    <div class="pipeline-node-desc">Text is read per element (OCR) and a silent reading time is estimated at 238 words/min. A labelled control costs reading time that a plain icon does not.</div>
+                    <div class="pipeline-node-ref"><a href="https://doi.org/10.1016/j.jml.2019.104047" target="_blank" rel="noopener">Brysbaert (2019)</a></div>
+                </div>
+                <div class="pipeline-node">
+                    <div class="pipeline-node-label">Glance</div>
+                    <div class="pipeline-node-title">Eyes-off-road Glances</div>
+                    <div class="pipeline-node-desc">For in-vehicle displays the predicted fixations are packed into glances and checked against the NHTSA / ISO 15008 single-glance (2 s) and cumulative (12 s) limits.</div>
+                    <div class="pipeline-node-ref">NHTSA (2013) Visual-Manual Guidelines · ISO 15008:2017</div>
+                </div>
+            </div>
+
             <div class="pipeline-section-title" style="margin-top:32px;">Key References</div>
             <div class="ref-list">
                 <div class="ref-item"><strong>Das et al. (2024)</strong> Shifting Focus with HCEye: Exploring the Dynamics of Visual Highlighting and Cognitive Load on User Attention and Saliency Prediction. Proc. ACM Hum.-Comput. Interact. (ETRA 2024). <a class="ref-doi" href="https://doi.org/10.1145/3655610" target="_blank" rel="noopener">doi:10.1145/3655610</a></div>
@@ -1974,6 +2002,7 @@
                 <div class="ref-item"><strong>Jokinen, Sarcar, Oulasvirta, Silpasuwanchai, Wang &amp; Ren (2020)</strong> Adaptive feature guidance: Modelling visual search with graphical layouts. International Journal of Human-Computer Studies, 136. <a class="ref-doi" href="https://doi.org/10.1016/j.ijhcs.2019.102376" target="_blank" rel="noopener">doi:10.1016/j.ijhcs.2019.102376</a></div>
                 <div class="ref-item"><strong>Rosenholtz, Li &amp; Nakano (2007)</strong> Measuring visual clutter. Journal of Vision, 7(2):17. <a class="ref-doi" href="https://doi.org/10.1167/7.2.17" target="_blank" rel="noopener">doi:10.1167/7.2.17</a></div>
                 <div class="ref-item"><strong>Tuch et al. (2009)</strong> Visual complexity of websites: Effects on users’ experience, physiology, performance, and memory. International Journal of Human-Computer Studies, 67(9). <a class="ref-doi" href="https://doi.org/10.1016/j.ijhcs.2009.04.002" target="_blank" rel="noopener">doi:10.1016/j.ijhcs.2009.04.002</a></div>
+                <div class="ref-item"><strong>Brysbaert (2019)</strong> How many words do we read per minute? A review and meta-analysis of reading rate. Journal of Memory and Language, 109. <a class="ref-doi" href="https://doi.org/10.1016/j.jml.2019.104047" target="_blank" rel="noopener">doi:10.1016/j.jml.2019.104047</a></div>
                 <div class="ref-item"><strong>Miniukovich &amp; De Angeli (2015)</strong> Computation of Interface Aesthetics. CHI 2015. <a class="ref-doi" href="https://doi.org/10.1145/2702123.2702575" target="_blank" rel="noopener">doi:10.1145/2702123.2702575</a></div>
                 <div class="ref-item"><strong>Hasler &amp; Süsstrunk (2003)</strong> Measuring colorfulness in natural images. Proc. SPIE 5007, Human Vision and Electronic Imaging VIII. <a class="ref-doi" href="https://doi.org/10.1117/12.477378" target="_blank" rel="noopener">doi:10.1117/12.477378</a></div>
                 <div class="ref-item"><strong>Itti &amp; Koch (2001)</strong> Computational modelling of visual attention. Nature Reviews Neuroscience, 2(3). <a class="ref-doi" href="https://doi.org/10.1038/35058500" target="_blank" rel="noopener">doi:10.1038/35058500</a></div>
