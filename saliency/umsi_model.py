@@ -29,12 +29,12 @@ Weights
 -------
 The pretrained weights file ``umsi++.hdf5`` is downloaded from:
   https://userinterfaces.aalto.fi/ueyeschi23/model_weights.zip
-and placed in ``saliency/weights/umsi++.hdf5``.
+and placed in ``saliency/weights/model_weights/saliency_models/UMSI++/umsi++.hdf5``.
 
 Usage
 -----
     from saliency.umsi_model import UMSIPlus
-    model = UMSIPlus("saliency/weights/umsi++.hdf5")
+    model = UMSIPlus("saliency/weights/model_weights/saliency_models/UMSI++/umsi++.hdf5")
     heatmap = model.predict_saliency("path/to/screenshot.png")
 """
 
@@ -476,7 +476,7 @@ class UMSIPlus:
     """High-level wrapper for UMSI++ saliency prediction.
 
     Usage:
-        model = UMSIPlus("saliency/weights/umsi++.hdf5")
+        model = UMSIPlus("saliency/weights/model_weights/saliency_models/UMSI++/umsi++.hdf5")
         heatmap = model.predict_saliency("screenshot.png")
     """
 
@@ -593,7 +593,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="UMSI++ Saliency Prediction")
     parser.add_argument("image", help="Path to input image")
-    parser.add_argument("--weights", default="saliency/weights/umsi++.hdf5",
+    parser.add_argument("--weights", default="saliency/weights/model_weights/saliency_models/UMSI++/umsi++.hdf5",
                         help="Path to UMSI++ weights")
     parser.add_argument("--output", default=None,
                         help="Path to save the saliency heatmap")

@@ -20,7 +20,7 @@
 | 06.05.2026 | 2.0 | UMSI++ TF2-Port (Keras 3) — lauffähig auf M4 Mac (CPU) |
 | 06.05.2026 | 2.0 | Saliency-Feature-Extraktion s∈ℝ⁵ implementiert |
 | 06.05.2026 | 2.0 | Flask-Endpoint `/api/saliency` integriert |
-| 06.05.2026 | 2.0 | Pretrained Weights geladen (UEyes CHI2023, 421 MB) |
+| 06.05.2026 | 2.0 | Pretrained Weights geladen (UEyes CHI2023, ~115 MB / 120 MB Datei) |
 | 06.05.2026 | 2.0 | PathGAN++ und DeepGaze++ Weights heruntergeladen (noch nicht portiert) |
 | 06.05.2026 | 2.5 | **Jokinen 2020 Visual Search Model** implementiert (`cognitive/jokinen_model.py`) |
 | 06.05.2026 | 2.5 | Element-Detektor für UI-Elemente (`cognitive/element_detector.py`) |
