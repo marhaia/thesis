@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pipeline</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
             --bg: #0f1117;
@@ -35,6 +33,19 @@
             max-width: 1200px;
             margin: 0 auto;
         }
+
+        /* ── Typography consistency rule ──────────────────────────────
+           One shared scale so headings never look cramped ("gedrungen"):
+             h1 page title : 26px / 600 / line-height 1.25
+             h2 section    : 16px / 600 / line-height 1.35
+             h3 sub-section: 13px / 600 / line-height 1.4
+             body text     : 13-14px / 400 / line-height 1.5
+             eyebrow label : 10-11px / 600 / UPPERCASE
+           Caps and 700-weight are allowed ONLY on small eyebrow labels and
+           numeric values — never on a real heading or on body text.
+           All paddings and margins are multiples of 4px.
+        ───────────────────────────────────────────────────── */
+        h1, h2, h3, h4 { line-height: 1.3; }
 
         /* Navigation */
         .navbar {
@@ -187,6 +198,48 @@
         }
         .site-footer-sep {
             color: var(--border);
+        }
+
+        /* Collapsible What-if simulation */
+        .whatif-details {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface);
+            margin-top: 4px;
+            padding: 0 16px;
+        }
+        .whatif-details[open] {
+            padding-bottom: 16px;
+        }
+        .whatif-summary {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 4px;
+            cursor: pointer;
+            list-style: none;
+        }
+        .whatif-summary::-webkit-details-marker {
+            display: none;
+        }
+        .whatif-summary-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .whatif-summary-hint {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+        .whatif-summary-chevron {
+            margin-left: auto;
+            font-size: 22px;
+            line-height: 1;
+            color: var(--text-dim);
+            transition: transform 0.15s;
+        }
+        .whatif-details[open] .whatif-summary-chevron {
+            transform: rotate(90deg);
         }
 
         /* Views */
@@ -361,6 +414,7 @@
         .card h2 {
             font-size: 16px;
             font-weight: 600;
+            line-height: 1.35;
             margin-bottom: 16px;
             display: flex;
             align-items: center;
@@ -1423,8 +1477,8 @@
         <div class="view active" id="view-analyzer">
 
         <header style="text-align:left; margin-bottom:24px;">
-            <h1 style="font-size:22px; font-weight:600;">Interactional Complexity Analyzer</h1>
-            <p style="color:var(--text-dim); font-size:13px; margin-top:4px;">Estimates the cognitive complexity of a GUI screenshot from visual structure, predicted saliency, and eye-tracking-derived signals.</p>
+            <h1 style="font-size:26px; font-weight:600; line-height:1.25;">Interactional Complexity Analyzer</h1>
+            <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin-top:8px;">Estimates the cognitive complexity of a GUI screenshot from visual structure, predicted saliency, and eye-tracking-derived signals.</p>
         </header>
 
         <!-- Steps 1 + 2 side by side -->
@@ -1776,8 +1830,8 @@
 
         <!-- View: Pipeline -->
         <div class="view" id="view-pipeline">
-            <h2 style="font-size:20px; font-weight:600; margin-bottom:6px;">How the Pipeline Works</h2>
-            <p style="color:var(--text-dim); font-size:13px; margin-bottom:28px;">Two-Stage Multi-Output architecture for computational estimation of interactional complexity from GUI screenshots.</p>
+            <h2 style="font-size:26px; font-weight:600; line-height:1.25; margin-bottom:8px;">How the Pipeline Works</h2>
+            <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin-bottom:28px;">Two-Stage Multi-Output architecture for computational estimation of interactional complexity from GUI screenshots.</p>
 
             <div class="pipeline-section-title">Stage 1 — Feature Extraction (Image → Vectors)</div>
             <div class="pipeline-row">
@@ -3925,12 +3979,15 @@
                         </div>
                     </div>
 
-                    <!-- ── Section B: What-if simulation (interactive) ── -->
+                    <!-- ── Section B: What-if simulation (interactive, collapsible) ── -->
                     <div class="section-separator"></div>
-                    <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--text-dim); margin-bottom:6px;">
-                        What-if: adjust context &amp; see score impact live
-                    </div>
-                    <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px; flex-wrap:wrap;">
+                    <details class="whatif-details">
+                        <summary class="whatif-summary">
+                            <span class="whatif-summary-title">What-if simulation</span>
+                            <span class="whatif-summary-hint">Try it — adjust the context and see the score change live</span>
+                            <span class="whatif-summary-chevron" aria-hidden="true">&rsaquo;</span>
+                        </summary>
+                    <div style="display:flex; gap:8px; align-items:center; margin:12px 0 10px; flex-wrap:wrap;">
                         <div id="bd-sim-state" class="pill">Original context selected (no simulation change).</div>
                         <button id="bd-reset" class="btn btn-secondary" style="width:auto; margin:0; padding:6px 10px; font-size:11px;">Reset to original</button>
                         <button id="bd-run-analysis" class="btn btn-secondary" style="width:auto; margin:0; padding:6px 10px; font-size:11px;">Run new analysis with these settings</button>
@@ -4041,6 +4098,7 @@
                             <div id="bd-desc-profile" class="bd-desc">${PROFILE_DESC[data.big_five_profile.key]||''}</div>
                         </div>
                     </div>
+                    </details>
                 </div>
             `;
             // Attach live-update listeners
