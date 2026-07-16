@@ -2400,6 +2400,7 @@
         // the canvas is sized to the image's intrinsic resolution and CSS scales
         // both image and canvas together.
         let _scanpathLastData = null;  // most recent scanpath response (for download)
+        let _scanpathTargetBox = null; // last drawn target region {x,y,w,h} in image px
         let _layoutLoadScore = null;   // layout-baseline cognitive load score (0-100)
 
         // Show the task-relative load for the clicked target LOCALLY inside the
@@ -2664,6 +2665,7 @@
             clearBtn.style.display = 'none';
             dlBtn.style.display = 'none';
             _scanpathLastData = null;
+            _scanpathTargetBox = null;
             hideTargetLoad();
             hideGlanceMetrics();
 
@@ -2677,6 +2679,8 @@
             img.src = URL.createObjectURL(selectedFile);
 
             // Draw a scanpath payload (the `scanpath` object from the backend).
+            // If a target box was drawn, keep it visible underneath the path so
+            // the user always sees which region they selected.
             const drawScanpath = (sp) => {
                 const w = sp.image_width || img.naturalWidth;
                 const h = sp.image_height || img.naturalHeight;
@@ -2684,6 +2688,28 @@
                 canvas.height = h;
                 const ctx = canvas.getContext('2d');
                 ctx.clearRect(0, 0, w, h);
+
+                // Persisted target region (the box the user drew), drawn first so
+                // the fixation path is rendered on top of it.
+                if (_scanpathTargetBox) {
+                    const b = _scanpathTargetBox;
+                    const boxLineW = Math.max(2, Math.round(Math.min(w, h) * 0.004));
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(34,197,94,0.95)';
+                    ctx.fillStyle = 'rgba(34,197,94,0.12)';
+                    ctx.lineWidth = boxLineW;
+                    ctx.fillRect(b.x, b.y, b.w, b.h);
+                    ctx.strokeRect(b.x, b.y, b.w, b.h);
+                    // "Target" label above the box.
+                    const fs = Math.max(12, Math.round(Math.min(w, h) * 0.022));
+                    ctx.font = `700 ${fs}px -apple-system, sans-serif`;
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'bottom';
+                    const ly = b.y > fs + 6 ? b.y - 4 : b.y + b.h + fs + 4;
+                    ctx.fillStyle = '#22c55e';
+                    ctx.fillText('Target', b.x, ly);
+                    ctx.restore();
+                }
 
                 const pts = sp.fixations || [];
                 if (pts.length === 0) return;
@@ -2742,6 +2768,7 @@
             // Ask the backend for the search path toward a drawn target region
             // (VAS-style). x, y, w, h are in original-image pixels.
             const requestScanpath = async (x, y, w, h) => {
+                _scanpathTargetBox = { x, y, w, h };  // remember for redraws
                 statusEl.textContent = 'Predicting search path…';
                 const formData = new FormData();
                 formData.append('image', selectedFile);
@@ -2778,8 +2805,8 @@
             // Drag-to-draw target selection. The user drags a box around the
             // area they are searching for; on release we convert it to
             // original-image pixels and request the predicted search path. A
-            // tiny drag (essentially a click) is expanded to a small default box
-            // centered on the point so single clicks still work.
+            // near-zero drag (an accidental click) is rejected with a hint so
+            // the interaction stays explicit and predictable.
             let _dragging = false;
             let _dragStart = null;  // {x, y} in original-image pixels
 
@@ -2815,21 +2842,26 @@
                 if (!_dragging || !_dragStart) return;
                 _dragging = false;
                 const p = toOrig(ev);
-                let x = Math.min(_dragStart.x, p.x);
-                let y = Math.min(_dragStart.y, p.y);
-                let w = Math.abs(p.x - _dragStart.x);
-                let h = Math.abs(p.y - _dragStart.y);
+                const x = Math.min(_dragStart.x, p.x);
+                const y = Math.min(_dragStart.y, p.y);
+                const w = Math.abs(p.x - _dragStart.x);
+                const h = Math.abs(p.y - _dragStart.y);
                 _dragStart = null;
-                // Expand a near-zero drag (a click) into a small default box so
-                // the interaction is forgiving.
-                const minSide = Math.max(20, Math.round(Math.min(img.naturalWidth, img.naturalHeight) * 0.05));
+                // Require a real box. A too-small drag (e.g. an accidental click)
+                // is rejected with a hint instead of silently guessing a target,
+                // so the selection is always deliberate. A previously drawn path
+                // is kept on screen (an accidental click must not wipe it).
+                const minSide = Math.max(20, Math.round(Math.min(img.naturalWidth, img.naturalHeight) * 0.03));
                 if (w < minSide || h < minSide) {
-                    const cx = x + w / 2;
-                    const cy = y + h / 2;
-                    w = Math.max(w, minSide);
-                    h = Math.max(h, minSide);
-                    x = Math.max(0, cx - w / 2);
-                    y = Math.max(0, cy - h / 2);
+                    if (_scanpathLastData && _scanpathLastData.scanpath) {
+                        drawScanpath(_scanpathLastData.scanpath);
+                    } else {
+                        const ctx = canvas.getContext('2d');
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    }
+                    statusEl.textContent =
+                        'Draw a larger box: drag around the element you want to select.';
+                    return;
                 }
                 requestScanpath(x, y, w, h);
             };
@@ -2844,6 +2876,7 @@
                 clearBtn.style.display = 'none';
                 dlBtn.style.display = 'none';
                 _scanpathLastData = null;
+                _scanpathTargetBox = null;
                 hideTargetLoad();
                 hideGlanceMetrics();
             };
