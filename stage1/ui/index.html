@@ -1558,7 +1558,7 @@
                         <button id="clearScanpathBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0; display:none;">Clear</button>
                         <button id="downloadScanpathBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0; display:none;">Download</button>
                     </div>
-                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;"><strong>Click any element</strong> on the screenshot to see the predicted order in which a first-time user would look while searching for it. This is a <strong>model estimate</strong> of goal-directed search (Jokinen et al., 2020), not measured eye-tracking.</p>
+                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;"><strong>Drag a box</strong> around the area you are searching for on the screenshot to see the predicted order in which a first-time user would look while searching for it. This is a <strong>model estimate</strong> of goal-directed search (Jokinen et al., 2020), not measured eye-tracking.</p>
                     <div id="scanpathContainer" style="position:relative; width:100%; border-radius:8px; border:1px solid var(--border); overflow:hidden; cursor:crosshair;">
                         <img id="scanpathImg" src="" alt="Screenshot for target selection" style="display:block; width:100%;">
                         <canvas id="scanpathCanvas" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></canvas>
@@ -2660,7 +2660,7 @@
             }
 
             panel.style.display = 'block';
-            statusEl.textContent = 'Click an element to predict the search path.';
+            statusEl.textContent = 'Drag a box around the area you are searching for.';
             clearBtn.style.display = 'none';
             dlBtn.style.display = 'none';
             _scanpathLastData = null;
@@ -2722,17 +2722,37 @@
                 });
             };
 
-            // Convert a click on the displayed image to original-image pixels.
-            const requestScanpath = async (origX, origY) => {
+            // Draw the live rubber-band selection rectangle while the user
+            // drags. Coordinates are in original-image pixels (the canvas is
+            // sized to the image's intrinsic resolution).
+            const drawSelectionBox = (x, y, w, h) => {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const lineW = Math.max(2, Math.round(Math.min(canvas.width, canvas.height) * 0.004));
+                ctx.save();
+                ctx.strokeStyle = 'rgba(34,197,94,0.95)';
+                ctx.fillStyle = 'rgba(34,197,94,0.15)';
+                ctx.lineWidth = lineW;
+                ctx.setLineDash([lineW * 3, lineW * 2]);
+                ctx.fillRect(x, y, w, h);
+                ctx.strokeRect(x, y, w, h);
+                ctx.restore();
+            };
+
+            // Ask the backend for the search path toward a drawn target region
+            // (VAS-style). x, y, w, h are in original-image pixels.
+            const requestScanpath = async (x, y, w, h) => {
                 statusEl.textContent = 'Predicting search path…';
                 const formData = new FormData();
                 formData.append('image', selectedFile);
                 // Match the display geometry used for the main analysis so the
                 // search-path timing is consistent with the score above.
                 const displayPreset = (document.getElementById('displayPreset') || {}).value || 'desktop';
+                const q = `target_x=${Math.round(x)}&target_y=${Math.round(y)}` +
+                          `&target_w=${Math.round(w)}&target_h=${Math.round(h)}`;
                 try {
                     const res = await fetch(
-                        `/api/scanpath-to-target?target_x=${Math.round(origX)}&target_y=${Math.round(origY)}&display_preset=${encodeURIComponent(displayPreset)}`,
+                        `/api/scanpath-to-target?${q}&display_preset=${encodeURIComponent(displayPreset)}`,
                         { method: 'POST', body: formData }
                     );
                     const data = await res.json();
@@ -2746,7 +2766,7 @@
                     showTargetLoad(data.target_load, data.target_id);
                     showGlanceMetrics(data.glance_metrics);
                     statusEl.textContent =
-                        `Target element #${data.target_id}: ${sp.n_fixations} fixations, ` +
+                        `Target region: ${sp.n_fixations} fixations, ` +
                         `${sp.total_time_s.toFixed(2)} s predicted search time.`;
                     clearBtn.style.display = '';
                     dlBtn.style.display = '';
@@ -2755,21 +2775,72 @@
                 }
             };
 
-            // Click handler: map display coords -> original-image coords.
-            container.onclick = (ev) => {
+            // Drag-to-draw target selection. The user drags a box around the
+            // area they are searching for; on release we convert it to
+            // original-image pixels and request the predicted search path. A
+            // tiny drag (essentially a click) is expanded to a small default box
+            // centered on the point so single clicks still work.
+            let _dragging = false;
+            let _dragStart = null;  // {x, y} in original-image pixels
+
+            const toOrig = (ev) => {
                 const rect = img.getBoundingClientRect();
                 const dispX = ev.clientX - rect.left;
                 const dispY = ev.clientY - rect.top;
-                if (dispX < 0 || dispY < 0 || dispX > rect.width || dispY > rect.height) return;
                 const scaleX = (img.naturalWidth || 1) / rect.width;
                 const scaleY = (img.naturalHeight || 1) / rect.height;
-                requestScanpath(dispX * scaleX, dispY * scaleY);
+                return {
+                    x: Math.max(0, Math.min(dispX, rect.width)) * scaleX,
+                    y: Math.max(0, Math.min(dispY, rect.height)) * scaleY,
+                };
             };
+
+            container.onmousedown = (ev) => {
+                ev.preventDefault();
+                _dragging = true;
+                _dragStart = toOrig(ev);
+            };
+
+            container.onmousemove = (ev) => {
+                if (!_dragging || !_dragStart) return;
+                const p = toOrig(ev);
+                const x = Math.min(_dragStart.x, p.x);
+                const y = Math.min(_dragStart.y, p.y);
+                const w = Math.abs(p.x - _dragStart.x);
+                const h = Math.abs(p.y - _dragStart.y);
+                drawSelectionBox(x, y, w, h);
+            };
+
+            const endDrag = (ev) => {
+                if (!_dragging || !_dragStart) return;
+                _dragging = false;
+                const p = toOrig(ev);
+                let x = Math.min(_dragStart.x, p.x);
+                let y = Math.min(_dragStart.y, p.y);
+                let w = Math.abs(p.x - _dragStart.x);
+                let h = Math.abs(p.y - _dragStart.y);
+                _dragStart = null;
+                // Expand a near-zero drag (a click) into a small default box so
+                // the interaction is forgiving.
+                const minSide = Math.max(20, Math.round(Math.min(img.naturalWidth, img.naturalHeight) * 0.05));
+                if (w < minSide || h < minSide) {
+                    const cx = x + w / 2;
+                    const cy = y + h / 2;
+                    w = Math.max(w, minSide);
+                    h = Math.max(h, minSide);
+                    x = Math.max(0, cx - w / 2);
+                    y = Math.max(0, cy - h / 2);
+                }
+                requestScanpath(x, y, w, h);
+            };
+
+            container.onmouseup = endDrag;
+            container.onmouseleave = (ev) => { if (_dragging) endDrag(ev); };
 
             clearBtn.onclick = () => {
                 const ctx = canvas.getContext('2d');
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                statusEl.textContent = 'Click an element to predict the search path.';
+                statusEl.textContent = 'Drag a box around the area you are searching for.';
                 clearBtn.style.display = 'none';
                 dlBtn.style.display = 'none';
                 _scanpathLastData = null;

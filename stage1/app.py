@@ -213,6 +213,91 @@ def _resolve_target_index(elements, target_id, target_x, target_y):
     return best_idx
 
 
+def _build_region_target_element(
+    img,
+    elements,
+    region_x,
+    region_y,
+    region_w,
+    region_h,
+    screen_width_cm,
+    screen_height_cm,
+    viewing_distance_cm,
+):
+    """Turn a user-drawn selection box into a synthetic target element.
+
+    VAS-style interaction: the user drags a rectangle around the area they are
+    searching for. That rectangle IS the target, independently of whether the
+    geometric detector happened to find an element there. We build a full
+    element dict from the drawn region -- measuring its dominant colour, WCAG
+    contrast and angular size directly from the image ROI, exactly like
+    ``detect_elements`` does -- append it to the detected elements as the
+    target, and return the extended element list plus the target index. The
+    previously detected elements stay in the list as distractors for the
+    visual-search simulation.
+
+    Returns ``(elements_with_target, target_idx)``. A new list is returned so
+    the caller's original detection is left untouched. ``target_idx`` is
+    ``None`` if the region is degenerate (outside the image).
+    """
+    import numpy as np
+    from cognitive.element_detector import (
+        compute_contrast_ratio,
+        _dominant_color_hsv,
+        _hsv_to_category,
+        WCAG_AA_LARGE,
+    )
+
+    h_img, w_img = img.shape[:2]
+
+    # Clamp the drawn box to the image bounds and enforce a minimal size so a
+    # tiny drag still yields a usable region.
+    x = int(max(0, min(region_x, w_img - 1)))
+    y = int(max(0, min(region_y, h_img - 1)))
+    w = int(max(1, min(region_w, w_img - x)))
+    h = int(max(1, min(region_h, h_img - y)))
+
+    roi = img[y:y + h, x:x + w]
+    if roi.size == 0:
+        return list(elements), None
+
+    dom_hsv = _dominant_color_hsv(roi)
+    color_cat = _hsv_to_category(dom_hsv)
+    contrast_ratio = compute_contrast_ratio(roi)
+
+    # Angular size from the region diagonal, matching element_detector's formula.
+    px_per_cm_x = w_img / screen_width_cm
+    px_per_cm_y = h_img / screen_height_cm
+    diag_px = float(np.sqrt(w ** 2 + h ** 2))
+    diag_cm = diag_px / ((px_per_cm_x + px_per_cm_y) / 2.0)
+    angular_size_deg = float(
+        np.degrees(2 * np.arctan(diag_cm / (2 * viewing_distance_cm)))
+    )
+
+    # Give the synthetic target a fresh id after the detected elements.
+    existing_ids = [e.get("id", -1) for e in elements]
+    new_id = (max(existing_ids) + 1) if existing_ids else 0
+
+    target_elem = {
+        "id": int(new_id),
+        "bbox": (x, y, w, h),
+        "center": (float(x + w / 2.0), float(y + h / 2.0)),
+        "area": int(w * h),
+        "dominant_color_hsv": (
+            float(dom_hsv[0]), float(dom_hsv[1]), float(dom_hsv[2])
+        ),
+        "color_category": color_cat,
+        "angular_size": angular_size_deg,
+        "contrast_ratio": float(contrast_ratio),
+        "wcag_aa_pass": bool(contrast_ratio >= WCAG_AA_LARGE),
+        # Marks this as the user-drawn region rather than a detected element.
+        "is_user_region": True,
+    }
+
+    extended = list(elements) + [target_elem]
+    return extended, len(extended) - 1
+
+
 def _predict_saliency_cached(image_hash, image_path):
     """Run UMSI++ saliency prediction with an LRU hash cache.
 
@@ -585,8 +670,15 @@ def scanpath_to_target():
     """
     Predict the visual-search scanpath toward a user-selected target element.
 
-    The user picks a target on the screenshot (by click position or element id);
-    this endpoint returns the fixation sequence the Jokinen 2020 Adaptive Feature
+    The user selects the area they are searching for on the screenshot. The
+    primary (VAS-style) mode is a DRAWN REGION box: the drawn rectangle becomes
+    a synthetic target element (its colour and contrast measured from the image
+    ROI), so the target is exactly what the user selected -- independent of what
+    the geometric detector happened to find. The other detected elements stay as
+    distractors. A single click position or an explicit element id are also
+    accepted (they select an existing detected element).
+
+    This endpoint returns the fixation sequence the Jokinen 2020 Adaptive Feature
     Guidance model traverses while a novice searches for that target, starting
     from the screen center. This is a TASK-DRIVEN scanpath (goal-directed search),
     not a free-viewing scanpath.
@@ -598,10 +690,13 @@ def scanpath_to_target():
     Request:
         POST multipart/form-data with field "image" (PNG/JPG screenshot).
         Target selection (one of):
-            - target_x, target_y (float, query params): click position in
-              ORIGINAL-image pixel coordinates. The element whose bounding box
-              contains the point is used; otherwise the element with the nearest
-              center is chosen.
+            - target_x, target_y, target_w, target_h (float, query params):
+              VAS-style drawn region in ORIGINAL-image pixels (top-left x/y and
+              size). The region becomes a synthetic target element and the other
+              detected elements are distractors. This is the primary mode.
+            - target_x, target_y (float, query params): a single click position
+              in ORIGINAL-image pixels. The element whose bounding box contains
+              the point is used; otherwise the nearest-center element is chosen.
             - target_id (int, query param): id of a previously detected element.
         Optional:
             n_simulations (int): Monte Carlo trials (default: 100).
@@ -639,13 +734,25 @@ def scanpath_to_target():
     if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
         return jsonify({"error": f"Unsupported format: {ext}"}), 400
 
-    # Target selection params.
+    # Target selection params. Primary (VAS-style) mode is a drawn region box:
+    # target_x, target_y = top-left in original-image pixels, target_w/target_h =
+    # its size. A single click point (target_x, target_y only) and an explicit
+    # target_id remain supported for backwards compatibility.
     target_x = request.args.get("target_x", default=None, type=float)
     target_y = request.args.get("target_y", default=None, type=float)
+    target_w = request.args.get("target_w", default=None, type=float)
+    target_h = request.args.get("target_h", default=None, type=float)
     target_id = request.args.get("target_id", default=None, type=int)
-    if target_id is None and (target_x is None or target_y is None):
+    has_region = (
+        target_x is not None and target_y is not None
+        and target_w is not None and target_w > 0
+        and target_h is not None and target_h > 0
+    )
+    has_point = target_x is not None and target_y is not None
+    if target_id is None and not has_point:
         return jsonify({
-            "error": "Provide either target_id or both target_x and target_y"
+            "error": "Provide a target region (target_x, target_y, target_w, "
+                     "target_h), a click point (target_x, target_y), or target_id"
         }), 400
 
     n_simulations = request.args.get("n_simulations", 100, type=int)
@@ -681,8 +788,23 @@ def scanpath_to_target():
                 "n_elements": 0,
             }), 200
 
-        # Resolve the target element index from the selection params.
-        target_idx = _resolve_target_index(elements, target_id, target_x, target_y)
+        # Resolve the target. VAS-style: a drawn region becomes a synthetic
+        # target element (measured from the image ROI) so the target is exactly
+        # what the user selected, independent of the geometric detector; the
+        # other detected elements stay as distractors. A click point or an
+        # explicit id falls back to selecting an existing detected element.
+        if has_region:
+            elements, target_idx = _build_region_target_element(
+                img, elements,
+                target_x, target_y, target_w, target_h,
+                screen_width_cm=screen_w_cm,
+                screen_height_cm=screen_h_cm,
+                viewing_distance_cm=viewing_cm,
+            )
+        else:
+            target_idx = _resolve_target_index(
+                elements, target_id, target_x, target_y
+            )
         if target_idx is None:
             return jsonify({"error": "Could not resolve target element"}), 400
 
