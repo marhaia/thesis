@@ -155,10 +155,10 @@
         .nav-btn {
             background: none;
             border: 1px solid transparent;
-            border-radius: 7px;
+            border-radius: 8px;
             color: var(--text-dim);
             font-size: 13px;
-            padding: 7px 14px;
+            padding: 8px 16px;
             cursor: pointer;
             transition: all 0.15s;
         }
@@ -329,7 +329,7 @@
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 12px 14px;
+            padding: 12px 16px;
             font-size: 12px;
             color: var(--text-dim);
             line-height: 1.5;
@@ -366,7 +366,7 @@
         }
         .contact-email {
             display: inline-block;
-            padding: 10px 18px;
+            padding: 12px 20px;
             background: var(--surface2);
             border: 1px solid var(--border);
             border-radius: 8px;
@@ -706,6 +706,26 @@
             color: var(--text);
             border-color: var(--text-dim);
         }
+        /* Reusable custom hover tooltip (data-tip on any element) */
+        .hover-tip {
+            position: fixed;
+            z-index: 9999;
+            max-width: 300px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.97);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-size: 12px;
+            line-height: 1.5;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+            pointer-events: none;
+            display: none;
+            word-break: break-word;
+        }
+        .hover-tip.show {
+            display: block;
+        }
         .feature-desc {
             font-size: 12px;
             color: var(--text-dim);
@@ -826,11 +846,12 @@
         /* Radar Chart */
         .radar-container {
             display: flex;
-            justify-content: stretch;
+            justify-content: center;
             margin: 16px 0;
             width: 100%;
         }
         #radarChart {
+            max-width: 440px;
             width: 100%;
             height: auto;
             display: block;
@@ -1989,6 +2010,68 @@
             document.addEventListener('click', (e) => {
                 if (!dropdown.contains(e.target) && !burger.contains(e.target)) closeMenu();
             });
+        })();
+
+        // ─── Reusable custom hover tooltip ───
+        // Any element carrying a data-tip attribute shows a small styled card on
+        // hover (and on keyboard focus). Used for the feature "i" icons and the
+        // radar chart points/labels. Replaces the slow native title tooltip.
+        (function initHoverTips() {
+            const tip = document.createElement('div');
+            tip.className = 'hover-tip';
+            document.body.appendChild(tip);
+            let current = null;
+            function place(x, y) {
+                const pad = 14;
+                const r = tip.getBoundingClientRect();
+                let left = x + pad;
+                let top = y + pad;
+                if (left + r.width > window.innerWidth - 8) left = x - r.width - pad;
+                if (top + r.height > window.innerHeight - 8) top = y - r.height - pad;
+                tip.style.left = Math.max(8, left) + 'px';
+                tip.style.top = Math.max(8, top) + 'px';
+            }
+            function show(el, x, y) {
+                current = el;
+                tip.innerHTML = el.getAttribute('data-tip') || '';
+                tip.classList.add('show');
+                place(x, y);
+            }
+            function hide() {
+                tip.classList.remove('show');
+                current = null;
+            }
+            document.addEventListener('mouseover', (e) => {
+                const el = e.target.closest('[data-tip]');
+                if (el) show(el, e.clientX, e.clientY);
+            });
+            document.addEventListener('mousemove', (e) => {
+                if (current && current.contains(e.target)) place(e.clientX, e.clientY);
+            });
+            document.addEventListener('mouseout', (e) => {
+                const el = e.target.closest('[data-tip]');
+                if (el && el === current) hide();
+            });
+            document.addEventListener('focusin', (e) => {
+                const el = e.target.closest && e.target.closest('[data-tip]');
+                if (el) {
+                    const r = el.getBoundingClientRect();
+                    show(el, r.left + r.width / 2, r.bottom);
+                }
+            });
+            document.addEventListener('focusout', () => hide());
+
+            // Expose a small API so canvas-based widgets (the radar chart, which
+            // has no DOM children to hang data-tip on) can reuse the same card.
+            window.uiTooltip = {
+                showHtml(html, x, y) {
+                    current = null;
+                    tip.innerHTML = html;
+                    tip.classList.add('show');
+                    place(x, y);
+                },
+                hide,
+            };
         })();
 
         // ─── State ───
@@ -3761,20 +3844,22 @@
                     signalBadge = `<span class="feature-signal ${sig.cls}">${sig.label}</span>`;
                 }
                 const dir  = FEATURE_DIRECTION[key] === 'higher_is_better'
-                    ? 'higher = better'
-                    : 'higher = more load';
+                    ? 'Better when this value is HIGH'
+                    : 'Better when this value is LOW (high = more load)';
                 // Everything explanatory (what the feature is, which way it
                 // reads, the source and the value range) now lives in a single
-                // tooltip on a small "i" icon, so the visible row stays clean:
-                // just the name, the bar and the value. This removes the inline
-                // description/reference that duplicated the info panel.
+                // custom hover tooltip on a small "i" icon, so the visible row
+                // stays clean: just the name, the bar and the value. A custom
+                // tooltip (data-tip) is used instead of the native title
+                // attribute because the native one is slow and cannot be styled.
                 const tipParts = [];
                 if (info.description) tipParts.push(info.description);
-                tipParts.push(`Direction: ${dir}.`);
+                tipParts.push(`<strong>${dir}.</strong>`);
                 if (info.reference) tipParts.push(`Source: ${info.reference}.`);
                 if (info.range) tipParts.push(`Typical range ${info.range}.`);
-                const infoTip = tipParts.join(' ').replace(/"/g, '&quot;');
-                const infoIcon = `<span class="feature-i" tabindex="0" title="${infoTip}" aria-label="${infoTip}">i</span>`;
+                const infoTip = tipParts.join('<br>').replace(/"/g, '&quot;');
+                const ariaTip = tipParts.join(' ').replace(/<[^>]+>/g, '').replace(/"/g, '&quot;');
+                const infoIcon = `<span class="feature-i" tabindex="0" data-tip="${infoTip}" aria-label="${ariaTip}">i</span>`;
                 const refLine = referenceLine(ref);
                 // Headline number: signed change vs the reference baseline
                 // (the typical GUI) when we have an empirical reference, e.g.
@@ -4295,7 +4380,9 @@
             const canvas = document.getElementById("radarChart");
             const parent = canvas.parentElement;
             const dpr = window.devicePixelRatio || 1;
-            const cssSize = Math.max(360, Math.floor(parent.clientWidth));
+            // Keep the chart compact: fill the column but never grow past 440px
+            // so it stays a small, glanceable profile rather than a huge canvas.
+            const cssSize = Math.max(320, Math.min(440, Math.floor(parent.clientWidth)));
             canvas.style.width = cssSize + "px";
             canvas.style.height = cssSize + "px";
             canvas.width = Math.floor(cssSize * dpr);
@@ -4373,14 +4460,68 @@
             ctx.stroke();
 
             // Draw dots
+            const shortNamesDots = ["Entropy", "Edges", "FeatCong", "SubbEnt", "Symmetry", "Color", "Hierarchy", "Elements"];
+            const hits = [];
             for (let i = 0; i < n; i++) {
                 const a = i * angleStep - Math.PI / 2;
                 const r = values[i] * R;
+                const dotX = cx + r * Math.cos(a);
+                const dotY = cy + r * Math.sin(a);
                 ctx.beginPath();
-                ctx.arc(cx + r * Math.cos(a), cy + r * Math.sin(a), 4, 0, 2 * Math.PI);
+                ctx.arc(dotX, dotY, 4, 0, 2 * Math.PI);
                 ctx.fillStyle = BAR_COLORS[i];
                 ctx.fill();
+
+                // Collect a hover hit-target for this point (and its axis label),
+                // so hovering either shows the measured value + interpretation.
+                const key = FEATURE_KEYS[i];
+                const info = featuresInfo.find(f => f.key === key) || {};
+                const dir = FEATURE_DIRECTION[key] === 'higher_is_better'
+                    ? 'Better when high'
+                    : 'Better when low (high = more load)';
+                const pct = Math.round(values[i] * 100);
+                const raw = (typeof data[key] === 'number') ? data[key].toFixed(4) : '-';
+                const tipHtml =
+                    `<strong>${info.name || shortNamesDots[i]}</strong><br>` +
+                    `Measured value: ${raw}<br>` +
+                    `Position on axis: ${pct}% of its range<br>` +
+                    `${dir}`;
+                const labelA = i * angleStep - Math.PI / 2;
+                const labelR = R + 28;
+                hits.push({ x: dotX, y: dotY, rDot: 12, tip: tipHtml });
+                hits.push({ x: cx + labelR * Math.cos(labelA), y: cy + labelR * Math.sin(labelA), rDot: 26, tip: tipHtml });
             }
+
+            // Attach the hover handler once. It hit-tests the mouse (in CSS px)
+            // against the stored dot/label positions and reuses the shared card.
+            canvas._radarHits = hits;
+            if (!canvas._radarHoverBound) {
+                canvas._radarHoverBound = true;
+                canvas.addEventListener('mousemove', (e) => {
+                    const rect = canvas.getBoundingClientRect();
+                    // Map client coords into the canvas CSS coordinate space.
+                    const scale = rect.width / (canvas._cssSize || rect.width);
+                    const mx = (e.clientX - rect.left) / scale;
+                    const my = (e.clientY - rect.top) / scale;
+                    const list = canvas._radarHits || [];
+                    let found = null;
+                    for (const h of list) {
+                        const dx = mx - h.x, dy = my - h.y;
+                        if (dx * dx + dy * dy <= h.rDot * h.rDot) { found = h; break; }
+                    }
+                    if (found && window.uiTooltip) {
+                        window.uiTooltip.showHtml(found.tip, e.clientX, e.clientY);
+                        canvas.style.cursor = 'help';
+                    } else if (window.uiTooltip) {
+                        window.uiTooltip.hide();
+                        canvas.style.cursor = 'default';
+                    }
+                });
+                canvas.addEventListener('mouseleave', () => {
+                    if (window.uiTooltip) window.uiTooltip.hide();
+                });
+            }
+            canvas._cssSize = cssSize;
         }
 
         // ─── History Table ───
