@@ -2745,9 +2745,12 @@
                     </div>`;
             }).join('');
             const caption = (typeof mean === 'number')
-                ? `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Hover a row or a number to highlight that element on the screenshot above; hover a number for its search time. \u201Cs\u201D is seconds of predicted search time. Layout average: ${mean.toFixed(1)} s across ${feedback.n_elements} elements.</div>`
-                : `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Hover a row or a number to highlight that element on the screenshot above. \u201Cs\u201D is seconds of predicted search time.</div>`;
-            list.innerHTML = elOverviewBlock() + rows + caption;
+                ? `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Hover a numbered box on the screenshot above for that element's predicted search time. \u201Cs\u201D is seconds of predicted search time. Layout average: ${mean.toFixed(1)} s across ${feedback.n_elements} elements.</div>`
+                : `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Hover a numbered box on the screenshot above for that element's predicted search time. \u201Cs\u201D is seconds of predicted search time.</div>`;
+            // The per-element data lives on hidden rows so the annotated overview
+            // (boxes, badges, hover cards) can read it; the visible list would
+            // duplicate what the image already shows.
+            list.innerHTML = elOverviewBlock() + `<div style="display:none;">${rows}</div>` + caption;
             panel.style.display = 'block';
             wireElementOverview(list, 'var(--danger)');
         }
@@ -2796,14 +2799,14 @@
             }).join('');
             const caption =
                 `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">` +
-                `Hover a row or a number to highlight that element on the screenshot above. ` +
+                `Hover a numbered box on the screenshot above for that element's contrast ratio. ` +
                 `Lowest contrast ${report.min_contrast_ratio.toFixed(1)}:1 \u00B7 ` +
                 `average ${report.mean_contrast_ratio.toFixed(1)}:1 \u00B7 ` +
                 `${report.n_pass} of ${report.n_elements} elements meet 3:1.</div>`;
             const body = allPass
                 ? `<div style="font-size:12px; color:var(--text-dim);">` +
                   `All ${report.n_elements} detected elements meet the 3:1 minimum. </div>` + caption
-                : elOverviewBlock() + rows + caption;
+                : elOverviewBlock() + `<div style="display:none;">${rows}</div>` + caption;
             list.innerHTML = body;
             panel.style.display = 'block';
             if (!allPass) wireElementOverview(list, 'var(--danger)');
@@ -2861,11 +2864,11 @@
             }).join('');
             const caption =
                 `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">` +
-                `Hover a row or a number to highlight that element on the screenshot above. ` +
+                `Hover a numbered box on the screenshot above for that element's text and reading time. ` +
                 `${report.total_words} words total \u00B7 ` +
                 `~${report.total_reading_time_s.toFixed(1)} s to read at ` +
                 `${report.words_per_minute} wpm.</div>`;
-            list.innerHTML = elOverviewBlock() + rows + caption;
+            list.innerHTML = elOverviewBlock() + `<div style="display:none;">${rows}</div>` + caption;
             panel.style.display = 'block';
             wireElementOverview(list, 'var(--accent, #3b82f6)');
         }
