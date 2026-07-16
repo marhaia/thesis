@@ -1385,6 +1385,13 @@ def cognitive_load():
             "search_feedback": search_feedback,
             "contrast_report": contrast_report,
             "readability_report": readability_report,
+            # Lightweight list of every detected element's box, so the target
+            # selector in the UI can offer the detected elements as one-tap
+            # suggestions (in addition to free drag-box selection).
+            "detected_elements": [
+                {"id": e["id"], "bbox": list(e["bbox"]), "center": list(e["center"])}
+                for e in (elements or [])
+            ],
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500

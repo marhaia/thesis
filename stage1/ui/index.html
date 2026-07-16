@@ -1555,14 +1555,25 @@
                     <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                         <span style="font-size:13px; font-weight:600;">Predicted Search Path</span>
                         <span id="scanpathStatus" style="font-size:11px; color:var(--text-dim);"></span>
-                        <button id="clearScanpathBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0; display:none;">Clear</button>
+                        <button id="undoScanpathBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0; display:none;">Undo last</button>
+                        <button id="clearScanpathBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0; display:none;">Clear all</button>
                         <button id="downloadScanpathBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0; display:none;">Download</button>
                     </div>
-                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;"><strong>Drag a box</strong> around the area you are searching for on the screenshot to see the predicted order in which a first-time user would look while searching for it. This is a <strong>model estimate</strong> of goal-directed search (Jokinen et al., 2020), not measured eye-tracking.</p>
-                    <div id="scanpathContainer" style="position:relative; width:100%; border-radius:8px; border:1px solid var(--border); overflow:hidden; cursor:crosshair;">
+                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 6px 0;"><strong>Drag a box</strong> around the area a user would search for &mdash; or <strong>tap a highlighted element</strong> &mdash; to see the predicted order a first-time user would look while searching for it. Add several targets to compare them. This is a <strong>model estimate</strong> of goal-directed search (Jokinen et al., 2020), not measured eye-tracking.</p>
+                    <!-- One-line onboarding hint (idea 9): a compact how-to shown
+                         above the canvas so first-time users know what to do. -->
+                    <div id="scanpathOnboard" style="display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text-dim); background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:6px 10px; margin:0 0 10px 0;">
+                        <span aria-hidden="true" style="font-size:13px;">&#9757;</span>
+                        <span>Drag a rectangle over the element you want to test, or tap one of the highlighted boxes. Drag a corner to resize, drag inside to move. Press <strong>Esc</strong> to cancel a drag.</span>
+                    </div>
+                    <div id="scanpathContainer" style="position:relative; width:100%; border-radius:8px; border:1px solid var(--border); overflow:hidden; cursor:crosshair; touch-action:none; user-select:none;">
                         <img id="scanpathImg" src="" alt="Screenshot for target selection" style="display:block; width:100%;">
                         <canvas id="scanpathCanvas" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></canvas>
                     </div>
+                    <!-- Multi-target comparison table (idea 6): each added target is
+                         listed here with its predicted search time and a traffic-
+                         light rating so several elements can be compared at a glance. -->
+                    <div id="scanpathCompare" style="display:none; margin-top:12px;"></div>
                     <!-- Task-relative cognitive load for the clicked target. Shown
                          LOCALLY here (not in the main score card on top) so the two
                          ideas stay separate: the path is the visual-search sequence,
@@ -1572,6 +1583,7 @@
                             <span style="font-size:11px; color:var(--text-dim);">Task-relative load for this target</span>
                             <span id="scanpathLoadValue" style="font-size:20px; font-weight:600;"></span>
                             <span id="scanpathLoadDelta" style="font-size:12px; font-weight:600;"></span>
+                            <span id="scanpathLoadBadge" style="font-size:11px; font-weight:700; padding:2px 8px; border-radius:6px;"></span>
                         </div>
                         <div id="scanpathLoadMeta" style="font-size:11px; color:var(--text-dim); margin-top:4px;"></div>
                     </div>
@@ -2402,6 +2414,40 @@
         let _scanpathLastData = null;  // most recent scanpath response (for download)
         let _scanpathTargetBox = null; // last drawn target region {x,y,w,h} in image px
         let _layoutLoadScore = null;   // layout-baseline cognitive load score (0-100)
+        // Multi-target state (idea 6): every committed target is kept so several
+        // elements can be compared. Each entry: {box:{x,y,w,h}, data, color, n}.
+        let _scanpathTargets = [];
+        // Detected-element suggestions (idea 2): thin outlines the user can tap
+        // instead of drawing a box. Each entry: {id, bbox:[x,y,w,h], center}.
+        let _scanpathSuggestions = [];
+        let _scanpathKeyBound = false; // ensure the Esc handler is bound only once
+        let _scanpathCancelDrag = null; // current-render drag-cancel fn (for Esc)
+
+        // Distinct colours cycled per target so several search paths stay
+        // visually separable when compared on the same screenshot.
+        const SCANPATH_COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#a855f7', '#ec4899', '#14b8a6'];
+
+        // Traffic-light rating (ideas 4 + 5) from the signed deviation of this
+        // target's search time vs the layout mean. Returns a colour, a short
+        // label and a plain-language sentence fragment.
+        function scanpathRating(devPct) {
+            if (typeof devPct !== 'number') {
+                return { color: 'var(--text-dim)', label: 'n/a', word: 'about average' };
+            }
+            if (devPct <= -15) return { color: 'var(--success)', label: 'quick to find', word: 'quick to find' };
+            if (devPct >= 15) return { color: 'var(--danger)', label: 'slow to find', word: 'slow to find' };
+            return { color: 'var(--warning, #d97706)', label: 'average', word: 'about average' };
+        }
+
+        // Turn a search time and fixation count into a friendly sentence.
+        function scanpathHumanText(timeS, nFix, devPct) {
+            if (typeof timeS !== 'number') return '';
+            const rating = scanpathRating(devPct);
+            const looks = (typeof nFix === 'number')
+                ? `${nFix} look${nFix === 1 ? '' : 's'}` : 'a few looks';
+            return `A first-time user would likely find this in about ` +
+                   `${timeS.toFixed(1)} s (${looks}) — ${rating.word}.`;
+        }
 
         // Show the task-relative load for the clicked target LOCALLY inside the
         // search-path panel. This is deliberately kept SEPARATE from the main
@@ -2414,6 +2460,7 @@
             const valEl = document.getElementById('scanpathLoadValue');
             const deltaEl = document.getElementById('scanpathLoadDelta');
             const metaEl = document.getElementById('scanpathLoadMeta');
+            const badgeEl = document.getElementById('scanpathLoadBadge');
             if (!box || !valEl || !deltaEl || !metaEl) return;
             if (!targetLoad || _layoutLoadScore === null) {
                 box.style.display = 'none';
@@ -2426,9 +2473,20 @@
             valEl.textContent = targetScore.toFixed(1);
             deltaEl.textContent = `${sign}${mod.toFixed(1)} vs layout`;
             deltaEl.style.color = harder ? 'var(--danger)' : 'var(--success)';
-            // Honest "T +/- s" search-time estimate from the Monte Carlo trials.
-            // The +/- is the per-target standard deviation across simulations,
-            // i.e. the model's own uncertainty for this element.
+            // Traffic-light badge (idea 5).
+            if (badgeEl) {
+                const rating = scanpathRating(targetLoad.deviation_pct);
+                badgeEl.textContent = rating.label;
+                badgeEl.style.background = rating.color;
+                badgeEl.style.color = '#fff';
+            }
+            // Human-readable summary first (idea 4), then the honest numbers.
+            const human = scanpathHumanText(
+                targetLoad.target_search_time_s,
+                (_scanpathLastData && _scanpathLastData.scanpath)
+                    ? _scanpathLastData.scanpath.n_fixations : undefined,
+                targetLoad.deviation_pct
+            );
             let timeStr = '';
             if (typeof targetLoad.target_search_time_s === 'number') {
                 const std = targetLoad.target_search_time_std_s;
@@ -2438,8 +2496,8 @@
                     : ` Predicted search time ${targetLoad.target_search_time_s.toFixed(1)} s.`;
             }
             metaEl.textContent =
-                `Target #${targetId}. Layout baseline ${_layoutLoadScore.toFixed(1)} · ` +
-                `this element is ${Math.abs(targetLoad.deviation_pct).toFixed(0)}% ` +
+                `${human} Layout baseline ${_layoutLoadScore.toFixed(1)}; this element is ` +
+                `${Math.abs(targetLoad.deviation_pct).toFixed(0)}% ` +
                 `${harder ? 'harder' : 'easier'} to find than the layout average. ` +
                 `The main Cognitive Load Score above stays the layout value.` +
                 timeStr;
@@ -2647,136 +2705,268 @@
             panel.style.display = 'block';
         }
 
-        function renderTargetScanpath() {
+        function renderTargetScanpath(detectedElements) {
             const panel = document.getElementById('targetScanpathPanel');
             const img = document.getElementById('scanpathImg');
             const canvas = document.getElementById('scanpathCanvas');
             const container = document.getElementById('scanpathContainer');
             const statusEl = document.getElementById('scanpathStatus');
+            const undoBtn = document.getElementById('undoScanpathBtn');
             const clearBtn = document.getElementById('clearScanpathBtn');
             const dlBtn = document.getElementById('downloadScanpathBtn');
+            const compareEl = document.getElementById('scanpathCompare');
             if (!panel || !img || !canvas || !selectedFile) {
                 if (panel) panel.style.display = 'none';
                 return;
             }
 
+            const IDLE_HINT = 'Drag a box around the element you want to test — or tap a highlighted box.';
             panel.style.display = 'block';
-            statusEl.textContent = 'Drag a box around the area you are searching for.';
+            statusEl.textContent = IDLE_HINT;
+            undoBtn.style.display = 'none';
             clearBtn.style.display = 'none';
             dlBtn.style.display = 'none';
             _scanpathLastData = null;
             _scanpathTargetBox = null;
+            _scanpathTargets = [];
+            _scanpathSuggestions = Array.isArray(detectedElements) ? detectedElements.slice() : [];
+            let _nextTargetN = 0;
             hideTargetLoad();
             hideGlanceMetrics();
+            if (compareEl) { compareEl.style.display = 'none'; compareEl.innerHTML = ''; }
 
             // Load the uploaded screenshot as the base image.
             img.onload = () => {
                 canvas.width = img.naturalWidth;
                 canvas.height = img.naturalHeight;
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                redrawAll();
             };
             img.src = URL.createObjectURL(selectedFile);
 
-            // Draw a scanpath payload (the `scanpath` object from the backend).
-            // If a target box was drawn, keep it visible underneath the path so
-            // the user always sees which region they selected.
-            const drawScanpath = (sp) => {
-                const w = sp.image_width || img.naturalWidth;
-                const h = sp.image_height || img.naturalHeight;
-                canvas.width = w;
-                canvas.height = h;
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, w, h);
+            // ── Geometry helpers ──────────────────────────────────────────
+            const imgMin = () => Math.min(img.naturalWidth || canvas.width, img.naturalHeight || canvas.height);
+            const handleSize = () => Math.max(8, Math.round(imgMin() * 0.012));
 
-                // Persisted target region (the box the user drew), drawn first so
-                // the fixation path is rendered on top of it.
-                if (_scanpathTargetBox) {
-                    const b = _scanpathTargetBox;
-                    const boxLineW = Math.max(2, Math.round(Math.min(w, h) * 0.004));
+            // Map a pointer/touch event to original-image pixel coordinates.
+            const toOrig = (ev) => {
+                const rect = img.getBoundingClientRect();
+                const cx = (ev.touches && ev.touches[0]) ? ev.touches[0].clientX : ev.clientX;
+                const cy = (ev.touches && ev.touches[0]) ? ev.touches[0].clientY : ev.clientY;
+                const scaleX = (img.naturalWidth || 1) / rect.width;
+                const scaleY = (img.naturalHeight || 1) / rect.height;
+                return {
+                    x: Math.max(0, Math.min(cx - rect.left, rect.width)) * scaleX,
+                    y: Math.max(0, Math.min(cy - rect.top, rect.height)) * scaleY,
+                };
+            };
+
+            const cornerPoints = (b) => ([
+                { name: 'nw', x: b.x, y: b.y },
+                { name: 'ne', x: b.x + b.w, y: b.y },
+                { name: 'sw', x: b.x, y: b.y + b.h },
+                { name: 'se', x: b.x + b.w, y: b.y + b.h },
+            ]);
+
+            const clampBox = (b) => {
+                const W = img.naturalWidth, H = img.naturalHeight;
+                const x = Math.max(0, Math.min(b.x, W - 1));
+                const y = Math.max(0, Math.min(b.y, H - 1));
+                return { x, y, w: Math.max(1, Math.min(b.w, W - x)), h: Math.max(1, Math.min(b.h, H - y)) };
+            };
+
+            const resizeBox = (base, corner, pt) => {
+                let x1 = base.x, y1 = base.y, x2 = base.x + base.w, y2 = base.y + base.h;
+                if (corner === 'nw') { x1 = pt.x; y1 = pt.y; }
+                else if (corner === 'ne') { x2 = pt.x; y1 = pt.y; }
+                else if (corner === 'sw') { x1 = pt.x; y2 = pt.y; }
+                else if (corner === 'se') { x2 = pt.x; y2 = pt.y; }
+                const x = Math.min(x1, x2), y = Math.min(y1, y2);
+                return clampBox({ x, y, w: Math.abs(x2 - x1), h: Math.abs(y2 - y1) });
+            };
+
+            // ── Drawing ───────────────────────────────────────────────────
+            const drawTarget = (ctx, t, isActive) => {
+                const w = canvas.width, h = canvas.height;
+                const b = t.box;
+                const boxLineW = Math.max(2, Math.round(Math.min(w, h) * 0.004));
+                ctx.save();
+                ctx.globalAlpha = 0.12;
+                ctx.fillStyle = t.color;
+                ctx.fillRect(b.x, b.y, b.w, b.h);
+                ctx.globalAlpha = 1;
+                ctx.strokeStyle = t.color;
+                ctx.lineWidth = boxLineW;
+                ctx.strokeRect(b.x, b.y, b.w, b.h);
+                const fs = Math.max(12, Math.round(Math.min(w, h) * 0.022));
+                ctx.font = `700 ${fs}px -apple-system, sans-serif`;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'bottom';
+                const ly = b.y > fs + 6 ? b.y - 4 : b.y + b.h + fs + 4;
+                ctx.fillStyle = t.color;
+                ctx.fillText(`Target ${t.n}`, b.x, ly);
+                ctx.restore();
+
+                const sp = t.data && t.data.scanpath;
+                if (sp && sp.fixations && sp.fixations.length) {
+                    const pts = sp.fixations;
+                    const r = Math.max(11, Math.round(Math.min(w, h) * 0.018));
+                    const lineW = Math.max(2, Math.round(Math.min(w, h) * 0.004));
                     ctx.save();
-                    ctx.strokeStyle = 'rgba(34,197,94,0.95)';
-                    ctx.fillStyle = 'rgba(34,197,94,0.12)';
-                    ctx.lineWidth = boxLineW;
-                    ctx.fillRect(b.x, b.y, b.w, b.h);
-                    ctx.strokeRect(b.x, b.y, b.w, b.h);
-                    // "Target" label above the box.
-                    const fs = Math.max(12, Math.round(Math.min(w, h) * 0.022));
-                    ctx.font = `700 ${fs}px -apple-system, sans-serif`;
-                    ctx.textAlign = 'left';
-                    ctx.textBaseline = 'bottom';
-                    const ly = b.y > fs + 6 ? b.y - 4 : b.y + b.h + fs + 4;
-                    ctx.fillStyle = '#22c55e';
-                    ctx.fillText('Target', b.x, ly);
+                    ctx.strokeStyle = t.color;
+                    ctx.lineWidth = lineW;
+                    ctx.lineJoin = 'round';
+                    ctx.setLineDash([lineW * 3, lineW * 2]);
+                    ctx.beginPath();
+                    pts.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.font = `700 ${Math.round(r * 1.05)}px -apple-system, sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    pts.forEach((p) => {
+                        const isTarget = p.is_target === true;
+                        const isStart = p.order === 0;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, isTarget ? r * 1.25 : r, 0, Math.PI * 2);
+                        ctx.fillStyle = isStart ? '#64748b' : t.color;
+                        ctx.fill();
+                        ctx.lineWidth = Math.max(2, Math.round(r * 0.14));
+                        ctx.strokeStyle = '#fff';
+                        ctx.stroke();
+                        ctx.fillStyle = '#fff';
+                        ctx.fillText(isStart ? 'S' : String(p.order), p.x, p.y);
+                    });
                     ctx.restore();
                 }
 
-                const pts = sp.fixations || [];
-                if (pts.length === 0) return;
-                const r = Math.max(13, Math.round(Math.min(w, h) * 0.020));
-                const lineW = Math.max(2, Math.round(Math.min(w, h) * 0.004));
-
-                // Connecting path between consecutive fixations.
-                ctx.strokeStyle = 'rgba(59,130,246,0.85)';
-                ctx.lineWidth = lineW;
-                ctx.lineJoin = 'round';
-                ctx.setLineDash([lineW * 3, lineW * 2]);
-                ctx.beginPath();
-                pts.forEach((p, i) => {
-                    if (i === 0) ctx.moveTo(p.x, p.y);
-                    else ctx.lineTo(p.x, p.y);
-                });
-                ctx.stroke();
-                ctx.setLineDash([]);
-
-                // Numbered fixation dots; the target gets a distinct color.
-                ctx.font = `700 ${Math.round(r * 1.05)}px -apple-system, sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                pts.forEach((p) => {
-                    const isTarget = p.is_target === true;
-                    const isStart = p.order === 0;
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, isTarget ? r * 1.25 : r, 0, Math.PI * 2);
-                    ctx.fillStyle = isTarget ? '#22c55e' : (isStart ? '#64748b' : '#3b82f6');
-                    ctx.fill();
-                    ctx.lineWidth = Math.max(2, Math.round(r * 0.14));
-                    ctx.strokeStyle = '#fff';
-                    ctx.stroke();
+                // Corner handles on the active target so it can be resized (idea 1).
+                if (isActive) {
+                    const hs = handleSize();
+                    ctx.save();
                     ctx.fillStyle = '#fff';
-                    ctx.fillText(isStart ? 'S' : String(p.order), p.x, p.y);
-                });
+                    ctx.strokeStyle = t.color;
+                    ctx.lineWidth = Math.max(2, Math.round(hs * 0.3));
+                    cornerPoints(b).forEach(c => {
+                        ctx.beginPath();
+                        ctx.rect(c.x - hs, c.y - hs, hs * 2, hs * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                    });
+                    ctx.restore();
+                }
             };
 
-            // Draw the live rubber-band selection rectangle while the user
-            // drags. Coordinates are in original-image pixels (the canvas is
-            // sized to the image's intrinsic resolution).
-            const drawSelectionBox = (x, y, w, h) => {
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                const lineW = Math.max(2, Math.round(Math.min(canvas.width, canvas.height) * 0.004));
+            const drawSuggestions = (ctx) => {
+                if (!_scanpathSuggestions.length) return;
+                const w = canvas.width, h = canvas.height;
+                const lineW = Math.max(1, Math.round(Math.min(w, h) * 0.002));
                 ctx.save();
-                ctx.strokeStyle = 'rgba(34,197,94,0.95)';
-                ctx.fillStyle = 'rgba(34,197,94,0.15)';
+                ctx.strokeStyle = 'rgba(148,163,184,0.75)';
+                ctx.setLineDash([lineW * 3, lineW * 3]);
                 ctx.lineWidth = lineW;
-                ctx.setLineDash([lineW * 3, lineW * 2]);
-                ctx.fillRect(x, y, w, h);
-                ctx.strokeRect(x, y, w, h);
+                _scanpathSuggestions.forEach(s => {
+                    const [x, y, bw, bh] = s.bbox;
+                    ctx.strokeRect(x, y, bw, bh);
+                });
                 ctx.restore();
             };
 
-            // Ask the backend for the search path toward a drawn target region
-            // (VAS-style). x, y, w, h are in original-image pixels.
-            const requestScanpath = async (x, y, w, h) => {
-                _scanpathTargetBox = { x, y, w, h };  // remember for redraws
+            const redrawAll = (rubber) => {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawSuggestions(ctx);
+                _scanpathTargets.forEach((t, i) => drawTarget(ctx, t, i === _scanpathTargets.length - 1));
+                if (rubber) {
+                    const lineW = Math.max(2, Math.round(Math.min(canvas.width, canvas.height) * 0.004));
+                    ctx.save();
+                    ctx.globalAlpha = 0.15; ctx.fillStyle = '#22c55e';
+                    ctx.fillRect(rubber.x, rubber.y, rubber.w, rubber.h);
+                    ctx.globalAlpha = 1;
+                    ctx.strokeStyle = 'rgba(34,197,94,0.95)';
+                    ctx.lineWidth = lineW;
+                    ctx.setLineDash([lineW * 3, lineW * 2]);
+                    ctx.strokeRect(rubber.x, rubber.y, rubber.w, rubber.h);
+                    ctx.restore();
+                }
+            };
+
+            // ── Multi-target comparison table (idea 6) ────────────────────
+            const renderCompare = () => {
+                if (!compareEl) return;
+                if (_scanpathTargets.length === 0) {
+                    compareEl.style.display = 'none';
+                    compareEl.innerHTML = '';
+                    return;
+                }
+                const rows = _scanpathTargets.map((t) => {
+                    const sp = t.data && t.data.scanpath;
+                    const tl = t.data && t.data.target_load;
+                    const time = sp ? sp.total_time_s : null;
+                    const dev = tl ? tl.deviation_pct : undefined;
+                    const rating = scanpathRating(dev);
+                    const timeStr = (typeof time === 'number') ? `${time.toFixed(1)} s` : '—';
+                    const nfix = sp ? sp.n_fixations : '—';
+                    return `
+                        <div style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); margin-bottom:6px;">
+                            <span style="flex:0 0 auto; width:14px; height:14px; border-radius:4px; background:${t.color};"></span>
+                            <span style="flex:0 0 auto; font-size:12px; font-weight:600;">Target ${t.n}</span>
+                            <span style="flex:1 1 auto; font-size:11px; color:var(--text-dim);">${nfix} looks</span>
+                            <span style="flex:0 0 auto; font-size:11px; font-weight:700; padding:2px 8px; border-radius:6px; background:${rating.color}; color:#fff;">${rating.label}</span>
+                            <span style="flex:0 0 auto; font-size:14px; font-weight:600; min-width:52px; text-align:right;">${timeStr}</span>
+                            <button data-remove="${t.n}" class="btn btn-secondary" style="flex:0 0 auto; font-size:11px; padding:2px 8px; width:auto; margin-top:0;">Remove</button>
+                        </div>`;
+                }).join('');
+                const caption = _scanpathTargets.length > 1
+                    ? `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Comparing ${_scanpathTargets.length} targets — lower search time means easier to find.</div>`
+                    : '';
+                compareEl.innerHTML = rows + caption;
+                compareEl.style.display = 'block';
+                compareEl.querySelectorAll('button[data-remove]').forEach(btn => {
+                    btn.onclick = () => {
+                        const n = parseInt(btn.getAttribute('data-remove'), 10);
+                        const idx = _scanpathTargets.findIndex(t => t.n === n);
+                        if (idx >= 0) { _scanpathTargets.splice(idx, 1); afterTargetsChanged(); }
+                    };
+                });
+            };
+
+            // Refresh everything that depends on the target list.
+            const afterTargetsChanged = () => {
+                redrawAll();
+                renderCompare();
+                const hasAny = _scanpathTargets.length > 0;
+                undoBtn.style.display = hasAny ? '' : 'none';
+                clearBtn.style.display = hasAny ? '' : 'none';
+                dlBtn.style.display = hasAny ? '' : 'none';
+                if (hasAny) {
+                    const active = _scanpathTargets[_scanpathTargets.length - 1];
+                    _scanpathLastData = active.data;
+                    _scanpathTargetBox = active.box;
+                    showTargetLoad(active.data.target_load, active.data.target_id);
+                    showGlanceMetrics(active.data.glance_metrics);
+                    const sp = active.data.scanpath;
+                    statusEl.textContent =
+                        `Target ${active.n}: ${sp.n_fixations} looks, ` +
+                        `${sp.total_time_s.toFixed(2)} s predicted search time.`;
+                } else {
+                    _scanpathLastData = null;
+                    _scanpathTargetBox = null;
+                    hideTargetLoad();
+                    hideGlanceMetrics();
+                    statusEl.textContent = IDLE_HINT;
+                }
+            };
+
+            // Ask the backend for the search path toward a target region. When
+            // existingN is given, the matching target is updated in place
+            // (after a move/resize); otherwise a new target is added.
+            const commitTarget = async (box, existingN) => {
                 statusEl.textContent = 'Predicting search path…';
                 const formData = new FormData();
                 formData.append('image', selectedFile);
-                // Match the display geometry used for the main analysis so the
-                // search-path timing is consistent with the score above.
                 const displayPreset = (document.getElementById('displayPreset') || {}).value || 'desktop';
-                const q = `target_x=${Math.round(x)}&target_y=${Math.round(y)}` +
-                          `&target_w=${Math.round(w)}&target_h=${Math.round(h)}`;
+                const q = `target_x=${Math.round(box.x)}&target_y=${Math.round(box.y)}` +
+                          `&target_w=${Math.round(box.w)}&target_h=${Math.round(box.h)}`;
                 try {
                     const res = await fetch(
                         `/api/scanpath-to-target?${q}&display_preset=${encodeURIComponent(displayPreset)}`,
@@ -2787,99 +2977,149 @@
                         statusEl.textContent = 'Error: ' + (data.error || 'no path returned');
                         return;
                     }
-                    _scanpathLastData = data;
-                    drawScanpath(data.scanpath);
-                    const sp = data.scanpath;
-                    showTargetLoad(data.target_load, data.target_id);
-                    showGlanceMetrics(data.glance_metrics);
-                    statusEl.textContent =
-                        `Target region: ${sp.n_fixations} fixations, ` +
-                        `${sp.total_time_s.toFixed(2)} s predicted search time.`;
-                    clearBtn.style.display = '';
-                    dlBtn.style.display = '';
+                    if (existingN != null) {
+                        const t = _scanpathTargets.find(t => t.n === existingN);
+                        if (t) { t.box = box; t.data = data; }
+                    } else {
+                        _nextTargetN += 1;
+                        const color = SCANPATH_COLORS[(_nextTargetN - 1) % SCANPATH_COLORS.length];
+                        _scanpathTargets.push({ box, data, color, n: _nextTargetN });
+                    }
+                    afterTargetsChanged();
                 } catch (e) {
                     statusEl.textContent = 'Error predicting search path.';
                 }
             };
 
-            // Drag-to-draw target selection. The user drags a box around the
-            // area they are searching for; on release we convert it to
-            // original-image pixels and request the predicted search path. A
-            // near-zero drag (an accidental click) is rejected with a hint so
-            // the interaction stays explicit and predictable.
-            let _dragging = false;
-            let _dragStart = null;  // {x, y} in original-image pixels
+            // ── Interaction state machine ─────────────────────────────────
+            let mode = null;            // 'draw' | 'move' | 'resize'
+            let startPt = null;
+            let startBox = null;        // active box at drag start (move/resize)
+            let activeCorner = null;
+            let startedOnSuggestion = null;
+            let moved = false;
 
-            const toOrig = (ev) => {
-                const rect = img.getBoundingClientRect();
-                const dispX = ev.clientX - rect.left;
-                const dispY = ev.clientY - rect.top;
-                const scaleX = (img.naturalWidth || 1) / rect.width;
-                const scaleY = (img.naturalHeight || 1) / rect.height;
-                return {
-                    x: Math.max(0, Math.min(dispX, rect.width)) * scaleX,
-                    y: Math.max(0, Math.min(dispY, rect.height)) * scaleY,
-                };
-            };
+            const activeBox = () => _scanpathTargets.length
+                ? _scanpathTargets[_scanpathTargets.length - 1].box : null;
 
-            container.onmousedown = (ev) => {
-                ev.preventDefault();
-                _dragging = true;
-                _dragStart = toOrig(ev);
-            };
-
-            container.onmousemove = (ev) => {
-                if (!_dragging || !_dragStart) return;
-                const p = toOrig(ev);
-                const x = Math.min(_dragStart.x, p.x);
-                const y = Math.min(_dragStart.y, p.y);
-                const w = Math.abs(p.x - _dragStart.x);
-                const h = Math.abs(p.y - _dragStart.y);
-                drawSelectionBox(x, y, w, h);
-            };
-
-            const endDrag = (ev) => {
-                if (!_dragging || !_dragStart) return;
-                _dragging = false;
-                const p = toOrig(ev);
-                const x = Math.min(_dragStart.x, p.x);
-                const y = Math.min(_dragStart.y, p.y);
-                const w = Math.abs(p.x - _dragStart.x);
-                const h = Math.abs(p.y - _dragStart.y);
-                _dragStart = null;
-                // Require a real box. A too-small drag (e.g. an accidental click)
-                // is rejected with a hint instead of silently guessing a target,
-                // so the selection is always deliberate. A previously drawn path
-                // is kept on screen (an accidental click must not wipe it).
-                const minSide = Math.max(20, Math.round(Math.min(img.naturalWidth, img.naturalHeight) * 0.03));
-                if (w < minSide || h < minSide) {
-                    if (_scanpathLastData && _scanpathLastData.scanpath) {
-                        drawScanpath(_scanpathLastData.scanpath);
-                    } else {
-                        const ctx = canvas.getContext('2d');
-                        ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    }
-                    statusEl.textContent =
-                        'Draw a larger box: drag around the element you want to select.';
-                    return;
+            const hitCorner = (pt) => {
+                const b = activeBox();
+                if (!b) return null;
+                const hs = handleSize() * 1.8;
+                for (const c of cornerPoints(b)) {
+                    if (Math.abs(pt.x - c.x) <= hs && Math.abs(pt.y - c.y) <= hs) return c.name;
                 }
-                requestScanpath(x, y, w, h);
+                return null;
+            };
+            const insideActive = (pt) => {
+                const b = activeBox();
+                return !!b && pt.x >= b.x && pt.x <= b.x + b.w && pt.y >= b.y && pt.y <= b.y + b.h;
+            };
+            const hitSuggestion = (pt) => {
+                for (const s of _scanpathSuggestions) {
+                    const [x, y, bw, bh] = s.bbox;
+                    if (pt.x >= x && pt.x <= x + bw && pt.y >= y && pt.y <= y + bh) return s;
+                }
+                return null;
             };
 
-            container.onmouseup = endDrag;
-            container.onmouseleave = (ev) => { if (_dragging) endDrag(ev); };
-
-            clearBtn.onclick = () => {
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                statusEl.textContent = 'Drag a box around the area you are searching for.';
-                clearBtn.style.display = 'none';
-                dlBtn.style.display = 'none';
-                _scanpathLastData = null;
-                _scanpathTargetBox = null;
-                hideTargetLoad();
-                hideGlanceMetrics();
+            const onStart = (ev) => {
+                ev.preventDefault();
+                const pt = toOrig(ev);
+                startPt = pt; moved = false; startedOnSuggestion = null; activeCorner = null;
+                const corner = hitCorner(pt);
+                if (corner) {
+                    mode = 'resize'; activeCorner = corner; startBox = Object.assign({}, activeBox());
+                } else if (insideActive(pt)) {
+                    mode = 'move'; startBox = Object.assign({}, activeBox());
+                } else {
+                    mode = 'draw'; startedOnSuggestion = hitSuggestion(pt);
+                }
             };
+
+            const onMove = (ev) => {
+                if (!mode) return;
+                ev.preventDefault();
+                const pt = toOrig(ev);
+                if (Math.abs(pt.x - startPt.x) > 2 || Math.abs(pt.y - startPt.y) > 2) moved = true;
+                if (mode === 'draw') {
+                    const x = Math.min(startPt.x, pt.x), y = Math.min(startPt.y, pt.y);
+                    const w = Math.abs(pt.x - startPt.x), h = Math.abs(pt.y - startPt.y);
+                    redrawAll({ x, y, w, h });
+                    // Live size read-out + confirm hint (idea 3).
+                    statusEl.textContent = `Selection ${Math.round(w)} × ${Math.round(h)} px — release to confirm.`;
+                } else if (mode === 'move') {
+                    const dx = pt.x - startPt.x, dy = pt.y - startPt.y;
+                    const t = _scanpathTargets[_scanpathTargets.length - 1];
+                    t.box = clampBox({ x: startBox.x + dx, y: startBox.y + dy, w: startBox.w, h: startBox.h });
+                    redrawAll();
+                } else if (mode === 'resize') {
+                    const t = _scanpathTargets[_scanpathTargets.length - 1];
+                    t.box = resizeBox(startBox, activeCorner, pt);
+                    redrawAll();
+                }
+            };
+
+            const onEnd = (ev) => {
+                if (!mode) return;
+                const pt = toOrig(ev);
+                const finished = mode;
+                mode = null;
+                const minSide = Math.max(20, Math.round(Math.min(img.naturalWidth, img.naturalHeight) * 0.03));
+                if (finished === 'draw') {
+                    const x = Math.min(startPt.x, pt.x), y = Math.min(startPt.y, pt.y);
+                    const w = Math.abs(pt.x - startPt.x), h = Math.abs(pt.y - startPt.y);
+                    if (!moved && startedOnSuggestion) {
+                        const [sx, sy, sw, sh] = startedOnSuggestion.bbox;
+                        commitTarget({ x: sx, y: sy, w: sw, h: sh }, null);
+                    } else if (w >= minSide && h >= minSide) {
+                        commitTarget({ x, y, w, h }, null);
+                    } else {
+                        redrawAll();
+                        statusEl.textContent = _scanpathSuggestions.length
+                            ? 'Draw a larger box, or tap one of the highlighted elements.'
+                            : 'Draw a larger box: drag around the element you want to select.';
+                    }
+                } else if (finished === 'move' || finished === 'resize') {
+                    const active = _scanpathTargets[_scanpathTargets.length - 1];
+                    if (active) commitTarget(active.box, active.n);
+                }
+                startedOnSuggestion = null;
+            };
+
+            // Cancel an in-progress drag/move/resize and restore the prior box.
+            const cancelInteraction = () => {
+                if (!mode) return;
+                if ((mode === 'move' || mode === 'resize') && startBox) {
+                    const active = _scanpathTargets[_scanpathTargets.length - 1];
+                    if (active) active.box = startBox;
+                }
+                mode = null; startedOnSuggestion = null;
+                redrawAll();
+                statusEl.textContent = IDLE_HINT;
+            };
+            _scanpathCancelDrag = cancelInteraction;
+
+            // Pointer events unify mouse + touch/pen (idea 7).
+            container.onpointerdown = (ev) => {
+                if (container.setPointerCapture) { try { container.setPointerCapture(ev.pointerId); } catch (e) {} }
+                onStart(ev);
+            };
+            container.onpointermove = onMove;
+            container.onpointerup = onEnd;
+            container.onpointercancel = () => { if (mode) cancelInteraction(); };
+
+            // Bind the global Esc handler once; it defers to the current render's
+            // cancel function so it always cancels the active drag (idea 10).
+            if (!_scanpathKeyBound) {
+                document.addEventListener('keydown', (ev) => {
+                    if (ev.key === 'Escape' && _scanpathCancelDrag) _scanpathCancelDrag();
+                });
+                _scanpathKeyBound = true;
+            }
+
+            undoBtn.onclick = () => { _scanpathTargets.pop(); afterTargetsChanged(); };
+            clearBtn.onclick = () => { _scanpathTargets = []; _nextTargetN = 0; afterTargetsChanged(); };
 
             dlBtn.onclick = () => {
                 // Composite screenshot + overlay into one downloadable PNG.
@@ -3023,7 +3263,7 @@
             };
 
             // ── Predicted search path (click a target) ────────────────────
-            renderTargetScanpath();
+            renderTargetScanpath(data.detected_elements);
 
             // ── Feature Vector Table ──────────────────────────────────────
             document.getElementById('featureSection').style.display = 'block';
