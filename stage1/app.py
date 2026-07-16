@@ -922,7 +922,14 @@ def scanpath_to_target():
 # (driver eye to display). "desktop" is the model's default and matches the
 # defaults in JokinenSearchModel.predict_search_times.
 DISPLAY_PRESETS = {
-    "desktop":   {"label": "Desktop monitor (default)", "width_cm": 37.0, "height_cm": 23.0, "viewing_distance_cm": 60.0},
+    # General-purpose (non-automotive) displays. The validation is run on
+    # normal GUIs, not domain-specific automotive HMIs, so these are the
+    # presets surfaced in the UI. The automotive presets below remain only so
+    # older saved requests / links still resolve; they are hidden in the UI.
+    "phone":     {"label": "Phone ~6.1\"",              "width_cm": 7.0,  "height_cm": 15.0, "viewing_distance_cm": 30.0},
+    "laptop":    {"label": "Laptop 14\"",               "width_cm": 30.9, "height_cm": 17.4, "viewing_distance_cm": 50.0},
+    "desktop":   {"label": "Desktop monitor 17\"",      "width_cm": 37.0, "height_cm": 23.0, "viewing_distance_cm": 60.0},
+    # Legacy automotive presets (kept for backward compatibility, not shown).
     "ivi_8":     {"label": "IVI 8\"",                    "width_cm": 17.7, "height_cm": 10.0, "viewing_distance_cm": 70.0},
     "ivi_10":    {"label": "IVI 10.25\"",                "width_cm": 22.7, "height_cm": 12.7, "viewing_distance_cm": 72.0},
     "ivi_12":    {"label": "IVI 12.3\"",                 "width_cm": 27.2, "height_cm": 15.3, "viewing_distance_cm": 75.0},

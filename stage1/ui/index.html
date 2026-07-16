@@ -179,8 +179,9 @@
             padding: 24px 0 32px 0;
         }
         .site-footer-inner {
-            max-width: 1200px;
-            margin: 0 auto;
+            max-width: none;
+            width: 100%;
+            margin: 0;
             padding: 0 24px;
             display: flex;
             flex-wrap: wrap;
@@ -717,7 +718,7 @@
             position: fixed;
             z-index: 9999;
             max-width: 300px;
-            padding: 8px 12px;
+            padding: 10px 12px;
             border-radius: 8px;
             background: rgba(15, 23, 42, 0.97);
             border: 1px solid var(--border);
@@ -725,12 +726,49 @@
             font-size: 12px;
             line-height: 1.5;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-            pointer-events: none;
+            pointer-events: auto;
             display: none;
             word-break: break-word;
         }
         .hover-tip.show {
             display: block;
+        }
+        /* Structured hierarchy inside a feature hover card. */
+        .hover-tip .tip-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 5px;
+        }
+        .hover-tip .tip-body {
+            font-size: 11.5px;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+        }
+        .hover-tip .tip-label {
+            display: block;
+            font-size: 9.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--text-dim);
+            opacity: .8;
+            margin-bottom: 1px;
+        }
+        .hover-tip .tip-dir {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+        .hover-tip .tip-src {
+            display: inline-block;
+            font-size: 11px;
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .hover-tip a.tip-src:hover {
+            text-decoration: underline;
         }
         .feature-desc {
             font-size: 12px;
@@ -992,7 +1030,7 @@
 
         .field select {
             width: 100%;
-            padding: 10px 12px;
+            padding: 10px 36px 10px 12px;
             border-radius: 8px;
             border: 1px solid var(--border);
             background: var(--surface2);
@@ -1165,7 +1203,7 @@
             color: var(--text);
             font-size: 12px;
             font-weight: 600;
-            padding: 4px 6px;
+            padding: 4px 24px 4px 8px;
             cursor: pointer;
             outline: none;
         }
@@ -1600,7 +1638,7 @@
                 <p class="field-hint" style="margin-bottom:14px;">Adjust before clicking Analyze. These parameters shift the score to reflect how a user is actually interacting with this screen. Defaults give a neutral baseline.</p>
                 <div class="control-grid">
                     <div class="field">
-                        <label for="taskType">Task Type</label>
+                        <label for="taskType">Task Type <span class="feature-i" tabindex="0" aria-label="Explanation of Task Type options" data-tip="<div class='tip-title'>Task Type</div><div class='tip-body'><strong>Search</strong> &mdash; locating a specific control or item<br><strong>Navigation</strong> &mdash; moving between screens or menus<br><strong>Monitoring</strong> &mdash; watching the screen for changes or status<br><strong>Data Entry</strong> &mdash; typing or filling in fields<br><strong>Decision Making</strong> &mdash; comparing options to choose one</div>">i</span></label>
                         <select id="taskType">
                             <option value="search" selected>Search — neutral default</option>
                             <option value="navigation">Navigation</option>
@@ -1611,7 +1649,7 @@
                         <div class="field-hint">What is the user's primary activity on this screen? <span class="field-hint-default">e.g. locating a specific control = <em>Search</em>. If unsure, keep <em>Search</em>.</span></div>
                     </div>
                     <div class="field">
-                        <label for="searchMode">Search Mode</label>
+                        <label for="searchMode">Search Mode <span class="feature-i" tabindex="0" aria-label="Explanation of Search Mode options" data-tip="<div class='tip-title'>Search Mode</div><div class='tip-body'><strong>Known Item</strong> &mdash; the user knows exactly what to look for<br><strong>Comparative</strong> &mdash; weighing several items against each other<br><strong>Exploratory</strong> &mdash; browsing without a fixed target in mind</div>">i</span></label>
                         <select id="searchMode">
                             <option value="known_item" selected>Known Item — neutral default</option>
                             <option value="comparative">Comparative</option>
@@ -1620,7 +1658,7 @@
                         <div class="field-hint">Does the user know exactly what to look for, or are they browsing? <span class="field-hint-default">e.g. tapping a known menu item = <em>Known Item</em>. If unsure, keep <em>Known Item</em>.</span></div>
                     </div>
                     <div class="field">
-                        <label for="targetSpecificity">Target Specificity</label>
+                        <label for="targetSpecificity">Target Specificity <span class="feature-i" tabindex="0" aria-label="Explanation of Target Specificity options" data-tip="<div class='tip-title'>Target Specificity</div><div class='tip-body'>How precisely the target is defined.<br><strong>High</strong> &mdash; well defined (e.g. a named button)<br><strong>Medium</strong> &mdash; roughly defined<br><strong>Low</strong> &mdash; vague or open-ended goal<br>Higher specificity lowers search load.</div>">i</span></label>
                         <select id="targetSpecificity">
                             <option value="high">High — target well defined</option>
                             <option value="medium" selected>Medium — neutral default</option>
@@ -1629,7 +1667,7 @@
                         <div class="field-hint">How precisely is the target defined? High specificity reduces search load. <span class="field-hint-default">If unsure, keep <em>Medium</em>.</span></div>
                     </div>
                     <div class="field">
-                        <label for="timePressure">Time Pressure</label>
+                        <label for="timePressure">Time Pressure <span class="feature-i" tabindex="0" aria-label="Explanation of Time Pressure options" data-tip="<div class='tip-title'>Time Pressure</div><div class='tip-body'>How much time the user has to act.<br><strong>Low</strong> &mdash; ample time, relaxed<br><strong>Medium</strong> &mdash; normal pace<br><strong>High</strong> &mdash; time-critical, must act fast<br>More pressure raises cognitive load.</div>">i</span></label>
                         <select id="timePressure">
                             <option value="low">Low — ample time</option>
                             <option value="medium" selected>Medium — neutral default</option>
@@ -1639,7 +1677,7 @@
                     </div>
                 </div>
                 <div class="field" style="margin-top: 12px;">
-                    <label for="profilePreset">User Profile <span class="tag-optional" style="vertical-align:middle;margin-left:6px;">Optional</span></label>
+                    <label for="profilePreset">User Profile <span class="feature-i" tabindex="0" aria-label="Explanation of User Profile options" data-tip="<div class='tip-title'>User Profile</div><div class='tip-body'>A Big Five personality preset that nudges the score.<br><strong>Neutral</strong> &mdash; no adjustment (default)<br><strong>Focused / Conscientious</strong> &mdash; careful, goal-driven<br><strong>Exploratory / Open</strong> &mdash; curious, likes to browse<br><strong>Social / Extraverted</strong> &mdash; outgoing, engagement-driven<br><strong>Stress-Sensitive</strong> &mdash; reacts more strongly to load</div>">i</span> <span class="tag-optional" style="vertical-align:middle;margin-left:6px;">Optional</span></label>
                     <select id="profilePreset">
                         <option value="neutral" selected>Neutral — neutral default (no adjustment)</option>
                         <option value="focused">Focused / Conscientious</option>
@@ -1650,17 +1688,13 @@
                     <div class="field-hint">Big Five personality preset that applies a small modifier to the score. Leave on Neutral to evaluate the interface independent of a specific user type (Costa &amp; McCrae, 1992). <span class="field-hint-default">If unsure, keep <em>Neutral</em>.</span></div>
                 </div>
                 <div class="field" style="margin-top: 12px;">
-                    <label for="displayPreset">Display <span class="tag-optional" style="vertical-align:middle;margin-left:6px;">Optional</span></label>
+                    <label for="displayPreset">Display <span class="feature-i" tabindex="0" aria-label="Explanation of Display options" data-tip="<div class='tip-title'>Display</div><div class='tip-body'>Physical screen size and viewing distance, which set the real angular size of elements.<br><strong>Phone</strong> &mdash; ~6.1&Prime;, held ~30 cm away<br><strong>Laptop</strong> &mdash; 14&Prime;, ~50 cm away<br><strong>Desktop monitor</strong> &mdash; 17&Prime;, ~60 cm away</div>">i</span> <span class="tag-optional" style="vertical-align:middle;margin-left:6px;">Optional</span></label>
                     <select id="displayPreset">
-                        <option value="desktop" selected>Desktop monitor — neutral default</option>
-                        <option value="ivi_8">Automotive IVI 8"</option>
-                        <option value="ivi_10">Automotive IVI 10.25"</option>
-                        <option value="ivi_12">Automotive IVI 12.3"</option>
-                        <option value="ivi_15">Automotive IVI 15"</option>
-                        <option value="cluster">Instrument cluster 12.3"</option>
-                        <option value="hud">Head-up display</option>
+                        <option value="phone">Phone — ~6.1" (7 × 15 cm), ~30 cm away</option>
+                        <option value="laptop">Laptop — 14" (30.9 × 17.4 cm), ~50 cm away</option>
+                        <option value="desktop" selected>Desktop monitor — 17" (37 × 23 cm), ~60 cm away</option>
                     </select>
-                    <div class="field-hint">Physical screen size and viewing distance. Visual search timing depends on the real angular size of elements, so a small in-vehicle display viewed at arm's length differs from a desktop monitor. <span class="field-hint-default">If unsure, keep <em>Desktop</em>.</span></div>
+                    <div class="field-hint">Physical screen size and viewing distance. Visual search timing depends on the real angular size of elements, so a small phone held close differs from a monitor on a desk. <span class="field-hint-default">If unsure, keep <em>Desktop monitor</em>.</span></div>
                 </div>
                 <div id="contextHint" class="context-hint">Tip: choose context first, then click Analyze Screenshot once. After results, use What-if for fast local simulation.</div>
             </div>
@@ -2057,9 +2091,9 @@
 
     <footer class="site-footer">
         <div class="site-footer-inner">
-            <span>GUI Complexity Analyzer — Stage 1</span>
+            <span>Computational Estimation of Interactional Complexity in Graphical User Interfaces</span>
             <span class="site-footer-sep">·</span>
-            <span>Master's thesis on computational estimation of GUI interactional complexity</span>
+            <span>Master's thesis project</span>
             <span class="site-footer-sep">·</span>
             <a href="mailto:hannah.maria.m@web.de">Contact</a>
         </div>
@@ -2107,6 +2141,9 @@
             tip.className = 'hover-tip';
             document.body.appendChild(tip);
             let current = null;
+            let hideTimer = null;
+            function cancelHide() { if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; } }
+            function scheduleHide() { cancelHide(); hideTimer = setTimeout(hide, 220); }
             function place(x, y) {
                 const pad = 14;
                 const r = tip.getBoundingClientRect();
@@ -2118,25 +2155,34 @@
                 tip.style.top = Math.max(8, top) + 'px';
             }
             function show(el, x, y) {
+                cancelHide();
                 current = el;
                 tip.innerHTML = el.getAttribute('data-tip') || '';
                 tip.classList.add('show');
                 place(x, y);
             }
             function hide() {
+                cancelHide();
                 tip.classList.remove('show');
                 current = null;
             }
+            // Keep the card open while the pointer is over it, so links inside
+            // (e.g. the clickable source reference) can actually be clicked.
+            tip.addEventListener('mouseenter', cancelHide);
+            tip.addEventListener('mouseleave', scheduleHide);
             document.addEventListener('mouseover', (e) => {
                 const el = e.target.closest('[data-tip]');
                 if (el) show(el, e.clientX, e.clientY);
             });
             document.addEventListener('mousemove', (e) => {
+                // Only follow the pointer while it is over the trigger itself;
+                // once the pointer heads toward the card we stop moving it so it
+                // can be reached and interacted with.
                 if (current && current.contains(e.target)) place(e.clientX, e.clientY);
             });
             document.addEventListener('mouseout', (e) => {
                 const el = e.target.closest('[data-tip]');
-                if (el && el === current) hide();
+                if (el && el === current) scheduleHide();
             });
             document.addEventListener('focusin', (e) => {
                 const el = e.target.closest && e.target.closest('[data-tip]');
@@ -2145,12 +2191,13 @@
                     show(el, r.left + r.width / 2, r.bottom);
                 }
             });
-            document.addEventListener('focusout', () => hide());
+            document.addEventListener('focusout', () => scheduleHide());
 
             // Expose a small API so canvas-based widgets (the radar chart, which
             // has no DOM children to hang data-tip on) can reuse the same card.
             window.uiTooltip = {
                 showHtml(html, x, y) {
+                    cancelHide();
                     current = null;
                     tip.innerHTML = html;
                     tip.classList.add('show');
@@ -2182,6 +2229,19 @@
             chromatic_coherence:        'higher_is_worse',
             visual_hierarchy:           'higher_is_better',
             interactive_element_density:'higher_is_worse',
+        };
+
+        // Primary literature DOI for each visual feature, used to turn the
+        // "Source:" line in the feature tooltip into a clickable reference.
+        const FEATURE_DOI = {
+            shannon_entropy:             '10.1002/j.1538-7305.1948.tb01338.x',
+            edge_density:                '10.1167/7.2.17',
+            feature_congestion:          '10.1167/7.2.17',
+            subband_entropy:             '10.1167/7.2.17',
+            layout_symmetry:             '10.1145/2702123.2702575',
+            visual_hierarchy:            '10.1145/2702123.2702575',
+            chromatic_coherence:         '10.1117/12.477378',
+            interactive_element_density: '10.1016/j.ijhcs.2009.04.002',
         };
 
         // Thresholds for signal badge (as % of normalised range)
@@ -3937,19 +3997,24 @@
                 const dir  = FEATURE_DIRECTION[key] === 'higher_is_better'
                     ? 'Better when this value is HIGH'
                     : 'Better when this value is LOW (high = more load)';
-                // Everything explanatory (what the feature is, which way it
-                // reads, the source and the value range) now lives in a single
-                // custom hover tooltip on a small "i" icon, so the visible row
-                // stays clean: just the name, the bar and the value. A custom
+                // The hover card explains what the feature MEASURES in general
+                // (not the current value), with a clear hierarchy: bold title,
+                // a short "what it measures" line, the reading direction, and a
+                // clickable source link. Kept deliberately short. A custom
                 // tooltip (data-tip) is used instead of the native title
                 // attribute because the native one is slow and cannot be styled.
-                const tipParts = [];
-                if (info.description) tipParts.push(info.description);
-                tipParts.push(`<strong>${dir}.</strong>`);
-                if (info.reference) tipParts.push(`Source: ${info.reference}.`);
-                if (info.range) tipParts.push(`Typical range ${info.range}.`);
-                const infoTip = tipParts.join('<br>').replace(/"/g, '&quot;');
-                const ariaTip = tipParts.join(' ').replace(/<[^>]+>/g, '').replace(/"/g, '&quot;');
+                const doi = FEATURE_DOI[key];
+                const srcLine = doi
+                    ? `<a class="tip-src" href="https://doi.org/${doi}" target="_blank" rel="noopener">Source: ${info.reference || 'reference'} &#8599;</a>`
+                    : (info.reference ? `<div class="tip-src">Source: ${info.reference}</div>` : '');
+                const tipHtml =
+                    `<div class="tip-title">${info.name || key}</div>` +
+                    (info.description ? `<div class="tip-body"><span class="tip-label">What it measures</span> ${info.description}</div>` : '') +
+                    `<div class="tip-dir">${dir}</div>` +
+                    srcLine;
+                const infoTip = tipHtml.replace(/"/g, '&quot;');
+                const ariaTip = [info.name || key, info.description, dir]
+                    .filter(Boolean).join('. ').replace(/<[^>]+>/g, '').replace(/"/g, '&quot;');
                 const infoIcon = `<span class="feature-i" tabindex="0" data-tip="${infoTip}" aria-label="${ariaTip}">i</span>`;
                 const refLine = referenceLine(ref);
                 // Headline number: signed change vs the reference baseline
@@ -3966,7 +4031,7 @@
                     ? `<div class="feature-value-raw" title="raw measured value">raw ${val.toFixed(4)}</div>`
                     : '';
                 return `
-                    <div class="feature-row">
+                    <div class="feature-row" data-fkey="${key}">
                         <div class="feature-info">
                             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                                 <div class="feature-name">${info.name || key}</div>
@@ -3982,6 +4047,17 @@
                     </div>
                 `;
             }).join("");
+
+            // Hovering a feature row emphasises the matching point in the radar
+            // chart, so the row and the diagram reinforce each other. Bound once.
+            if (!featureRows._radarLinkBound) {
+                featureRows._radarLinkBound = true;
+                featureRows.addEventListener('mouseover', (e) => {
+                    const row = e.target.closest('.feature-row');
+                    if (row) highlightRadarFeature(row.getAttribute('data-fkey'));
+                });
+                featureRows.addEventListener('mouseleave', () => highlightRadarFeature(null));
+            }
 
             // ─── Score Breakdown Panel ───
             const baseScore = data.base_prediction.cognitive_load_score;
@@ -4163,6 +4239,13 @@
                             <span class="whatif-summary-hint">Try it — adjust the context and see the score change live</span>
                             <span class="whatif-summary-chevron" aria-hidden="true">&rsaquo;</span>
                         </summary>
+                    <!-- Locked baseline reference, always visible inside What-if so the
+                         user can compare the simulated score against the fixed original. -->
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--surface); border:1px dashed var(--border); border-radius:8px; padding:8px 12px; margin:12px 0 4px; font-size:12px;">
+                        <span style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim);">Baseline (locked)</span>
+                        <span style="font-size:18px; font-weight:700;">${final.toFixed(1)}</span>
+                        <span style="color:var(--text-dim);">This reference never changes while you simulate — only the simulated score below moves.</span>
+                    </div>
                     <div style="display:flex; gap:8px; align-items:center; margin:12px 0 10px; flex-wrap:wrap;">
                         <div id="bd-sim-state" class="pill">Original context selected (no simulation change).</div>
                         <button id="bd-reset" class="btn btn-secondary" style="width:auto; margin:0; padding:6px 10px; font-size:11px;">Reset to original</button>
@@ -4467,6 +4550,19 @@
         }
 
         // ─── Radar Chart ───
+        // Index of the feature point to emphasise in the radar (set when the
+        // user hovers a feature row); -1 means no highlight.
+        let _radarHighlightIdx = -1;
+        function highlightRadarFeature(key) {
+            const idx = key == null ? -1 : FEATURE_KEYS.indexOf(key);
+            if (idx === _radarHighlightIdx) return;
+            _radarHighlightIdx = idx;
+            if (window._latestVisualFeatures &&
+                document.getElementById("radarPanel") &&
+                document.getElementById("radarPanel").style.display !== "none") {
+                drawRadar(window._latestVisualFeatures);
+            }
+        }
         function drawRadar(data) {
             const canvas = document.getElementById("radarChart");
             const parent = canvas.parentElement;
@@ -4562,6 +4658,19 @@
                 ctx.arc(dotX, dotY, 4, 0, 2 * Math.PI);
                 ctx.fillStyle = BAR_COLORS[i];
                 ctx.fill();
+
+                // Emphasise the point matching the feature row the user hovers.
+                if (i === _radarHighlightIdx) {
+                    ctx.beginPath();
+                    ctx.arc(dotX, dotY, 9, 0, 2 * Math.PI);
+                    ctx.strokeStyle = BAR_COLORS[i];
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(dotX, dotY, 4, 0, 2 * Math.PI);
+                    ctx.fillStyle = "#ffffff";
+                    ctx.fill();
+                }
 
                 // Collect a hover hit-target for this point (and its axis label),
                 // so hovering either shows the measured value + interpretation.
