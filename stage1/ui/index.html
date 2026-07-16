@@ -1564,7 +1564,7 @@
                          above the canvas so first-time users know what to do. -->
                     <div id="scanpathOnboard" style="display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text-dim); background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:6px 10px; margin:0 0 10px 0;">
                         <span aria-hidden="true" style="font-size:13px;">&#9757;</span>
-                        <span>Drag a rectangle over the element you want to test, or tap one of the highlighted boxes. Drag a corner to resize, drag inside to move. Press <strong>Esc</strong> to cancel a drag.</span>
+                        <span>Drag a rectangle over the element you want to test, or tap one of the highlighted boxes. Drag a corner to resize, drag inside to move, click another target to select it. Press <strong>Esc</strong> to cancel a drag.</span>
                     </div>
                     <div id="scanpathContainer" style="position:relative; width:100%; border-radius:8px; border:1px solid var(--border); overflow:hidden; cursor:crosshair; touch-action:none; user-select:none;">
                         <img id="scanpathImg" src="" alt="Screenshot for target selection" style="display:block; width:100%;">
@@ -2626,6 +2626,7 @@
                     const bbox = (row.getAttribute('data-bbox') || '').split(',').map(Number);
                     const rank = row.getAttribute('data-rank');
                     if (bbox.length !== 4 || rank == null) return;
+                    const tip = row.getAttribute('data-tip') || `Element ${rank}`;
                     const [x, y, w, h] = bbox;
                     const box = document.createElement('div');
                     box.style.cssText =
@@ -2633,8 +2634,10 @@
                         `width:${w / nw * 100}%; height:${h / nh * 100}%; box-sizing:border-box; ` +
                         `border:2px solid ${accent}; border-radius:4px; pointer-events:auto; ` +
                         `cursor:pointer; transition:box-shadow .12s, border-width .12s;`;
+                    box.title = tip;
                     const badge = document.createElement('div');
                     badge.textContent = rank;
+                    badge.title = tip;
                     badge.style.cssText =
                         `position:absolute; left:${x / nw * 100}%; top:${y / nh * 100}%; ` +
                         `transform:translate(-50%,-50%); min-width:20px; height:20px; padding:0 5px; ` +
@@ -2697,22 +2700,24 @@
                 const isTop = i === 0;
                 const bbox = Array.isArray(e.bbox) ? e.bbox : null;
                 const rank = i + 1;
+                const tip = `Element ${rank}: ${e.search_time_s.toFixed(1)} s predicted search time` +
+                            ` \u00B7 ${e.fixation_count.toFixed(1)} fixations \u00B7 ${e.color_category} region`;
                 return `
-                    <div class="el-row" ${bbox ? `data-bbox="${bbox.join(',')}" data-rank="${rank}" data-id="${e.id}"` : ''} style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); margin-bottom:8px; cursor:pointer;">
+                    <div class="el-row" ${bbox ? `data-bbox="${bbox.join(',')}" data-rank="${rank}" data-id="${e.id}" data-tip="${tip.replace(/"/g, '&quot;')}"` : ''} style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); margin-bottom:8px; cursor:pointer;">
                         <span style="flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; background:${isTop ? 'var(--danger)' : 'var(--surface)'}; color:${isTop ? '#fff' : 'var(--text-dim)'};">${rank}</span>
                         <div style="flex:1 1 auto; min-width:0;">
                             <div style="font-size:13px; font-weight:600;">Element ${rank}${isTop ? ' \u2014 main bottleneck' : ''}</div>
                             <div style="font-size:11px; color:var(--text-dim);">${e.fixation_count.toFixed(1)} fixations \u00B7 ${e.color_category} region</div>
                         </div>
                         <div style="flex:0 0 auto; text-align:right;">
-                            <div style="font-size:15px; font-weight:600;">${e.search_time_s.toFixed(1)}${stdStr} s</div>
+                            <div style="font-size:15px; font-weight:600;" title="Predicted visual-search time in seconds">${e.search_time_s.toFixed(1)}${stdStr} s</div>
                             <div style="font-size:11px; font-weight:600; color:${deltaColor};">${sign}${e.deviation_pct.toFixed(0)}% vs average</div>
                         </div>
                     </div>`;
             }).join('');
             const caption = (typeof mean === 'number')
-                ? `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Hover a row or a number to highlight that element on the screenshot above. Layout average search time: ${mean.toFixed(1)} s across ${feedback.n_elements} elements.</div>`
-                : `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Hover a row or a number to highlight that element on the screenshot above.</div>`;
+                ? `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Hover a row or a number to highlight that element on the screenshot above; hover a number for its search time. \u201Cs\u201D is seconds of predicted search time. Layout average: ${mean.toFixed(1)} s across ${feedback.n_elements} elements.</div>`
+                : `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Hover a row or a number to highlight that element on the screenshot above. \u201Cs\u201D is seconds of predicted search time.</div>`;
             list.innerHTML = elOverviewBlock() + rows + caption;
             panel.style.display = 'block';
             wireElementOverview(list, 'var(--danger)');
@@ -2745,8 +2750,10 @@
                 const isWorst = i === 0;
                 const bbox = Array.isArray(e.bbox) ? e.bbox : null;
                 const rank = i + 1;
+                const tip = `Element ${rank}: contrast ${e.contrast_ratio.toFixed(1)}:1 (below the 3:1 minimum)` +
+                            ` \u00B7 ${e.color_category} region`;
                 return `
-                    <div class="el-row" ${bbox ? `data-bbox="${bbox.join(',')}" data-rank="${rank}" data-id="${e.id}"` : ''} style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); margin-bottom:8px; cursor:pointer;">
+                    <div class="el-row" ${bbox ? `data-bbox="${bbox.join(',')}" data-rank="${rank}" data-id="${e.id}" data-tip="${tip.replace(/"/g, '&quot;')}"` : ''} style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); margin-bottom:8px; cursor:pointer;">
                         <span style="flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; background:${isWorst ? 'var(--danger)' : 'var(--surface)'}; color:${isWorst ? '#fff' : 'var(--text-dim)'};">${rank}</span>
                         <div style="flex:1 1 auto; min-width:0;">
                             <div style="font-size:13px; font-weight:600;">Element ${rank}${isWorst ? ' \u2014 lowest contrast' : ''}</div>
@@ -2808,8 +2815,10 @@
                 const label = (e.text || '').slice(0, 40);
                 const bbox = Array.isArray(e.bbox) ? e.bbox : null;
                 const rank = i + 1;
+                const tip = `Element ${rank}: \u201C${label}\u201D \u00B7 ${e.n_words} word` +
+                            `${e.n_words === 1 ? '' : 's'} \u00B7 ${e.reading_time_s.toFixed(2)} s to read`;
                 return `
-                    <div class="el-row" ${bbox ? `data-bbox="${bbox.join(',')}" data-rank="${rank}" data-id="${e.id}"` : ''} style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); margin-bottom:8px; cursor:pointer;">
+                    <div class="el-row" ${bbox ? `data-bbox="${bbox.join(',')}" data-rank="${rank}" data-id="${e.id}" data-tip="${tip.replace(/"/g, '&quot;')}"` : ''} style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); margin-bottom:8px; cursor:pointer;">
                         <span style="flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; background:${isTop ? 'var(--accent, #3b82f6)' : 'var(--surface)'}; color:${isTop ? '#fff' : 'var(--text-dim)'};">${rank}</span>
                         <div style="flex:1 1 auto; min-width:0;">
                             <div style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Element ${rank}: \u201C${label}\u201D</div>
@@ -2858,6 +2867,10 @@
             _scanpathTargets = [];
             _scanpathSuggestions = Array.isArray(detectedElements) ? detectedElements.slice() : [];
             let _nextTargetN = 0;
+            // The target currently selected for display: its search path,
+            // corner handles and the big info box below all follow this one.
+            // Clicking a target (on the image or in the compare list) selects it.
+            let _selectedN = null;
             hideTargetLoad();
             hideGlanceMetrics();
             if (compareEl) { compareEl.style.display = 'none'; compareEl.innerHTML = ''; }
@@ -3002,7 +3015,7 @@
                 const ctx = canvas.getContext('2d');
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 drawSuggestions(ctx);
-                _scanpathTargets.forEach((t, i) => drawTarget(ctx, t, i === _scanpathTargets.length - 1));
+                _scanpathTargets.forEach((t) => drawTarget(ctx, t, t.n === _selectedN));
                 if (rubber) {
                     const lineW = Math.max(2, Math.round(Math.min(canvas.width, canvas.height) * 0.004));
                     ctx.save();
@@ -3033,10 +3046,11 @@
                     const rating = scanpathRating(dev);
                     const timeStr = (typeof time === 'number') ? `${time.toFixed(1)} s` : '—';
                     const nfix = sp ? sp.n_fixations : '—';
+                    const isSel = t.n === _selectedN;
                     return `
-                        <div style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); margin-bottom:6px;">
+                        <div data-select="${t.n}" style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; border:1px solid ${isSel ? t.color : 'var(--border)'}; background:var(--surface2); margin-bottom:6px; cursor:pointer; ${isSel ? `box-shadow:0 0 0 2px ${t.color}55;` : ''}">
                             <span style="flex:0 0 auto; width:14px; height:14px; border-radius:4px; background:${t.color};"></span>
-                            <span style="flex:0 0 auto; font-size:12px; font-weight:600;">Target ${t.n}</span>
+                            <span style="flex:0 0 auto; font-size:12px; font-weight:600;">Target ${t.n}${isSel ? ' \u2022' : ''}</span>
                             <span style="flex:1 1 auto; font-size:11px; color:var(--text-dim);">${nfix} looks</span>
                             <span style="flex:0 0 auto; font-size:11px; font-weight:700; padding:2px 8px; border-radius:6px; background:${rating.color}; color:#fff;">${rating.label}</span>
                             <span style="flex:0 0 auto; font-size:14px; font-weight:600; min-width:52px; text-align:right;">${timeStr}</span>
@@ -3044,38 +3058,67 @@
                         </div>`;
                 }).join('');
                 const caption = _scanpathTargets.length > 1
-                    ? `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Comparing ${_scanpathTargets.length} targets — lower search time means easier to find.</div>`
-                    : '';
+                    ? `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Click a target to show its details below \u2014 lower search time means easier to find.</div>`
+                    : `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Click a target to show its details below.</div>`;
                 compareEl.innerHTML = rows + caption;
                 compareEl.style.display = 'block';
                 compareEl.querySelectorAll('button[data-remove]').forEach(btn => {
-                    btn.onclick = () => {
+                    btn.onclick = (ev) => {
+                        ev.stopPropagation();
                         const n = parseInt(btn.getAttribute('data-remove'), 10);
                         const idx = _scanpathTargets.findIndex(t => t.n === n);
-                        if (idx >= 0) { _scanpathTargets.splice(idx, 1); afterTargetsChanged(); }
+                        if (idx >= 0) {
+                            const wasSel = _scanpathTargets[idx].n === _selectedN;
+                            _scanpathTargets.splice(idx, 1);
+                            if (wasSel) _selectedN = _scanpathTargets.length
+                                ? _scanpathTargets[_scanpathTargets.length - 1].n : null;
+                            afterTargetsChanged();
+                        }
+                    };
+                });
+                compareEl.querySelectorAll('div[data-select]').forEach(rowEl => {
+                    rowEl.onclick = () => {
+                        const n = parseInt(rowEl.getAttribute('data-select'), 10);
+                        selectTarget(n);
                     };
                 });
             };
 
-            // Refresh everything that depends on the target list.
-            const afterTargetsChanged = () => {
+            // Select a target for display: its path, handles and the info box
+            // below all switch to this one. Called when the user clicks a target
+            // on the image or in the compare list, and after adding a new one.
+            const selectTarget = (n) => {
+                const t = _scanpathTargets.find(t => t.n === n);
+                if (!t) return;
+                _selectedN = n;
+                _scanpathLastData = t.data;
+                _scanpathTargetBox = t.box;
+                showTargetLoad(t.data.target_load, t.data.target_id);
+                showGlanceMetrics(t.data.glance_metrics);
+                const sp = t.data.scanpath;
+                statusEl.textContent =
+                    `Target ${t.n}: ${sp.n_fixations} looks, ` +
+                    `${sp.total_time_s.toFixed(2)} s predicted search time.`;
                 redrawAll();
                 renderCompare();
+            };
+
+            // Refresh everything that depends on the target list.
+            const afterTargetsChanged = () => {
                 const hasAny = _scanpathTargets.length > 0;
+                // Keep a valid selection; default to the last target.
+                if (hasAny && !_scanpathTargets.some(t => t.n === _selectedN)) {
+                    _selectedN = _scanpathTargets[_scanpathTargets.length - 1].n;
+                }
+                redrawAll();
+                renderCompare();
                 undoBtn.style.display = hasAny ? '' : 'none';
                 clearBtn.style.display = hasAny ? '' : 'none';
                 dlBtn.style.display = hasAny ? '' : 'none';
                 if (hasAny) {
-                    const active = _scanpathTargets[_scanpathTargets.length - 1];
-                    _scanpathLastData = active.data;
-                    _scanpathTargetBox = active.box;
-                    showTargetLoad(active.data.target_load, active.data.target_id);
-                    showGlanceMetrics(active.data.glance_metrics);
-                    const sp = active.data.scanpath;
-                    statusEl.textContent =
-                        `Target ${active.n}: ${sp.n_fixations} looks, ` +
-                        `${sp.total_time_s.toFixed(2)} s predicted search time.`;
+                    selectTarget(_selectedN);
                 } else {
+                    _selectedN = null;
                     _scanpathLastData = null;
                     _scanpathTargetBox = null;
                     hideTargetLoad();
@@ -3107,10 +3150,12 @@
                     if (existingN != null) {
                         const t = _scanpathTargets.find(t => t.n === existingN);
                         if (t) { t.box = box; t.data = data; }
+                        _selectedN = existingN;
                     } else {
                         _nextTargetN += 1;
                         const color = SCANPATH_COLORS[(_nextTargetN - 1) % SCANPATH_COLORS.length];
                         _scanpathTargets.push({ box, data, color, n: _nextTargetN });
+                        _selectedN = _nextTargetN;
                     }
                     afterTargetsChanged();
                 } catch (e) {
@@ -3119,15 +3164,18 @@
             };
 
             // ── Interaction state machine ─────────────────────────────────
-            let mode = null;            // 'draw' | 'move' | 'resize'
+            let mode = null;            // 'draw' | 'move' | 'resize' | 'select'
             let startPt = null;
             let startBox = null;        // active box at drag start (move/resize)
             let activeCorner = null;
             let startedOnSuggestion = null;
+            let selectPendingN = null;  // target clicked for selection
             let moved = false;
 
-            const activeBox = () => _scanpathTargets.length
-                ? _scanpathTargets[_scanpathTargets.length - 1].box : null;
+            const activeBox = () => {
+                const t = _scanpathTargets.find(t => t.n === _selectedN);
+                return t ? t.box : null;
+            };
 
             const hitCorner = (pt) => {
                 const b = activeBox();
@@ -3142,6 +3190,16 @@
                 const b = activeBox();
                 return !!b && pt.x >= b.x && pt.x <= b.x + b.w && pt.y >= b.y && pt.y <= b.y + b.h;
             };
+            // Topmost target whose box contains the point (last drawn wins).
+            const hitTarget = (pt) => {
+                for (let i = _scanpathTargets.length - 1; i >= 0; i--) {
+                    const b = _scanpathTargets[i].box;
+                    if (pt.x >= b.x && pt.x <= b.x + b.w && pt.y >= b.y && pt.y <= b.y + b.h) {
+                        return _scanpathTargets[i];
+                    }
+                }
+                return null;
+            };
             const hitSuggestion = (pt) => {
                 for (const s of _scanpathSuggestions) {
                     const [x, y, bw, bh] = s.bbox;
@@ -3154,13 +3212,20 @@
                 ev.preventDefault();
                 const pt = toOrig(ev);
                 startPt = pt; moved = false; startedOnSuggestion = null; activeCorner = null;
+                selectPendingN = null;
                 const corner = hitCorner(pt);
                 if (corner) {
                     mode = 'resize'; activeCorner = corner; startBox = Object.assign({}, activeBox());
                 } else if (insideActive(pt)) {
                     mode = 'move'; startBox = Object.assign({}, activeBox());
                 } else {
-                    mode = 'draw'; startedOnSuggestion = hitSuggestion(pt);
+                    const other = hitTarget(pt);
+                    if (other) {
+                        // Clicking another target selects it (confirmed on release).
+                        mode = 'select'; selectPendingN = other.n;
+                    } else {
+                        mode = 'draw'; startedOnSuggestion = hitSuggestion(pt);
+                    }
                 }
             };
 
@@ -3169,7 +3234,9 @@
                 ev.preventDefault();
                 const pt = toOrig(ev);
                 if (Math.abs(pt.x - startPt.x) > 2 || Math.abs(pt.y - startPt.y) > 2) moved = true;
-                if (mode === 'draw') {
+                if (mode === 'select') {
+                    return; // a plain click; selection happens on release
+                } else if (mode === 'draw') {
                     const x = Math.min(startPt.x, pt.x), y = Math.min(startPt.y, pt.y);
                     const w = Math.abs(pt.x - startPt.x), h = Math.abs(pt.y - startPt.y);
                     redrawAll({ x, y, w, h });
@@ -3177,13 +3244,11 @@
                     statusEl.textContent = `Selection ${Math.round(w)} × ${Math.round(h)} px — release to confirm.`;
                 } else if (mode === 'move') {
                     const dx = pt.x - startPt.x, dy = pt.y - startPt.y;
-                    const t = _scanpathTargets[_scanpathTargets.length - 1];
-                    t.box = clampBox({ x: startBox.x + dx, y: startBox.y + dy, w: startBox.w, h: startBox.h });
-                    redrawAll();
+                    const t = _scanpathTargets.find(t => t.n === _selectedN);
+                    if (t) { t.box = clampBox({ x: startBox.x + dx, y: startBox.y + dy, w: startBox.w, h: startBox.h }); redrawAll(); }
                 } else if (mode === 'resize') {
-                    const t = _scanpathTargets[_scanpathTargets.length - 1];
-                    t.box = resizeBox(startBox, activeCorner, pt);
-                    redrawAll();
+                    const t = _scanpathTargets.find(t => t.n === _selectedN);
+                    if (t) { t.box = resizeBox(startBox, activeCorner, pt); redrawAll(); }
                 }
             };
 
@@ -3193,7 +3258,9 @@
                 const finished = mode;
                 mode = null;
                 const minSide = Math.max(20, Math.round(Math.min(img.naturalWidth, img.naturalHeight) * 0.03));
-                if (finished === 'draw') {
+                if (finished === 'select') {
+                    if (selectPendingN != null) selectTarget(selectPendingN);
+                } else if (finished === 'draw') {
                     const x = Math.min(startPt.x, pt.x), y = Math.min(startPt.y, pt.y);
                     const w = Math.abs(pt.x - startPt.x), h = Math.abs(pt.y - startPt.y);
                     if (!moved && startedOnSuggestion) {
@@ -3208,20 +3275,21 @@
                             : 'Draw a larger box: drag around the element you want to select.';
                     }
                 } else if (finished === 'move' || finished === 'resize') {
-                    const active = _scanpathTargets[_scanpathTargets.length - 1];
+                    const active = _scanpathTargets.find(t => t.n === _selectedN);
                     if (active) commitTarget(active.box, active.n);
                 }
                 startedOnSuggestion = null;
+                selectPendingN = null;
             };
 
             // Cancel an in-progress drag/move/resize and restore the prior box.
             const cancelInteraction = () => {
                 if (!mode) return;
                 if ((mode === 'move' || mode === 'resize') && startBox) {
-                    const active = _scanpathTargets[_scanpathTargets.length - 1];
+                    const active = _scanpathTargets.find(t => t.n === _selectedN);
                     if (active) active.box = startBox;
                 }
-                mode = null; startedOnSuggestion = null;
+                mode = null; startedOnSuggestion = null; selectPendingN = null;
                 redrawAll();
                 statusEl.textContent = IDLE_HINT;
             };
