@@ -1271,6 +1271,219 @@ def cognitive_load():
             filepath.unlink()
 
 
+# ===========================================================================
+# Screen-set input (shared by the inter-screen consistency feature)
+# ===========================================================================
+
+def _read_screen_set(req):
+    """
+    Read an ordered set of screens from a request.
+
+    Two input formats are accepted (both produce an ordered list of frames):
+      1. Several image files under the multipart field "images" (the upload
+         order is preserved).
+      2. A single animated GIF under the field "image": every frame becomes one
+         screen, in playback order (PIL Image.seek per frame).
+
+    Returns
+    -------
+    (frames, names) : (list of np.ndarray BGR, list of str)
+        One decoded BGR image per screen and a human-readable name per screen.
+
+    Raises
+    ------
+    ValueError
+        If no usable screens were supplied or a file cannot be decoded.
+    """
+    import io
+    import cv2
+    import numpy as np
+    from PIL import Image
+
+    allowed = {".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".gif"}
+    frames = []
+    names = []
+
+    # --- Format 1: multiple image files ---
+    files = req.files.getlist("images")
+    files = [f for f in files if f and f.filename]
+    if files:
+        for f in files:
+            ext = Path(f.filename).suffix.lower()
+            if ext not in allowed:
+                raise ValueError(f"Unsupported format: {ext}")
+            data = f.read()
+            arr = np.frombuffer(data, dtype=np.uint8)
+            img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+            if img is None:
+                raise ValueError(f"Cannot read image: {f.filename}")
+            frames.append(img)
+            names.append(f.filename)
+        return frames, names
+
+    # --- Format 2: a single (possibly animated) file under "image" ---
+    single = req.files.get("image")
+    if single is None or not single.filename:
+        raise ValueError(
+            "Provide either several files under 'images' or one file under 'image'"
+        )
+    ext = Path(single.filename).suffix.lower()
+    if ext not in allowed:
+        raise ValueError(f"Unsupported format: {ext}")
+
+    data = single.read()
+    pil = Image.open(io.BytesIO(data))
+    frame_index = 0
+    while True:
+        try:
+            pil.seek(frame_index)
+        except EOFError:
+            break
+        rgb = np.array(pil.convert("RGB"))
+        frames.append(cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
+        names.append(f"{single.filename}#frame{frame_index}")
+        frame_index += 1
+
+    if not frames:
+        raise ValueError(f"Cannot read image: {single.filename}")
+    return frames, names
+
+
+@app.route("/api/screen-consistency", methods=["POST"])
+def screen_consistency():
+    """
+    Measure how consistent a set of screens from one product is.
+
+    Detects UI elements on each screen and reports a geometric inter-screen
+    consistency score (do recurring controls stay in place across screens?).
+
+    Input: several files under "images", OR one animated GIF under "image".
+
+    NOTE (honesty): this is a purely geometric metric. It does NOT identify
+    controls semantically and is NOT yet validated against user behaviour.
+    """
+    try:
+        frames, names = _read_screen_set(request)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+    if len(frames) < 2:
+        return jsonify({
+            "error": "Need at least 2 screens to measure inter-screen consistency",
+            "n_screens": len(frames),
+        }), 400
+
+    try:
+        from cognitive.element_detector import detect_elements
+        from stage2.screen_consistency import compute_screen_set_consistency
+
+        element_sets = []
+        image_shapes = []
+        per_screen = []
+        for name, img in zip(names, frames):
+            elements = detect_elements(img)
+            element_sets.append(elements)
+            image_shapes.append(img.shape[:2])
+            per_screen.append({"screen": name, "n_elements": len(elements)})
+
+        result = compute_screen_set_consistency(element_sets, image_shapes)
+        result["screens"] = per_screen
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/learning-curve", methods=["POST"])
+def learning_curve():
+    """
+    Predict how search effort on one screen drops as the user practises it.
+
+    Runs the Jokinen search simulation at several exposure counts (default
+    1 / 10 / 100 uses). The first point (1 use) equals the novice prediction.
+
+    NOTE (honesty): only the SHAPE of the curve is meaningful; the absolute
+    learning rate depends on an uncalibrated parameter (needs a user study).
+    """
+    if "image" not in request.files:
+        return jsonify({"error": "No image uploaded"}), 400
+
+    file = request.files["image"]
+    if file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+
+    ext = Path(file.filename).suffix.lower()
+    if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
+        return jsonify({"error": f"Unsupported format: {ext}"}), 400
+
+    # Optional exposures list, e.g. ?exposures=1,5,20,100
+    exposures_arg = request.args.get("exposures", default=None)
+    if exposures_arg:
+        try:
+            exposures = [int(x) for x in exposures_arg.split(",") if x.strip()]
+        except ValueError:
+            return jsonify({"error": "exposures must be a comma-separated list of integers"}), 400
+    else:
+        exposures = [1, 10, 100]
+
+    n_simulations = request.args.get("n_simulations", 100, type=int)
+    use_saliency = request.args.get("use_saliency", "true").lower() != "false"
+    (screen_w_cm, screen_h_cm,
+     viewing_cm, display_preset_meta) = _resolve_display_preset(request)
+
+    image_hash, image_bytes = _hash_upload(file)
+    filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
+    filepath = UPLOAD_DIR / filename
+    filepath.write_bytes(image_bytes)
+
+    try:
+        import cv2
+        from cognitive.element_detector import detect_elements
+        from cognitive.jokinen_model import JokinenSearchModel, JokinenParams
+
+        img = cv2.imread(str(filepath))
+        if img is None:
+            return jsonify({"error": "Cannot read image"}), 400
+
+        elements = detect_elements(img)
+        if len(elements) == 0:
+            return jsonify({
+                "filename": file.filename,
+                "error": "No UI elements detected",
+                "n_elements": 0,
+            }), 200
+
+        saliency_map = None
+        if use_saliency:
+            try:
+                saliency_map, _, _ = _predict_saliency_cached(image_hash, filepath)
+            except Exception as e:
+                print(f"[LearningCurve] Saliency unavailable, feature-only mode: {e!r}")
+
+        params = JokinenParams(
+            n_simulations=min(n_simulations, 500),
+            random_seed=42,
+        )
+        jokinen = JokinenSearchModel(params)
+        result = jokinen.predict_learning_curve(
+            elements=elements,
+            exposures=exposures,
+            saliency_map=saliency_map,
+            image_shape=img.shape[:2],
+            screen_width_cm=screen_w_cm,
+            screen_height_cm=screen_h_cm,
+            viewing_distance_cm=viewing_cm,
+        )
+        result["filename"] = file.filename
+        result["n_elements"] = len(elements)
+        result["display_preset"] = display_preset_meta
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if filepath.exists():
+            filepath.unlink()
+
+
 if __name__ == "__main__":
     print("\n" + "=" * 50)
     print("  Stage 1 — Visual Complexity Analyzer")
@@ -1279,6 +1492,8 @@ if __name__ == "__main__":
     print("    POST /api/saliency        → s∈ℝ⁵ saliency features")
     print("    POST /api/search-time     → Jokinen search time")
     print("    POST /api/cognitive-load   → h∈ℝ⁶ + full vector ℝ¹⁹")
+    print("    POST /api/screen-consistency → inter-screen consistency")
+    print("    POST /api/learning-curve  → novice→expert learning curve")
     print("  Open: http://localhost:5001")
     print("=" * 50 + "\n")
     # Prime the UMSI++ model before accepting traffic so the first real

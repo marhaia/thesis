@@ -150,6 +150,37 @@ class JokinenParams:
     sigma_U: float = 0.4        # [NOT USED] Utility noise SD (fitted)
     B_sa: float = 2.0           # [NOT USED] Source activation for LTM spreading (fitted)
 
+    # === Learning curve (novice -> expert), our optional extension ===
+    # OFF BY DEFAULT: n_exposures = 1 reproduces the pure novice simulation
+    # EXACTLY (memory_activation(1) = ln(1) = 0, so the target gets zero boost
+    # and every result is byte-identical to the novice model).
+    #
+    # Mechanism (grounded, single calibration knob):
+    #   With repeated use, the user learns WHERE a target is and directs
+    #   attention there top-down. We model this as a memory-guidance boost added
+    #   to the target's activation, growing with the ACT-R base-level activation
+    #   of the learned location. Under evenly spaced practice the base-level
+    #   activation grows logarithmically with the number of exposures, which is
+    #   exactly the power law of practice in reaction time.
+    #     memory_activation(n) = ln(n)                       # 0 at n=1
+    #     activation[target] += W_memory * memory_activation(n)
+    #   More practice -> the target wins earlier -> fewer fixations -> lower
+    #   search time -> lower load. This yields "load at 1st use / after 10 / 100".
+    #
+    # References:
+    #   Newell, A., & Rosenbloom, P. S. (1981). Mechanisms of skill acquisition
+    #     and the law of practice. In Cognitive Skills and Their Acquisition.
+    #   Anderson, J. R., et al. (2004). An integrated theory of the mind.
+    #     Psychological Review, 111(4), 1036-1060 (ACT-R base-level activation).
+    #
+    # CAVEAT (must be stated in the thesis): W_memory is the learning-strength
+    # knob. Its default 1.0 is a placeholder; the true value (how fast load
+    # drops with practice) MUST be calibrated against real repeated-use data
+    # (the user study, Item 1). Until then the SHAPE of the curve is meaningful
+    # (monotone decreasing, diminishing returns) but the absolute rate is not.
+    n_exposures: int = 1        # 1 = novice/first use (default, unchanged behaviour)
+    W_memory: float = 1.0       # Memory-guidance strength (NEEDS CALIBRATION)
+
     # === Visual Short-Term Memory (Inhibition of Return) ===
     # VSTM capacity ~4 items (Cowan, 2001; Luck & Vogel, 1997).
     # tau_vstm controls how many fixation steps an attended element is suppressed
@@ -351,6 +382,115 @@ class JokinenSearchModel:
             "predicted_difficulty": difficulty,
             "n_elements": len(elements),
             "n_simulations": self.params.n_simulations,
+        }
+
+    def predict_learning_curve(
+        self,
+        elements: List[Dict],
+        exposures: Optional[List[int]] = None,
+        saliency_map: Optional[np.ndarray] = None,
+        image_shape: Optional[Tuple[int, int]] = None,
+        screen_width_cm: float = 37.0,
+        screen_height_cm: float = 23.0,
+        viewing_distance_cm: float = 60.0,
+    ) -> Dict:
+        """
+        Predict how search effort drops as the user practises the same layout.
+
+        This runs the standard search simulation at several exposure counts
+        (e.g. 1st use, after 10 uses, after 100 uses). With more exposures the
+        learned target location receives a stronger top-down memory boost
+        (see JokinenParams: n_exposures / W_memory), so the target is found in
+        fewer fixations and the mean search time falls.
+
+        The FIRST point (exposures = 1) is exactly the novice prediction, so
+        this method is a strict superset of predict_search_times.
+
+        HONESTY NOTE: only the SHAPE of the curve (monotone decreasing with
+        diminishing returns) is meaningful. The absolute learning RATE depends
+        on W_memory, which is a placeholder until calibrated against real
+        repeated-use data (user study, Item 1). Do not report absolute
+        "load after N uses" numbers as validated.
+
+        Parameters
+        ----------
+        elements : list of dict
+            Detected UI elements (same format as predict_search_times).
+        exposures : list of int, optional
+            Exposure counts to evaluate. Defaults to [1, 10, 100]. Values are
+            sorted ascending; a value of 1 represents first/novice use.
+        saliency_map, image_shape, screen_*_cm, viewing_distance_cm :
+            Passed through unchanged to predict_search_times.
+
+        Returns
+        -------
+        dict with keys:
+            curve : list of dict, one per exposure count, each with
+                exposures, mean_search_time_s, search_time_std_s,
+                predicted_difficulty, memory_activation (ln(n)).
+            novice_search_time_s : float
+                Mean search time at exposures = 1 (baseline).
+            expert_search_time_s : float
+                Mean search time at the largest exposure count.
+            search_time_reduction : float
+                Fraction of novice search time removed by practice, in [0, 1]
+                (0 = no improvement, 1 = fully eliminated). Derived, not
+                calibrated.
+            calibration_note : str
+                Explicit reminder that the learning rate is uncalibrated.
+        """
+        if exposures is None:
+            exposures = [1, 10, 100]
+        # Keep it well defined: positive integers, sorted, de-duplicated.
+        exp_list = sorted({int(e) for e in exposures if int(e) >= 1})
+        if not exp_list:
+            raise ValueError("exposures must contain at least one value >= 1")
+
+        original_n = self.params.n_exposures
+        curve: List[Dict] = []
+        try:
+            for n in exp_list:
+                self.params.n_exposures = n
+                # Reset the RNG before each run so differences come from
+                # practice (n_exposures), not from a drifting random stream.
+                self.rng = np.random.default_rng(self.params.random_seed)
+                res = self.predict_search_times(
+                    elements,
+                    saliency_map=saliency_map,
+                    image_shape=image_shape,
+                    screen_width_cm=screen_width_cm,
+                    screen_height_cm=screen_height_cm,
+                    viewing_distance_cm=viewing_distance_cm,
+                )
+                curve.append({
+                    "exposures": n,
+                    "mean_search_time_s": res["mean_search_time_s"],
+                    "search_time_std_s": res["search_time_std_s"],
+                    "predicted_difficulty": res["predicted_difficulty"],
+                    "memory_activation": round(float(np.log(n)), 4),
+                })
+        finally:
+            # Always restore the caller's setting and RNG state.
+            self.params.n_exposures = original_n
+            self.rng = np.random.default_rng(self.params.random_seed)
+
+        novice_t = curve[0]["mean_search_time_s"]
+        expert_t = curve[-1]["mean_search_time_s"]
+        if novice_t > 0:
+            reduction = float(np.clip((novice_t - expert_t) / novice_t, 0.0, 1.0))
+        else:
+            reduction = 0.0
+
+        return {
+            "curve": curve,
+            "novice_search_time_s": novice_t,
+            "expert_search_time_s": expert_t,
+            "search_time_reduction": round(reduction, 4),
+            "calibration_note": (
+                "Curve shape is meaningful (monotone, diminishing returns); "
+                "absolute learning rate depends on W_memory and is NOT yet "
+                "calibrated against real repeated-use data."
+            ),
         }
 
     def predict_scanpath_to_target(
@@ -558,6 +698,15 @@ class JokinenSearchModel:
             acuity_threshold = p.a_size * ecc_deg ** 2 + p.b_size * ecc_deg
             below_threshold = elem_angular_size < acuity_threshold
             activations[below_threshold] -= p.visibility_penalty
+
+            # --- Learning-curve memory guidance (optional, off at n_exposures=1) ---
+            # A practiced user has learned the target's location and directs
+            # attention there top-down. The boost grows with ACT-R base-level
+            # activation ln(n_exposures) (power law of practice). At n_exposures=1
+            # this is ln(1) = 0, i.e. no boost -> identical to the novice model.
+            if p.n_exposures > 1:
+                memory_activation = np.log(p.n_exposures)
+                activations[target_idx] += p.W_memory * memory_activation
 
             # VSTM inhibition: set visited elements to -∞
             for visited_idx in vstm:
