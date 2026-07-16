@@ -567,6 +567,29 @@
             font-size: 14px;
             font-weight: 500;
         }
+        /* Small "i" indicator next to a feature name. Its full explanation is
+           shown as a native tooltip (never clipped) on hover/focus. */
+        .feature-i {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 10px;
+            font-style: italic;
+            font-weight: 700;
+            font-family: Georgia, "Times New Roman", serif;
+            cursor: help;
+            flex-shrink: 0;
+            user-select: none;
+        }
+        .feature-i:hover {
+            color: var(--text);
+            border-color: var(--text-dim);
+        }
         .feature-desc {
             font-size: 12px;
             color: var(--text-dim);
@@ -3591,14 +3614,20 @@
                     signalBadge = `<span class="feature-signal ${sig.cls}">${sig.label}</span>`;
                 }
                 const dir  = FEATURE_DIRECTION[key] === 'higher_is_better'
-                    ? '<span style="font-size:10px;color:var(--text-dim);">↑ higher = better</span>'
-                    : '<span style="font-size:10px;color:var(--text-dim);">↑ higher = more load</span>';
-                const refText = info.reference
-                    ? `<span style="font-size:10px; color:var(--accent); margin-top:2px; display:block;">${info.reference}</span>`
-                    : '';
-                const descText = info.description
-                    ? `<div class="feature-desc">${info.description}${refText}</div>`
-                    : '';
+                    ? 'higher = better'
+                    : 'higher = more load';
+                // Everything explanatory (what the feature is, which way it
+                // reads, the source and the value range) now lives in a single
+                // tooltip on a small "i" icon, so the visible row stays clean:
+                // just the name, the bar and the value. This removes the inline
+                // description/reference that duplicated the info panel.
+                const tipParts = [];
+                if (info.description) tipParts.push(info.description);
+                tipParts.push(`Direction: ${dir}.`);
+                if (info.reference) tipParts.push(`Source: ${info.reference}.`);
+                if (info.range) tipParts.push(`Typical range ${info.range}.`);
+                const infoTip = tipParts.join(' ').replace(/"/g, '&quot;');
+                const infoIcon = `<span class="feature-i" tabindex="0" title="${infoTip}" aria-label="${infoTip}">i</span>`;
                 const refLine = referenceLine(ref);
                 // Headline number: signed change vs the reference baseline
                 // (the typical GUI) when we have an empirical reference, e.g.
@@ -3618,10 +3647,9 @@
                         <div class="feature-info">
                             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                                 <div class="feature-name">${info.name || key}</div>
+                                ${infoIcon}
                                 ${signalBadge}
-                                ${dir}
                             </div>
-                            ${descText}
                             <div class="feature-bar-bg">
                                 <div class="feature-bar" style="width:${barPct}%; background:${col};"></div>
                             </div>
