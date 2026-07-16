@@ -2559,13 +2559,15 @@
         // design). Expects data.search_feedback = {mean_search_time_s,
         // n_elements, bottlenecks:[{id, search_time_s, search_time_std_s,
         // fixation_count, deviation_pct, ...}]}.
-        // ── Element locator (shared) ──────────────────────────────────────
-        // The bottleneck, contrast and reading panels all list "Element #N".
-        // On its own an id is meaningless to a user, so these helpers add a
-        // cropped thumbnail to every row and let the user click a row to see
-        // exactly where that element sits on the screenshot. All three panels
-        // share the same detected-element id space and bounding boxes, so one
-        // set of helpers works for all of them.
+        // ── Element overview (shared) ─────────────────────────────────────
+        // The bottleneck, contrast and reading panels all list several
+        // elements. A bare "Element #N" is meaningless to a user, so each
+        // panel shows the uploaded screenshot once with every listed element
+        // outlined and numbered directly on the image (1, 2, 3 ...). The same
+        // numbers appear on the list rows, and hovering a row or a number
+        // highlights the matching box on the image (and vice versa). All three
+        // panels share the same detected-element bounding boxes, so one set of
+        // helpers works for all of them.
 
         // Cache the uploaded screenshot as an HTMLImageElement (its natural
         // pixel size matches the element bounding boxes) so thumbnails and the
@@ -2589,91 +2591,85 @@
             return p;
         }
 
-        // A 44x44 thumbnail canvas slot for a row, carrying its bbox.
-        function elThumbSlot(bbox) {
-            return `<canvas class="el-thumb" width="44" height="44" data-bbox="${bbox.join(',')}" ` +
-                   `title="Element location" style="flex:0 0 auto; width:44px; height:44px; ` +
-                   `border-radius:6px; border:1px solid var(--border); background:var(--surface);"></canvas>`;
-        }
-
-        // A collapsible reference-screenshot block that highlights a clicked
-        // element. Hidden until the user clicks a row.
-        function elLocatorBlock() {
-            return `<div class="el-locator" style="display:none; position:relative; margin:0 0 10px 0; ` +
-                   `border-radius:8px; overflow:hidden; border:1px solid var(--border);">` +
-                   `<img alt="Screenshot with the selected element highlighted" style="display:block; width:100%;">` +
-                   `<canvas style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></canvas>` +
+        // The annotated overview: the screenshot with an overlay layer on top
+        // that will hold one outlined box + numbered badge per listed element.
+        // Boxes/badges are positioned in percentages of the natural image
+        // size, so the overlay stays aligned when the image scales responsively.
+        function elOverviewBlock() {
+            return `<div class="el-overview" style="position:relative; margin:0 0 12px 0; ` +
+                   `border-radius:8px; overflow:hidden; border:1px solid var(--border); ` +
+                   `background:var(--surface2);">` +
+                   `<img alt="Screenshot with the listed elements outlined and numbered" ` +
+                   `style="display:block; width:100%;">` +
+                   `<div class="el-overlay" style="position:absolute; inset:0; pointer-events:none;"></div>` +
                    `</div>`;
         }
 
-        // Draw a padded crop of bbox into a thumbnail canvas, outlining the
-        // element inside its local context.
-        function drawElemThumb(canvas, img, bbox) {
-            const [x, y, w, h] = bbox;
-            const cw = canvas.width, ch = canvas.height;
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, cw, ch);
-            const pad = Math.round(Math.max(w, h) * 0.3) + 4;
-            const sx = Math.max(0, x - pad), sy = Math.max(0, y - pad);
-            const sw = Math.min(img.naturalWidth - sx, w + pad * 2);
-            const sh = Math.min(img.naturalHeight - sy, h + pad * 2);
-            if (sw <= 0 || sh <= 0) return;
-            const scale = Math.min(cw / sw, ch / sh);
-            const dw = sw * scale, dh = sh * scale;
-            const dx = (cw - dw) / 2, dy = (ch - dh) / 2;
-            ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
-            ctx.strokeStyle = '#3b82f6';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(dx + (x - sx) * scale, dy + (y - sy) * scale, w * scale, h * scale);
-        }
-
-        // After a list is rendered, draw all row thumbnails and wire click-to-
-        // locate on the panel's shared reference screenshot. `accent` colours
-        // the highlight outline to match the panel.
-        function wireElementLocator(listEl, accent) {
+        // After a list is rendered, draw the overview boxes/badges from the
+        // rows' data-bbox/data-rank attributes and wire two-way hover
+        // highlighting between each row and its box on the image. `accent`
+        // colours the outlines to match the panel.
+        function wireElementOverview(listEl, accent) {
             if (!listEl) return;
             getScreenshotImage().then((img) => {
                 if (!img) return;
-                listEl.querySelectorAll('canvas.el-thumb').forEach((c) => {
-                    const bbox = (c.getAttribute('data-bbox') || '').split(',').map(Number);
-                    if (bbox.length === 4) drawElemThumb(c, img, bbox);
-                });
-                const locator = listEl.querySelector('.el-locator');
-                if (!locator) return;
-                const lim = locator.querySelector('img');
-                const lcanvas = locator.querySelector('canvas');
-                lcanvas.width = img.naturalWidth;
-                lcanvas.height = img.naturalHeight;
-                lim.src = img.src;
-                const highlight = (bbox, id) => {
-                    const ctx = lcanvas.getContext('2d');
-                    ctx.clearRect(0, 0, lcanvas.width, lcanvas.height);
-                    const [x, y, w, h] = bbox;
-                    ctx.save();
-                    // Dim the rest of the screenshot, keep the element bright.
-                    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                    ctx.fillRect(0, 0, lcanvas.width, lcanvas.height);
-                    ctx.clearRect(x, y, w, h);
-                    ctx.strokeStyle = accent || '#3b82f6';
-                    ctx.lineWidth = Math.max(3, Math.round(Math.min(lcanvas.width, lcanvas.height) * 0.006));
-                    ctx.strokeRect(x, y, w, h);
-                    const fs = Math.max(14, Math.round(Math.min(lcanvas.width, lcanvas.height) * 0.03));
-                    ctx.font = `700 ${fs}px -apple-system, sans-serif`;
-                    ctx.fillStyle = accent || '#3b82f6';
-                    ctx.textBaseline = 'bottom';
-                    ctx.fillText('#' + id, x, y > fs + 4 ? y - 4 : y + h + fs + 4);
-                    ctx.restore();
-                    locator.style.display = 'block';
-                };
+                const overview = listEl.querySelector('.el-overview');
+                if (!overview) return;
+                const im = overview.querySelector('img');
+                const overlay = overview.querySelector('.el-overlay');
+                im.src = img.src;
+                const nw = img.naturalWidth, nh = img.naturalHeight;
+                if (!nw || !nh) return;
+                overlay.innerHTML = '';
+                const byRank = {};
                 listEl.querySelectorAll('.el-row').forEach((row) => {
-                    row.style.cursor = 'pointer';
+                    const bbox = (row.getAttribute('data-bbox') || '').split(',').map(Number);
+                    const rank = row.getAttribute('data-rank');
+                    if (bbox.length !== 4 || rank == null) return;
+                    const [x, y, w, h] = bbox;
+                    const box = document.createElement('div');
+                    box.style.cssText =
+                        `position:absolute; left:${x / nw * 100}%; top:${y / nh * 100}%; ` +
+                        `width:${w / nw * 100}%; height:${h / nh * 100}%; box-sizing:border-box; ` +
+                        `border:2px solid ${accent}; border-radius:4px; pointer-events:auto; ` +
+                        `cursor:pointer; transition:box-shadow .12s, border-width .12s;`;
+                    const badge = document.createElement('div');
+                    badge.textContent = rank;
+                    badge.style.cssText =
+                        `position:absolute; left:${x / nw * 100}%; top:${y / nh * 100}%; ` +
+                        `transform:translate(-50%,-50%); min-width:20px; height:20px; padding:0 5px; ` +
+                        `border-radius:10px; background:${accent}; color:#fff; font-size:12px; ` +
+                        `font-weight:700; display:flex; align-items:center; justify-content:center; ` +
+                        `pointer-events:auto; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.4); ` +
+                        `transition:transform .12s;`;
+                    overlay.appendChild(box);
+                    overlay.appendChild(badge);
+                    byRank[rank] = { box, badge, row };
+                });
+                const setHi = (rank, on) => {
+                    const b = byRank[rank];
+                    if (!b) return;
+                    b.box.style.borderWidth = on ? '4px' : '2px';
+                    b.box.style.boxShadow = on ? `0 0 0 3px ${accent}55` : 'none';
+                    b.badge.style.transform = on
+                        ? 'translate(-50%,-50%) scale(1.35)'
+                        : 'translate(-50%,-50%) scale(1)';
+                    b.row.style.outline = on ? `2px solid ${accent}` : '';
+                    b.row.style.outlineOffset = on ? '-1px' : '';
+                };
+                Object.keys(byRank).forEach((rank) => {
+                    const { box, badge, row } = byRank[rank];
+                    const on = () => setHi(rank, true);
+                    const off = () => setHi(rank, false);
+                    box.onmouseenter = on; box.onmouseleave = off;
+                    badge.onmouseenter = on; badge.onmouseleave = off;
+                    row.onmouseenter = on; row.onmouseleave = off;
+                    // Tapping a row scrolls the annotated image into view
+                    // (useful on touch devices where hover is unavailable).
                     row.onclick = () => {
-                        const bbox = (row.getAttribute('data-bbox') || '').split(',').map(Number);
-                        const id = row.getAttribute('data-id');
-                        if (bbox.length === 4) {
-                            highlight(bbox, id);
-                            locator.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                        }
+                        overview.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        setHi(rank, true);
+                        setTimeout(() => setHi(rank, false), 1200);
                     };
                 });
             });
@@ -2700,12 +2696,12 @@
                 // Highlight the single worst element as the primary bottleneck.
                 const isTop = i === 0;
                 const bbox = Array.isArray(e.bbox) ? e.bbox : null;
+                const rank = i + 1;
                 return `
-                    <div class="el-row" ${bbox ? `data-bbox="${bbox.join(',')}" data-id="${e.id}"` : ''} style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); margin-bottom:8px;">
-                        <span style="flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; background:${isTop ? 'var(--danger)' : 'var(--surface)'}; color:${isTop ? '#fff' : 'var(--text-dim)'};">${i + 1}</span>
-                        ${bbox ? elThumbSlot(bbox) : ''}
+                    <div class="el-row" ${bbox ? `data-bbox="${bbox.join(',')}" data-rank="${rank}" data-id="${e.id}"` : ''} style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); margin-bottom:8px; cursor:pointer;">
+                        <span style="flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; background:${isTop ? 'var(--danger)' : 'var(--surface)'}; color:${isTop ? '#fff' : 'var(--text-dim)'};">${rank}</span>
                         <div style="flex:1 1 auto; min-width:0;">
-                            <div style="font-size:13px; font-weight:600;">Element #${e.id}${isTop ? ' \u2014 main bottleneck' : ''}</div>
+                            <div style="font-size:13px; font-weight:600;">Element ${rank}${isTop ? ' \u2014 main bottleneck' : ''}</div>
                             <div style="font-size:11px; color:var(--text-dim);">${e.fixation_count.toFixed(1)} fixations \u00B7 ${e.color_category} region</div>
                         </div>
                         <div style="flex:0 0 auto; text-align:right;">
@@ -2715,11 +2711,11 @@
                     </div>`;
             }).join('');
             const caption = (typeof mean === 'number')
-                ? `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Click a row to locate the element. Layout average search time: ${mean.toFixed(1)} s across ${feedback.n_elements} elements.</div>`
-                : `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Click a row to locate the element on the screenshot.</div>`;
-            list.innerHTML = elLocatorBlock() + rows + caption;
+                ? `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Hover a row or a number to highlight that element on the screenshot above. Layout average search time: ${mean.toFixed(1)} s across ${feedback.n_elements} elements.</div>`
+                : `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Hover a row or a number to highlight that element on the screenshot above.</div>`;
+            list.innerHTML = elOverviewBlock() + rows + caption;
             panel.style.display = 'block';
-            wireElementLocator(list, 'var(--danger)');
+            wireElementOverview(list, 'var(--danger)');
         }
 
         // Accessibility / legibility: render the WCAG 2.1 / ISO 15008 contrast
@@ -2748,12 +2744,12 @@
             const rows = failing.map((e, i) => {
                 const isWorst = i === 0;
                 const bbox = Array.isArray(e.bbox) ? e.bbox : null;
+                const rank = i + 1;
                 return `
-                    <div class="el-row" ${bbox ? `data-bbox="${bbox.join(',')}" data-id="${e.id}"` : ''} style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); margin-bottom:8px;">
-                        <span style="flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; background:${isWorst ? 'var(--danger)' : 'var(--surface)'}; color:${isWorst ? '#fff' : 'var(--text-dim)'};">${i + 1}</span>
-                        ${bbox ? elThumbSlot(bbox) : ''}
+                    <div class="el-row" ${bbox ? `data-bbox="${bbox.join(',')}" data-rank="${rank}" data-id="${e.id}"` : ''} style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); margin-bottom:8px; cursor:pointer;">
+                        <span style="flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; background:${isWorst ? 'var(--danger)' : 'var(--surface)'}; color:${isWorst ? '#fff' : 'var(--text-dim)'};">${rank}</span>
                         <div style="flex:1 1 auto; min-width:0;">
-                            <div style="font-size:13px; font-weight:600;">Element #${e.id}${isWorst ? ' \u2014 lowest contrast' : ''}</div>
+                            <div style="font-size:13px; font-weight:600;">Element ${rank}${isWorst ? ' \u2014 lowest contrast' : ''}</div>
                             <div style="font-size:11px; color:var(--text-dim);">${e.color_category} region</div>
                         </div>
                         <div style="flex:0 0 auto; text-align:right;">
@@ -2764,16 +2760,17 @@
             }).join('');
             const caption =
                 `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">` +
-                `Click a row to locate the element. Lowest contrast ${report.min_contrast_ratio.toFixed(1)}:1 \u00B7 ` +
+                `Hover a row or a number to highlight that element on the screenshot above. ` +
+                `Lowest contrast ${report.min_contrast_ratio.toFixed(1)}:1 \u00B7 ` +
                 `average ${report.mean_contrast_ratio.toFixed(1)}:1 \u00B7 ` +
                 `${report.n_pass} of ${report.n_elements} elements meet 3:1.</div>`;
             const body = allPass
                 ? `<div style="font-size:12px; color:var(--text-dim);">` +
                   `All ${report.n_elements} detected elements meet the 3:1 minimum. </div>` + caption
-                : elLocatorBlock() + rows + caption;
+                : elOverviewBlock() + rows + caption;
             list.innerHTML = body;
             panel.style.display = 'block';
-            if (!allPass) wireElementLocator(list, 'var(--danger)');
+            if (!allPass) wireElementOverview(list, 'var(--danger)');
         }
 
         // Text reading cost (OCR, optional): render the most text-heavy
@@ -2810,12 +2807,12 @@
                 const isTop = i === 0;
                 const label = (e.text || '').slice(0, 40);
                 const bbox = Array.isArray(e.bbox) ? e.bbox : null;
+                const rank = i + 1;
                 return `
-                    <div class="el-row" ${bbox ? `data-bbox="${bbox.join(',')}" data-id="${e.id}"` : ''} style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); margin-bottom:8px;">
-                        <span style="flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; background:${isTop ? 'var(--accent, #3b82f6)' : 'var(--surface)'}; color:${isTop ? '#fff' : 'var(--text-dim)'};">${i + 1}</span>
-                        ${bbox ? elThumbSlot(bbox) : ''}
+                    <div class="el-row" ${bbox ? `data-bbox="${bbox.join(',')}" data-rank="${rank}" data-id="${e.id}"` : ''} style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); margin-bottom:8px; cursor:pointer;">
+                        <span style="flex:0 0 auto; width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; background:${isTop ? 'var(--accent, #3b82f6)' : 'var(--surface)'}; color:${isTop ? '#fff' : 'var(--text-dim)'};">${rank}</span>
                         <div style="flex:1 1 auto; min-width:0;">
-                            <div style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Element #${e.id}: \u201C${label}\u201D</div>
+                            <div style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Element ${rank}: \u201C${label}\u201D</div>
                             <div style="font-size:11px; color:var(--text-dim);">${e.n_words} word${e.n_words === 1 ? '' : 's'} \u00B7 ${e.color_category} region</div>
                         </div>
                         <div style="flex:0 0 auto; text-align:right;">
@@ -2826,12 +2823,13 @@
             }).join('');
             const caption =
                 `<div style="font-size:11px; color:var(--text-dim); margin-top:4px;">` +
-                `Click a row to locate the element. ${report.total_words} words total \u00B7 ` +
+                `Hover a row or a number to highlight that element on the screenshot above. ` +
+                `${report.total_words} words total \u00B7 ` +
                 `~${report.total_reading_time_s.toFixed(1)} s to read at ` +
                 `${report.words_per_minute} wpm.</div>`;
-            list.innerHTML = elLocatorBlock() + rows + caption;
+            list.innerHTML = elOverviewBlock() + rows + caption;
             panel.style.display = 'block';
-            wireElementLocator(list, 'var(--accent, #3b82f6)');
+            wireElementOverview(list, 'var(--accent, #3b82f6)');
         }
 
         function renderTargetScanpath(detectedElements) {
