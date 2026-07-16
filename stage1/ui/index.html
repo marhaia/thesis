@@ -856,6 +856,30 @@
             height: auto;
             display: block;
         }
+        /* Attention-map colour legend (JET colormap, same reading as 3M VAS) */
+        .saliency-legend {
+            margin-top: 8px;
+        }
+        .saliency-legend-bar {
+            height: 12px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: linear-gradient(to right,
+                #00007f 0%, #0000ff 12%, #00ffff 37%,
+                #00ff00 50%, #ffff00 63%, #ff0000 87%, #7f0000 100%);
+        }
+        .saliency-legend-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+        .saliency-legend-note {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
         .radar-interpretation {
             margin-top: 8px;
             max-width: 68ch;
@@ -1694,16 +1718,27 @@
                             <button id="downloadSaliencyBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0;">Download Map</button>
                             <button id="downloadOriginalBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0;">Download Original</button>
                         </div>
-                        <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">UMSI++ deep-learning saliency overlay (Jiang et al., CHI 2023). Warm colors = high predicted fixation probability. Used as saliency feature vector s∈ℝ⁵.</p>
+                        <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">UMSI++ deep-learning saliency overlay (Jiang et al., CHI 2023). The colours show the predicted probability that a user looks at each area within the first few seconds. Used as saliency feature vector s∈ℝ⁵.</p>
                         <img id="saliencyImg" src="" alt="Saliency heatmap"
                              style="width:100%; border-radius:8px; border:1px solid var(--border);">
+                        <!-- Colour legend (matches the JET colormap used for the
+                             overlay in the backend). Same reading as 3M VAS: cool
+                             colours = low fixation probability, warm = high. -->
+                        <div class="saliency-legend">
+                            <div class="saliency-legend-bar"></div>
+                            <div class="saliency-legend-labels">
+                                <span>Low — rarely looked at</span>
+                                <span>High — looked at first</span>
+                            </div>
+                            <div class="saliency-legend-note">Predicted probability of visual fixation within the first few seconds.</div>
+                        </div>
                     </div>
                     <div id="radarPanel" style="display:none;">
                         <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                             <span style="font-size:13px; font-weight:600;">Visual Feature Profile</span>
                             <button id="downloadRadarBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0;">Download Profile</button>
                         </div>
-                        <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Radar chart of the 8 visual complexity features v∈ℝ⁸. Each axis is normalized to its empirical range. See feature table below for values.</p>
+                        <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Radar chart of the 8 visual complexity features v∈ℝ⁸. Each axis is normalized to its empirical range. Hover a point or label for its value and meaning.</p>
                         <div class="radar-container">
                             <canvas id="radarChart" width="900" height="900"></canvas>
                         </div>
