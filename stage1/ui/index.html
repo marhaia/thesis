@@ -79,26 +79,26 @@
         }
         .nav-burger {
             display: flex;
-            flex-direction: column;
+            align-items: center;
             justify-content: center;
-            gap: 4px;
-            width: 36px;
-            height: 36px;
-            padding: 8px;
+            width: 30px;
+            height: 30px;
+            padding: 6px;
             background: var(--surface2);
             border: 1px solid var(--border);
             border-radius: 8px;
             cursor: pointer;
+            color: var(--text-dim);
+            transition: color 0.15s, border-color 0.15s;
         }
-        .nav-burger span {
-            display: block;
-            height: 2px;
+        .nav-burger svg {
             width: 100%;
-            background: var(--text-dim);
-            border-radius: 2px;
+            height: 100%;
+            display: block;
         }
-        .nav-burger:hover span {
-            background: var(--text);
+        .nav-burger:hover {
+            color: var(--text);
+            border-color: var(--accent);
         }
         .nav-dropdown {
             display: none;
@@ -196,6 +196,13 @@
         }
         .site-footer-inner a:hover {
             text-decoration: underline;
+        }
+        .site-footer-inner a.footer-placeholder {
+            color: var(--text-dim);
+            cursor: default;
+        }
+        .site-footer-inner a.footer-placeholder:hover {
+            text-decoration: none;
         }
         .site-footer-sep {
             color: var(--border);
@@ -403,6 +410,8 @@
             grid-template-columns: 1fr;
             gap: 24px;
             margin-top: 32px;
+            padding-top: 18px;
+            border-top: 1px solid var(--border);
         }
         .results-visual-row > div {
             width: 100%;
@@ -734,6 +743,8 @@
             font-style: italic;
             font-weight: 600;
             font-family: Georgia, "Times New Roman", serif;
+            text-transform: none;
+            letter-spacing: normal;
             cursor: help;
             flex-shrink: 0;
             user-select: none;
@@ -1623,12 +1634,10 @@
                     <button class="nav-btn" onclick="showView('pipeline')">How it works</button>
                 </div>
                 <div class="nav-menu">
-                    <button class="nav-burger" id="navBurger" aria-label="Menu" aria-expanded="false" aria-controls="navDropdown">
-                        <span></span><span></span><span></span>
+                    <button class="nav-burger" id="navBurger" aria-label="Settings" title="Settings" aria-expanded="false" aria-controls="navDropdown">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                     </button>
                     <div class="nav-dropdown" id="navDropdown" role="menu">
-                        <button class="nav-btn nav-dropdown-item" onclick="showView('contact')">Contact</button>
-                        <div class="nav-dropdown-divider"></div>
                         <div class="nav-settings-title">Alerts</div>
                         <label>
                             <input type="checkbox" id="notifyToggle" checked>
@@ -1747,13 +1756,13 @@
                     <div class="field-hint">Big Five personality preset that applies a small modifier to the score. Leave on Neutral to evaluate the interface independent of a specific user type (Costa &amp; McCrae, 1992). <span class="field-hint-default">If unsure, keep <em>Neutral</em>.</span></div>
                 </div>
                 <div class="field" style="margin-top: 12px;">
-                    <label for="displayPreset">Display <span class="feature-i" tabindex="0" aria-label="Explanation of Display options" data-tip="<div class='tip-title'>Display</div><div class='tip-body'>Physical screen size and viewing distance, which set the real angular size of elements.<br><strong>Phone</strong> &mdash; ~6.1&Prime;, held close<br><strong>Laptop</strong> &mdash; 14&Prime;, at desk distance<br><strong>Desktop monitor</strong> &mdash; 17&Prime;, at desk distance</div>">i</span> <span class="tag-optional" style="vertical-align:middle;margin-left:6px;">Optional</span></label>
+                    <label for="displayPreset">Display <span class="feature-i" tabindex="0" aria-label="Explanation of Display options" data-tip="<div class='tip-title'>Display</div><div class='tip-body'>Screen size and typical viewing distance, which together set how large the elements appear to the eye.<br><strong>Phone</strong> &mdash; ~6&Prime;, held close<br><strong>Laptop</strong> &mdash; 14&Prime;, arm's length<br><strong>Desktop monitor</strong> &mdash; 17&Prime;, arm's length</div>">i</span> <span class="tag-optional" style="vertical-align:middle;margin-left:6px;">Optional</span></label>
                     <select id="displayPreset">
-                        <option value="phone">Phone &mdash; ~6.1&Prime;, held close</option>
-                        <option value="laptop">Laptop &mdash; 14&Prime;, at desk distance</option>
-                        <option value="desktop" selected>Desktop monitor &mdash; 17&Prime;, at desk distance</option>
+                        <option value="phone">Phone &mdash; small screen</option>
+                        <option value="laptop">Laptop &mdash; 14&Prime;</option>
+                        <option value="desktop" selected>Desktop monitor &mdash; 17&Prime;</option>
                     </select>
-                    <div class="field-hint">Physical screen size and viewing distance. Visual search timing depends on the real angular size of elements, so a small phone held close differs from a monitor on a desk. <span class="field-hint-default">If unsure, keep <em>Desktop monitor</em>.</span></div>
+                    <div class="field-hint">Screen size and typical viewing distance. This sets how large the elements appear to the eye, which affects visual search timing. <span class="field-hint-default">If unsure, keep <em>Desktop monitor</em>.</span></div>
                 </div>
                 <div id="contextHint" class="context-hint">Tip: choose context first, then click Analyze Screenshot once. After results, use What-if for fast local simulation.</div>
             </div>
@@ -1872,7 +1881,7 @@
                      the goal-directed visual-search scanpath the model predicts a
                      novice would follow to reach that target. Task-driven (not
                      free-viewing), computed from the existing Jokinen search model. -->
-                <div id="targetScanpathPanel" style="display:none; margin-top:32px;">
+                <div id="targetScanpathPanel" class="result-section" style="display:none; margin-top:32px;">
                     <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                         <span style="font-size:13px; font-weight:600;">Predicted Search Path</span>
                         <span id="scanpathStatus" style="font-size:11px; color:var(--text-dim);"></span>
@@ -1926,7 +1935,7 @@
                 <!-- 4c. Generative feedback: which elements are the search
                      bottlenecks (hardest to find), ranked by predicted search
                      time. Turns the aggregate score into concrete design advice. -->
-                <div id="searchFeedbackPanel" style="display:none; margin-top:32px;">
+                <div id="searchFeedbackPanel" class="result-section" style="display:none; margin-top:32px;">
                     <div style="margin-bottom:8px;">
                         <span style="font-size:13px; font-weight:600;">Search Bottlenecks</span>
                     </div>
@@ -1937,7 +1946,7 @@
                 <!-- 4d. Accessibility / legibility: per-element WCAG 2.1
                      contrast. Lists the lowest-contrast elements so
                      the designer sees which parts are hard to read. -->
-                <div id="contrastPanel" style="display:none; margin-top:32px;">
+                <div id="contrastPanel" class="result-section" style="display:none; margin-top:32px;">
                     <div style="margin-bottom:8px;">
                         <span style="font-size:13px; font-weight:600;">Contrast &amp; Legibility (WCAG 2.1)</span>
                         <span id="contrastSummaryBadge" style="font-size:12px; font-weight:700; padding:2px 8px; border-radius:6px; margin-left:8px;"></span>
@@ -1951,7 +1960,7 @@
                 <!-- 4e. Text reading cost (OCR, optional): labelled controls
                      carry a reading cost that a plain icon does not. Lists the
                      most text-heavy elements and the estimated reading time. -->
-                <div id="readabilityPanel" style="display:none; margin-top:32px;">
+                <div id="readabilityPanel" class="result-section" style="display:none; margin-top:32px;">
                     <div style="margin-bottom:8px;">
                         <span style="font-size:13px; font-weight:600;">Text &amp; Reading Cost</span>
                         <span id="readabilitySummaryBadge" style="font-size:12px; font-weight:700; padding:2px 8px; border-radius:6px; margin-left:8px;"></span>
@@ -1995,7 +2004,7 @@
             </div>
             <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
                 <button class="btn btn-secondary" id="exportHistoryBtn" style="width:auto; padding:9px 18px; display:none;">
-                    Export All as CSV
+                    Export all as CSV
                 </button>
                 <button class="btn btn-secondary" id="clearHistoryBtn" style="width:auto; padding:9px 18px; display:none;">
                     Clear History
@@ -2116,6 +2125,7 @@
                 <div class="ref-item"><strong>Hasler &amp; Süsstrunk (2003)</strong> Measuring colorfulness in natural images. Proc. SPIE 5007, Human Vision and Electronic Imaging VIII. <a class="ref-doi" href="https://doi.org/10.1117/12.477378" target="_blank" rel="noopener">doi:10.1117/12.477378</a></div>
                 <div class="ref-item"><strong>Itti &amp; Koch (2001)</strong> Computational modelling of visual attention. Nature Reviews Neuroscience, 2(3). <a class="ref-doi" href="https://doi.org/10.1038/35058500" target="_blank" rel="noopener">doi:10.1038/35058500</a></div>
                 <div class="ref-item"><strong>Shannon (1948)</strong> A Mathematical Theory of Communication. Bell System Technical Journal, 27(3). <a class="ref-doi" href="https://doi.org/10.1002/j.1538-7305.1948.tb01338.x" target="_blank" rel="noopener">doi:10.1002/j.1538-7305.1948.tb01338.x</a></div>
+                <div class="ref-item"><strong>Canny (1986)</strong> A Computational Approach to Edge Detection. IEEE Transactions on Pattern Analysis and Machine Intelligence, PAMI-8(6). <a class="ref-doi" href="https://doi.org/10.1109/TPAMI.1986.4767851" target="_blank" rel="noopener">doi:10.1109/TPAMI.1986.4767851</a></div>
                 <div class="ref-item"><strong>Breiman (2001)</strong> Random Forests. Machine Learning, 45(1). <a class="ref-doi" href="https://doi.org/10.1023/A:1010933404324" target="_blank" rel="noopener">doi:10.1023/A:1010933404324</a></div>
                 <div class="ref-item"><strong>Tatler (2007)</strong> The central fixation bias in scene viewing: Selecting an optimal viewing position independently of motor biases and image feature distributions. Journal of Vision, 7(14):4. <a class="ref-doi" href="https://doi.org/10.1167/7.14.4" target="_blank" rel="noopener">doi:10.1167/7.14.4</a></div>
                 <div class="ref-item"><strong>Salvucci (2001)</strong> An integrated model of eye movements and visual encoding. Cognitive Systems Research, 1(4). <a class="ref-doi" href="https://doi.org/10.1016/S1389-0417(00)00015-2" target="_blank" rel="noopener">doi:10.1016/S1389-0417(00)00015-2</a></div>
@@ -2147,6 +2157,12 @@
             <span>Computational Estimation of Interactional Complexity in Graphical User Interfaces</span>
             <span class="site-footer-sep">·</span>
             <span>Master's thesis project</span>
+            <span class="site-footer-sep">·</span>
+            <a href="https://github.com/marhaia/thesis" target="_blank" rel="noopener">GitHub</a>
+            <span class="site-footer-sep">·</span>
+            <a href="#" class="footer-placeholder" title="OSF project link — to be added" onclick="return false;">OSF (soon)</a>
+            <span class="site-footer-sep">·</span>
+            <a href="#" class="footer-placeholder" title="DOI — to be added" onclick="return false;">DOI (soon)</a>
             <span class="site-footer-sep">·</span>
             <a href="mailto:hannah.maria.m@web.de">Contact</a>
         </div>
@@ -2286,15 +2302,17 @@
 
         // Primary literature DOI for each visual feature, used to turn the
         // "Source:" line in the feature tooltip into a clickable reference.
+        // Each DOI must match the reference text returned by /api/features.
+        // interactive_element_density has no DOI (custom contour-based method),
+        // so it is intentionally omitted and shown as plain text.
         const FEATURE_DOI = {
-            shannon_entropy:             '10.1002/j.1538-7305.1948.tb01338.x',
-            edge_density:                '10.1167/7.2.17',
-            feature_congestion:          '10.1167/7.2.17',
-            subband_entropy:             '10.1167/7.2.17',
-            layout_symmetry:             '10.1145/2702123.2702575',
-            visual_hierarchy:            '10.1145/2702123.2702575',
-            chromatic_coherence:         '10.1117/12.477378',
-            interactive_element_density: '10.1016/j.ijhcs.2009.04.002',
+            shannon_entropy:             '10.1002/j.1538-7305.1948.tb01338.x', // Shannon (1948)
+            edge_density:                '10.1109/TPAMI.1986.4767851',          // Canny (1986)
+            feature_congestion:          '10.1167/7.2.17',                      // Rosenholtz et al. (2007)
+            subband_entropy:             '10.1167/7.2.17',                      // Rosenholtz et al. (2007)
+            layout_symmetry:             '10.1145/2702123.2702575',             // Miniukovich & De Angeli (2015)
+            visual_hierarchy:            '10.1016/j.ijhcs.2009.04.002',         // Tuch et al. (2009)
+            chromatic_coherence:         '10.1117/12.477378',                   // Hasler & Süsstrunk (2003)
         };
 
         // Thresholds for signal badge (as % of normalised range)
@@ -3896,17 +3914,17 @@
             _layoutLoadScore = adjusted.cognitive_load_score;
             summaryGrid.innerHTML = `
                 <div class="summary-card">
-                    <div class="summary-label">Cognitive Load Score</div>
+                    <div class="summary-label">Cognitive Load Score <span class="feature-i" tabindex="0" aria-label="What is the Cognitive Load Score?" data-tip="<div class='tip-title'>Cognitive Load Score</div><div class='tip-body'>Overall estimated mental effort to use this screen, on a 0&ndash;100 scale. Higher means more load. It combines the visual complexity features with the selected task and profile context.</div>">i</span></div>
                     <div class="summary-value">${adjusted.cognitive_load_score.toFixed(1)}</div>
                     <div class="summary-meta">Base ${base.cognitive_load_score.toFixed(1)} · adjusted by task/profile · ${data.prediction_source === "stage2_trained_model" ? "experimental regressor" : "HCEye rule-based"}</div>
                 </div>
                 <div class="summary-card">
-                    <div class="summary-label">Search Efficiency</div>
+                    <div class="summary-label">Search Efficiency <span class="feature-i" tabindex="0" aria-label="What is Search Efficiency?" data-tip="<div class='tip-title'>Search Efficiency</div><div class='tip-body'>How easily a user can find a specific target on this screen, on a 0&ndash;1 scale. Higher means faster, more direct visual search.</div>">i</span></div>
                     <div class="summary-value">${adjusted.search_efficiency.toFixed(3)}</div>
                     <div class="summary-meta">Higher = easier target acquisition</div>
                 </div>
                 <div class="summary-card">
-                    <div class="summary-label">Attention Demand</div>
+                    <div class="summary-label">Attention Demand <span class="feature-i" tabindex="0" aria-label="What is Attention Demand?" data-tip="<div class='tip-title'>Attention Demand</div><div class='tip-body'>How much of the user's attentional capacity this screen requires, on a 0&ndash;1 scale. Higher means more attentional resources are needed.</div>">i</span></div>
                     <div class="summary-value">${adjusted.attention_demand.toFixed(3)}</div>
                     <div class="summary-meta">Higher = more attentional resources required</div>
                 </div>
@@ -4794,7 +4812,7 @@
                 return;
             }
 
-            const shortKeys = ["Score", "Search", "Attn", "Task", "Profile"];
+            const shortKeys = ["Score", "Search", "Attention", "Task", "Profile"];
             let html = `<div style="overflow-x: auto;"><table class="history-table"><tr>
                 <th title="Include this analysis in the overall comparison"><input type="checkbox" id="historySelectAll"></th>
                 <th>File</th>
@@ -4836,6 +4854,7 @@
                     history.forEach(r => { r.included = selectAll.checked; });
                     content.querySelectorAll(".history-select").forEach(cb => { cb.checked = selectAll.checked; });
                     updateComparisonSummary();
+                    syncSelectAll();
                 });
             }
             syncSelectAll();
@@ -4854,6 +4873,14 @@
             const sel = history.filter(r => r.included !== false).length;
             selectAll.checked = total > 0 && sel === total;
             selectAll.indeterminate = sel > 0 && sel < total;
+
+            // Keep the export button label in sync with the current selection.
+            const exportBtn = document.getElementById("exportHistoryBtn");
+            if (exportBtn) {
+                exportBtn.textContent = (sel === 0 || sel === total)
+                    ? "Export all as CSV"
+                    : `Export selected as CSV (${sel})`;
+            }
         }
 
         // Overall comparison over the selected analyses only (pure display of
@@ -5117,7 +5144,12 @@
         });
 
         document.getElementById("exportHistoryBtn").addEventListener("click", () => {
-            exportCSV(history, "complexity_vectors_all.csv");
+            // Export only the selected (included) analyses; fall back to all if
+            // nothing is selected. Filename reflects whether it is all or a subset.
+            const sel = history.filter(r => r.included !== false);
+            const rows = sel.length ? sel : history;
+            const allSelected = rows.length === history.length;
+            exportCSV(rows, allSelected ? "complexity_vectors_all.csv" : "complexity_vectors_selected.csv");
         });
 
         document.getElementById("clearHistoryBtn").addEventListener("click", () => {

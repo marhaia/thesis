@@ -429,64 +429,56 @@ def features_info():
             "name": "Shannon Entropy",
             "description": "Global information density of the image. Higher = more visual information competing for attention.",
             "range": "[0, 8]",
-            "reference": "Shannon (1948)",
-            "icon": "📊"
+            "reference": "Shannon (1948)"
         },
         {
             "key": "edge_density",
             "name": "Edge Density",
             "description": "Proportion of pixels classified as edges. A proxy for structural complexity — more boundaries = more parsing effort.",
             "range": "[0, 1]",
-            "reference": "Canny edge detection (AIM m4)",
-            "icon": "📐"
+            "reference": "Canny edge detection (AIM m4)"
         },
         {
             "key": "feature_congestion",
             "name": "Feature Congestion",
             "description": "Multi-scale clutter combining color covariance, contrast variance, and orientation energy. Higher = more visual noise.",
             "range": "[0, ∞)",
-            "reference": "Rosenholtz et al. (2007) — AIM m8",
-            "icon": "🌀"
+            "reference": "Rosenholtz et al. (2007) — AIM m8"
         },
         {
             "key": "subband_entropy",
             "name": "Subband Entropy",
             "description": "Redundancy-based clutter via steerable pyramid decomposition. Higher = more unpredictable spatial frequency content.",
             "range": "[0, ∞)",
-            "reference": "Rosenholtz et al. (2007) — AIM m7",
-            "icon": "🔬"
+            "reference": "Rosenholtz et al. (2007) — AIM m7"
         },
         {
             "key": "layout_symmetry",
             "name": "Layout Symmetry",
             "description": "Degree of axial balance (vertical + horizontal). Higher = more symmetric = less visual search needed.",
             "range": "[0, 1]",
-            "reference": "Miniukovich & De Angeli (2015)",
-            "icon": "⚖️"
+            "reference": "Miniukovich & De Angeli (2015)"
         },
         {
             "key": "chromatic_coherence",
             "name": "Chromatic Coherence",
             "description": "Color palette fragmentation combining luminance variance, colorfulness, and hue/saturation spread. Higher = more fragmented.",
             "range": "[0, 1]",
-            "reference": "Hasler & Süsstrunk (2003)",
-            "icon": "🎨"
+            "reference": "Hasler & Süsstrunk (2003)"
         },
         {
             "key": "visual_hierarchy",
             "name": "Visual Hierarchy",
             "description": "Strength of layered visual structure (contrast gradients + size dominance). Higher = clearer hierarchy = less search effort.",
             "range": "[0, 1]",
-            "reference": "Tuch et al. (2009)",
-            "icon": "📏"
+            "reference": "Tuch et al. (2009)"
         },
         {
             "key": "interactive_element_density",
             "name": "Interactive Element Density",
             "description": "Estimated count of UI controls per area. Higher = more action possibilities = higher decisional load.",
             "range": "[0, ∞)",
-            "reference": "Custom (contour-based)",
-            "icon": "🔘"
+            "reference": "Custom (contour-based)"
         },
     ]
     return jsonify(features)
