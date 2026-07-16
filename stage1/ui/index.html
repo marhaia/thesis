@@ -63,28 +63,68 @@
             align-items: center;
             gap: 12px;
         }
-        .nav-settings {
+        .nav-menu {
+            position: relative;
+        }
+        .nav-burger {
             display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 5px 10px;
+            flex-direction: column;
+            justify-content: center;
+            gap: 4px;
+            width: 36px;
+            height: 36px;
+            padding: 8px;
+            background: var(--surface2);
             border: 1px solid var(--border);
             border-radius: 8px;
-            background: var(--surface2);
-            font-size: 12px;
-            color: var(--text-dim);
+            cursor: pointer;
+        }
+        .nav-burger span {
+            display: block;
+            height: 2px;
+            width: 100%;
+            background: var(--text-dim);
+            border-radius: 2px;
+        }
+        .nav-burger:hover span {
+            background: var(--text);
+        }
+        .nav-dropdown {
+            display: none;
+            position: absolute;
+            top: 44px;
+            right: 0;
+            min-width: 200px;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+            z-index: 50;
+        }
+        .nav-dropdown.open {
+            display: flex;
+        }
+        .nav-dropdown .nav-dropdown-item {
+            text-align: left;
+        }
+        .nav-dropdown-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 4px 0;
         }
         .nav-settings-title {
             font-size: 10px;
             text-transform: uppercase;
             letter-spacing: 0.06em;
             color: var(--text-dim);
-            margin-right: 2px;
         }
-        .nav-settings label {
+        .nav-dropdown label {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             cursor: pointer;
             color: var(--text);
             font-size: 12px;
@@ -94,17 +134,11 @@
             .navbar {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 10px;
+                gap: 12px;
             }
             .navbar-actions {
                 width: 100%;
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
-            }
-            .nav-settings {
-                width: 100%;
-                flex-wrap: wrap;
+                justify-content: space-between;
             }
         }
         .nav-btn {
@@ -125,6 +159,34 @@
             color: var(--text);
             background: var(--surface2);
             border-color: var(--border);
+        }
+
+        /* Footer */
+        .site-footer {
+            border-top: 1px solid var(--border);
+            margin-top: 48px;
+            padding: 24px 0 32px 0;
+        }
+        .site-footer-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+        .site-footer-inner a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .site-footer-inner a:hover {
+            text-decoration: underline;
+        }
+        .site-footer-sep {
+            color: var(--border);
         }
 
         /* Views */
@@ -1335,18 +1397,24 @@
                 <div class="navbar-links">
                     <button class="nav-btn active" onclick="showView('analyzer')">Analyzer</button>
                     <button class="nav-btn" onclick="showView('pipeline')">How it works</button>
-                    <button class="nav-btn" onclick="showView('contact')">Contact</button>
                 </div>
-                <div class="nav-settings">
-                    <span class="nav-settings-title">Alerts</span>
-                    <label>
-                        <input type="checkbox" id="notifyToggle" checked>
-                        Desktop
-                    </label>
-                    <label>
-                        <input type="checkbox" id="soundToggle" checked>
-                        Sound
-                    </label>
+                <div class="nav-menu">
+                    <button class="nav-burger" id="navBurger" aria-label="Menu" aria-expanded="false" aria-controls="navDropdown">
+                        <span></span><span></span><span></span>
+                    </button>
+                    <div class="nav-dropdown" id="navDropdown" role="menu">
+                        <button class="nav-btn nav-dropdown-item" onclick="showView('contact')">Contact</button>
+                        <div class="nav-dropdown-divider"></div>
+                        <div class="nav-settings-title">Alerts</div>
+                        <label>
+                            <input type="checkbox" id="notifyToggle" checked>
+                            Desktop notifications
+                        </label>
+                        <label>
+                            <input type="checkbox" id="soundToggle" checked>
+                            Sound
+                        </label>
+                    </div>
                 </div>
             </div>
         </nav>
@@ -1548,7 +1616,6 @@
                     <div id="saliencyPanel" style="display:none;">
                         <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px;">
                             <span style="font-size:13px; font-weight:600;">Predicted Attention Map</span>
-                            <button id="saliencyToggleBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0;">Hide</button>
                             <button id="downloadSaliencyBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0;">Download Map</button>
                             <button id="downloadOriginalBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0;">Download Original</button>
                         </div>
@@ -1680,9 +1747,6 @@
                 <div style="display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;">
                     <button class="btn btn-secondary" id="exportBtn" style="width:auto; padding:10px 20px;">
                         Export as CSV
-                    </button>
-                    <button class="btn btn-secondary" id="exportPdfBtn" style="width:auto; padding:10px 20px; background:#1e3a5f; border-color:#3b82f6; color:#93c5fd;">
-                        Download PDF Report
                     </button>
                 </div>
             </div>
@@ -1830,6 +1894,16 @@
 
     </div><!-- end container -->
 
+    <footer class="site-footer">
+        <div class="site-footer-inner">
+            <span>GUI Complexity Analyzer — Stage 1</span>
+            <span class="site-footer-sep">·</span>
+            <span>Master's thesis on computational estimation of GUI interactional complexity</span>
+            <span class="site-footer-sep">·</span>
+            <a href="mailto:hannah.maria.m@web.de">Contact</a>
+        </div>
+    </footer>
+
     <script>
         // ─── Navigation ───
         function showView(name) {
@@ -1838,6 +1912,30 @@
             document.getElementById('view-' + name).classList.add('active');
             event.target.classList.add('active');
         }
+
+        // ─── Burger menu (Contact + Alerts settings) ───
+        (function initBurgerMenu() {
+            const burger = document.getElementById('navBurger');
+            const dropdown = document.getElementById('navDropdown');
+            if (!burger || !dropdown) return;
+            const closeMenu = () => {
+                dropdown.classList.remove('open');
+                burger.setAttribute('aria-expanded', 'false');
+            };
+            burger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const open = dropdown.classList.toggle('open');
+                burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+            });
+            // Close after picking Contact from the menu.
+            dropdown.querySelectorAll('.nav-dropdown-item').forEach(el => {
+                el.addEventListener('click', closeMenu);
+            });
+            // Close when clicking outside the menu.
+            document.addEventListener('click', (e) => {
+                if (!dropdown.contains(e.target) && !burger.contains(e.target)) closeMenu();
+            });
+        })();
 
         // ─── State ───
         let selectedFile = null;
@@ -3525,11 +3623,6 @@
             if (data.saliency_overlay_b64) {
                 saliencyImg.src = 'data:image/jpeg;base64,' + data.saliency_overlay_b64;
                 saliencyPanel.style.display = 'block';
-                document.getElementById('saliencyToggleBtn').onclick = () => {
-                    const visible = saliencyImg.style.display !== 'none';
-                    saliencyImg.style.display = visible ? 'none' : 'block';
-                    document.getElementById('saliencyToggleBtn').textContent = visible ? 'Show' : 'Hide';
-                };
                 document.getElementById('downloadSaliencyBtn').onclick = () => {
                     const a = document.createElement('a');
                     a.href = saliencyImg.src;
@@ -4267,19 +4360,7 @@
             document.getElementById("clearHistoryBtn").style.display = "block";
         }
 
-        // ─── PDF Export ───
-        document.getElementById("exportPdfBtn").addEventListener("click", async () => {
-            if (history.length === 0) return;
-            const btn = document.getElementById("exportPdfBtn");
-            btn.textContent = "Generating…";
-            btn.disabled = true;
-            try {
-                await exportPDF(history[history.length - 1]);
-            } finally {
-                btn.textContent = "Download PDF Report";
-                btn.disabled = false;
-            }
-        });
+        // ─── PDF Export (button removed from UI; exportPDF kept unused) ───
 
         async function exportPDF(d) {
             const { jsPDF } = window.jspdf;
