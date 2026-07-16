@@ -2601,16 +2601,16 @@
         // size, so the overlay stays aligned when the image scales responsively.
         function elOverviewBlock() {
             return `<div class="el-overview" style="position:relative; margin:0 0 12px 0; ` +
-                   `border-radius:8px; overflow:hidden; border:1px solid var(--border); ` +
+                   `border-radius:8px; border:1px solid var(--border); ` +
                    `background:var(--surface2);">` +
                    `<img alt="Screenshot with the listed elements outlined and numbered" ` +
-                   `style="display:block; width:100%;">` +
+                   `style="display:block; width:100%; border-radius:8px;">` +
                    `<div class="el-overlay" style="position:absolute; inset:0; pointer-events:none;">` +
                    `<div class="el-tip" style="position:absolute; display:none; z-index:5; ` +
-                   `max-width:60%; padding:6px 9px; border-radius:6px; font-size:11px; ` +
-                   `line-height:1.35; color:#fff; background:rgba(15,23,42,0.94); ` +
-                   `box-shadow:0 2px 10px rgba(0,0,0,.45); pointer-events:none; ` +
-                   `white-space:normal;"></div>` +
+                   `max-width:min(320px, 90%); padding:7px 10px; border-radius:6px; font-size:11px; ` +
+                   `line-height:1.4; color:#fff; background:rgba(15,23,42,0.97); ` +
+                   `box-shadow:0 3px 14px rgba(0,0,0,.5); pointer-events:none; ` +
+                   `white-space:normal; word-break:break-word;"></div>` +
                    `</div>` +
                    `</div>`;
         }
@@ -2660,8 +2660,10 @@
                     overlay.appendChild(badge);
                     byRank[rank] = { box, badge, row, bbox, tipText };
                 });
-                // Show the floating info card directly at the element. Placed
-                // above the box, or below it when the box sits near the top.
+                // Show the floating info card directly at the element. It is
+                // positioned in pixels and clamped to the image bounds so it is
+                // never clipped or pushed off an edge — the card stays fully
+                // readable wherever the element sits.
                 const showTip = (rank) => {
                     if (!tip) return;
                     const b = byRank[rank];
@@ -2669,16 +2671,29 @@
                     const [x, y, w, h] = b.bbox;
                     tip.textContent = b.tipText;
                     tip.style.borderLeft = `3px solid ${accent}`;
-                    tip.style.left = `${(x + w / 2) / nw * 100}%`;
-                    const near = (y / nh) < 0.16;
-                    if (near) {
-                        tip.style.top = `${(y + h) / nh * 100}%`;
-                        tip.style.transform = 'translate(-50%, 8px)';
-                    } else {
-                        tip.style.top = `${y / nh * 100}%`;
-                        tip.style.transform = 'translate(-50%, calc(-100% - 8px))';
-                    }
+                    tip.style.transform = 'none';
+                    // Make it measurable, then place it.
+                    tip.style.left = '0px';
+                    tip.style.top = '0px';
                     tip.style.display = 'block';
+                    const cw = overview.clientWidth, ch = overview.clientHeight;
+                    if (!cw || !ch) return;
+                    const sx = cw / nw, sy = ch / nh;
+                    const boxL = x * sx, boxT = y * sy, boxW = w * sx, boxH = h * sy;
+                    const pad = 6, gap = 8;
+                    const tw = tip.offsetWidth, th = tip.offsetHeight;
+                    // Horizontal: centre on the element, then clamp inside image.
+                    let left = boxL + boxW / 2 - tw / 2;
+                    left = Math.max(pad, Math.min(left, cw - tw - pad));
+                    // Vertical: above the element if it fits, else below, else
+                    // clamp inside the image so it is always fully visible.
+                    let top = boxT - th - gap;
+                    if (top < pad) {
+                        const below = boxT + boxH + gap;
+                        top = (below + th <= ch - pad) ? below : Math.max(pad, ch - th - pad);
+                    }
+                    tip.style.left = `${Math.round(left)}px`;
+                    tip.style.top = `${Math.round(top)}px`;
                 };
                 const hideTip = () => { if (tip) tip.style.display = 'none'; };
                 const setHi = (rank, on) => {
