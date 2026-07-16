@@ -2135,6 +2135,7 @@
                 <div class="ref-item"><strong>Taubman-Ben-Ari, Mikulincer &amp; Gillath (2004)</strong> The multidimensional driving style inventory — scale construct and validation. Accident Analysis &amp; Prevention, 36(3). <a class="ref-doi" href="https://doi.org/10.1016/S0001-4575(03)00010-1" target="_blank" rel="noopener">doi:10.1016/S0001-4575(03)00010-1</a></div>
                 <div class="ref-item"><strong>Borchani, Varando, Bielza &amp; Larrañaga (2015)</strong> A survey on multi-output regression. WIREs Data Mining and Knowledge Discovery, 5(5). <a class="ref-doi" href="https://doi.org/10.1002/widm.1157" target="_blank" rel="noopener">doi:10.1002/widm.1157</a></div>
                 <div class="ref-item"><strong>Bylinskii, Judd, Oliva, Torralba &amp; Durand (2018)</strong> What do different evaluation metrics tell us about saliency models? IEEE Transactions on Pattern Analysis and Machine Intelligence, 41(3). <a class="ref-doi" href="https://doi.org/10.1109/TPAMI.2018.2815601" target="_blank" rel="noopener">doi:10.1109/TPAMI.2018.2815601</a></div>
+                <div class="ref-item"><strong>Torralba &amp; Efros (2011)</strong> Unbiased look at dataset bias. CVPR 2011. <a class="ref-doi" href="https://doi.org/10.1109/CVPR.2011.5995347" target="_blank" rel="noopener">doi:10.1109/CVPR.2011.5995347</a></div>
                 <div class="ref-item"><strong>Serapio-García, Safdari, Crepy, Sun, Fitz, Romero, Abdulhai, Faust &amp; Matarić (2023)</strong> Personality Traits in Large Language Models. arXiv preprint. <a class="ref-doi" href="https://doi.org/10.48550/arXiv.2307.00184" target="_blank" rel="noopener">doi:10.48550/arXiv.2307.00184</a></div>
                 <div class="ref-item"><strong>Kahneman (1973)</strong> Attention and Effort. Prentice-Hall. (Book — no DOI)</div>
                 <div class="ref-item"><strong>Costa &amp; McCrae (1992)</strong> Revised NEO Personality Inventory (NEO PI-R). Psychological Assessment Resources. (Test manual — no DOI)</div>
@@ -3950,8 +3951,13 @@
                         dcBanner.innerHTML =
                             `<strong>Caution:</strong> the saliency model classifies this screenshot as ` +
                             `<strong>${label}</strong> (${conf}% confidence), which is outside the ` +
-                            `general GUI domain it was trained for. The saliency map and the ` +
-                            `cognitive-load score may be less reliable for this image.`;
+                            `general GUI domain it was trained for. Saliency and other learned ` +
+                            `models are known to lose accuracy on inputs that differ from their ` +
+                            `training distribution ` +
+                            `(<a class="cite-link" href="https://doi.org/10.1109/CVPR.2011.5995347" target="_blank" rel="noopener">Torralba &amp; Efros, 2011</a>; ` +
+                            `<a class="cite-link" href="https://doi.org/10.1145/3544548.3581096" target="_blank" rel="noopener">Jiang et al., 2023</a>), ` +
+                            `so the saliency map and the cognitive-load score may be less reliable ` +
+                            `for this image.`;
                     } else {
                         dcBanner.style.cssText =
                             'display:block; margin-bottom:16px; padding:8px 14px; border-radius:8px; ' +
