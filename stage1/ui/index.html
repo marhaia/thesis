@@ -2046,7 +2046,7 @@
 
             <div class="pipeline-arrow">↓</div>
 
-            <div class="pipeline-section-title">Stage 2 — Cognitive Load Estimation (Vectors → Score)</div>
+            <div class="pipeline-section-title">Stage 2 — Experimental Layout-Complexity Heuristic (Vectors → Score)</div>
             <div class="pipeline-row">
                 <div class="pipeline-node">
                     <div class="pipeline-node-label">HCEye Sensitivity</div>
@@ -4204,9 +4204,9 @@
                 return { label: 'Very high estimate', note: 'High estimated demand for this layout; consider simplifying.', cls: 'badge-very-high' };
             }
             function recommendationFor(score, delta) {
-                if (score >= 75 || delta >= 10) return 'Recommendation: Redesign recommended before delivery.';
-                if (score >= 50 || delta >= 5) return 'Recommendation: Minor simplification advised.';
-                return 'Recommendation: Keep as is.';
+                if (score >= 75 || delta >= 10) return 'Review cue: inspect the contributing feature patterns.';
+                if (score >= 50 || delta >= 5) return 'Review cue: inspect the contributing feature patterns.';
+                return 'Review cue: no elevated feature patterns stand out.';
             }
 
             // ── Explanations shown below each dropdown ────────────────────
@@ -4539,8 +4539,8 @@
                 body = `The interface places a <strong>moderate demand on user attention</strong>. Most users will cope well under normal conditions, but performance may degrade slightly under time pressure or dual-task situations — consistent with HCEye findings.`;
             } else if (score < 75) {
                 level = 'HIGH'; badge = 'High Load'; badgeClass = 'badge-high'; levelClass = 'level-high';
-                title = 'Elevated cognitive demand detected';
-                body = `This screen is estimated to cause <strong>notable attentional strain</strong>. Based on HCEye data, users under cognitive load make fewer but longer fixations — they take in less of the interface while processing each element more effortfully. The estimated effect for this screen is quantified below.`;
+                title = 'Higher experimental layout-complexity value';
+                body = `Several measured layout proxies are elevated for this screen. This is an exploratory layout-complexity signal only; it does not establish actual user cognitive demand. The contributing feature patterns are shown below.`;
             } else {
                 level = 'VERY_HIGH'; badge = 'Very High Estimate'; badgeClass = 'badge-very-high'; levelClass = 'level-very-high';
                 title = 'Very high estimated attentional demand';
@@ -5062,7 +5062,7 @@
             doc.setFont("helvetica", "normal");
             doc.setFontSize(8.5);
             doc.setTextColor(...dim);
-            const titleMap = { LOW: "Interface is easy to process", MODERATE: "Manageable, but worth watching", HIGH: "Elevated cognitive demand detected", "VERY HIGH": "Very high estimated attentional demand" };
+            const titleMap = { LOW: "Interface is easy to process", MODERATE: "Manageable, but worth watching", HIGH: "Higher experimental layout-complexity value", "VERY HIGH": "Very high estimated attentional demand" };
             doc.text(titleMap[level] || "", margin + 55, y + 17);
             y += 28;
 

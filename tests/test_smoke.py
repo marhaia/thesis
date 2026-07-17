@@ -551,6 +551,10 @@ def test_standard_ui_has_no_overload_or_safety_verdicts():
         "safety risk",
         "wcag compliant",
         "wcag non-compliant",
+        "redesign recommended",
+        "elevated cognitive demand",
+        "notable attentional strain",
+        "cognitive load estimation",  # visible pipeline heading must be renamed
         "wcag conformance audit",  # only allowed negated ("not a WCAG conformance audit")
     ]
     for phrase in forbidden:
