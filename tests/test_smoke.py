@@ -636,3 +636,51 @@ def test_standard_ui_keeps_selected_target_result_separate():
     # methodologically separate from the layout value.
     assert "Selected Target Search Difficulty" in html
     assert "the Experimental Layout Complexity value above is unchanged" in html
+
+
+def test_standard_ui_final_framing_acceptance():
+    # Final bounded framing patch: prohibit the exact remaining causal /
+    # human-performance / mislabelled-validation phrases. Internal API keys
+    # and the factual HCEye publication references remain allowed; the legacy
+    # source-study statistic is kept only inside a hidden HTML comment.
+    html = _standard_ui_html().lower()
+    forbidden = [
+        "lowers search load",
+        "reacts more strongly to load",
+        "high = more load",
+        "reduces perceptual demand",
+        "efficient pre-attentive processing",
+        "increase scanning effort",
+        "aids visual parsing",
+        "reducing search time",
+        "users must scan",
+        "selection demand",
+        "hceye behavioral validation",
+        "umsi++ saliency validation",
+        "cognitive load index (hceye)",
+    ]
+    for phrase in forbidden:
+        assert phrase not in html, f"forbidden framing phrase present: {phrase!r}"
+
+    # Positive assertions: the neutral replacements must be present.
+    assert "internal checks and source-study correspondence" in html
+    assert "not independent validation" in html
+    assert "hceye-derived rule index (exploratory)" in html
+    # The design-type banner must be intentionally disabled.
+    assert "intentionally disabled" in html
+
+
+def test_standard_ui_hides_unverified_umsi_class_mapping():
+    # The unverified six-class softmax mapping must not drive any rendered
+    # semantic label or in/out-of-domain reliability decision. The banner is
+    # forced hidden and the render branch is dead-coded (if (false)).
+    html = _standard_ui_html()
+    assert "if (false) {" in html, "design-type banner render branch must be dead-coded"
+    # The forced-hidden assignment must precede the dead branch.
+    disabled_idx = html.find("dcBanner.style.display = 'none';\n                dcBanner.innerHTML = '';")
+    assert disabled_idx != -1, "design-type banner must be forced hidden"
+    lower = html.lower()
+    # No rendered in/out-of-domain verdict from the mapping.
+    assert "within the model's intended ui domain" not in lower or "if (false)" in html
+    # The explanatory comment must state why it is disabled.
+    assert "index-to-label mapping" in lower

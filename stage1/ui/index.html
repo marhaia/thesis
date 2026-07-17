@@ -1726,7 +1726,7 @@
                         <div class="field-hint">Does the user know exactly what to look for, or are they browsing? <span class="field-hint-default">e.g. tapping a known menu item = <em>Known Item</em>. If unsure, keep <em>Known Item</em>.</span></div>
                     </div>
                     <div class="field">
-                        <label for="targetSpecificity">Target Specificity <span class="feature-i" tabindex="0" aria-label="Explanation of Target Specificity options" data-tip="<div class='tip-title'>Target Specificity</div><div class='tip-body'>How precisely the target is defined.<br><strong>High</strong> &mdash; well defined (e.g. a named button)<br><strong>Medium</strong> &mdash; roughly defined<br><strong>Low</strong> &mdash; vague or open-ended goal<br>Higher specificity lowers search load.</div>">i</span></label>
+                        <label for="targetSpecificity">Target Specificity <span class="feature-i" tabindex="0" aria-label="Explanation of Target Specificity options" data-tip="<div class='tip-title'>Target Specificity</div><div class='tip-body'>How precisely the target is defined.<br><strong>High</strong> &mdash; well defined (e.g. a named button)<br><strong>Medium</strong> &mdash; roughly defined<br><strong>Low</strong> &mdash; vague or open-ended goal<br>Higher specificity narrows the modelled search set.</div>">i</span></label>
                         <select id="targetSpecificity">
                             <option value="high">High — target well defined</option>
                             <option value="medium" selected>Medium — neutral default</option>
@@ -1745,7 +1745,7 @@
                     </div>
                 </div>
                 <div class="field" style="margin-top: 12px;">
-                    <label for="profilePreset">User Profile <span class="feature-i" tabindex="0" aria-label="Explanation of User Profile options" data-tip="<div class='tip-title'>User Profile</div><div class='tip-body'>A Big Five personality preset that nudges the score.<br><strong>Neutral</strong> &mdash; no adjustment (default)<br><strong>Focused / Conscientious</strong> &mdash; careful, goal-driven<br><strong>Exploratory / Open</strong> &mdash; curious, likes to browse<br><strong>Social / Extraverted</strong> &mdash; outgoing, engagement-driven<br><strong>Stress-Sensitive</strong> &mdash; reacts more strongly to load</div>">i</span> <span class="tag-optional" style="vertical-align:middle;margin-left:6px;">Optional</span></label>
+                    <label for="profilePreset">User Profile <span class="feature-i" tabindex="0" aria-label="Explanation of User Profile options" data-tip="<div class='tip-title'>User Profile</div><div class='tip-body'>A Big Five personality preset that nudges the score.<br><strong>Neutral</strong> &mdash; no adjustment (default)<br><strong>Focused / Conscientious</strong> &mdash; careful, goal-driven<br><strong>Exploratory / Open</strong> &mdash; curious, likes to browse<br><strong>Social / Extraverted</strong> &mdash; outgoing, engagement-driven<br><strong>Stress-Sensitive</strong> &mdash; receives the largest upward profile modifier (unvalidated)<br>All profile modifiers are unvalidated modelling choices, not measured personality effects.</div>">i</span> <span class="tag-optional" style="vertical-align:middle;margin-left:6px;">Optional</span></label>
                     <select id="profilePreset">
                         <option value="neutral" selected>Neutral — neutral default (no adjustment)</option>
                         <option value="focused">Focused / Conscientious</option>
@@ -2078,21 +2078,21 @@
                     <div class="pipeline-node-label">Full Feature Vector</div>
                     <div class="pipeline-node-title">Multi-Output Prediction</div>
                     <div class="pipeline-node-dim">x = [v, s, h, t, p] ∈ ℝ³⁰</div>
-                    <div class="pipeline-node-desc">The concatenated vector is passed to the regression model (HCEye rule-based by default, optional trained Random Forest). Primary output: Experimental Layout-Complexity Index (0–100), plus two exploratory, unvalidated rule-based proxies — Search Efficiency (0–1) and Attention Demand (0–1). A mutual coherence check flags implausible combinations.</div>
+                    <div class="pipeline-node-desc">The concatenated vector is scored by the rule-based experimental heuristic (the standard path). Primary output: Experimental Layout-Complexity Index (0–100), plus two exploratory, unvalidated rule-based proxies — Search Efficiency (0–1) and Attention Demand (0–1). The trained Random-Forest scaffold is disabled/quarantined: its current training construction is circular and cannot provide validation evidence. A mutual coherence check flags implausible combinations.</div>
                     <div class="pipeline-node-ref"><a href="https://doi.org/10.1023/A:1010933404324" target="_blank" rel="noopener">Breiman (2001)</a> Random Forest · <a href="https://doi.org/10.1002/widm.1157" target="_blank" rel="noopener">Borchani et al. (2015)</a> Multi-Output Regression · <a href="https://doi.org/10.1167/7.2.17" target="_blank" rel="noopener">Rosenholtz et al. (2007)</a> Coherence</div>
                 </div>
             </div>
 
-            <div class="pipeline-section-title" style="margin-top:32px;">Validation</div>
+            <div class="pipeline-section-title" style="margin-top:32px;">Internal Checks and Source-Study Correspondence</div>
             <div class="pipeline-row">
                 <div class="pipeline-node">
-                    <div class="pipeline-node-title">HCEye Behavioral Validation</div>
-                    <div class="pipeline-node-desc">H1 (fewer fixations under high load): p = 2.55×10⁻²⁸, Cohen’s d = 1.47 (large effect). Model prediction deviation: 0.6% from observed ratio.</div>
+                    <div class="pipeline-node-title">HCEye Aggregate-Ratio Reproduction</div>
+                    <div class="pipeline-node-desc">The rule reproduces an aggregate HCEye ratio (fewer fixations under the study's high-load condition) that was used in its construction. This is a source-study correspondence check, not independent validation of the screenshot-level index.<!-- legacy source-study statistic, hidden from UI: H1 (fewer fixations under high load): p = 2.55×10⁻²⁸, Cohen’s d = 1.47 (large effect). Model prediction deviation: 0.6% from observed ratio. --></div>
                     <div class="pipeline-node-ref"><a href="https://doi.org/10.1145/3655610" target="_blank" rel="noopener">Das et al. ETRA 2024</a></div>
                 </div>
                 <div class="pipeline-node">
-                    <div class="pipeline-node-title">UMSI++ Saliency Validation</div>
-                    <div class="pipeline-node-desc">Internal sanity check on a UEyes sample: predicted maps reproduce the human-fixation ground truth with CC around 0.90 and SIM around 0.81 on the sampled images. These are in-house figures on a non-standard split and are <em>not</em> directly comparable to the published UEyes benchmark (UMSI++: CC = 0.833, SIM = 0.733; Jiang et al., 2023), so they should be read as a consistency check rather than a state-of-the-art claim.</div>
+                    <div class="pipeline-node-title">UEyes Sample Sanity Check</div>
+                    <div class="pipeline-node-desc">A local engineering sanity check on a UEyes sample: predicted saliency maps look qualitatively consistent with human-fixation ground truth. This is not official-code parity and not benchmark validation; architecture/checkpoint parity remains to be independently established.</div>
                     <div class="pipeline-node-ref"><a href="https://doi.org/10.1145/3544548.3581096" target="_blank" rel="noopener">Jiang et al. CHI 2023</a> · <a href="https://doi.org/10.1109/TPAMI.2018.2815601" target="_blank" rel="noopener">Bylinskii et al. (2018)</a></div>
                 </div>
             </div>
@@ -3954,14 +3954,24 @@
             // proxies. They remain only in the technical details / PDF export,
             // explicitly labelled as exploratory proxies.
 
-            // ── UMSI++ design-type classification banner (Item 12) ───────────
-            // The saliency model has a 6-class design-type head. If it classifies
-            // the screenshot as something other than a desktop/automotive UI, the
-            // saliency prediction (and everything downstream) is out of domain and
-            // should be read with caution. Always show the detected type; switch
-            // to a caution style only when out_of_domain is true.
+            // ── UMSI++ design-type classification banner — INTENTIONALLY DISABLED ──
+            // The six-class softmax index-to-label mapping of the saliency model's
+            // design-type head is NOT verified. Until the label mapping is
+            // confirmed against the official code, the standard UI must not:
+            //   (a) render a semantic design-type label from that mapping,
+            //   (b) classify a screenshot as in-domain / out-of-domain, or
+            //   (c) warn that downstream outputs are more or less reliable
+            //       based on it.
+            // Rendering an unverified label would be an unfounded claim, so the
+            // banner is kept hidden. The backend field data.design_classification
+            // is left unchanged for API compatibility but is deliberately not used
+            // here. Re-enable only after the mapping is independently verified.
             const dcBanner = document.getElementById('designClassBanner');
             if (dcBanner) {
+                dcBanner.style.display = 'none';
+                dcBanner.innerHTML = '';
+            }
+            if (false) {
                 const dc = data.design_classification;
                 if (dc && dc.predicted_class) {
                     const label = dc.predicted_class.replace(/_/g, ' ');
@@ -4096,7 +4106,7 @@
                 }
                 const dir  = FEATURE_DIRECTION[key] === 'higher_is_better'
                     ? 'Better when this value is HIGH'
-                    : 'Better when this value is LOW (high = stronger feature signal)';
+                    : 'Higher values indicate a stronger feature signal.';
                 // The hover card explains what the feature MEASURES in general
                 // (not the current value), with a clear hierarchy: bold title,
                 // a short "what it measures" line, the reading direction, and a
@@ -4611,27 +4621,27 @@
             const findings = [];
 
             if (entropy > 0.7)
-                findings.push('High information density (Shannon entropy) — the screen carries a large amount of visual information per pixel.');
+                findings.push('High information density (Shannon entropy) — the image contains a large amount of pixel-level variation.');
             else if (entropy < 0.3)
-                findings.push('Low information density — the screen is visually sparse, which reduces perceptual demand.');
+                findings.push('Low information density — the image contains relatively little pixel-level variation.');
 
             if (congestion > 0.6)
-                findings.push('Elevated feature congestion — local regions are dense with competing visual features (color, contrast, orientation), which raises the congestion feature signal.');
+                findings.push('Elevated feature congestion — local regions are dense with competing visual features (color, contrast, orientation).');
             else if (congestion < 0.25)
-                findings.push('Low feature congestion — visual elements are well-separated, supporting efficient pre-attentive processing.');
+                findings.push('Low feature congestion — detected visual features are comparatively separated.');
 
             if (symmetry < 0.3)
-                findings.push('Weak layout symmetry — irregular spatial distribution of elements may increase scanning effort.');
+                findings.push('Weak layout symmetry — elements are distributed irregularly.');
             else if (symmetry > 0.7)
-                findings.push('Strong layout symmetry — balanced element distribution aids visual parsing.');
+                findings.push('Strong layout symmetry — elements are distributed more evenly.');
 
             if (hierarchy > 0.65)
-                findings.push('Clear visual hierarchy — size/contrast gradients guide the eye effectively, reducing search time.');
+                findings.push('Clear visual hierarchy — stronger size/contrast gradients are present.');
             else if (hierarchy < 0.35)
-                findings.push('Flat visual hierarchy — lack of clear size or contrast gradients means users must scan more uniformly.');
+                findings.push('Flat visual hierarchy — weaker size/contrast gradients are present.');
 
             if (elements > 0.6)
-                findings.push('High interactive element density — many actionable items per area increases selection demand.');
+                findings.push('High interactive-element density — many detected actionable regions occur per unit area.');
 
             if (chromatic < 0.3)
                 findings.push('Low chromatic coherence — high color variance may signal inconsistent visual design or high information density.');
@@ -4776,7 +4786,7 @@
                     : 'Better when low (high = stronger feature signal)';
                 const dirFull = FEATURE_DIRECTION[key] === 'higher_is_better'
                     ? 'Better when this value is HIGH'
-                    : 'Better when this value is LOW (high = more load)';
+                    : 'Higher values indicate a stronger feature signal.';
                 const pct = Math.round(values[i] * 100);
                 const raw = (typeof data[key] === 'number') ? data[key].toFixed(4) : '-';
                 const dotTip =
@@ -5102,12 +5112,12 @@
             }
 
             // ── Scores ───────────────────────────────────────────────────
-            sectionTitle("Prediction Scores");
+            sectionTitle("Experimental Outputs");
             row("Experimental Layout-Complexity Index (adjusted)",   score.toFixed(2), lvlColor);
             row("Experimental Layout-Complexity Index (base)",        (d.base_score || 0).toFixed(2));
             row("Search Efficiency (exploratory proxy)",   (d.search_efficiency || 0).toFixed(3));
             row("Attention Demand (exploratory proxy)",    (d.attention_demand || 0).toFixed(3));
-            row("Cognitive Load Index (HCEye)",       (d.hceye_cli || 0).toFixed(3));
+            row("HCEye-derived Rule Index (exploratory)",       (d.hceye_cli || 0).toFixed(3));
             row("Task Modifier",                      (d.task_modifier || 0).toFixed(2));
             row("Profile Modifier",                   (d.profile_modifier || 0).toFixed(2));
             divider();
