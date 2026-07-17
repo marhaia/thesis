@@ -101,10 +101,15 @@ def _rgb2lab(im: np.ndarray) -> np.ndarray:
     ])
     xyz = np.dot(im, matrix.T)
 
-    # Step 3: Normalize by D65 white point reference values
-    xyz[:, :, 0] /= 95.047   # Xn
-    xyz[:, :, 1] /= 100.000  # Yn
-    xyz[:, :, 2] /= 108.883  # Zn
+    # Step 3: Normalize by D65 white point reference values.
+    # xyz is on the 0..1 scale (linear-sRGB white maps to Y=1.0), so the white
+    # point must be on the SAME 0..1 scale (Xn=0.95047, Yn=1.0, Zn=1.08883).
+    # Using the 0..100-scale values here (95.047/100/108.883) was a unit bug:
+    # it drove white to L*~=8.99 instead of 100 and corrupted every downstream
+    # Lab-based metric (feature congestion, subband entropy).
+    xyz[:, :, 0] /= 0.95047    # Xn (D65)
+    xyz[:, :, 1] /= 1.00000    # Yn (D65)
+    xyz[:, :, 2] /= 1.08883    # Zn (D65)
 
     # Step 4: CIE nonlinear companding (cube-root or linear segment)
     mask = xyz >= 0.008856              # threshold = (6/29)^3
@@ -452,9 +457,13 @@ def _entropy(x: np.ndarray, nbins: Optional[int] = None) -> float:
     result is a relative measure.
     """
     nsamples = x.shape[0]
+    # Degenerate inputs carry no information (entropy = 0) and would otherwise
+    # produce nbins <= 1, i.e. np.histogram(x, bins=0), which raises.
+    if nsamples <= 1:
+        return 0.0
     if nbins is None:
         nbins = int(np.ceil(np.sqrt(nsamples)))  # heuristic: √N bins
-    elif nbins == 1:
+    if nbins <= 1:
         return 0.0
     edges = np.histogram(x, bins=nbins - 1)[1]   # bin edge computation
     ref_hist = np.digitize(x, edges)              # assign samples to bins

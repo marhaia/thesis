@@ -275,6 +275,22 @@ class HCEyeFeatureExtractor:
         )
         cognitive_load_index = float(np.clip(cognitive_load_index / 0.3, 0.0, 1.0))
 
+        # --- Empty-canvas anchoring (supervisor sanity test) ----------------
+        # The five terms above carry non-zero floors: highlight effectiveness
+        # has a fixed 0.5 base and AOI sensitivity a constant ~0.28 offset, so
+        # even a blank canvas would score ~0.4 ("medium load"). Interaction
+        # load is only meaningful to the degree the screen actually presents
+        # content to process, so we scale the index by a measured content-
+        # presence factor. A near-empty screen (no edges, no elements, near-
+        # total whitespace) -> presence ~0 -> low load; a content-rich screen
+        # -> presence ~1 -> index effectively unchanged. This anchors the
+        # headline at the bottom of its range instead of a fixed floor.
+        content_presence = float(np.clip(
+            max(edge, element_count, layout_complexity, 1.0 - whitespace),
+            0.0, 1.0,
+        ))
+        cognitive_load_index *= content_presence
+
         return np.array([
             fixation_reduction,
             duration_increase,

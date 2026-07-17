@@ -99,11 +99,13 @@ class TaskDescriptor:
     def score_modifier(self) -> float:
         """Return an additive modifier on a 0-100 cognitive-load score.
 
-        Weights chosen so that the highest-demand combination
-        (decision + low specificity + high time pressure + exploratory)
-        adds ~12 points and the lowest-demand combination subtracts ~8 points.
-        These bounds are heuristic; ordinal relationships follow the CLT and
-        Multiple Resource Theory references in the module docstring.
+        The intercept is chosen so the neutral default configuration
+        (search / medium specificity / medium time pressure / known-item)
+        adds exactly 0. Relative to that baseline, the highest-demand
+        combination adds up to ~+11 points and the lowest-demand combination
+        subtracts up to ~-7 points (further clipped to [-8, +12]). These bounds
+        are heuristic; ordinal relationships follow the CLT and Multiple
+        Resource Theory references in the module docstring.
         """
         vec = self.to_vector()
         modifier = (
@@ -111,7 +113,7 @@ class TaskDescriptor:
             6.0 * vec[1] +   # specificity        — narrows/widens search set
             10.0 * vec[2] +  # time_pressure      — strongest acute load driver
             7.0 * vec[3] -   # search_mode        — exploration penalty
-            15.0             # intercept: centres neutral config near 0
+            16.1             # intercept: centres the neutral default at exactly 0
         )
         return float(np.clip(modifier, -8.0, 12.0))
 

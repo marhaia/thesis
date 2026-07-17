@@ -1885,11 +1885,12 @@
                     <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                         <span style="font-size:13px; font-weight:600;">Predicted Search Path</span>
                         <span id="scanpathStatus" style="font-size:11px; color:var(--text-dim);"></span>
+                        <button id="addTargetBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0; display:none;">Add another target</button>
                         <button id="undoScanpathBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0; display:none;">Undo last</button>
                         <button id="clearScanpathBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0; display:none;">Clear all</button>
                         <button id="downloadScanpathBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0; display:none;">Download</button>
                     </div>
-                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 6px 0;"><strong>Drag a box</strong> around the area a user would search for &mdash; or <strong>tap a highlighted element</strong> &mdash; to see the predicted order a first-time user would look while searching for it. Add several targets to compare them. This is a <strong>model estimate</strong> of goal-directed search (<a class="cite-link" href="https://doi.org/10.1016/j.ijhcs.2019.102376" target="_blank" rel="noopener">Jokinen et al., 2020</a>), not measured eye-tracking.</p>
+                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 6px 0;"><strong>Drag a box</strong> around the area a user would search for &mdash; or <strong>tap a highlighted element</strong> &mdash; to see the predicted order a first-time user would look while searching for it. To add several targets to compare, use <strong>Add another target</strong> (or hold <strong>Shift</strong> while dragging). This is a <strong>model estimate</strong> of goal-directed search (<a class="cite-link" href="https://doi.org/10.1016/j.ijhcs.2019.102376" target="_blank" rel="noopener">Jokinen et al., 2020</a>), not measured eye-tracking.</p>
                     <!-- One-line onboarding hint (idea 9): a compact how-to shown
                          above the canvas so first-time users know what to do. -->
                     <div id="scanpathOnboard" style="display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text-dim); background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:6px 10px; margin:0 0 10px 0;">
@@ -1904,32 +1905,31 @@
                          listed here with its predicted search time and a traffic-
                          light rating so several elements can be compared at a glance. -->
                     <div id="scanpathCompare" style="display:none; margin-top:12px;"></div>
-                    <!-- Task-relative cognitive load for the clicked target. Shown
-                         LOCALLY here (not in the main score card on top) so the two
-                         ideas stay separate: the path is the visual-search sequence,
-                         this line is how hard THIS target is to find vs the layout. -->
-                    <div id="scanpathLoadLine" style="display:none; margin-top:12px; padding:12px 14px; border-radius:8px; border:1px solid var(--border); background:var(--surface2);">
-                        <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
-                            <span style="font-size:11px; color:var(--text-dim);">Task-relative load for this target</span>
-                            <span id="scanpathLoadValue" style="font-size:20px; font-weight:600;"></span>
-                            <span id="scanpathLoadDelta" style="font-size:12px; font-weight:600;"></span>
-                            <span id="scanpathLoadBadge" style="font-size:11px; font-weight:700; padding:2px 8px; border-radius:6px;"></span>
+                    <!-- Selected-target search difficulty. Shown LOCALLY here,
+                         kept methodologically SEPARATE from the stable layout
+                         value on top: this card reports how hard THIS target is
+                         to FIND (absolute predicted search time), never a
+                         cognitive-load / effort score, and never changes the
+                         layout value. Made prominent so a target switch is
+                         clearly visible. -->
+                    <div id="scanpathLoadLine" style="display:none; margin-top:14px; padding:16px 18px; border-radius:10px; border:2px solid var(--accent, #3b82f6); background:var(--surface2); box-shadow:0 2px 10px rgba(0,0,0,0.15);">
+                        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:6px;">
+                            <span style="font-size:13px; font-weight:700;">Selected Target Search Difficulty</span>
+                            <span id="scanpathLoadBadge" style="font-size:11px; font-weight:700; padding:3px 10px; border-radius:6px;"></span>
                         </div>
-                        <div id="scanpathLoadMeta" style="font-size:11px; color:var(--text-dim); margin-top:4px;"></div>
+                        <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+                            <span id="scanpathLoadValue" style="font-size:28px; font-weight:700;"></span>
+                            <span id="scanpathLoadDelta" style="font-size:13px; font-weight:600;"></span>
+                        </div>
+                        <div id="scanpathLoadMeta" style="font-size:11px; color:var(--text-dim); margin-top:6px;"></div>
                     </div>
 
-                    <!-- 4b-2. Glance-based automotive check (NHTSA 2013 / ISO 15008):
-                         only shown for in-vehicle display presets. Splits the
-                         predicted search into eyes-off-road glances and compares
-                         them to the single-glance (<=2 s) and cumulative (<=12 s)
-                         limits. -->
-                    <div id="glanceMetricsLine" style="display:none; margin-top:12px; padding:12px 14px; border-radius:8px; border:1px solid var(--border); background:var(--surface2);">
-                        <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
-                            <span style="font-size:11px; color:var(--text-dim);">Driver glance check (NHTSA / ISO 15008)</span>
-                            <span id="glanceStatusBadge" style="font-size:12px; font-weight:700; padding:2px 8px; border-radius:6px;"></span>
-                        </div>
-                        <div id="glanceMetricsBody" style="font-size:12px; margin-top:6px; line-height:1.5;"></div>
-                    </div>
+                    <!-- Driver glance check (NHTSA 2013 / ISO 15008) removed from
+                         the core UI: the compliance-style pass/fail framing over-
+                         claimed validated automotive compliance from an unvalidated
+                         model estimate. The backend still computes glance_metrics;
+                         re-introducing a clearly-labelled exploratory view is left
+                         as Future Work. -->
                 </div>
 
                 <!-- 4c. Generative feedback: which elements are the search
@@ -2898,7 +2898,7 @@
         // both image and canvas together.
         let _scanpathLastData = null;  // most recent scanpath response (for download)
         let _scanpathTargetBox = null; // last drawn target region {x,y,w,h} in image px
-        let _layoutLoadScore = null;   // layout-baseline cognitive load score (0-100)
+        let _layoutLoadScore = null;   // stable Experimental Layout Complexity value (0-100)
         // Multi-target state (idea 6): every committed target is kept so several
         // elements can be compared. Each entry: {box:{x,y,w,h}, data, color, n}.
         let _scanpathTargets = [];
@@ -2934,110 +2934,95 @@
                    `${timeS.toFixed(1)} s (${looks}) — ${rating.word}.`;
         }
 
-        // Show the task-relative load for the clicked target LOCALLY inside the
-        // search-path panel. This is deliberately kept SEPARATE from the main
-        // Cognitive Load Score card on top (which stays the stable layout value):
-        // the path = the visual-search sequence, this line = how hard THIS target
-        // is to find relative to the layout. Selecting a different target updates
-        // only this local line, so the top score never jumps around.
-        function showTargetLoad(targetLoad, targetId) {
+        // Show the SELECTED-TARGET search difficulty in the prominent card
+        // inside the search-path panel. This is deliberately kept SEPARATE from
+        // the layout complexity card on top (which stays the stable layout
+        // value): this card reports how hard THIS target is to FIND (absolute
+        // predicted search time in seconds), never a cognitive-load / effort
+        // score, and it is NOT combined with the layout value. Selecting a
+        // different target updates only this card, so the layout value never
+        // jumps.
+        function showTargetLoad(sel, targetId) {
             const box = document.getElementById('scanpathLoadLine');
             const valEl = document.getElementById('scanpathLoadValue');
             const deltaEl = document.getElementById('scanpathLoadDelta');
             const metaEl = document.getElementById('scanpathLoadMeta');
             const badgeEl = document.getElementById('scanpathLoadBadge');
             if (!box || !valEl || !deltaEl || !metaEl) return;
-            if (!targetLoad || _layoutLoadScore === null) {
-                box.style.display = 'none';
-                return;
+            if (!sel) { box.style.display = 'none'; return; }
+
+            // Accept either the new selected_target block or the legacy
+            // target_load shape (older history entries) by normalising.
+            if (sel.search_time_s === undefined && sel.target_search_time_s !== undefined) {
+                const dp = sel.deviation_pct;
+                sel = {
+                    target_id: targetId,
+                    search_time_s: sel.target_search_time_s,
+                    search_time_std_s: sel.target_search_time_std_s,
+                    layout_mean_search_time_s: sel.mean_search_time_s,
+                    relative_difficulty: (dp <= -15 ? 'easier than layout average'
+                        : dp >= 15 ? 'harder than layout average'
+                        : 'around layout average'),
+                    deviation_pct: dp,
+                    search_success: true,
+                };
             }
-            const mod = targetLoad.search_load_modifier;
-            const targetScore = Math.max(0, Math.min(100, _layoutLoadScore + mod));
-            const sign = mod >= 0 ? '+' : '';
-            const harder = targetLoad.deviation_pct >= 0;
-            valEl.textContent = targetScore.toFixed(1);
-            deltaEl.textContent = `${sign}${mod.toFixed(1)} vs layout`;
-            deltaEl.style.color = harder ? 'var(--danger)' : 'var(--success)';
-            // Traffic-light badge (idea 5).
+
+            // Absolute predicted search time is the headline of this card.
+            const t = sel.search_time_s;
+            const std = sel.search_time_std_s;
+            valEl.textContent = (typeof t === 'number') ? `${t.toFixed(1)} s` : '\u2014';
+
+            const dev = sel.deviation_pct;
+            const harder = typeof dev === 'number' && dev >= 0;
+            if (typeof dev === 'number') {
+                const sign = dev >= 0 ? '+' : '';
+                deltaEl.textContent = `${sign}${dev.toFixed(0)}% vs layout average`;
+                deltaEl.style.color = harder ? 'var(--danger)' : 'var(--success)';
+            } else {
+                deltaEl.textContent = '';
+            }
+
+            // Plain-language relative label as the badge.
             if (badgeEl) {
-                const rating = scanpathRating(targetLoad.deviation_pct);
-                badgeEl.textContent = rating.label;
+                badgeEl.textContent = sel.relative_difficulty || '\u2014';
+                const rating = scanpathRating(dev);
                 badgeEl.style.background = rating.color;
                 badgeEl.style.color = '#fff';
             }
-            // Human-readable summary first (idea 4), then the honest numbers.
-            const human = scanpathHumanText(
-                targetLoad.target_search_time_s,
-                (_scanpathLastData && _scanpathLastData.scanpath)
-                    ? _scanpathLastData.scanpath.n_fixations : undefined,
-                targetLoad.deviation_pct
-            );
-            let timeStr = '';
-            if (typeof targetLoad.target_search_time_s === 'number') {
-                const std = targetLoad.target_search_time_std_s;
-                timeStr = (typeof std === 'number')
-                    ? ` Predicted search time ${targetLoad.target_search_time_s.toFixed(1)} ` +
-                      `\u00B1 ${std.toFixed(1)} s (model uncertainty over simulations).`
-                    : ` Predicted search time ${targetLoad.target_search_time_s.toFixed(1)} s.`;
-            }
+
+            const idStr = (sel.target_id != null)
+                ? `Target #${sel.target_id}. ` : (targetId != null ? `Target #${targetId}. ` : '');
+            const stdStr = (typeof std === 'number')
+                ? ` \u00B1 ${std.toFixed(1)} s (model uncertainty over simulations)` : '';
+            const meanStr = (typeof sel.layout_mean_search_time_s === 'number')
+                ? ` Layout average search time ${sel.layout_mean_search_time_s.toFixed(1)} s.` : '';
+            const successStr = (sel.search_success === false)
+                ? ' Note: the model did not reliably reach this target within the fixation budget.' : '';
             metaEl.textContent =
-                `${human} Layout baseline ${_layoutLoadScore.toFixed(1)}; this element is ` +
-                `${Math.abs(targetLoad.deviation_pct).toFixed(0)}% ` +
-                `${harder ? 'harder' : 'easier'} to find than the layout average. ` +
-                `The main Cognitive Load Score above stays the layout value.` +
-                timeStr;
+                `${idStr}Predicted first-time search time ` +
+                `${(typeof t === 'number') ? t.toFixed(1) : '\u2014'} s${stdStr}.` +
+                `${meanStr} This is a search-difficulty estimate for the selected ` +
+                `target only; the Experimental Layout Complexity value above is unchanged.` +
+                successStr;
             box.style.display = 'block';
         }
 
-        // Hide the local task-relative load line (e.g. after Clear).
+        // Hide the selected-target search-difficulty card (e.g. after Clear).
         function hideTargetLoad() {
             const box = document.getElementById('scanpathLoadLine');
             if (box) box.style.display = 'none';
         }
 
-        // Render the driver-glance compliance check (NHTSA 2013 / ISO 15008).
-        // Only populated when the backend returns glance_metrics (i.e. an
-        // in-vehicle display preset). Splits the predicted search into
-        // eyes-off-road glances and compares them to the single-glance (2 s)
-        // and cumulative (12 s) limits.
-        function showGlanceMetrics(gm) {
-            const box = document.getElementById('glanceMetricsLine');
-            const badge = document.getElementById('glanceStatusBadge');
-            const body = document.getElementById('glanceMetricsBody');
-            if (!box || !badge || !body) return;
-            if (!gm || gm.n_glances === 0) {
-                box.style.display = 'none';
-                return;
-            }
-            if (gm.compliant) {
-                badge.textContent = 'within limits';
-                badge.style.background = 'var(--success)';
-                badge.style.color = '#fff';
-            } else {
-                badge.textContent = 'exceeds limit';
-                badge.style.background = 'var(--danger)';
-                badge.style.color = '#fff';
-            }
-            const singleColor = gm.exceeds_single_glance ? 'var(--danger)' : 'var(--text)';
-            const cumColor = gm.exceeds_cumulative ? 'var(--danger)' : 'var(--text)';
-            body.innerHTML =
-                `The predicted search would take <b>${gm.n_glances}</b> ` +
-                `glance${gm.n_glances === 1 ? '' : 's'} at the display ` +
-                `(budget ${gm.glance_budget_s.toFixed(1)} s each).<br>` +
-                `Longest single glance: <b style="color:${singleColor}">` +
-                `${gm.max_single_glance_s.toFixed(1)} s</b> ` +
-                `(limit ${gm.single_glance_limit_s.toFixed(1)} s).<br>` +
-                `Total eyes-off-road time: <b style="color:${cumColor}">` +
-                `${gm.total_eyes_off_road_s.toFixed(1)} s</b> ` +
-                `(limit ${gm.cumulative_limit_s.toFixed(1)} s).`;
-            box.style.display = 'block';
-        }
+        // Driver-glance compliance check (NHTSA 2013 / ISO 15008) has been
+        // removed from the core UI: the pass/fail compliance framing over-
+        // claimed validated automotive compliance from an unvalidated model
+        // estimate. These two functions are kept as no-ops so existing call
+        // sites stay valid; the backend still returns glance_metrics for any
+        // future, clearly-labelled exploratory view.
+        function showGlanceMetrics(_gm) { /* intentionally disabled (Future Work) */ }
 
-        // Hide the glance-metrics line (e.g. after Clear or for desktop preset).
-        function hideGlanceMetrics() {
-            const box = document.getElementById('glanceMetricsLine');
-            if (box) box.style.display = 'none';
-        }
+        function hideGlanceMetrics() { /* intentionally disabled (Future Work) */ }
 
         // Generative feedback: render the ranked search-bottleneck elements so
         // the designer sees which elements are hardest to find (diagnosis ->
@@ -3420,18 +3405,20 @@
             const undoBtn = document.getElementById('undoScanpathBtn');
             const clearBtn = document.getElementById('clearScanpathBtn');
             const dlBtn = document.getElementById('downloadScanpathBtn');
+            const addBtn = document.getElementById('addTargetBtn');
             const compareEl = document.getElementById('scanpathCompare');
             if (!panel || !img || !canvas || !selectedFile) {
                 if (panel) panel.style.display = 'none';
                 return;
             }
 
-            const IDLE_HINT = 'Drag a box around the element you want to test — or tap a highlighted box.';
+            const IDLE_HINT = 'Drag a box around an element to get its target-specific search difficulty — or tap a highlighted box. The layout value above stays unchanged.';
             panel.style.display = 'block';
             statusEl.textContent = IDLE_HINT;
             undoBtn.style.display = 'none';
             clearBtn.style.display = 'none';
             dlBtn.style.display = 'none';
+            if (addBtn) addBtn.style.display = 'none';
             _scanpathLastData = null;
             _scanpathTargetBox = null;
             _scanpathTargets = [];
@@ -3441,6 +3428,12 @@
             // corner handles and the big info box below all follow this one.
             // Clicking a target (on the image or in the compare list) selects it.
             let _selectedN = null;
+            // When true, the NEXT drag always starts a NEW target box (even if it
+            // begins inside an existing target). This is the touch-friendly
+            // equivalent of holding Shift while dragging, so a second target can
+            // be added on an isolated crop where the first box covers most of the
+            // image. Reset after one new target is committed.
+            let _addTargetMode = false;
             hideTargetLoad();
             hideGlanceMetrics();
             if (compareEl) { compareEl.style.display = 'none'; compareEl.innerHTML = ''; }
@@ -3530,21 +3523,28 @@
                     pts.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
                     ctx.stroke();
                     ctx.setLineDash([]);
-                    ctx.font = `700 ${Math.round(r * 1.05)}px -apple-system, sans-serif`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     pts.forEach((p) => {
                         const isTarget = p.is_target === true;
                         const isStart = p.order === 0;
+                        const rr = isTarget ? r * 1.25 : r;
                         ctx.beginPath();
-                        ctx.arc(p.x, p.y, isTarget ? r * 1.25 : r, 0, Math.PI * 2);
+                        ctx.arc(p.x, p.y, rr, 0, Math.PI * 2);
                         ctx.fillStyle = isStart ? '#64748b' : t.color;
                         ctx.fill();
                         ctx.lineWidth = Math.max(2, Math.round(r * 0.14));
                         ctx.strokeStyle = '#fff';
                         ctx.stroke();
+                        // Per-path label so overlaid targets never show the same
+                        // number twice: start = "T{n}", each fixation = "T{n}.{order}"
+                        // (e.g. T2.3 = target 2, fixation 3). Font shrinks for the
+                        // longer labels so they still fit inside the dot.
+                        const label = isStart ? `T${t.n}` : `T${t.n}.${p.order}`;
+                        const fontPx = Math.max(8, Math.round(rr * 1.7 / Math.max(2, label.length)));
+                        ctx.font = `700 ${fontPx}px -apple-system, sans-serif`;
                         ctx.fillStyle = '#fff';
-                        ctx.fillText(isStart ? 'S' : String(p.order), p.x, p.y);
+                        ctx.fillText(label, p.x, p.y);
                     });
                     ctx.restore();
                 }
@@ -3610,7 +3610,7 @@
                 }
                 const rows = _scanpathTargets.map((t) => {
                     const sp = t.data && t.data.scanpath;
-                    const tl = t.data && t.data.target_load;
+                    const tl = t.data && (t.data.selected_target || t.data.target_load);
                     const time = sp ? sp.total_time_s : null;
                     const dev = tl ? tl.deviation_pct : undefined;
                     const rating = scanpathRating(dev);
@@ -3663,7 +3663,7 @@
                 _selectedN = n;
                 _scanpathLastData = t.data;
                 _scanpathTargetBox = t.box;
-                showTargetLoad(t.data.target_load, t.data.target_id);
+                showTargetLoad(t.data.selected_target || t.data.target_load, t.data.target_id);
                 showGlanceMetrics(t.data.glance_metrics);
                 const sp = t.data.scanpath;
                 statusEl.textContent =
@@ -3671,6 +3671,18 @@
                     `${sp.total_time_s.toFixed(2)} s predicted search time.`;
                 redrawAll();
                 renderCompare();
+            };
+
+            // Toggle the touch-friendly "add another target" arm state and
+            // reflect it on the button + status line.
+            const setAddMode = (on) => {
+                _addTargetMode = on;
+                if (addBtn) {
+                    addBtn.textContent = on ? 'Adding target… (drag a box)' : 'Add another target';
+                    addBtn.style.background = on ? 'var(--accent, #3b82f6)' : '';
+                    addBtn.style.color = on ? '#fff' : '';
+                }
+                if (on) statusEl.textContent = 'Drag a box around the next target to add it.';
             };
 
             // Refresh everything that depends on the target list.
@@ -3682,6 +3694,7 @@
                 }
                 redrawAll();
                 renderCompare();
+                if (addBtn) addBtn.style.display = hasAny ? '' : 'none';
                 undoBtn.style.display = hasAny ? '' : 'none';
                 clearBtn.style.display = hasAny ? '' : 'none';
                 dlBtn.style.display = hasAny ? '' : 'none';
@@ -3783,6 +3796,15 @@
                 const pt = toOrig(ev);
                 startPt = pt; moved = false; startedOnSuggestion = null; activeCorner = null;
                 selectPendingN = null;
+                // Shift+Drag or the "Add another target" button always starts a
+                // brand-new target, even when the drag begins inside an existing
+                // one. Otherwise a drag inside the active box would just move it,
+                // which made adding a second target impossible on tight crops.
+                const forceNew = ev.shiftKey || _addTargetMode;
+                if (forceNew) {
+                    mode = 'draw'; startedOnSuggestion = hitSuggestion(pt);
+                    return;
+                }
                 const corner = hitCorner(pt);
                 if (corner) {
                     mode = 'resize'; activeCorner = corner; startBox = Object.assign({}, activeBox());
@@ -3836,8 +3858,10 @@
                     if (!moved && startedOnSuggestion) {
                         const [sx, sy, sw, sh] = startedOnSuggestion.bbox;
                         commitTarget({ x: sx, y: sy, w: sw, h: sh }, null);
+                        setAddMode(false);
                     } else if (w >= minSide && h >= minSide) {
                         commitTarget({ x, y, w, h }, null);
+                        setAddMode(false);
                     } else {
                         redrawAll();
                         statusEl.textContent = _scanpathSuggestions.length
@@ -3860,6 +3884,7 @@
                     if (active) active.box = startBox;
                 }
                 mode = null; startedOnSuggestion = null; selectPendingN = null;
+                setAddMode(false);
                 redrawAll();
                 statusEl.textContent = IDLE_HINT;
             };
@@ -3885,6 +3910,7 @@
 
             undoBtn.onclick = () => { _scanpathTargets.pop(); afterTargetsChanged(); };
             clearBtn.onclick = () => { _scanpathTargets = []; _nextTargetN = 0; afterTargetsChanged(); };
+            if (addBtn) addBtn.onclick = () => setAddMode(!_addTargetMode);
 
             dlBtn.onclick = () => {
                 // Composite screenshot + overlay into one downloadable PNG.
@@ -3909,15 +3935,18 @@
 
             const base = data.base_prediction || {};
             const adjusted = data.adjusted_prediction || {};
-            // Remember the layout-baseline load score so the search-path panel can
-            // show a SEPARATE task-relative load line for a clicked target. The
-            // main score card below stays the stable layout value and never jumps.
-            _layoutLoadScore = adjusted.cognitive_load_score;
+            const layout = data.layout || {};
+            // Remember the stable layout complexity value so the search-path
+            // panel can show a SEPARATE target search-difficulty card. This
+            // value never changes when a target is selected.
+            _layoutLoadScore = (typeof layout.experimental_complexity_index === 'number')
+                ? layout.experimental_complexity_index
+                : adjusted.cognitive_load_score;
             summaryGrid.innerHTML = `
                 <div class="summary-card">
-                    <div class="summary-label">Cognitive Load Score <span class="feature-i" tabindex="0" aria-label="What is the Cognitive Load Score?" data-tip="<div class='tip-title'>Cognitive Load Score</div><div class='tip-body'>Overall estimated mental effort to use this screen, on a 0&ndash;100 scale. Higher means more load. It combines the visual complexity features with the selected task and profile context.</div>">i</span></div>
+                    <div class="summary-label">Experimental Layout Complexity <span class="feature-i" tabindex="0" aria-label="What is Experimental Layout Complexity?" data-tip="<div class='tip-title'>Experimental Layout Complexity</div><div class='tip-body'>An exploratory, image-based complexity value for the whole screen, on a 0&ndash;100 scale. Higher means a busier, more demanding layout. It combines the visual complexity features with the selected task and profile context. It is a layout characteristic, not a validated cognitive-load measurement, and it does not change when you select a target.</div>">i</span></div>
                     <div class="summary-value">${adjusted.cognitive_load_score.toFixed(1)}</div>
-                    <div class="summary-meta">Base ${base.cognitive_load_score.toFixed(1)} · adjusted by task/profile · ${data.prediction_source === "stage2_trained_model" ? "experimental regressor" : "HCEye rule-based"}</div>
+                    <div class="summary-meta">Base ${base.cognitive_load_score.toFixed(1)} · adjusted by task/profile · ${data.prediction_source === "stage2_trained_model" ? "experimental regressor" : "HCEye rule-based"}. Select a target below for its search difficulty.</div>
                 </div>
                 <div class="summary-card">
                     <div class="summary-label">Search Efficiency <span class="feature-i" tabindex="0" aria-label="What is Search Efficiency?" data-tip="<div class='tip-title'>Search Efficiency</div><div class='tip-body'>How easily a user can find a specific target on this screen, on a 0&ndash;1 scale. Higher means faster, more direct visual search.</div>">i</span></div>
@@ -4808,6 +4837,19 @@
         }
 
         // ─── History Table ───
+        // Escape text before it is interpolated into innerHTML. The uploaded
+        // filename is attacker-controllable, so a name containing HTML/quotes
+        // must not be able to inject markup, script, or break out of the title
+        // attribute. Covers &, <, >, ", '.
+        function escapeHtml(value) {
+            return String(value == null ? "" : value)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
         function renderHistory() {
             const content = document.getElementById("historyContent");
 
@@ -4818,24 +4860,28 @@
                 return;
             }
 
-            const shortKeys = ["Score", "Search", "Attention", "Task", "Profile"];
+            const shortKeys = ["Layout", "Search", "Attention", "Task", "Profile"];
             let html = `<div style="overflow-x: auto;"><table class="history-table"><tr>
                 <th title="Include this analysis in the overall comparison"><input type="checkbox" id="historySelectAll"></th>
                 <th>File</th>
-                ${shortKeys.map(k => `<th>${k}</th>`).join("")}
+                <th title="Experimental Layout Complexity (0-100, layout characteristic)">Layout</th>
+                ${shortKeys.slice(1).map(k => `<th>${k}</th>`).join("")}
             </tr>`;
 
             history.forEach((row, i) => {
                 const checked = row.included !== false ? "checked" : "";
+                const fileName = escapeHtml(row.filename);
+                const taskType = escapeHtml(row.task_type);
+                const profile = escapeHtml(row.profile);
                 html += `<tr>
                     <td><input type="checkbox" class="history-select" data-idx="${i}" ${checked}></td>
                     <td style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                        title="${row.filename}">${row.filename}</td>
+                        title="${fileName}">${fileName}</td>
                     <td>${row.score.toFixed(1)}</td>
                     <td>${row.search_efficiency.toFixed(3)}</td>
                     <td>${row.attention_demand.toFixed(3)}</td>
-                    <td>${row.task_type}</td>
-                    <td title="${row.profile}">${row.profile}</td>
+                    <td>${taskType}</td>
+                    <td title="${profile}">${profile}</td>
                 </tr>`;
             });
 

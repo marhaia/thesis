@@ -81,8 +81,8 @@ def get_profile(profile_key: str = "neutral") -> Dict[str, object]:
 
     # Cognitive-load modifier formula:
     #
-    #   modifier = 4·N  − 2.5·C  − 1.5·(1−N)  + 1·O  − 1
-    #            = 5.5·N − 2.5·C + O − 2.5
+    #   modifier = 4·N  − 2.5·C  − 1.5·(1−N)  + 1·O  − 0.5
+    #            = 5.5·N − 2.5·C + O − 2.0
     #
     #   Rationale:
     #     +4·N   : Neuroticism is the dominant predictor of CL sensitivity;
@@ -97,7 +97,8 @@ def get_profile(profile_key: str = "neutral") -> Dict[str, object]:
     #     +1·O   : High Openness correlates with exploratory scanning, which
     #              can slightly increase time-on-task but rarely causes overload
     #              (Chamorro-Premuzic & Furnham, 2003).
-    #     −1.0   : Intercept to centre neutral profile at modifier ≈ 0.
+    #     −0.5   : Intercept chosen so the neutral profile (all traits = 0.5)
+    #              yields exactly 0 (no CL adjustment).
     #
     #   Clipped to [−5, +6] to prevent outlier profiles from dominating.
     modifier = (
@@ -105,7 +106,7 @@ def get_profile(profile_key: str = "neutral") -> Dict[str, object]:
         2.5 * conscientiousness -
         1.5 * resilience +
         1.0 * exploration_preference -
-        1.0
+        0.5
     )
     modifier = float(np.clip(modifier, -5.0, 6.0))
 

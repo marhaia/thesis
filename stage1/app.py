@@ -370,8 +370,61 @@ def _warmup_saliency_model():
 
 app = Flask(__name__, static_folder="ui", static_url_path="")
 
+# --- Resource limits (guard against accidental or malicious exhaustion) ------
+# Maximum accepted request body size. Flask rejects larger uploads with 413
+# before reading them into memory. Override with the MAX_UPLOAD_MB env var.
+MAX_UPLOAD_MB = int(os.environ.get("MAX_UPLOAD_MB", "50"))
+app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
+
+# Maximum number of screens accepted in one screen-set request (several files
+# or animated-GIF frames). Larger sets are rejected rather than processed.
+MAX_SCREENS = int(os.environ.get("MAX_SCREENS", "60"))
+
+# Maximum length of an exposure / total-uses schedule list.
+MAX_SCHEDULE_LEN = 50
+
+# Bounds for the Monte-Carlo trial count exposed via ?n_simulations=.
+MIN_SIMULATIONS = 1
+MAX_SIMULATIONS = 500
+
 UPLOAD_DIR = Path(__file__).parent / "data" / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+@app.errorhandler(413)
+def _too_large(_err):
+    """Return a clean JSON 413 instead of an HTML error page for oversized uploads."""
+    return jsonify({
+        "error": f"Upload too large (limit {MAX_UPLOAD_MB} MB)."
+    }), 413
+
+
+def _clamp_simulations(req):
+    """Read ?n_simulations and clamp it to [MIN_SIMULATIONS, MAX_SIMULATIONS].
+
+    ``type=int`` yields None for non-numeric input (e.g. ?n_simulations=abc);
+    that and any out-of-range value fall back into the valid band so the Monte
+    Carlo loop can never run zero (which would yield an empty result / NaN) or an
+    unbounded number of trials.
+    """
+    val = req.args.get("n_simulations", 100, type=int)
+    if val is None:
+        val = 100
+    return int(max(MIN_SIMULATIONS, min(val, MAX_SIMULATIONS)))
+
+
+def _server_error(exc):
+    """Log the full exception server-side and return a generic JSON 500.
+
+    Prevents leaking internal details (local paths, dependency versions, model
+    internals, stack traces) to the client while keeping the real cause in the
+    server log for debugging. Use for unexpected faults only; expected input
+    problems should still return a specific 4xx.
+    """
+    import traceback
+    print(f"[error] {type(exc).__name__}: {exc}")
+    traceback.print_exc()
+    return jsonify({"error": "Internal server error"}), 500
 
 
 @app.route("/")
@@ -413,7 +466,7 @@ def analyze():
         results["visual_cache_hit"] = cache_hit
         return jsonify(results)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _server_error(e)
     finally:
         # Clean up uploaded file
         if filepath.exists():
@@ -537,7 +590,7 @@ def saliency():
             "saliency_cache_hit": cache_hit,
         })
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _server_error(e)
     finally:
         if filepath.exists():
             filepath.unlink()
@@ -592,7 +645,7 @@ def search_time():
         return jsonify({"error": f"Unsupported format: {ext}"}), 400
 
     # Parse optional query parameters
-    n_simulations = request.args.get("n_simulations", 100, type=int)
+    n_simulations = _clamp_simulations(request)
     use_saliency = request.args.get("use_saliency", "true").lower() != "false"
 
     image_hash, image_bytes = _hash_upload(file)
@@ -651,7 +704,7 @@ def search_time():
         return jsonify(results)
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _server_error(e)
     finally:
         if filepath.exists():
             filepath.unlink()
@@ -747,7 +800,7 @@ def scanpath_to_target():
                      "target_h), a click point (target_x, target_y), or target_id"
         }), 400
 
-    n_simulations = request.args.get("n_simulations", 100, type=int)
+    n_simulations = _clamp_simulations(request)
     use_saliency = request.args.get("use_saliency", "true").lower() != "false"
 
     # Physical display geometry (affects search timing via angular size).
@@ -842,7 +895,15 @@ def scanpath_to_target():
         # layout in general. We express it as a SIGNED modifier (in score points)
         # relative to the layout's mean search time: a target that is harder to
         # find than average raises the load, an easier one lowers it.
-        target_load = None
+        # SELECTED-TARGET SEARCH DIFFICULTY (methodologically separate from the
+        # layout-wide complexity index). The Jokinen search model already
+        # estimates a search cost PER element. Selecting a target lets us report
+        # that element's ABSOLUTE predicted search time (seconds) plus how it
+        # compares to the layout mean — WITHOUT folding it into the layout score
+        # or inventing a new 0-100 number. This is a search-difficulty construct,
+        # not a cognitive-load / mental-effort / safety measure.
+        selected_target = None
+        target_load = None  # legacy alias, kept for backward compatibility
         search_res = jokinen.predict_search_times(
             elements=elements,
             saliency_map=saliency_map,
@@ -858,30 +919,55 @@ def scanpath_to_target():
         if 0 <= target_idx < len(per_elem):
             target_time = float(per_elem[target_idx].get("search_time_s", 0.0))
             target_time_std = float(per_elem[target_idx].get("search_time_std_s", 0.0))
+
+        # Whether the model actually reached the target in the representative
+        # scanpath (vs. running out of fixations). The last fixation is the
+        # target when the search succeeded.
+        fixations = (scanpath or {}).get("fixations", [])
+        search_success = bool(fixations and fixations[-1].get("is_target"))
+
         if target_time is not None and mean_time > 0:
-            # Signed fractional deviation from the layout mean, then mapped to
-            # bounded score points. POINTS_PER_UNIT and MODIFIER_CAP are chosen
-            # so a target that takes ~50% longer than average adds ~+12 points
-            # while staying within a readable +/-15 point envelope.
+            deviation = (target_time - mean_time) / mean_time
+            deviation_pct = round(deviation * 100.0, 1)
+            # Plain-language, relative label. Deliberately about SEARCH time
+            # vs the layout average, never about cognitive load / effort.
+            if deviation_pct <= -15.0:
+                relative_difficulty = "easier than layout average"
+            elif deviation_pct >= 15.0:
+                relative_difficulty = "harder than layout average"
+            else:
+                relative_difficulty = "around layout average"
+
+            selected_target = {
+                "target_id": elements[target_idx].get("id"),
+                "search_time_s": round(target_time, 4),
+                # Monte Carlo uncertainty (1 SD over the simulation trials).
+                "search_time_std_s": round(target_time_std, 4)
+                if target_time_std is not None else None,
+                "layout_mean_search_time_s": round(mean_time, 4),
+                "relative_difficulty": relative_difficulty,
+                "deviation_pct": deviation_pct,
+                "search_success": search_success,
+            }
+
+            # Legacy diagnostic: the old signed score-point modifier. Kept ONLY
+            # as an explicitly experimental field for backward compatibility; it
+            # must NOT be combined with the layout score in new UI/exports.
             POINTS_PER_UNIT = 25.0
             MODIFIER_CAP = 15.0
-            deviation = (target_time - mean_time) / mean_time
             search_load_modifier = float(
                 max(-MODIFIER_CAP, min(MODIFIER_CAP, POINTS_PER_UNIT * deviation))
             )
             target_load = {
                 "mean_search_time_s": round(mean_time, 4),
                 "target_search_time_s": round(target_time, 4),
-                # Per-target Monte Carlo uncertainty (1 standard deviation over
-                # the simulation trials) for an honest "T +/- s" display.
                 "target_search_time_std_s": round(target_time_std, 4)
                 if target_time_std is not None else None,
-                # >1 = harder to find than average, <1 = easier.
                 "relative_difficulty": round(target_time / mean_time, 3),
-                # Signed % deviation vs the layout mean (for readable display).
-                "deviation_pct": round(deviation * 100.0, 1),
-                # Signed modifier in score points to apply to the base load.
-                "search_load_modifier": round(search_load_modifier, 2),
+                "deviation_pct": deviation_pct,
+                # Experimental diagnostic only — see selected_target for the
+                # canonical, non-cognitive-load search-difficulty result.
+                "experimental_search_load_modifier": round(search_load_modifier, 2),
             }
 
         target_elem = elements[target_idx]
@@ -893,13 +979,16 @@ def scanpath_to_target():
             "target_bbox": list(target_elem.get("bbox", [])),
             "saliency_used": saliency_map is not None,
             "scanpath": scanpath,
+            # Canonical, methodologically-separate search-difficulty result.
+            "selected_target": selected_target,
+            # Legacy alias (experimental diagnostic modifier inside).
             "target_load": target_load,
             "display_preset": display_preset_meta,
             "glance_metrics": glance_metrics,
         })
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _server_error(e)
     finally:
         if filepath.exists():
             filepath.unlink()
@@ -1371,6 +1460,16 @@ def cognitive_load():
                 "search_efficiency": search_efficiency,
                 "attention_demand": attention_demand,
             },
+            # Methodologically-separate LAYOUT construct. This is the stable,
+            # image-based value that must NOT change when a target is selected.
+            # Named "experimental_complexity_index" to keep it distinct from the
+            # per-target search-difficulty result (see /api/scanpath-to-target ->
+            # selected_target) and to signal it is an exploratory heuristic.
+            "layout": {
+                "experimental_complexity_index": adjusted_score,
+                "task_modifier": descriptor_modifier,
+                "profile_modifier": profile_modifier,
+            },
             "prediction_source": prediction_source,
             "trained_model_requested": use_trained_model,
             "trained_model_available": model_path.exists(),
@@ -1393,7 +1492,7 @@ def cognitive_load():
             ],
         })
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _server_error(e)
     finally:
         if filepath.exists():
             filepath.unlink()
@@ -1436,6 +1535,10 @@ def _read_screen_set(req):
     files = req.files.getlist("images")
     files = [f for f in files if f and f.filename]
     if files:
+        if len(files) > MAX_SCREENS:
+            raise ValueError(
+                f"Too many screens: {len(files)} (limit {MAX_SCREENS})"
+            )
         for f in files:
             ext = Path(f.filename).suffix.lower()
             if ext not in allowed:
@@ -1467,6 +1570,10 @@ def _read_screen_set(req):
             pil.seek(frame_index)
         except EOFError:
             break
+        if frame_index >= MAX_SCREENS:
+            raise ValueError(
+                f"Too many frames: GIF exceeds the {MAX_SCREENS}-screen limit"
+            )
         rgb = np.array(pil.convert("RGB"))
         frames.append(cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
         names.append(f"{single.filename}#frame{frame_index}")
@@ -1518,7 +1625,7 @@ def screen_consistency():
         result["screens"] = per_screen
         return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _server_error(e)
 
 
 @app.route("/api/learning-curve", methods=["POST"])
@@ -1550,10 +1657,16 @@ def learning_curve():
             exposures = [int(x) for x in exposures_arg.split(",") if x.strip()]
         except ValueError:
             return jsonify({"error": "exposures must be a comma-separated list of integers"}), 400
+        if not exposures:
+            return jsonify({"error": "exposures must contain at least one value"}), 400
+        if len(exposures) > MAX_SCHEDULE_LEN:
+            return jsonify({"error": f"exposures accepts at most {MAX_SCHEDULE_LEN} values"}), 400
+        if any(x < 1 for x in exposures):
+            return jsonify({"error": "exposures values must be >= 1"}), 400
     else:
         exposures = [1, 10, 100]
 
-    n_simulations = request.args.get("n_simulations", 100, type=int)
+    n_simulations = _clamp_simulations(request)
     use_saliency = request.args.get("use_saliency", "true").lower() != "false"
     (screen_w_cm, screen_h_cm,
      viewing_cm, display_preset_meta) = _resolve_display_preset(request)
@@ -1606,7 +1719,7 @@ def learning_curve():
         result["display_preset"] = display_preset_meta
         return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _server_error(e)
     finally:
         if filepath.exists():
             filepath.unlink()
@@ -1644,10 +1757,16 @@ def product_learning():
             total_uses = [int(x) for x in total_uses_arg.split(",") if x.strip()]
         except ValueError:
             return jsonify({"error": "total_uses must be a comma-separated list of integers"}), 400
+        if not total_uses:
+            return jsonify({"error": "total_uses must contain at least one value"}), 400
+        if len(total_uses) > MAX_SCHEDULE_LEN:
+            return jsonify({"error": f"total_uses accepts at most {MAX_SCHEDULE_LEN} values"}), 400
+        if any(x < 1 for x in total_uses):
+            return jsonify({"error": "total_uses values must be >= 1"}), 400
     else:
         total_uses = [1, 10, 100]
 
-    n_simulations = request.args.get("n_simulations", 100, type=int)
+    n_simulations = _clamp_simulations(request)
     (screen_w_cm, screen_h_cm,
      viewing_cm, display_preset_meta) = _resolve_display_preset(request)
 
@@ -1688,7 +1807,7 @@ def product_learning():
         product["inter_screen_consistency"] = consistency
         return jsonify(product)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _server_error(e)
 
 
 if __name__ == "__main__":
@@ -1707,4 +1826,9 @@ if __name__ == "__main__":
     # Prime the UMSI++ model before accepting traffic so the first real
     # request doesn't pay the TensorFlow graph-build cost.
     _warmup_saliency_model()
-    app.run(host="localhost", port=5001, debug=True)
+    # Debug mode is OFF by default (the reloader/debugger must never be exposed
+    # if the host ever changes from localhost). Enable explicitly for local
+    # development with FLASK_DEBUG=1.
+    debug_mode = os.environ.get("FLASK_DEBUG", "0").lower() in {"1", "true", "yes"}
+    host = os.environ.get("FLASK_HOST", "localhost")
+    app.run(host=host, port=5001, debug=debug_mode)

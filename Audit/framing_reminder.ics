@@ -1,0 +1,18 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Thesis_G//framing reminder//EN
+CALSCALE:GREGORIAN
+BEGIN:VEVENT
+UID:framing-honesty-pass-20260725@thesis-g
+DTSTAMP:20260717T090000Z
+DTSTART:20260725T100000
+DTEND:20260725T110000
+SUMMARY:Thesis: framing/honesty pass (Audit/framing_todo.md)
+DESCRIPTION:Work through Audit/framing_todo.md: rename Cognitive Load Score to an exploratory heuristic, soften WCAG/glance claims, general honesty sweep. Deferred code-free task.
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Thesis framing/honesty pass tomorrow
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+END:VCALENDAR

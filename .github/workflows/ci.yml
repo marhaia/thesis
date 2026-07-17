@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Smoke & regression tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+          cache: pip
+
+      - name: Install lightweight test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-ci.txt
+
+      - name: Run pytest
+        run: python -m pytest tests/test_smoke.py -q
+
+  deps-check:
+    name: Full requirements resolve (dry run)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Dry-run resolve the full runtime stack
+        # Catches real dependency conflicts (e.g. an incompatible numpy/opencv
+        # pin) without downloading the multi-hundred-MB ML wheels.
+        run: |
+          python -m pip install --upgrade pip
+          pip install --dry-run -r requirements.txt

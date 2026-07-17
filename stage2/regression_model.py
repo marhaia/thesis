@@ -191,19 +191,20 @@ class Stage2Model:
         Returns:
             Dict with training metrics
         """
-        from sklearn.model_selection import train_test_split, cross_val_score
+        from sklearn.model_selection import train_test_split
         from sklearn.preprocessing import StandardScaler
         from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
-        
-        # Scale features
-        self.scaler = StandardScaler()
-        X_scaled = self.scaler.fit_transform(X)
-        
-        # Train/val split
-        X_train, X_val, y_train, y_val = train_test_split(
-            X_scaled, y, test_size=validation_split, random_state=42
+
+        # Train/val split on the RAW features. The scaler is fit on the training
+        # fold only and applied to the validation fold, so no validation
+        # statistics leak into training (avoids optimistically biased metrics).
+        X_train_raw, X_val_raw, y_train, y_val = train_test_split(
+            X, y, test_size=validation_split, random_state=42
         )
-        
+        holdout_scaler = StandardScaler()
+        X_train = holdout_scaler.fit_transform(X_train_raw)
+        X_val = holdout_scaler.transform(X_val_raw)
+
         # Create and train model
         self._create_model()
         self.model.fit(X_train, y_train)
@@ -237,20 +238,28 @@ class Stage2Model:
                 'val_rmse': float(np.sqrt(mean_squared_error(y_val[:, i], y_pred_val[:, i]))),
             }
         
-        # Cross-validation (on full data)
+        # Cross-validation on the RAW data. A fresh scaler is fit on each fold's
+        # training split only, so the CV estimate is not leakage-inflated.
         from sklearn.model_selection import KFold
         kf = KFold(n_splits=5, shuffle=True, random_state=42)
         cv_scores = []
-        for train_idx, test_idx in kf.split(X_scaled):
+        for train_idx, test_idx in kf.split(X):
+            fold_scaler = StandardScaler()
+            X_fold_train = fold_scaler.fit_transform(X[train_idx])
+            X_fold_test = fold_scaler.transform(X[test_idx])
             self._create_model()
-            self.model.fit(X_scaled[train_idx], y[train_idx])
-            y_pred_cv = self.model.predict(X_scaled[test_idx])
+            self.model.fit(X_fold_train, y[train_idx])
+            y_pred_cv = self.model.predict(X_fold_test)
             cv_scores.append(r2_score(y[test_idx], y_pred_cv, multioutput='uniform_average'))
         
         metrics['cv_r2_mean'] = float(np.mean(cv_scores))
         metrics['cv_r2_std'] = float(np.std(cv_scores))
         
-        # Retrain on full data for final model
+        # Fit the final production scaler + model on ALL data. Using the full
+        # data here is correct: the leakage-free metrics above are what get
+        # reported; this final model is only what predict() will use.
+        self.scaler = StandardScaler()
+        X_scaled = self.scaler.fit_transform(X)
         self._create_model()
         self.model.fit(X_scaled, y)
         self.is_trained = True

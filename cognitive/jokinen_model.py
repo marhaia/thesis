@@ -54,17 +54,17 @@ class JokinenParams:
     Defaults are from Jokinen et al. (2020), Table 1.
 
     IMPLEMENTATION SCOPE (honest note): the current pipeline implements a
-    bottom-up, novice-mode simulation — feature dissimilarity (colour + size),
-    a size-based visual acuity gate, UMSI++ saliency, EMMA timing, and
-    inhibition of return. Three blocks are declared with their literature
-    citations for reference / a possible future extension but are NOT read
-    anywhere in the current code and are marked "[NOT USED]" below: the top-down
-    guidance weight (W_TA), the ACT-R memory block, and the utility-learning
-    block. In particular there is no top-down (goal-directed) guidance yet, so
-    the model ranks bottom-up conspicuity rather than simulating "search for X";
-    see the module docstring / thesis for the resulting limitation. The colour
-    and shape acuity coefficients are also unused — the acuity gate uses only the
-    size coefficients (a_size, b_size).
+    novice-mode simulation with top-down (goal-directed) guidance — feature
+    dissimilarity (colour + size), a target-similarity guidance term (W_TA;
+    Guided Search), a size-based visual acuity gate, UMSI++ saliency, EMMA
+    timing, and inhibition of return. The selected target actively steers the
+    scanpath toward elements sharing its colour/size, so the model simulates
+    "search for X" rather than only ranking bottom-up conspicuity. Two blocks
+    remain declared with their literature citations for a possible future
+    extension but are NOT read anywhere in the current code, marked
+    "[NOT USED]" below: the ACT-R memory block and the utility-learning block.
+    The colour and shape acuity coefficients are also unused — the acuity gate
+    uses only the size coefficients (a_size, b_size).
 
     Literature-based (fixed):
         K           : EMMA encoding constant (Salvucci, 2001)          [USED]
@@ -73,7 +73,7 @@ class JokinenParams:
         t_exec      : Saccade execution time per degree (s/deg)        [USED]
         t_sacc      : Additional saccade constant (s)                  [USED]
         W_BA        : Bottom-up activation weight                      [USED]
-        W_TA        : Top-down activation weight                       [NOT USED]
+        W_TA        : Top-down activation weight                       [USED]
         sigma_TA    : Noise SD for activation (logistic)              [USED]
         a_color     : Visual threshold param a for colour             [NOT USED]
         b_color     : Visual threshold param b for colour             [NOT USED]
@@ -108,8 +108,8 @@ class JokinenParams:
 
     # === Activation Weights (Jokinen 2020, Table 1 — fitted) ===
     W_BA: float = 1.1           # Bottom-up (saliency) activation weight
-    W_TA: float = 0.45          # [NOT USED] Top-down (task relevance) weight —
-                                # no top-down guidance is implemented (see class docstring)
+    W_TA: float = 0.45          # Top-down (task-relevance) weight — scales the
+                                # target colour/size similarity guidance term
     sigma_TA: float = 0.376     # Logistic noise SD on activation (fitted)
 
     # === Visual Threshold Parameters (Jokinen 2020, Table 1; Eq. 1) ===
@@ -348,6 +348,10 @@ class JokinenSearchModel:
             search_times = []
             fixation_counts = []
 
+            # Top-down guidance for THIS target (colour/size similarity). Same
+            # for every Monte-Carlo run, so compute once per target.
+            target_guidance = self._compute_target_guidance(elements, target_idx)
+
             for _ in range(self.params.n_simulations):
                 t, n_fix = self._simulate_single_search(
                     target_idx=target_idx,
@@ -355,6 +359,7 @@ class JokinenSearchModel:
                     combined_activations=combined_activations,
                     start_fixation=start_fixation,
                     deg_per_px=deg_per_px,
+                    target_guidance=target_guidance,
                 )
                 search_times.append(t)
                 fixation_counts.append(n_fix)
@@ -744,6 +749,9 @@ class JokinenSearchModel:
         deg_per_px = np.degrees(np.arctan(1.0 / (px_per_cm * viewing_distance_cm)))
         start_fixation = (img_w / 2.0, img_h / 2.0)
 
+        # Top-down guidance for the requested target (colour/size similarity).
+        target_guidance = self._compute_target_guidance(elements, target_idx)
+
         # Run several trials and keep the median-length one as representative.
         trials = []
         for _ in range(self.params.n_simulations):
@@ -754,6 +762,7 @@ class JokinenSearchModel:
                 start_fixation=start_fixation,
                 deg_per_px=deg_per_px,
                 return_path=True,
+                target_guidance=target_guidance,
             )
             trials.append((n_fix, t, path))
 
@@ -787,6 +796,7 @@ class JokinenSearchModel:
         start_fixation: Tuple[float, float],
         deg_per_px: float,
         return_path: bool = False,
+        target_guidance: Optional[np.ndarray] = None,
     ):
         """
         Simulate a single visual search trial.
@@ -877,6 +887,16 @@ class JokinenSearchModel:
         for step in range(p.max_fixations):
             # --- Compute activation with noise ---
             activations = combined_activations.copy()
+
+            # --- Top-down (goal-directed) guidance: Jokinen (2020) W_TA term ---
+            # Boost elements that share the target's colour/size, so the search
+            # is actively steered toward target-like features (Guided Search;
+            # Wolfe 1994). This makes the scanpath depend on WHICH target is
+            # sought, not just where the search stops. target_guidance is a
+            # fixed per-target similarity vector in [0, 1]; None recovers the
+            # pure bottom-up behaviour (backward compatible).
+            if target_guidance is not None:
+                activations = activations + p.W_TA * target_guidance
 
             # Add logistic noise (Jokinen 2020: σ_TA = 0.376)
             noise = self.rng.logistic(0, p.sigma_TA, size=n_elements)
@@ -1056,7 +1076,11 @@ class JokinenSearchModel:
         """
         Compute feature-based bottom-up activation (Eq. 2 from paper).
 
-        BA_i = Σ_j Σ_k dissim(v_ik, v_jk) / d_ij
+        BA_i = Σ_j Σ_k dissim(v_ik, v_jk) / sqrt(d_ij)
+
+        Note: we divide by sqrt(d_ij) (Euclidean distance) rather than d_ij so
+        that the spatial fall-off is less steep; this matches the accumulation
+        in the loop below. Keep this docstring and the code in sync.
 
         The paper sums the dissimilarity over several feature dimensions k.
         We use two dimensions here:
@@ -1122,6 +1146,49 @@ class JokinenSearchModel:
             activations /= max_act
 
         return activations
+
+    def _compute_target_guidance(
+        self, elements: List[Dict], target_idx: int
+    ) -> np.ndarray:
+        """
+        Top-down (goal-directed) guidance — the W_TA term of Jokinen (2020).
+
+        A searcher who knows what the target looks like directs attention
+        toward elements that SHARE the target's features before the target
+        itself is fixated (Guided Search; Wolfe 1994, 2007). We model this as
+        a per-element similarity to the target in the same two feature
+        dimensions used bottom-up (colour category + size), so the selected
+        target actively steers the scanpath rather than only defining the stop
+        condition.
+
+        Returns
+        -------
+        np.ndarray of shape (n_elements,), similarity in [0, 1] (1 = identical
+        features to the target; the target element itself scores 1). Multiplied
+        by params.W_TA in the simulation loop.
+        """
+        n = len(elements)
+        if n == 0:
+            return np.zeros(0, dtype=np.float64)
+
+        target = elements[target_idx]
+        t_color = target.get("color_category", "gray")
+        t_area = float(target.get("area") or (target["bbox"][2] * target["bbox"][3]))
+
+        sims = np.zeros(n, dtype=np.float64)
+        for j, e in enumerate(elements):
+            # Colour: categorical match (1) or mismatch (0), mirroring the
+            # bottom-up colour dissimilarity term.
+            color_sim = 1.0 if e.get("color_category", "gray") == t_color else 0.0
+            # Size: symmetric relative-area similarity in [0, 1] (1 = same area).
+            area = float(e.get("area") or (e["bbox"][2] * e["bbox"][3]))
+            area_sum = area + t_area
+            size_sim = 1.0 - abs(area - t_area) / area_sum if area_sum > 0 else 1.0
+            # Equal weighting of the two feature dimensions, matching the
+            # bottom-up combination.
+            sims[j] = 0.5 * color_sim + 0.5 * size_sim
+
+        return sims
 
     def _combine_activations(
         self,

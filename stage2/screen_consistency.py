@@ -79,9 +79,17 @@ def _normalized_occupancy_grid(
     """
     Build a normalised occupancy grid for one screen.
 
-    Each grid cell holds the fraction of its area covered by the union of the
-    element bounding boxes, clamped to [0, 1]. Coordinates are normalised by the
-    image size, so screens of different resolutions are directly comparable.
+    Each grid cell holds the fraction of its area covered by the UNION of the
+    element bounding boxes, in [0, 1]. Coordinates are normalised by the image
+    size, so screens of different resolutions are directly comparable.
+
+    The union is computed by rasterising the boxes onto a supersampled BINARY
+    mask and then averaging per cell. A binary mask is what makes this a true
+    union: overlapping boxes cover the same sub-samples only once, so two
+    overlapping half-cell boxes can never sum to full occupancy (the previous
+    additive-per-box implementation double-counted overlaps before clipping).
+    The supersampling factor bounds the raster size independently of the input
+    resolution.
 
     Parameters
     ----------
@@ -96,14 +104,14 @@ def _normalized_occupancy_grid(
     rows, cols = grid
     img_h, img_w = float(image_shape[0]), float(image_shape[1])
     occ = np.zeros((rows, cols), dtype=np.float64)
-    if img_h <= 0 or img_w <= 0:
+    if img_h <= 0 or img_w <= 0 or rows <= 0 or cols <= 0:
         return occ
 
-    cell_h = img_h / rows
-    cell_w = img_w / cols
-    cell_area = cell_h * cell_w
-    if cell_area <= 0:
-        return occ
+    # Supersamples per cell edge: S=20 -> a 200x200 raster for a 10x10 grid,
+    # regardless of the screenshot's pixel resolution.
+    S = 20
+    rr, cc = rows * S, cols * S
+    mask = np.zeros((rr, cc), dtype=bool)
 
     for e in elements:
         x, y, w, h = e["bbox"]
@@ -115,26 +123,19 @@ def _normalized_occupancy_grid(
         if x1 <= x0 or y1 <= y0:
             continue
 
-        # Grid cell index range this box spans.
-        c0 = int(x0 // cell_w)
-        c1 = int(min(cols - 1, (x1 - 1e-9) // cell_w))
-        r0 = int(y0 // cell_h)
-        r1 = int(min(rows - 1, (y1 - 1e-9) // cell_h))
+        # Map the box to raster indices (normalised by the image size). floor on
+        # the near edge and ceil on the far edge so a box always marks at least
+        # one sub-sample it touches.
+        ci0 = max(0, int(np.floor(x0 / img_w * cc)))
+        ci1 = min(cc, int(np.ceil(x1 / img_w * cc)))
+        ri0 = max(0, int(np.floor(y0 / img_h * rr)))
+        ri1 = min(rr, int(np.ceil(y1 / img_h * rr)))
+        if ci1 <= ci0 or ri1 <= ri0:
+            continue
+        mask[ri0:ri1, ci0:ci1] = True
 
-        for r in range(r0, r1 + 1):
-            cell_top = r * cell_h
-            cell_bot = cell_top + cell_h
-            overlap_h = min(y1, cell_bot) - max(y0, cell_top)
-            if overlap_h <= 0:
-                continue
-            for c in range(c0, c1 + 1):
-                cell_left = c * cell_w
-                cell_right = cell_left + cell_w
-                overlap_w = min(x1, cell_right) - max(x0, cell_left)
-                if overlap_w <= 0:
-                    continue
-                occ[r, c] += (overlap_h * overlap_w) / cell_area
-
+    # Per-cell occupancy = fraction of covered sub-samples in that cell.
+    occ = mask.reshape(rows, S, cols, S).mean(axis=(1, 3))
     return np.clip(occ, 0.0, 1.0)
 
 
@@ -239,10 +240,13 @@ def compute_screen_set_consistency(
     Dict with keys:
         'n_screens' : int
         'consistency_score' : float in [0, 1] (1 = recurring controls never
-            move; 0 = maximally unstable). Derived PRIMARILY from the mean
-            displacement of persistent elements matched between consecutive
-            screens (the direct "does the Back button move?" signal). Falls back
-            to the occupancy-grid measure when no elements can be matched.
+            move; 0 = maximally unstable). A coverage-weighted blend of the
+            mean displacement of persistent elements matched between
+            consecutive screens (the direct "does the Back button move?"
+            signal) and the coarser occupancy measure. When few elements match
+            (low match_coverage) the score leans on the occupancy measure so a
+            single lucky match cannot claim high consistency on its own; it
+            falls back fully to occupancy when no elements can be matched.
         'layout_instability' : float in [0, 1] (= 1 - consistency_score).
         'mean_element_displacement' : float or None — mean normalised centre
             displacement of persistent elements matched between consecutive
@@ -253,6 +257,10 @@ def compute_screen_set_consistency(
         'occupancy_consistency' : float in [0, 1] — a coarser, matching-free
             supporting measure of how stably screen REGIONS are used across the
             set (from the per-cell occupancy std).
+        'match_coverage' : float in [0, 1] — fraction of the (smaller) element
+            set that could be confidently matched across consecutive screens.
+            Low values mean the displacement signal is based on few elements,
+            so the headline leans more on 'occupancy_consistency'.
         'per_cell_instability' : list[list[float]] — the (rows x cols) grid of
             per-cell occupancy std, for visualisation/inspection.
         'interpretation' : str — a short human-readable verdict.
@@ -307,25 +315,41 @@ def compute_screen_set_consistency(
     # across every consecutive screen pair.
     mean_disp: Optional[float] = None
     max_disp: Optional[float] = None
+    # Match coverage = fraction of the (smaller) element set that could be
+    # confidently matched across consecutive screens. A headline built on only
+    # a couple of matched elements must not claim high consistency on its own.
+    match_coverage: float = 0.0
     if n >= 2:
         all_disp: List[float] = []
+        n_matched = 0
+        n_possible = 0
         for s in range(n - 1):
-            all_disp.extend(
-                _match_elements(
-                    element_sets[s], image_shapes[s],
-                    element_sets[s + 1], image_shapes[s + 1],
-                )
+            disp = _match_elements(
+                element_sets[s], image_shapes[s],
+                element_sets[s + 1], image_shapes[s + 1],
             )
+            all_disp.extend(disp)
+            n_matched += len(disp)
+            n_possible += min(len(element_sets[s]), len(element_sets[s + 1]))
         if all_disp:
             mean_disp = float(np.mean(all_disp))
             max_disp = float(np.max(all_disp))
+        if n_possible > 0:
+            match_coverage = n_matched / float(n_possible)
 
     # --- Headline consistency score ---
-    # Prefer the direct displacement signal; fall back to the coarser occupancy
-    # measure only when no elements could be matched (e.g. every screen has a
-    # completely different element set). See the docstring for the factor 2.
+    # Prefer the direct displacement signal, but weight it by how many elements
+    # actually persist (match_coverage). When only a handful of elements match
+    # (low coverage), a near-zero mean displacement would otherwise falsely
+    # report a highly consistent layout while most elements appeared/moved/
+    # disappeared; in that regime we lean on the coarser occupancy measure.
+    # See the docstring for the factor 2.
     if mean_disp is not None:
-        consistency = float(np.clip(1.0 - 2.0 * mean_disp, 0.0, 1.0))
+        disp_consistency = float(np.clip(1.0 - 2.0 * mean_disp, 0.0, 1.0))
+        consistency = float(
+            match_coverage * disp_consistency
+            + (1.0 - match_coverage) * occupancy_consistency
+        )
     else:
         consistency = occupancy_consistency
 
@@ -348,6 +372,7 @@ def compute_screen_set_consistency(
             round(max_disp, 4) if max_disp is not None else None
         ),
         "occupancy_consistency": round(occupancy_consistency, 4),
+        "match_coverage": round(match_coverage, 4),
         "per_cell_instability": per_cell_std.round(4).tolist(),
         "interpretation": verdict,
     }

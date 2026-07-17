@@ -482,7 +482,17 @@ class UMSIPlus:
 
     # Design-type labels (6-class head from Jiang et al., CHI 2023, §3.2).
     # The model was trained on UEyes (1,980 screenshots, 62 participants)
-    # across these six UI/image categories.
+    # across six UI/image categories.
+    #
+    # NOTE ON ORDERING: the exact index-to-label mapping of the softmax head
+    # is NOT recoverable from the published checkpoint alone (it depends on the
+    # training-time label encoder, which is not shipped with umsi++.hdf5). This
+    # list is therefore a best-effort guess and is used ONLY for the optional,
+    # informational class printout in predict_saliency(return_classif=True).
+    # It has NO effect on the saliency heatmap or on any downstream scoring in
+    # this project, which consume the heatmap exclusively. Do not rely on the
+    # specific label at a given index without cross-checking the UEyes training
+    # label map.
     DESIGN_CLASSES = [
         "poster",
         "infographic",
