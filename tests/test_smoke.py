@@ -523,3 +523,80 @@ def test_multi_target_layout_stable_and_targets_valid(client):
         seen_ids.add(st["target_id"])
     # Distinct targets must resolve to distinct target ids.
     assert len(seen_ids) == 3
+
+
+# ---------------------------------------------------------------------------
+# Framing / construct-validity regression guards (fix/audit-framing)
+# ---------------------------------------------------------------------------
+# These guard the *scientific framing* of the standard UI. They ensure the
+# tool never presents unvalidated estimates as validated cognitive-load
+# measurements, overload / safety verdicts, or WCAG conformance verdicts, and
+# that the required honesty caveats stay in place. They read the served
+# standard UI (index.html) as plain text.
+
+def _standard_ui_html() -> str:
+    """Return the standard UI markup as served at the app root."""
+    path = os.path.join(ROOT, "stage1", "ui", "index.html")
+    with open(path, "r", encoding="utf-8") as fh:
+        return fh.read()
+
+
+def test_standard_ui_has_no_overload_or_safety_verdicts():
+    html = _standard_ui_html().lower()
+    forbidden = [
+        "cognitive overload",
+        "overload risk",
+        "critical cognitive",
+        "cognitive load measurement",
+        "safety risk",
+        "wcag compliant",
+        "wcag non-compliant",
+        "wcag conformance audit",  # only allowed negated ("not a WCAG conformance audit")
+    ]
+    for phrase in forbidden:
+        if phrase == "wcag conformance audit":
+            # The only allowed occurrence is the explicit negation.
+            assert "not a wcag conformance audit" in html, (
+                "expected the 'not a WCAG conformance audit' caveat"
+            )
+            assert html.count("wcag conformance audit") == html.count(
+                "not a wcag conformance audit"
+            ), "found an un-negated 'WCAG conformance audit' claim"
+        else:
+            assert phrase not in html, f"forbidden framing phrase present: {phrase!r}"
+
+
+def test_standard_ui_keeps_exploratory_caveats():
+    html = _standard_ui_html().lower()
+    # Layout score must be flagged as an exploratory, unvalidated heuristic.
+    assert "exploratory, unvalidated heuristic" in html
+    assert "not a cognitive-load measurement" in html
+    # Contrast section must be WCAG-informed, not a conformance verdict.
+    assert "wcag-informed contrast" in html
+    assert "not a wcag conformance audit" in html
+
+
+def test_standard_ui_demotes_search_and_attention_proxies():
+    html = _standard_ui_html().lower()
+    # Where the proxies remain (technical details / PDF), they must be
+    # explicitly labelled as exploratory proxies.
+    assert "exploratory proxy" in html or "exploratory, unvalidated rule-based proxies" in html
+
+
+def test_standard_ui_has_no_visible_driver_glance_panel():
+    html = _standard_ui_html()
+    # The glance helpers must be disabled no-ops (Future Work), not renderers.
+    assert "function showGlanceMetrics(_gm) { /* intentionally disabled" in html
+    assert "function hideGlanceMetrics() { /* intentionally disabled" in html
+    lower = html.lower()
+    # No automotive compliance conclusions presented to the user.
+    for phrase in ("nhtsa compliant", "iso 15008 compliant", "glance compliant"):
+        assert phrase not in lower, f"automotive compliance verdict present: {phrase!r}"
+
+
+def test_standard_ui_keeps_selected_target_result_separate():
+    html = _standard_ui_html()
+    # Selected-target search difficulty is presented as its own card and kept
+    # methodologically separate from the layout value.
+    assert "Selected Target Search Difficulty" in html
+    assert "the Experimental Layout Complexity value above is unchanged" in html

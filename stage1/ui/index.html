@@ -1948,12 +1948,12 @@
                      the designer sees which parts are hard to read. -->
                 <div id="contrastPanel" class="result-section" style="display:none; margin-top:32px;">
                     <div style="margin-bottom:8px;">
-                        <span style="font-size:13px; font-weight:600;">Contrast &amp; Legibility (WCAG 2.1)</span>
+                        <span style="font-size:13px; font-weight:600;">WCAG-informed contrast check</span>
                         <span id="contrastSummaryBadge" style="font-size:12px; font-weight:700; padding:2px 8px; border-radius:6px; margin-left:8px;"></span>
                     </div>
                     <!-- Plain-language headline result for non-expert users. -->
                     <div id="contrastMainStatement" style="font-size:13px; font-weight:600; margin:0 0 8px 0;"></div>
-                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Per-element foreground/background contrast ratio, estimated from the pixels (WCAG 2.1 definition). The 3:1 threshold is WCAG AA for large text and non-text UI elements. Higher is easier to read.</p>
+                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Pixel-based heuristic; not a WCAG conformance audit. Per-element foreground/background contrast ratio, estimated from the pixels using the WCAG 2.1 contrast formula. The 3:1 value is used only as a reference threshold for readability; higher is easier to read.</p>
                     <div id="contrastList"></div>
                 </div>
 
@@ -2078,7 +2078,7 @@
                     <div class="pipeline-node-label">Full Feature Vector</div>
                     <div class="pipeline-node-title">Multi-Output Prediction</div>
                     <div class="pipeline-node-dim">x = [v, s, h, t, p] ∈ ℝ³⁰</div>
-                    <div class="pipeline-node-desc">The concatenated vector is passed to the regression model (HCEye rule-based by default, optional trained Random Forest). Three simultaneous outputs: Cognitive Load Score (0–100), Search Efficiency (0–1), Attention Demand (0–1). A mutual coherence check flags implausible combinations.</div>
+                    <div class="pipeline-node-desc">The concatenated vector is passed to the regression model (HCEye rule-based by default, optional trained Random Forest). Primary output: Cognitive Load Score (0–100), plus two exploratory, unvalidated rule-based proxies — Search Efficiency (0–1) and Attention Demand (0–1). A mutual coherence check flags implausible combinations.</div>
                     <div class="pipeline-node-ref"><a href="https://doi.org/10.1023/A:1010933404324" target="_blank" rel="noopener">Breiman (2001)</a> Random Forest · <a href="https://doi.org/10.1002/widm.1157" target="_blank" rel="noopener">Borchani et al. (2015)</a> Multi-Output Regression · <a href="https://doi.org/10.1167/7.2.17" target="_blank" rel="noopener">Rosenholtz et al. (2007)</a> Coherence</div>
                 </div>
             </div>
@@ -2101,8 +2101,8 @@
             <div class="pipeline-row">
                 <div class="pipeline-node">
                     <div class="pipeline-node-label">Contrast</div>
-                    <div class="pipeline-node-title">WCAG Contrast</div>
-                    <div class="pipeline-node-desc">Per-element foreground/background luminance contrast ratio (WCAG 2.1 formula with an Otsu ink/paper split). Elements below the 3:1 legibility minimum are flagged.</div>
+                    <div class="pipeline-node-title">WCAG-informed contrast</div>
+                    <div class="pipeline-node-desc">Per-element foreground/background luminance contrast ratio (WCAG 2.1 formula with an Otsu ink/paper split). Pixel-based heuristic, not a WCAG conformance audit; elements below the 3:1 reference threshold are flagged as low-contrast.</div>
                     <div class="pipeline-node-ref"><a href="https://www.w3.org/TR/WCAG21/" target="_blank" rel="noopener">WCAG 2.1 (W3C)</a></div>
                 </div>
                 <div class="pipeline-node">
@@ -3946,19 +3946,13 @@
                 <div class="summary-card">
                     <div class="summary-label">Experimental Layout Complexity <span class="feature-i" tabindex="0" aria-label="What is Experimental Layout Complexity?" data-tip="<div class='tip-title'>Experimental Layout Complexity</div><div class='tip-body'>An exploratory, image-based complexity value for the whole screen, on a 0&ndash;100 scale. Higher means a busier, more demanding layout. It combines the visual complexity features with the selected task and profile context. It is a layout characteristic, not a validated cognitive-load measurement, and it does not change when you select a target.</div>">i</span></div>
                     <div class="summary-value">${adjusted.cognitive_load_score.toFixed(1)}</div>
-                    <div class="summary-meta">Base ${base.cognitive_load_score.toFixed(1)} · adjusted by task/profile · ${data.prediction_source === "stage2_trained_model" ? "experimental regressor" : "HCEye rule-based"}. Select a target below for its search difficulty.</div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-label">Search Efficiency <span class="feature-i" tabindex="0" aria-label="What is Search Efficiency?" data-tip="<div class='tip-title'>Search Efficiency</div><div class='tip-body'>How easily a user can find a specific target on this screen, on a 0&ndash;1 scale. Higher means faster, more direct visual search.</div>">i</span></div>
-                    <div class="summary-value">${adjusted.search_efficiency.toFixed(3)}</div>
-                    <div class="summary-meta">Higher = easier target acquisition</div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-label">Attention Demand <span class="feature-i" tabindex="0" aria-label="What is Attention Demand?" data-tip="<div class='tip-title'>Attention Demand</div><div class='tip-body'>How much of the user's attentional capacity this screen requires, on a 0&ndash;1 scale. Higher means more attentional resources are needed.</div>">i</span></div>
-                    <div class="summary-value">${adjusted.attention_demand.toFixed(3)}</div>
-                    <div class="summary-meta">Higher = more attentional resources required</div>
+                    <div class="summary-meta"><strong>Exploratory, unvalidated heuristic &mdash; not a cognitive-load measurement.</strong> Base ${base.cognitive_load_score.toFixed(1)} · adjusted by task/profile · ${data.prediction_source === "stage2_trained_model" ? "experimental regressor" : "HCEye rule-based"}. Select a target below for its search difficulty.</div>
                 </div>
             `;
+            // Search Efficiency and Attention Demand are intentionally NOT shown
+            // as headline cards: they are exploratory, unvalidated rule-based
+            // proxies. They remain only in the technical details / PDF export,
+            // explicitly labelled as exploratory proxies.
 
             // ── UMSI++ design-type classification banner (Item 12) ───────────
             // The saliency model has a 6-class design-type head. If it classifies
@@ -4206,8 +4200,8 @@
             function scoreBand(score) {
                 if (score < 25) return { label: 'Low load', note: 'Easy to process for most users.', cls: 'badge-low' };
                 if (score < 50) return { label: 'Moderate load', note: 'Manageable, but can degrade under pressure.', cls: 'badge-moderate' };
-                if (score < 75) return { label: 'High load', note: 'Elevated attentional strain expected.', cls: 'badge-high' };
-                return { label: 'Very high load', note: 'Critical overload risk; redesign recommended.', cls: 'badge-very-high' };
+                if (score < 75) return { label: 'High estimate', note: 'Elevated estimated attentional demand.', cls: 'badge-high' };
+                return { label: 'Very high estimate', note: 'High estimated demand for this layout; consider simplifying.', cls: 'badge-very-high' };
             }
             function recommendationFor(score, delta) {
                 if (score >= 75 || delta >= 10) return 'Recommendation: Redesign recommended before delivery.';
@@ -4538,7 +4532,7 @@
             if (score < 25) {
                 level = 'LOW'; badge = 'Low Load'; badgeClass = 'badge-low'; levelClass = 'level-low';
                 title = 'Interface is easy to process';
-                body = `The visual complexity of this screen is <strong>well within typical attentional capacity</strong>. Users are unlikely to experience measurable cognitive strain, and visual search should be efficient.`;
+                body = `The visual complexity of this screen is <strong>estimated to be well within typical attentional capacity</strong>. Users are unlikely to experience noticeable cognitive strain, and visual search should be efficient. This is an exploratory estimate, not a validated measurement.`;
             } else if (score < 50) {
                 level = 'MODERATE'; badge = 'Moderate Load'; badgeClass = 'badge-moderate'; levelClass = 'level-moderate';
                 title = 'Manageable, but worth watching';
@@ -4548,9 +4542,9 @@
                 title = 'Elevated cognitive demand detected';
                 body = `This screen is estimated to cause <strong>notable attentional strain</strong>. Based on HCEye data, users under cognitive load make fewer but longer fixations — they take in less of the interface while processing each element more effortfully. The estimated effect for this screen is quantified below.`;
             } else {
-                level = 'VERY_HIGH'; badge = 'Very High Load'; badgeClass = 'badge-very-high'; levelClass = 'level-very-high';
-                title = 'Critical cognitive overload risk';
-                body = `The visual structure of this screen is estimated to cause <strong>significant cognitive overload</strong>. Under such conditions, users miss relevant UI elements, make more errors, and take substantially longer to complete tasks (Rosenholtz et al., 2007; Jokinen et al., 2020).`;
+                level = 'VERY_HIGH'; badge = 'Very High Estimate'; badgeClass = 'badge-very-high'; levelClass = 'level-very-high';
+                title = 'Very high estimated attentional demand';
+                body = `The visual structure of this screen is estimated to place a <strong>very high attentional demand</strong> on users. In the literature, high visual demand is associated with more missed elements, more errors, and longer task times (Rosenholtz et al., 2007; Jokinen et al., 2020). This is an exploratory estimate, not a validated overload measurement.`;
             }
 
             // Derive concrete implications
@@ -5064,11 +5058,11 @@
             doc.setFont("helvetica", "bold");
             doc.setFontSize(11);
             doc.setTextColor(...lvlColor);
-            doc.text(`${level} COGNITIVE LOAD`, margin + 55, y + 10);
+            doc.text(`${level} ESTIMATED LOAD (EXPLORATORY)`, margin + 55, y + 10);
             doc.setFont("helvetica", "normal");
             doc.setFontSize(8.5);
             doc.setTextColor(...dim);
-            const titleMap = { LOW: "Interface is easy to process", MODERATE: "Manageable, but worth watching", HIGH: "Elevated cognitive demand detected", "VERY HIGH": "Critical cognitive overload risk" };
+            const titleMap = { LOW: "Interface is easy to process", MODERATE: "Manageable, but worth watching", HIGH: "Elevated cognitive demand detected", "VERY HIGH": "Very high estimated attentional demand" };
             doc.text(titleMap[level] || "", margin + 55, y + 17);
             y += 28;
 
@@ -5106,8 +5100,8 @@
             sectionTitle("Prediction Scores");
             row("Cognitive Load Score (adjusted)",   score.toFixed(2), lvlColor);
             row("Cognitive Load Score (base)",        (d.base_score || 0).toFixed(2));
-            row("Search Efficiency",                  (d.search_efficiency || 0).toFixed(3));
-            row("Attention Demand",                   (d.attention_demand || 0).toFixed(3));
+            row("Search Efficiency (exploratory proxy)",   (d.search_efficiency || 0).toFixed(3));
+            row("Attention Demand (exploratory proxy)",    (d.attention_demand || 0).toFixed(3));
             row("Cognitive Load Index (HCEye)",       (d.hceye_cli || 0).toFixed(3));
             row("Task Modifier",                      (d.task_modifier || 0).toFixed(2));
             row("Profile Modifier",                   (d.profile_modifier || 0).toFixed(2));
