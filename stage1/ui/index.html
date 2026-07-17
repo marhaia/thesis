@@ -1657,7 +1657,7 @@
 
         <header style="text-align:left; margin-bottom:24px;">
             <h1 style="font-size:26px; font-weight:600; line-height:1.25;">Interactional Complexity Analyzer</h1>
-            <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin-top:8px;">Estimates the cognitive complexity of a GUI screenshot from visual structure, predicted saliency, and eye-tracking-derived signals.</p>
+            <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin-top:8px;">Computes an experimental layout-complexity index for a GUI screenshot from visual structure, predicted saliency, and eye-tracking-derived signals. Exploratory heuristic, not a validated cognitive-load measurement.</p>
         </header>
 
         <!-- Steps 1 + 2 side by side -->
@@ -1732,16 +1732,16 @@
                             <option value="medium" selected>Medium — neutral default</option>
                             <option value="low">Low — vague or open-ended</option>
                         </select>
-                        <div class="field-hint">How precisely is the target defined? High specificity reduces search load. <span class="field-hint-default">If unsure, keep <em>Medium</em>.</span></div>
+                        <div class="field-hint">How precisely is the target defined? High specificity narrows the modelled search set. <span class="field-hint-default">If unsure, keep <em>Medium</em>.</span></div>
                     </div>
                     <div class="field">
-                        <label for="timePressure">Time Pressure <span class="feature-i" tabindex="0" aria-label="Explanation of Time Pressure options" data-tip="<div class='tip-title'>Time Pressure</div><div class='tip-body'>How much time the user has to act.<br><strong>Low</strong> &mdash; ample time, relaxed<br><strong>Medium</strong> &mdash; normal pace<br><strong>High</strong> &mdash; time-critical, must act fast<br>More pressure raises cognitive load.</div>">i</span></label>
+                        <label for="timePressure">Time Pressure <span class="feature-i" tabindex="0" aria-label="Explanation of Time Pressure options" data-tip="<div class='tip-title'>Time Pressure</div><div class='tip-body'>How much time the user has to act.<br><strong>Low</strong> &mdash; ample time, relaxed<br><strong>Medium</strong> &mdash; normal pace<br><strong>High</strong> &mdash; time-critical, must act fast<br>More pressure increases the modelling modifier applied to the experimental index.</div>">i</span></label>
                         <select id="timePressure">
                             <option value="low">Low — ample time</option>
                             <option value="medium" selected>Medium — neutral default</option>
                             <option value="high">High — time-critical</option>
                         </select>
-                        <div class="field-hint">Time constraints directly increase cognitive load (Kahneman, 1973). <span class="field-hint-default">If unsure, keep <em>Medium</em>.</span></div>
+                        <div class="field-hint">Time pressure sets an unvalidated modelling modifier applied to the experimental index (informed by Kahneman, 1973). <span class="field-hint-default">If unsure, keep <em>Medium</em>.</span></div>
                     </div>
                 </div>
                 <div class="field" style="margin-top: 12px;">
@@ -1808,7 +1808,7 @@
                     </div>
                     <div class="loading-stage" id="lstage-3">
                         <div class="stage-dot"></div>
-                        <span>HCEye cognitive load model</span>
+                        <span>HCEye rule-based heuristic</span>
                     </div>
                     <div class="loading-stage" id="lstage-4">
                         <div class="stage-dot"></div>
@@ -1844,7 +1844,7 @@
                 <div class="results-visual-row">
                     <div id="saliencyPanel" style="display:none;">
                         <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px;">
-                            <span style="font-size:13px; font-weight:600;">Predicted Attention Map</span>
+                            <span style="font-size:13px; font-weight:600;">Predicted Saliency Map</span>
                             <button id="downloadSaliencyBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0;">Download Map</button>
                             <button id="downloadOriginalBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0;">Download Original</button>
                         </div>
@@ -1939,7 +1939,7 @@
                     <div style="margin-bottom:8px;">
                         <span style="font-size:13px; font-weight:600;">Search Bottlenecks</span>
                     </div>
-                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Elements ranked by predicted visual-search time (<a class="cite-link" href="https://doi.org/10.1016/j.ijhcs.2019.102376" target="_blank" rel="noopener">Jokinen et al., 2020</a>). The elements at the top take a first-time user the longest to find and are the best candidates for redesign (e.g. higher contrast, more salient placement, clearer grouping). Times are <strong>model estimates</strong>, not measured eye-tracking.</p>
+                    <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Elements ranked by predicted visual-search time (<a class="cite-link" href="https://doi.org/10.1016/j.ijhcs.2019.102376" target="_blank" rel="noopener">Jokinen et al., 2020</a>). The elements at the top have the highest model-predicted search time and are the best candidates for design review (e.g. higher contrast, more salient placement, clearer grouping). Times are <strong>model estimates</strong>, not measured eye-tracking.</p>
                     <div id="searchFeedbackList"></div>
                 </div>
 
@@ -2039,7 +2039,7 @@
                     <div class="pipeline-node-label">Stage 1c</div>
                     <div class="pipeline-node-title">Search Time Model</div>
                     <div class="pipeline-node-dim">Jokinen 2020</div>
-                    <div class="pipeline-node-desc">Cognitive search time estimated via Jokinen’s adaptive feature guidance model, integrating EMMA eye-movement parameters and ACT-R memory decay.</div>
+                    <div class="pipeline-node-desc">Search time estimated via Jokinen’s adaptive feature guidance model, integrating EMMA eye-movement parameters and ACT-R memory decay.</div>
                     <div class="pipeline-node-ref"><a href="https://doi.org/10.1016/j.ijhcs.2019.102376" target="_blank" rel="noopener">Jokinen et al. (2020)</a> · <a href="https://doi.org/10.1016/S1389-0417(00)00015-2" target="_blank" rel="noopener">Salvucci (2001)</a> · <a href="https://doi.org/10.1037/0033-295X.111.4.1036" target="_blank" rel="noopener">Anderson et al. (2004)</a></div>
                 </div>
             </div>
@@ -2078,7 +2078,7 @@
                     <div class="pipeline-node-label">Full Feature Vector</div>
                     <div class="pipeline-node-title">Multi-Output Prediction</div>
                     <div class="pipeline-node-dim">x = [v, s, h, t, p] ∈ ℝ³⁰</div>
-                    <div class="pipeline-node-desc">The concatenated vector is passed to the regression model (HCEye rule-based by default, optional trained Random Forest). Primary output: Cognitive Load Score (0–100), plus two exploratory, unvalidated rule-based proxies — Search Efficiency (0–1) and Attention Demand (0–1). A mutual coherence check flags implausible combinations.</div>
+                    <div class="pipeline-node-desc">The concatenated vector is passed to the regression model (HCEye rule-based by default, optional trained Random Forest). Primary output: Experimental Layout-Complexity Index (0–100), plus two exploratory, unvalidated rule-based proxies — Search Efficiency (0–1) and Attention Demand (0–1). A mutual coherence check flags implausible combinations.</div>
                     <div class="pipeline-node-ref"><a href="https://doi.org/10.1023/A:1010933404324" target="_blank" rel="noopener">Breiman (2001)</a> Random Forest · <a href="https://doi.org/10.1002/widm.1157" target="_blank" rel="noopener">Borchani et al. (2015)</a> Multi-Output Regression · <a href="https://doi.org/10.1167/7.2.17" target="_blank" rel="noopener">Rosenholtz et al. (2007)</a> Coherence</div>
                 </div>
             </div>
@@ -2335,8 +2335,8 @@
             // for 'higher_is_worse': higher pct → worse
             // for 'higher_is_better': higher pct → better (invert)
             const loadPct = dir === 'higher_is_better' ? 100 - pct : pct;
-            if (loadPct >= t.crit) return { cls: 'crit', label: 'High load impact' };
-            if (loadPct >= t.high) return { cls: 'high', label: 'Elevated' };
+            if (loadPct >= t.crit) return { cls: 'crit', label: 'Strongly elevated feature signal' };
+            if (loadPct >= t.high) return { cls: 'high', label: 'Elevated feature pattern' };
             if (loadPct >= t.warn) return { cls: 'warn', label: 'Moderate' };
             return { cls: 'ok', label: 'Within range' };
         }
@@ -2350,8 +2350,8 @@
         function featureSignalFromRef(key, percentile) {
             const dir = FEATURE_DIRECTION[key];
             const loadPct = dir === 'higher_is_better' ? 100 - percentile : percentile;
-            if (loadPct >= 90) return { cls: 'crit', label: 'High load impact' };
-            if (loadPct >= 75) return { cls: 'high', label: 'Elevated' };
+            if (loadPct >= 90) return { cls: 'crit', label: 'Strongly elevated feature signal' };
+            if (loadPct >= 75) return { cls: 'high', label: 'Elevated feature pattern' };
             return { cls: 'ok', label: 'Within range' };
         }
 
@@ -2457,7 +2457,7 @@
             // feature is critical and one is unlisted). critical + elevated +
             // within-range always sums to FEATURE_KEYS.length.
             const summaryParts = [];
-            if (crits.length) summaryParts.push(`${crits.length} critical`);
+            if (crits.length) summaryParts.push(`${crits.length} strongly elevated`);
             if (highs.length) summaryParts.push(`${highs.length} elevated`);
             summaryParts.push(`${oks.length} within typical range`);
             bullets.push({
@@ -2466,13 +2466,13 @@
             });
 
             if (crits.length) {
-                bullets.push({ cls:'crit', text: `<strong>Critical load drivers:</strong> ${crits.map(i=>NAMES[i.key]).join(', ')} — address these first.` });
+                bullets.push({ cls:'crit', text: `<strong>Strongly elevated feature signals:</strong> ${crits.map(i=>NAMES[i.key]).join(', ')} — candidates for design review.` });
             }
             if (highs.length) {
-                bullets.push({ cls:'high', text: `<strong>Elevated:</strong> ${highs.map(i=>NAMES[i.key]).join(', ')} — worth reviewing in context.` });
+                bullets.push({ cls:'high', text: `<strong>Elevated feature patterns:</strong> ${highs.map(i=>NAMES[i.key]).join(', ')} — worth reviewing in context.` });
             }
             if (oks.length === FEATURE_KEYS.length) {
-                bullets.push({ cls:'ok', text: 'No single feature is driving the load score.' });
+                bullets.push({ cls:'ok', text: 'No single feature stands out as strongly elevated.' });
             }
 
             // Explain the common case where the overall load is high while most
@@ -2480,7 +2480,7 @@
             // prediction (saliency + eye-movement model) plus task context, not
             // an average of these structural features.
             if (loadScore >= 50 && (crits.length + highs.length) <= 2) {
-                bullets.push({ cls:'high', text: 'Why is the load high if most features are typical? The load score is a bottom-up prediction (predicted saliency + eye-movement model) shaped by the task context — it is driven by the flagged feature(s) above, not by all 8 structural features being jointly atypical. Structural typicality and predicted attentional load are complementary, not the same.' });
+                bullets.push({ cls:'high', text: 'Why is the index high if most features are typical? The experimental layout-complexity index is a bottom-up computation (predicted saliency + eye-movement model) shaped by the task context — it is driven by the flagged feature(s) above, not by all 8 structural features being jointly atypical. Structural typicality and the exploratory index are complementary, not the same.' });
             }
 
             // Specific actionable hints
@@ -2492,10 +2492,10 @@
             const congSig = items.find(i=>i.key==='feature_congestion')?.sig.cls;
             const entSig  = items.find(i=>i.key==='shannon_entropy')?.sig.cls;
             if ((congSig==='crit'||congSig==='high') && (entSig==='crit'||entSig==='high')) {
-                bullets.push({ cls:'crit', text: 'High congestion and entropy together signal visual clutter — reducing element density or increasing whitespace would lower cognitive load.' });
+                bullets.push({ cls:'crit', text: 'High congestion and entropy together signal visual clutter — reducing element density or increasing whitespace lowers these feature signals.' });
             }
 
-            if (!bullets.length) bullets.push({ cls:'ok', text: 'No critical patterns detected across feature combinations.' });
+            if (!bullets.length) bullets.push({ cls:'ok', text: 'No strongly elevated feature patterns detected across feature combinations.' });
 
             return `<div class="design-diagnosis">
                 <div class="design-diagnosis-title">Design Diagnosis <span style="text-transform:none; letter-spacing:0; font-weight:400; margin-left:6px; color:var(--text-dim);">(rule-based from normalized visual features + interaction patterns)</span></div>
@@ -2559,7 +2559,7 @@
             }
 
             if (time === "high" && (task === "decision" || mode === "exploratory")) {
-                contextHint.textContent = "High-load setup selected (time-critical + decision/exploratory). Expect a higher adjusted score.";
+                contextHint.textContent = "Higher-modifier setup selected (time-critical + decision/exploratory). Expect a higher adjusted index.";
                 return;
             }
 
@@ -2742,7 +2742,7 @@
             const STAGES = [
                 { id: 'lstage-1', start:  0, label: 'Extracting visual features…' },
                 { id: 'lstage-2', start:  5, label: 'Running UMSI++ saliency — this is the slow step…' },
-                { id: 'lstage-3', start: 50, label: 'HCEye cognitive load model…' },
+                { id: 'lstage-3', start: 50, label: 'HCEye rule-based heuristic…' },
                 { id: 'lstage-4', start: 60, label: 'Applying task & profile modifiers…' },
             ];
             const timerEl  = document.getElementById('loadingTimer');
@@ -4096,7 +4096,7 @@
                 }
                 const dir  = FEATURE_DIRECTION[key] === 'higher_is_better'
                     ? 'Better when this value is HIGH'
-                    : 'Better when this value is LOW (high = more load)';
+                    : 'Better when this value is LOW (high = stronger feature signal)';
                 // The hover card explains what the feature MEASURES in general
                 // (not the current value), with a clear hierarchy: bold title,
                 // a short "what it measures" line, the reading direction, and a
@@ -4198,10 +4198,10 @@
             function deltaClass(d) { return d > 0.05 ? 'pos' : d < -0.05 ? 'neg' : 'zero'; }
             function deltaStr(d)   { return (d >= 0 ? '+' : '') + d.toFixed(1); }
             function scoreBand(score) {
-                if (score < 25) return { label: 'Low load', note: 'Easy to process for most users.', cls: 'badge-low' };
-                if (score < 50) return { label: 'Moderate load', note: 'Manageable, but can degrade under pressure.', cls: 'badge-moderate' };
-                if (score < 75) return { label: 'High estimate', note: 'Elevated estimated attentional demand.', cls: 'badge-high' };
-                return { label: 'Very high estimate', note: 'High estimated demand for this layout; consider simplifying.', cls: 'badge-very-high' };
+                if (score < 25) return { label: 'Low experimental layout complexity', note: 'Few layout proxies are elevated.', cls: 'badge-low' };
+                if (score < 50) return { label: 'Moderate experimental layout complexity', note: 'Some layout proxies are moderately elevated.', cls: 'badge-moderate' };
+                if (score < 75) return { label: 'High experimental layout complexity', note: 'Several layout proxies are elevated.', cls: 'badge-high' };
+                return { label: 'Very high experimental layout complexity', note: 'Many layout proxies are strongly elevated.', cls: 'badge-very-high' };
             }
             function recommendationFor(score, delta) {
                 if (score >= 75 || delta >= 10) return 'Review cue: inspect the contributing feature patterns.';
@@ -4211,33 +4211,33 @@
 
             // ── Explanations shown below each dropdown ────────────────────
             const TASK_DESC = {
-                navigation:  'Spatial/procedural — user follows a known path. Lowest attentional demand.',
-                search:      'Sustained focused attention required to locate a specific target.',
-                monitoring:  'Largely pre-attentive, peripheral scanning. Moderate demand.',
-                data_entry:  'Sustained attention + motor execution. High demand.',
-                decision:    'Simultaneous evaluation of alternatives. Highest attentional demand.',
+                navigation:  'Spatial/procedural — user follows a known path. Smallest upward modifier.',
+                search:      'Sustained focused search for a specific target — moderate upward modifier.',
+                monitoring:  'Peripheral scanning — small upward modifier.',
+                data_entry:  'Sustained input task — larger upward modifier.',
+                decision:    'Simultaneous evaluation of alternatives — largest upward modifier.',
             };
             const MODE_DESC = {
                 known_item:  'User knows exactly what to look for — direct memory retrieval.',
                 comparative: 'User must compare multiple options before choosing.',
-                exploratory: 'No fixed target — exhaustive scanning required. Highest load.',
+                exploratory: 'No fixed target — exhaustive scanning assumed. Largest upward modifier.',
             };
             const SPEC_DESC = {
-                high:   'Target is well-defined — narrows search set, reduces load.',
+                high:   'Target is well-defined — narrows the modelled search set.',
                 medium: 'Partially defined target — moderate search effort.',
                 low:    'Vague target — user must evaluate many candidates.',
             };
             const TIME_DESC = {
                 low:    'Ample time — user can process at their own pace.',
                 medium: 'Moderate time constraint — some pressure to act.',
-                high:   'Severe time constraint — reduced processing time increases load.',
+                high:   'Severe time constraint — larger upward modifier.',
             };
             const PROFILE_DESC = {
                 neutral:          'Baseline — no personality adjustment applied.',
-                focused:          'High conscientiousness, low neuroticism — structured, calm under load.',
-                exploratory:      'High openness — enjoys exploring, lower anxiety response.',
-                social:           'High extraversion — socially oriented, moderate load sensitivity.',
-                stress_sensitive: 'High neuroticism — amplified response to cognitive demand.',
+                focused:          'High conscientiousness, low neuroticism — downward profile modifier.',
+                exploratory:      'High openness — smaller upward profile modifier.',
+                social:           'High extraversion — small profile modifier.',
+                stress_sensitive: 'High neuroticism — largest upward profile modifier (unvalidated).',
             };
 
             const originalContext = {
@@ -4510,7 +4510,7 @@
             el.innerHTML = `
                 <div class="coherence-warning-title">Coherence Check — ${coherence.flags.length} inconsistenc${coherence.flags.length === 1 ? 'y' : 'ies'} detected</div>
                 ${items}
-                <div style="margin-top:8px; font-size:11px; color: var(--text-dim);">These are diagnostic flags, not errors. The prediction is still valid but may be at the boundary of the model’s calibration range.</div>
+                <div style="margin-top:8px; font-size:11px; color: var(--text-dim);">These are diagnostic flags, not errors. The result remains computable, but may lie outside the reference range and should be interpreted cautiously.</div>
             `;
             el.classList.add('visible');
         }
@@ -4530,21 +4530,21 @@
             let level, badge, badgeClass, levelClass, title, body;
 
             if (score < 25) {
-                level = 'LOW'; badge = 'Low Load'; badgeClass = 'badge-low'; levelClass = 'level-low';
-                title = 'Interface is easy to process';
-                body = `The visual complexity of this screen is <strong>estimated to be well within typical attentional capacity</strong>. Users are unlikely to experience noticeable cognitive strain, and visual search should be efficient. This is an exploratory estimate, not a validated measurement.`;
+                level = 'LOW'; badge = 'Low complexity'; badgeClass = 'badge-low'; levelClass = 'level-low';
+                title = 'Low experimental layout complexity';
+                body = `Few of the measured layout proxies are elevated for this screen. This is an exploratory layout-complexity signal only; it does not establish actual user cognitive demand. The contributing feature patterns are shown below.`;
             } else if (score < 50) {
-                level = 'MODERATE'; badge = 'Moderate Load'; badgeClass = 'badge-moderate'; levelClass = 'level-moderate';
-                title = 'Manageable, but worth watching';
-                body = `The interface places a <strong>moderate demand on user attention</strong>. Most users will cope well under normal conditions, but performance may degrade slightly under time pressure or dual-task situations — consistent with HCEye findings.`;
+                level = 'MODERATE'; badge = 'Moderate complexity'; badgeClass = 'badge-moderate'; levelClass = 'level-moderate';
+                title = 'Moderate experimental layout complexity';
+                body = `Some of the measured layout proxies are moderately elevated for this screen. This is an exploratory layout-complexity signal only; it does not establish actual user cognitive demand. The contributing feature patterns are shown below.`;
             } else if (score < 75) {
-                level = 'HIGH'; badge = 'High Load'; badgeClass = 'badge-high'; levelClass = 'level-high';
-                title = 'Higher experimental layout-complexity value';
+                level = 'HIGH'; badge = 'High complexity'; badgeClass = 'badge-high'; levelClass = 'level-high';
+                title = 'High experimental layout complexity';
                 body = `Several measured layout proxies are elevated for this screen. This is an exploratory layout-complexity signal only; it does not establish actual user cognitive demand. The contributing feature patterns are shown below.`;
             } else {
-                level = 'VERY_HIGH'; badge = 'Very High Estimate'; badgeClass = 'badge-very-high'; levelClass = 'level-very-high';
-                title = 'Very high estimated attentional demand';
-                body = `The visual structure of this screen is estimated to place a <strong>very high attentional demand</strong> on users. In the literature, high visual demand is associated with more missed elements, more errors, and longer task times (Rosenholtz et al., 2007; Jokinen et al., 2020). This is an exploratory estimate, not a validated overload measurement.`;
+                level = 'VERY_HIGH'; badge = 'Very high complexity'; badgeClass = 'badge-very-high'; levelClass = 'level-very-high';
+                title = 'Very high experimental layout complexity';
+                body = `Many of the measured layout proxies are strongly elevated for this screen. This is an exploratory layout-complexity signal only; it does not establish actual user cognitive demand. The contributing feature patterns are shown below.`;
             }
 
             // Derive concrete implications
@@ -4553,18 +4553,18 @@
             const items = [];
 
             if (fixPct > 3)
-                items.push(`Under cognitive load, users are estimated to make <strong>~${fixPct}% fewer fixations</strong> on this screen — they see less of the interface.`);
+                items.push(`HCEye model output: about <strong>~${fixPct}% fewer fixations</strong> under its high-load condition (model estimate, not a measured effect on your users).`);
 
             if (durPct > 3)
-                items.push(`Fixation duration is estimated to increase by <strong>~${durPct}%</strong> — each element requires more processing effort.`);
+                items.push(`HCEye model output: fixation duration about <strong>~${durPct}% longer</strong> under its high-load condition (model estimate, not measured).`);
 
             if (searchEff < 0.5)
-                items.push(`<strong>Search efficiency is low (${searchEff.toFixed(2)})</strong> — users may have difficulty finding specific targets, especially under time pressure.`);
+                items.push(`<strong>Search-efficiency proxy is low (${searchEff.toFixed(2)})</strong> — an exploratory, unvalidated signal that targets may be harder to locate.`);
             else if (searchEff > 0.75)
-                items.push(`<strong>Search efficiency is good (${searchEff.toFixed(2)})</strong> — targets should be findable without excessive visual scanning.`);
+                items.push(`<strong>Search-efficiency proxy is high (${searchEff.toFixed(2)})</strong> — an exploratory, unvalidated signal that targets may be easier to locate.`);
 
             if (hlEff > 0.7)
-                items.push(`<strong>Dynamic highlighting would be highly effective</strong> on this screen — it can compensate well for attention loss under load (HCEye: +${Math.round(hlEff*100)}% AOI retention with dynamic highlights).`);
+                items.push(`<strong>Dynamic highlighting</strong> — HCEye reports higher AOI retention with dynamic highlights (+${Math.round(hlEff*100)}%); an exploratory indication, not validated for this screen.`);
 
             const taskMod = data.task_descriptor && data.task_descriptor.modifier || 0;
             // Express the task modifier relative to the base score so the headline
@@ -4572,9 +4572,9 @@
             // traceability (same pattern as the signed delta% feature headlines).
             const taskPct = baseScore ? Math.round(Math.abs(taskMod) / baseScore * 100) : 0;
             if (taskMod > 4)
-                items.push(`The selected <strong>task type raises the score by ~${taskPct}%</strong> (+${taskMod.toFixed(1)} points) — exploratory or decision tasks amplify cognitive demand.`);
+                items.push(`The selected <strong>task type raises the index by ~${taskPct}%</strong> (+${taskMod.toFixed(1)} points) — an unvalidated modelling modifier for exploratory/decision tasks.`);
             else if (taskMod < -2)
-                items.push(`The selected <strong>task type lowers the score by ~${taskPct}%</strong> (−${Math.abs(taskMod).toFixed(1)} points) — navigation tasks tend to be less demanding.`);
+                items.push(`The selected <strong>task type lowers the index by ~${taskPct}%</strong> (−${Math.abs(taskMod).toFixed(1)} points) — an unvalidated modelling modifier for navigation tasks.`);
 
             const panel = document.getElementById('interpretationPanel');
             panel.innerHTML = `
@@ -4616,7 +4616,7 @@
                 findings.push('Low information density — the screen is visually sparse, which reduces perceptual demand.');
 
             if (congestion > 0.6)
-                findings.push('Elevated feature congestion — local regions are dense with competing visual features (color, contrast, orientation), which increases attentional filtering cost.');
+                findings.push('Elevated feature congestion — local regions are dense with competing visual features (color, contrast, orientation), which raises the congestion feature signal.');
             else if (congestion < 0.25)
                 findings.push('Low feature congestion — visual elements are well-separated, supporting efficient pre-attentive processing.');
 
@@ -4634,7 +4634,7 @@
                 findings.push('High interactive element density — many actionable items per area increases selection demand.');
 
             if (chromatic < 0.3)
-                findings.push('Low chromatic coherence — high color variance may signal inconsistent visual design or high information load.');
+                findings.push('Low chromatic coherence — high color variance may signal inconsistent visual design or high information density.');
 
             if (findings.length === 0)
                 findings.push('Feature profile is balanced — no single dimension is dominant or critically low.');
@@ -4773,7 +4773,7 @@
                 const info = featuresInfo.find(f => f.key === key) || {};
                 const dir = FEATURE_DIRECTION[key] === 'higher_is_better'
                     ? 'Better when high'
-                    : 'Better when low (high = more load)';
+                    : 'Better when low (high = stronger feature signal)';
                 const dirFull = FEATURE_DIRECTION[key] === 'higher_is_better'
                     ? 'Better when this value is HIGH'
                     : 'Better when this value is LOW (high = more load)';
@@ -4859,7 +4859,12 @@
                 <th title="Include this analysis in the overall comparison"><input type="checkbox" id="historySelectAll"></th>
                 <th>File</th>
                 <th title="Experimental Layout Complexity (0-100, layout characteristic)">Layout</th>
-                ${shortKeys.slice(1).map(k => `<th>${k}</th>`).join("")}
+                ${shortKeys.slice(1).map(k => {
+                    const tt = k === 'Search' ? 'Search Efficiency (exploratory, unvalidated proxy)'
+                             : k === 'Attention' ? 'Attention Demand (exploratory, unvalidated proxy)'
+                             : k;
+                    return `<th title="${tt}">${k}</th>`;
+                }).join("")}
             </tr>`;
 
             history.forEach((row, i) => {
@@ -5058,11 +5063,11 @@
             doc.setFont("helvetica", "bold");
             doc.setFontSize(11);
             doc.setTextColor(...lvlColor);
-            doc.text(`${level} ESTIMATED LOAD (EXPLORATORY)`, margin + 55, y + 10);
+            doc.text(`${level} EXPERIMENTAL LAYOUT COMPLEXITY`, margin + 55, y + 10);
             doc.setFont("helvetica", "normal");
             doc.setFontSize(8.5);
             doc.setTextColor(...dim);
-            const titleMap = { LOW: "Interface is easy to process", MODERATE: "Manageable, but worth watching", HIGH: "Higher experimental layout-complexity value", "VERY HIGH": "Very high estimated attentional demand" };
+            const titleMap = { LOW: "Low experimental layout complexity", MODERATE: "Moderate experimental layout complexity", HIGH: "High experimental layout complexity", "VERY HIGH": "Very high experimental layout complexity" };
             doc.text(titleMap[level] || "", margin + 55, y + 17);
             y += 28;
 
@@ -5098,8 +5103,8 @@
 
             // ── Scores ───────────────────────────────────────────────────
             sectionTitle("Prediction Scores");
-            row("Cognitive Load Score (adjusted)",   score.toFixed(2), lvlColor);
-            row("Cognitive Load Score (base)",        (d.base_score || 0).toFixed(2));
+            row("Experimental Layout-Complexity Index (adjusted)",   score.toFixed(2), lvlColor);
+            row("Experimental Layout-Complexity Index (base)",        (d.base_score || 0).toFixed(2));
             row("Search Efficiency (exploratory proxy)",   (d.search_efficiency || 0).toFixed(3));
             row("Attention Demand (exploratory proxy)",    (d.attention_demand || 0).toFixed(3));
             row("Cognitive Load Index (HCEye)",       (d.hceye_cli || 0).toFixed(3));

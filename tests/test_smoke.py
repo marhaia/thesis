@@ -580,6 +580,38 @@ def test_standard_ui_keeps_exploratory_caveats():
     assert "not a wcag conformance audit" in html
 
 
+def test_standard_ui_has_no_rendered_load_or_performance_verdicts():
+    # Honesty sweep: the standard UI must not present the heuristic as a
+    # validated cognitive-load / human-performance verdict. Internal API keys
+    # (cognitive_load_score, attention_demand) and factual descriptions of the
+    # HCEye study (e.g. "under high load") are allowed; only rendered
+    # verdict phrases are banned.
+    html = _standard_ui_html().lower()
+    forbidden = [
+        "low load",
+        "moderate load",
+        "high load impact",
+        "critical load drivers",
+        "easy to process for most users",
+        "typical attentional capacity",
+        "performance may degrade",
+        "very high attentional demand",
+        "estimated load",
+        "cognitive load score",  # spaces = user-facing label; underscore key is allowed
+        "prediction is still valid",
+    ]
+    for phrase in forbidden:
+        assert phrase not in html, f"forbidden rendered verdict present: {phrase!r}"
+    # Bare "high load" is only allowed inside the factual HCEye description
+    # ("fewer fixations under high load"); it must never appear as a band label.
+    assert html.count("high load") == html.count("under high load"), (
+        "found a 'high load' verdict outside the factual HCEye description"
+    )
+    # The neutral replacements must be present.
+    assert "experimental layout complexity" in html
+    assert "result remains computable" in html
+
+
 def test_standard_ui_demotes_search_and_attention_proxies():
     html = _standard_ui_html().lower()
     # Where the proxies remain (technical details / PDF), they must be
