@@ -192,6 +192,90 @@ def detect_elements(
     return elements
 
 
+def detect_elements_scale_invariant(
+    image: np.ndarray,
+    min_area: int = MIN_ELEMENT_AREA_PX,
+    max_elements: int = MAX_ELEMENTS,
+    screen_width_cm: float = SCREEN_WIDTH_CM,
+    screen_height_cm: float = SCREEN_HEIGHT_CM,
+    viewing_distance_cm: float = VIEWING_DISTANCE_CM,
+    canonical_long_side: Optional[int] = None,
+) -> List[Dict]:
+    """Detect UI elements on a canonical-resolution copy, returning boxes in the
+    ORIGINAL image's coordinate space.
+
+    ``detect_elements`` uses fixed-pixel operators (Canny, a fixed morphology
+    kernel, a fixed ``min_area``), so the same layout rendered at a different
+    native resolution yields a different element count and whitespace ratio.
+    That resolution dependence is the remaining, detection-side half of the
+    Stage-1 scale defect (the visual-feature half is handled by
+    ``canonicalize_for_analysis``). Running detection once on the fixed
+    canonical resolution removes it.
+
+    Geometric fields (``bbox``, ``center``, ``area``) are rescaled from the
+    canonical image back to the native image, so overlays, target selection and
+    the Jokinen search model stay coordinate-correct in native pixels. The
+    ratio-based fields (``angular_size``, ``contrast_ratio``, colour) are
+    scale-invariant by construction (they depend on element-to-image ratios or
+    on colour, not on absolute pixel size) and are kept as computed on the
+    canonical image.
+
+    Note: because detection now runs at a fixed resolution, both the element set
+    AND any whitespace / element-count derived from it are resolution-invariant,
+    while every consumer still receives native-coordinate boxes.
+    """
+    h_nat, w_nat = image.shape[:2]
+
+    # Lazy import so this module stays importable without the heavy visual stack
+    # (canonicalize_for_analysis lives next to the Stage-1 feature code).
+    import os
+    import sys
+    stage1_dir = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "stage1")
+    if stage1_dir not in sys.path:
+        sys.path.insert(0, stage1_dir)
+    from visual_complexity import canonicalize_for_analysis, CANONICAL_LONG_SIDE
+
+    long_side = canonical_long_side or CANONICAL_LONG_SIDE
+    canon = canonicalize_for_analysis(image, long_side=long_side)
+    h_can, w_can = canon.shape[:2]
+
+    canon_elements = detect_elements(
+        canon,
+        min_area=min_area,
+        max_elements=max_elements,
+        screen_width_cm=screen_width_cm,
+        screen_height_cm=screen_height_cm,
+        viewing_distance_cm=viewing_distance_cm,
+    )
+
+    # Map canonical-space boxes back to native pixels. fx == fy up to rounding
+    # (aspect ratio is preserved), but both are applied exactly for safety.
+    fx = w_nat / float(w_can)
+    fy = h_nat / float(h_can)
+
+    native_elements: List[Dict] = []
+    for e in canon_elements:
+        x, y, w, h = e["bbox"]
+        nx = int(round(x * fx))
+        ny = int(round(y * fy))
+        nw = max(1, int(round(w * fx)))
+        nh = max(1, int(round(h * fy)))
+        # Clip to native bounds so a rounded box never leaves the image.
+        nx = min(max(nx, 0), max(w_nat - 1, 0))
+        ny = min(max(ny, 0), max(h_nat - 1, 0))
+        nw = min(nw, w_nat - nx)
+        nh = min(nh, h_nat - ny)
+
+        e2 = dict(e)
+        e2["bbox"] = (nx, ny, nw, nh)
+        e2["center"] = (nx + nw / 2.0, ny + nh / 2.0)
+        e2["area"] = int(nw * nh)
+        native_elements.append(e2)
+
+    return native_elements
+
+
 # ---------------------------------------------------------------------------
 # Helper Functions
 # ---------------------------------------------------------------------------

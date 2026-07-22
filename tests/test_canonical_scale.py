@@ -321,3 +321,83 @@ def test_analyze_normal_image_is_not_400(client):
     # A normal image must NOT hit the too-small 400 path (200 expected; the
     # saliency stage degrades gracefully without the ML stack).
     assert resp.status_code == 200, resp.get_data(as_text=True)
+
+
+# ---------------------------------------------------------------------------
+# 5. Scale-invariant element detection (the detection-side half of the fix).
+#    detect_elements uses fixed-pixel operators, so the raw element count and
+#    whitespace ratio it produces depend on native resolution; this feeds the
+#    HCEye index via whitespace / element_count. detect_elements_scale_invariant
+#    runs detection once on the canonical image and rescales boxes back to native
+#    pixels, so the count / whitespace are resolution-invariant while overlays,
+#    target selection and the Jokinen model keep coordinate-correct native boxes.
+# ---------------------------------------------------------------------------
+from cognitive.element_detector import (  # noqa: E402
+    detect_elements,
+    detect_elements_scale_invariant,
+)
+
+
+def _boxes_board(s):
+    """Separated solid boxes on a light ground, at integer scale ``s``."""
+    im = np.full((600 * s, 900 * s, 3), 245, np.uint8)
+    boxes = [(60, 60, 180, 140, (200, 40, 40)),
+             (400, 80, 520, 160, (40, 160, 40)),
+             (700, 100, 820, 180, (40, 40, 200)),
+             (120, 360, 260, 460, (180, 120, 40)),
+             (520, 380, 660, 470, (120, 40, 160))]
+    for x1, y1, x2, y2, c in boxes:
+        cv2.rectangle(im, (x1 * s, y1 * s), (x2 * s, y2 * s), c, -1)
+    return im
+
+
+def _whitespace_of(img, elements):
+    h, w = img.shape[:2]
+    area = float(h * w) or 1.0
+    mask = np.zeros((h, w), np.uint8)
+    for e in elements:
+        x, y, bw, bh = e["bbox"]
+        mask[int(y):int(y + bh), int(x):int(x + bw)] = 1
+    return float(np.clip(1.0 - float(mask.sum()) / area, 0.0, 1.0))
+
+
+def test_detect_scale_invariant_boxes_stay_in_native_bounds():
+    for s in (1, 2, 3):
+        img = _boxes_board(s)
+        H, W = img.shape[:2]
+        els = detect_elements_scale_invariant(img)
+        assert els, f"no elements at scale {s}"
+        for e in els:
+            x, y, bw, bh = e["bbox"]
+            assert 0 <= x <= W and 0 <= y <= H
+            assert x + bw <= W and y + bh <= H
+            assert bw >= 1 and bh >= 1
+
+
+def test_detect_scale_invariant_count_and_whitespace_are_stable():
+    # The naive native detector changes count/whitespace with resolution; the
+    # scale-invariant one must keep both essentially constant across 1x/2x/3x.
+    counts, whitespaces = [], []
+    for s in (1, 2, 3):
+        img = _boxes_board(s)
+        els = detect_elements_scale_invariant(img)
+        counts.append(len(els))
+        whitespaces.append(_whitespace_of(img, els))
+    assert max(counts) == min(counts), f"element count not scale-stable: {counts}"
+    assert max(whitespaces) - min(whitespaces) <= 0.02, (
+        f"whitespace not scale-stable: {whitespaces}")
+
+
+def test_detect_scale_invariant_boxes_track_native_resolution():
+    # A box detected at 2x native must sit at ~2x the pixel coordinates of the
+    # same box at 1x (boxes are expressed in native pixels, not canonical).
+    e1 = detect_elements_scale_invariant(_boxes_board(1))
+    e2 = detect_elements_scale_invariant(_boxes_board(2))
+    assert len(e1) == len(e2) and len(e1) >= 1
+    # Compare the largest-area box in each (stable anchor).
+    b1 = max(e1, key=lambda e: e["area"])["bbox"]
+    b2 = max(e2, key=lambda e: e["area"])["bbox"]
+    # x, y, w, h of the 2x image should be ~2x those of the 1x image.
+    for a, b in zip(b1, b2):
+        assert abs(b - 2 * a) <= max(6, 0.1 * 2 * a), f"{b1} vs {b2}"
+

@@ -1242,8 +1242,15 @@ def cognitive_load():
         readability_report = None
         if jokinen_img is not None:
             try:
-                from cognitive.element_detector import detect_elements
-                elements = detect_elements(jokinen_img)
+                # Scale-invariant detection: run once on the canonical resolution
+                # and rescale boxes back to native pixels. This makes the
+                # whitespace ratio and element count fed into the HCEye index
+                # resolution-independent (the detector's fixed-pixel operators
+                # would otherwise change the count/whitespace with native size),
+                # while every downstream consumer below still gets native-
+                # coordinate boxes (Jokinen search, overlays, target selection).
+                from cognitive.element_detector import detect_elements_scale_invariant
+                elements = detect_elements_scale_invariant(jokinen_img)
                 h_img, w_img = jokinen_img.shape[:2]
                 img_area = float(h_img * w_img) or 1.0
                 mask = np.zeros((h_img, w_img), dtype=np.uint8)
@@ -1335,7 +1342,7 @@ def cognitive_load():
         try:
             import cv2
             from cognitive.jokinen_model import JokinenSearchModel, JokinenParams
-            from cognitive.element_detector import detect_elements
+            from cognitive.element_detector import detect_elements_scale_invariant
             # Reuse the image and element boxes already loaded in Step 2.5.
             # Only re-read/re-detect if that earlier step failed for any reason.
             if jokinen_img is None:
@@ -1343,7 +1350,7 @@ def cognitive_load():
             if jokinen_img is None:
                 raise ValueError(f"Cannot read image for Jokinen search model: {filepath}")
             if elements is None:
-                elements = detect_elements(jokinen_img)
+                elements = detect_elements_scale_invariant(jokinen_img)
             # Reuse the already-computed UMSI++ heatmap when saliency succeeded
             # (avoids re-running the slow saliency step). s is not None implies
             # the saliency block ran past the heatmap assignment above.
