@@ -1229,9 +1229,10 @@ def cognitive_load():
         # ANALYSIS PATH (canonical, score-driving): whitespace_ratio and OCR-
         # derived text_density are computed on a single canonical analysis image
         # (long side 1280 px) with canonical element detection, so they share the
-        # SAME analysis scale as the eight visual features and are therefore
-        # resolution-invariant. These are the ONLY element-derived values that
-        # feed the layout experimental_complexity_index.
+        # SAME analysis scale as the eight visual features, which standardises
+        # their analysis scale and reduces measured resolution sensitivity. These
+        # are the ONLY element-derived values that feed the layout
+        # experimental_complexity_index.
         #
         # NATIVE PATH (interaction only): the Jokinen search model, target
         # selection, native overlays, native contrast diagnostics and the

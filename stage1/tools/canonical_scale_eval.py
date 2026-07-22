@@ -652,7 +652,7 @@ def main() -> int:
                    "ueyes_native_to_candidate_perturbation": pert_rows}, f, indent=2)
     with open(os.path.join(args.out_dir, "candidate_comparison.csv"), "w",
               newline="") as f:
-        w = csv.writer(f)
+        w = csv.writer(f, lineterminator="\n")
         w.writerow(["candidate_long_side", "driver_scale_mean_rel_gap",
                     "driver_scale_worst_rel_gap", "ueyes_mean_rel_perturbation",
                     "ueyes_worst_rel_perturbation"])
@@ -696,7 +696,7 @@ def main() -> int:
                        "results": ho}, f, indent=2)
         with open(os.path.join(args.out_dir, "heldout_ueyes_manifest.csv"), "w",
                   newline="") as f:
-            w = csv.writer(f)
+            w = csv.writer(f, lineterminator="\n")
             w.writerow(["image_id", "category", "seed"])
             for i, c, _ in heldout:
                 w.writerow([i, c, args.seed])

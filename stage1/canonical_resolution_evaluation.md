@@ -72,6 +72,12 @@ UI, gradient/low-detail UI) rendered at 1x/2x/3x, plus a deterministic UEyes
 *selection* sample (first + middle image of each sorted category). The selection
 sample IDs are recorded in `stage1/canonical_eval/candidate_comparison.json`.
 
+> Sample scope: the corpus-wide native-resolution statistics above use the full
+> 1,485-image UEyes corpus, but this candidate feature comparison does NOT. The
+> scale-gap objective uses the three synthetic fixtures, and the perturbation
+> tie-breaker uses only the eight declared selection images. No candidate
+> feature-perturbation number is computed over all 1,485 images.
+
 **Primary objective — scale gap of the pixel-scale drivers**
 (`feature_congestion`, `edge_density`, `interactive_element_density`), worst-case
 relative 1x/2x/3x gap after canonicalisation, measured on the *re-rendered*
@@ -173,11 +179,25 @@ What the evaluation shows:
 - **Canonical element geometry is stable.** Per-scale normalised canonical
   bounding boxes are saved, and their 1x→2x / 1x→3x matching coverage and mean
   IoU (greedy best-IoU one-to-one, IoU ≥ 0.5) are summarised per image.
+- **A raster-stress residual remains on the canonical path.** Even with
+  whitespace canonicalised, the canonical combined displayed-point gap is not
+  zero on raster-enlarged real images: the maximum is **≈ 2.114 displayed
+  points** (image `a2d191`, web), almost entirely from the visual-input side
+  (its `visual_hierarchy` input, not whitespace) under `cv2.resize` enlargement.
+  Because this is a raster-enlargement artefact rather than a native re-render,
+  it is reported as an observed residual and is **not** assumed to vanish under
+  true native re-rendering.
 
 The native detection path (bounding boxes, overlays, target selection, contrast
 and the Jokinen search model) is kept native **by design** for coordinate
 accuracy. It no longer feeds the layout score, so its native-scale behaviour is
 a deliberate architectural choice rather than an unresolved defect of the score.
+
+Scope of the scale evidence: only the reduced HCEye rule index (visual features
++ whitespace, no saliency, no OCR, no modifiers) is exercised across scales. The
+**complete production `cognitive_load_index` with the real UMSI++ saliency model
+and real EasyOCR text density has NOT been scale-validated** and no such claim is
+made here.
 
 ## Scope / limitations
 

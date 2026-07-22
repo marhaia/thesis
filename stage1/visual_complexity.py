@@ -56,30 +56,39 @@ from skimage import transform
 # in turn makes the downstream headline score resolution-dependent (see the
 # scale-invariance diagnosis).
 #
-# To remove that dependence we compute the eight features on a deterministic,
-# aspect-ratio-preserving CANONICAL analysis resolution: every screenshot is
-# resized so that its LONG side equals CANONICAL_LONG_SIDE before any feature is
-# computed. This is a pure analysis-time normalisation; the original image and
-# its coordinate system are kept untouched for element detection, bounding
-# boxes, overlays, target selection and the Jokinen search model.
+# To standardise the analysis scale we compute the eight features on a
+# deterministic, aspect-ratio-preserving CANONICAL analysis resolution: every
+# screenshot is resized so that its LONG side equals CANONICAL_LONG_SIDE before
+# any feature is computed. This is a pure analysis-time normalisation. The
+# score-driving LAYOUT measurements (whitespace_ratio and OCR text_density) run
+# on the same canonical image (see stage1/canonical_layout.py); the SEPARATE
+# native path for the Jokinen search model, target selection, overlays and
+# native contrast diagnostics keeps the original image and its coordinate space.
 #
 # Chosen value: 1280 px long side. Evidence-based selection over the candidate
-# set {1024, 1280, 1440} on the 1,485-image UEyes GUI corpus (median native
-# long side = 1188 px) plus three synthetic layouts rendered at 1x/2x/3x:
-#   * Scale gap (the primary objective): for the resolution-sensitive,
-#     score-driving features (feature_congestion, edge_density,
-#     interactive_element_density) 1024 and 1280 are tied at < 5 % worst-case
-#     relative 1x/2x/3x gap, while 1440 is clearly worse (~7 %) because the
-#     larger upscale of small inputs re-introduces interpolation artefacts.
-#   * Information loss (the tie-breaker): a 1024 canonical would DOWNSCALE ~70 %
-#     of the corpus (median long side 1188 > 1024) and drifts up to ~44 % on
-#     high-resolution mobile screenshots; 1280 downscales only ~30 % of the
-#     corpus and drifts far less, at ~1.5x the 1024 processing cost. 1440 adds
-#     ~25 % cost over 1280 for only a marginal preservation gain while losing on
-#     the primary scale-gap objective.
-# Rule: pick the smallest candidate that (a) minimises the score-driving-feature
-# scale gap and (b) does not force the majority of the corpus to be downscaled.
-# 1024 fails (b); 1440 fails (a); 1280 satisfies both. Hence 1280.
+# set {1024, 1280, 1440}. Two distinct samples are used, and must not be
+# conflated:
+#   * Corpus-wide native-resolution statistics were computed over the full
+#     1,485-image UEyes GUI corpus (median native long side = 1188 px). These
+#     describe the corpus only; they are NOT the candidate feature comparison.
+#   * The candidate feature comparison used the three synthetic layouts (for the
+#     scale-gap objective) and the eight declared UEyes SELECTION images (for
+#     the native->candidate perturbation tie-breaker). It did NOT run over all
+#     1,485 images.
+# Reproducible results (stage1/canonical_eval/candidate_comparison.json):
+#   * Scale gap (primary objective, synthetic re-render, score-driving features
+#     feature_congestion / edge_density / interactive_element_density): worst-
+#     case relative 1x/2x/3x gap 1024 = 4.43 %, 1280 = 4.38 % (tied), 1440 =
+#     6.66 % (clearly worse).
+#   * Native->candidate perturbation on the eight selection images (tie-breaker):
+#     mean / worst relative feature change 1024 = 12.98 % / 111.42 %,
+#     1280 = 10.72 % / 87.25 %, 1440 = 13.74 % / 111.46 %. 1280 perturbs real
+#     screenshots least.
+# Rule: pick the smallest candidate that (a) is tied for the best score-driving-
+# feature scale gap and (b) perturbs real screenshots least. 1024 loses on (b);
+# 1440 loses on (a); 1280 satisfies both. Hence 1280. This is an exploratory,
+# evidence-based engineering choice, not a pre-registered or provably optimal
+# value.
 CANONICAL_LONG_SIDE = 1280
 
 # Inputs whose long side is below this are considered too small to analyse
@@ -1300,10 +1309,13 @@ def compute_complexity_vector(image_path: str) -> Dict[str, float]:
         raise FileNotFoundError(f"Cannot load image: {image_path}")
 
     # Normalise to the canonical analysis resolution ONCE, before any feature is
-    # computed, so the eight features are resolution-invariant (see
+    # computed, so the eight features share a standardised analysis scale and
+    # their measured resolution sensitivity is reduced (see
     # canonicalize_for_analysis / CANONICAL_LONG_SIDE). The original file on disk
-    # and every coordinate-space consumer (element detection, bounding boxes,
-    # overlays, Jokinen search) are unaffected: they re-read the original image.
+    # is unaffected: the SEPARATE native path (element detection for the Jokinen
+    # search model, bounding boxes, overlays, target selection) re-reads the
+    # original image. The score-driving layout measurements run on the canonical
+    # image via stage1/canonical_layout.py.
     native_h, native_w = image.shape[:2]
     image = canonicalize_for_analysis(image)
 

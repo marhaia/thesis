@@ -14,13 +14,13 @@
   "scale_gap": [
     {
       "candidate": 1024,
-      "mean_rel_gap": 0.00720489683879055,
-      "worst_rel_gap": 0.04433181281965261
+      "mean_rel_gap": 0.007213281479894505,
+      "worst_rel_gap": 0.04433624230165536
     },
     {
       "candidate": 1280,
-      "mean_rel_gap": 0.00725530943423306,
-      "worst_rel_gap": 0.04379113960324474
+      "mean_rel_gap": 0.007254965341228017,
+      "worst_rel_gap": 0.04378827455866422
     },
     {
       "candidate": 1440,
@@ -31,7 +31,7 @@
   "ueyes_native_to_candidate_perturbation": [
     {
       "candidate": 1024,
-      "mean_rel_perturbation": 0.12984952110528028,
+      "mean_rel_perturbation": 0.1298494295054639,
       "worst_rel_perturbation": 1.1141868512110729
     },
     {

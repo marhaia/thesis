@@ -1,0 +1,295 @@
+{
+  "description": "TRUE endpoint scale matrix produced through the real Flask /api/cognitive-load route. NOT the reduced HCEye-rule fixture_scale_report.json.",
+  "environment": {
+    "numpy": "1.26.4",
+    "opencv": "4.10.0",
+    "python": "3.9.6"
+  },
+  "fixtures": {
+    "gradient": {
+      "analysis_provenance_by_scale": {
+        "1": {
+          "analysis_long_side": 1280,
+          "analysis_path": "canonical-analysis:long1280",
+          "analysis_shape": [
+            853,
+            1280
+          ],
+          "element_count": 1,
+          "native_shape": [
+            600,
+            900
+          ],
+          "scale_x": 0.703125,
+          "scale_y": 0.7033997655334114,
+          "text_density": null,
+          "text_density_source": "fallback_neutral",
+          "whitespace_ratio": 0.922441932883939
+        },
+        "2": {
+          "analysis_long_side": 1280,
+          "analysis_path": "canonical-analysis:long1280",
+          "analysis_shape": [
+            853,
+            1280
+          ],
+          "element_count": 1,
+          "native_shape": [
+            1200,
+            1800
+          ],
+          "scale_x": 1.40625,
+          "scale_y": 1.4067995310668229,
+          "text_density": null,
+          "text_density_source": "fallback_neutral",
+          "whitespace_ratio": 0.922441932883939
+        },
+        "3": {
+          "analysis_long_side": 1280,
+          "analysis_path": "canonical-analysis:long1280",
+          "analysis_shape": [
+            853,
+            1280
+          ],
+          "element_count": 1,
+          "native_shape": [
+            1800,
+            2700
+          ],
+          "scale_x": 2.109375,
+          "scale_y": 2.1101992966002343,
+          "text_density": null,
+          "text_density_source": "fallback_neutral",
+          "whitespace_ratio": 0.922441932883939
+        }
+      },
+      "cognitive_load_index": {
+        "by_scale": {
+          "1": 0.0468866266310215,
+          "2": 0.0468754805624485,
+          "3": 0.04687537997961044
+        },
+        "displayed_point_gap": 0.0011246651411056519,
+        "raw_abs_gap": 1.1246651411056519e-05,
+        "raw_rel_gap": 0.00023990726022889118
+      },
+      "layout_experimental_complexity_index": {
+        "by_scale": {
+          "1": 4.688662746548651,
+          "2": 4.687548139691351,
+          "3": 4.687538081407546
+        },
+        "displayed_point_gap": 0.0011246651411056519,
+        "raw_abs_gap": 0.0011246651411056519,
+        "raw_rel_gap": 0.00023990725595846057
+      },
+      "profile": {
+        "modifier": 0.0,
+        "preset": null
+      },
+      "task_descriptor": {
+        "modifier": 8.34465012644614e-08,
+        "search_mode": "known_item",
+        "target_specificity": "medium",
+        "task_type": "search",
+        "time_pressure": "medium"
+      }
+    },
+    "hard_edged": {
+      "analysis_provenance_by_scale": {
+        "1": {
+          "analysis_long_side": 1280,
+          "analysis_path": "canonical-analysis:long1280",
+          "analysis_shape": [
+            853,
+            1280
+          ],
+          "element_count": 5,
+          "native_shape": [
+            600,
+            900
+          ],
+          "scale_x": 0.703125,
+          "scale_y": 0.7033997655334114,
+          "text_density": null,
+          "text_density_source": "fallback_neutral",
+          "whitespace_ratio": 0.8853220252051582
+        },
+        "2": {
+          "analysis_long_side": 1280,
+          "analysis_path": "canonical-analysis:long1280",
+          "analysis_shape": [
+            853,
+            1280
+          ],
+          "element_count": 5,
+          "native_shape": [
+            1200,
+            1800
+          ],
+          "scale_x": 1.40625,
+          "scale_y": 1.4067995310668229,
+          "text_density": null,
+          "text_density_source": "fallback_neutral",
+          "whitespace_ratio": 0.8865135917350527
+        },
+        "3": {
+          "analysis_long_side": 1280,
+          "analysis_path": "canonical-analysis:long1280",
+          "analysis_shape": [
+            853,
+            1280
+          ],
+          "element_count": 5,
+          "native_shape": [
+            1800,
+            2700
+          ],
+          "scale_x": 2.109375,
+          "scale_y": 2.1101992966002343,
+          "text_density": null,
+          "text_density_source": "fallback_neutral",
+          "whitespace_ratio": 0.8866775351699883
+        }
+      },
+      "cognitive_load_index": {
+        "by_scale": {
+          "1": 0.23485925793647766,
+          "2": 0.23722657561302185,
+          "3": 0.23614703118801117
+        },
+        "displayed_point_gap": 0.23673176765441895,
+        "raw_abs_gap": 0.0023673176765441895,
+        "raw_rel_gap": 0.010027708940427009
+      },
+      "layout_experimental_complexity_index": {
+        "by_scale": {
+          "1": 23.485925877094267,
+          "2": 23.722657644748686,
+          "3": 23.614703202247618
+        },
+        "displayed_point_gap": 0.23673176765441895,
+        "raw_abs_gap": 0.23673176765441895,
+        "raw_rel_gap": 0.010027708904982006
+      },
+      "profile": {
+        "modifier": 0.0,
+        "preset": null
+      },
+      "task_descriptor": {
+        "modifier": 8.34465012644614e-08,
+        "search_mode": "known_item",
+        "target_specificity": "medium",
+        "task_type": "search",
+        "time_pressure": "medium"
+      }
+    },
+    "text_lines": {
+      "analysis_provenance_by_scale": {
+        "1": {
+          "analysis_long_side": 1280,
+          "analysis_path": "canonical-analysis:long1280",
+          "analysis_shape": [
+            853,
+            1280
+          ],
+          "element_count": 4,
+          "native_shape": [
+            600,
+            900
+          ],
+          "scale_x": 0.703125,
+          "scale_y": 0.7033997655334114,
+          "text_density": null,
+          "text_density_source": "fallback_neutral",
+          "whitespace_ratio": 0.7735428267878077
+        },
+        "2": {
+          "analysis_long_side": 1280,
+          "analysis_path": "canonical-analysis:long1280",
+          "analysis_shape": [
+            853,
+            1280
+          ],
+          "element_count": 3,
+          "native_shape": [
+            1200,
+            1800
+          ],
+          "scale_x": 1.40625,
+          "scale_y": 1.4067995310668229,
+          "text_density": null,
+          "text_density_source": "fallback_neutral",
+          "whitespace_ratio": 0.7776743845252052
+        },
+        "3": {
+          "analysis_long_side": 1280,
+          "analysis_path": "canonical-analysis:long1280",
+          "analysis_shape": [
+            853,
+            1280
+          ],
+          "element_count": 3,
+          "native_shape": [
+            1800,
+            2700
+          ],
+          "scale_x": 2.109375,
+          "scale_y": 2.1101992966002343,
+          "text_density": null,
+          "text_density_source": "fallback_neutral",
+          "whitespace_ratio": 0.7776743845252052
+        }
+      },
+      "cognitive_load_index": {
+        "by_scale": {
+          "1": 0.5560059547424316,
+          "2": 0.5534077882766724,
+          "3": 0.5535963773727417
+        },
+        "displayed_point_gap": 0.25981664657592773,
+        "raw_abs_gap": 0.0025981664657592773,
+        "raw_rel_gap": 0.004686982539493662
+      },
+      "layout_experimental_complexity_index": {
+        "by_scale": {
+          "1": 55.600595557689665,
+          "2": 55.34077891111374,
+          "3": 55.35963782072067
+        },
+        "displayed_point_gap": 0.25981664657592773,
+        "raw_abs_gap": 0.25981664657592773,
+        "raw_rel_gap": 0.0046869825324381605
+      },
+      "profile": {
+        "modifier": 0.0,
+        "preset": null
+      },
+      "task_descriptor": {
+        "modifier": 8.34465012644614e-08,
+        "search_mode": "known_item",
+        "target_specificity": "medium",
+        "task_type": "search",
+        "time_pressure": "medium"
+      }
+    }
+  },
+  "mocked_components": [
+    {
+      "component": "saliency_umsi_plus_plus",
+      "effect": "raises -> endpoint sets s=None (saliency vector = zeros(5))",
+      "route_symbol": "app._predict_saliency_cached"
+    },
+    {
+      "component": "ocr_easyocr_compute_readability",
+      "effect": "returns None -> text_density stays neutral fallback (text_density_source='fallback_neutral')",
+      "route_symbol": "cognitive.text_reader.compute_readability"
+    }
+  ],
+  "route": "/api/cognitive-load",
+  "scales": [
+    1,
+    2,
+    3
+  ]
+}

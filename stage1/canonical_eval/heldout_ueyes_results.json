@@ -234,10 +234,10 @@
           "raw_features": {
             "shannon_entropy": 2.7828660011291504,
             "edge_density": 0.013439670138888889,
-            "feature_congestion": 9.932825939610694,
-            "subband_entropy": 2.2807040007463955,
-            "layout_symmetry": 0.3508921627074325,
-            "chromatic_coherence": 0.2556441469051106,
+            "feature_congestion": 9.932828131177535,
+            "subband_entropy": 2.2807021621732466,
+            "layout_symmetry": 0.3508922220819307,
+            "chromatic_coherence": 0.2556441422965505,
             "visual_hierarchy": 0.5844995833590917,
             "interactive_element_density": 0.043402777777777776
           },
@@ -245,7 +245,7 @@
             "edge_density": 0.12556182337173177,
             "feature_congestion": 1.0,
             "interactive_element_density": 0.1194931639276343,
-            "layout_symmetry": 0.5807489429044974,
+            "layout_symmetry": 0.580749027902191,
             "visual_hierarchy": 0.7530302783454033
           },
           "canonical_whitespace_ratio": 0.9903298611111111,
@@ -285,10 +285,10 @@
           "raw_features": {
             "shannon_entropy": 2.809054374694824,
             "edge_density": 0.013610026041666667,
-            "feature_congestion": 10.125774018052569,
-            "subband_entropy": 2.259848224460565,
+            "feature_congestion": 10.125773454703342,
+            "subband_entropy": 2.2597983145243603,
             "layout_symmetry": 0.35117816872612245,
-            "chromatic_coherence": 0.2567184522140453,
+            "chromatic_coherence": 0.25671840698587656,
             "visual_hierarchy": 0.5835589624076989,
             "interactive_element_density": 0.043402777777777776
           },
@@ -1266,38 +1266,38 @@
         },
         "2": {
           "raw_features": {
-            "shannon_entropy": 5.20978307723999,
+            "shannon_entropy": 5.209779739379883,
             "edge_density": 0.0707680171009772,
-            "feature_congestion": 32.26159331821411,
-            "subband_entropy": 4.01651128839592,
-            "layout_symmetry": 0.343606325206836,
-            "chromatic_coherence": 0.40793097189336847,
-            "visual_hierarchy": 0.5065379182174861,
+            "feature_congestion": 32.261596462092974,
+            "subband_entropy": 4.016512640215854,
+            "layout_symmetry": 0.34360629345650495,
+            "chromatic_coherence": 0.4079311815126056,
+            "visual_hierarchy": 0.5065422110947441,
             "interactive_element_density": 0.0
           },
           "normalized_hceye_inputs": {
             "edge_density": 0.9501917268121595,
             "feature_congestion": 1.0,
             "interactive_element_density": 0.0,
-            "layout_symmetry": 0.5703188862135173,
-            "visual_hierarchy": 0.5757434611889998
+            "layout_symmetry": 0.5703188407612612,
+            "visual_hierarchy": 0.5757532788246099
           },
           "canonical_whitespace_ratio": 1.0,
           "canonical_element_count": 0,
           "canonical_norm_boxes": [],
           "native_whitespace_ratio": 1.0,
           "native_element_count": 0,
-          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.4918762445449829,
-          "hceye_rule_index_no_saliency_no_ocr_native": 0.4918762445449829
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.49187612533569336,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.49187612533569336
         },
         "3": {
           "raw_features": {
-            "shannon_entropy": 5.118518829345703,
+            "shannon_entropy": 5.118510723114014,
             "edge_density": 0.07094615228013029,
-            "feature_congestion": 33.24820978723214,
-            "subband_entropy": 4.009370340959169,
-            "layout_symmetry": 0.3408526362163742,
-            "chromatic_coherence": 0.4095440768003754,
+            "feature_congestion": 33.24822483250126,
+            "subband_entropy": 4.00936994856358,
+            "layout_symmetry": 0.34085275819312577,
+            "chromatic_coherence": 0.40954403562880964,
             "visual_hierarchy": 0.5044546795684781,
             "interactive_element_density": 0.0
           },
@@ -1305,7 +1305,7 @@
             "edge_density": 0.9503612339260212,
             "feature_congestion": 1.0,
             "interactive_element_density": 0.0,
-            "layout_symmetry": 0.5663768366855814,
+            "layout_symmetry": 0.5663770113016682,
             "visual_hierarchy": 0.5709791791665287
           },
           "canonical_whitespace_ratio": 1.0,
@@ -1320,12 +1320,12 @@
       "decomposition_canonical_path": {
         "index_actual_by_scale": {
           "1": 0.49223777651786804,
-          "2": 0.4918762445449829,
+          "2": 0.49187612533569336,
           "3": 0.4919838607311249
         },
         "index_whitespace_fixed_1x_by_scale": {
           "1": 0.49223777651786804,
-          "2": 0.4918762445449829,
+          "2": 0.49187612533569336,
           "3": 0.4919838607311249
         },
         "index_visual_fixed_1x_by_scale": {
@@ -1333,19 +1333,19 @@
           "2": 0.49223777651786804,
           "3": 0.49223777651786804
         },
-        "combined_point_gap": 0.036153197288513184,
+        "combined_point_gap": 0.03616511821746826,
         "whitespace_only_point_gap": 0.0,
-        "visual_input_only_point_gap": 0.036153197288513184
+        "visual_input_only_point_gap": 0.03616511821746826
       },
       "decomposition_native_path_baseline": {
         "index_actual_by_scale": {
           "1": 0.49223777651786804,
-          "2": 0.4918762445449829,
+          "2": 0.49187612533569336,
           "3": 0.4919838607311249
         },
         "index_whitespace_fixed_1x_by_scale": {
           "1": 0.49223777651786804,
-          "2": 0.4918762445449829,
+          "2": 0.49187612533569336,
           "3": 0.4919838607311249
         },
         "index_visual_fixed_1x_by_scale": {
@@ -1353,9 +1353,9 @@
           "2": 0.49223777651786804,
           "3": 0.49223777651786804
         },
-        "combined_point_gap": 0.036153197288513184,
+        "combined_point_gap": 0.03616511821746826,
         "whitespace_only_point_gap": 0.0,
-        "visual_input_only_point_gap": 0.036153197288513184
+        "visual_input_only_point_gap": 0.03616511821746826
       },
       "canonical_whitespace_abs_gap": 0.0,
       "native_whitespace_abs_gap": 0.0,
@@ -1443,10 +1443,10 @@
           "raw_features": {
             "shannon_entropy": 6.799190998077393,
             "edge_density": 0.018952682783018867,
-            "feature_congestion": 11.894128960297207,
-            "subband_entropy": 2.784030151561993,
+            "feature_congestion": 11.894127771285788,
+            "subband_entropy": 2.7840289540455534,
             "layout_symmetry": 0.0,
-            "chromatic_coherence": 0.5492968698228555,
+            "chromatic_coherence": 0.5492968795684997,
             "visual_hierarchy": 0.4113566988437863,
             "interactive_element_density": 0.3562303459119497
           },
@@ -1518,11 +1518,11 @@
           "raw_features": {
             "shannon_entropy": 6.798247337341309,
             "edge_density": 0.01923275353773585,
-            "feature_congestion": 12.379391038617436,
-            "subband_entropy": 2.7440231795588312,
+            "feature_congestion": 12.379390557266683,
+            "subband_entropy": 2.744022013021232,
             "layout_symmetry": 0.0,
-            "chromatic_coherence": 0.5501177309537879,
-            "visual_hierarchy": 0.41459327180660127,
+            "chromatic_coherence": 0.5501177272218367,
+            "visual_hierarchy": 0.414600235168342,
             "interactive_element_density": 0.3562303459119497
           },
           "normalized_hceye_inputs": {
@@ -1530,7 +1530,7 @@
             "feature_congestion": 1.0,
             "interactive_element_density": 0.7501042431366968,
             "layout_symmetry": 0.0,
-            "visual_hierarchy": 0.41105467658440265
+            "visual_hierarchy": 0.4110652054289291
           },
           "canonical_whitespace_ratio": 0.53901950668239,
           "canonical_element_count": 8,
@@ -1586,49 +1586,49 @@
           ],
           "native_whitespace_ratio": 0.7107294041385532,
           "native_element_count": 44,
-          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.6027905344963074,
-          "hceye_rule_index_no_saliency_no_ocr_native": 0.5735998749732971
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.6027904152870178,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.5735997557640076
         }
       },
       "decomposition_canonical_path": {
         "index_actual_by_scale": {
           "1": 0.610717236995697,
           "2": 0.6032454371452332,
-          "3": 0.6027905344963074
+          "3": 0.6027904152870178
         },
         "index_whitespace_fixed_1x_by_scale": {
           "1": 0.610717236995697,
           "2": 0.6110256314277649,
-          "3": 0.6106711626052856
+          "3": 0.6106710433959961
         },
         "index_visual_fixed_1x_by_scale": {
           "1": 0.610717236995697,
           "2": 0.6029370427131653,
           "3": 0.6028366088867188
         },
-        "combined_point_gap": 0.7926702499389648,
+        "combined_point_gap": 0.7926821708679199,
         "whitespace_only_point_gap": 0.7880628108978271,
-        "visual_input_only_point_gap": 0.035446882247924805
+        "visual_input_only_point_gap": 0.03545880317687988
       },
       "decomposition_native_path_baseline": {
         "index_actual_by_scale": {
           "1": 0.6402415037155151,
           "2": 0.5992512106895447,
-          "3": 0.5735998749732971
+          "3": 0.5735997557640076
         },
         "index_whitespace_fixed_1x_by_scale": {
           "1": 0.6402415037155151,
           "2": 0.6405499577522278,
-          "3": 0.6401954889297485
+          "3": 0.6401953101158142
         },
         "index_visual_fixed_1x_by_scale": {
           "1": 0.6402415037155151,
           "2": 0.5989428162574768,
           "3": 0.5736459493637085
         },
-        "combined_point_gap": 6.664162874221802,
+        "combined_point_gap": 6.664174795150757,
         "whitespace_only_point_gap": 6.659555435180664,
-        "visual_input_only_point_gap": 0.035446882247924805
+        "visual_input_only_point_gap": 0.03546476364135742
       },
       "canonical_whitespace_abs_gap": 0.046356623427672994,
       "native_whitespace_abs_gap": 0.3917388252710601,

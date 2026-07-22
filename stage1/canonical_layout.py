@@ -3,9 +3,10 @@
 Production helper that computes the score-driving *layout* measurements
 (``whitespace_ratio`` and OCR-derived ``text_density``) on a single canonical
 analysis image whose long side is ``CANONICAL_LONG_SIDE`` (1280 px). Running
-these on a fixed resolution makes them resolution-invariant, matching the eight
-canonical visual features, so the layout ``experimental_complexity_index`` no
-longer depends on the native capture resolution.
+these on a fixed resolution standardises their analysis scale, matching the
+eight canonical visual features, so the layout ``experimental_complexity_index``
+has substantially reduced measured resolution sensitivity (see the reproducible
+canonical evaluation for the residual raster-stress gaps).
 
 This module is the ANALYSIS path. It is deliberately separate from the NATIVE
 path used by the Jokinen search model, target selection, scanpaths and native

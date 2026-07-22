@@ -324,6 +324,166 @@ def test_analyze_normal_image_is_not_400(client):
 
 
 # ---------------------------------------------------------------------------
+# 5. Two-path endpoint WIRING test.
+#
+# The scale tests above prove the analysis math is scale-stable, but they call
+# the helpers directly. This test drives the REAL Flask /api/cognitive-load
+# route once and installs spies on the four boundary functions to prove the
+# endpoint actually wires the two paths as claimed:
+#
+#   (A) the score-driving LAYOUT detection runs on the CANONICAL image
+#       (long side == CANONICAL_LONG_SIDE),
+#   (B) the score-driving OCR receives the SAME canonical image and the SAME
+#       canonical element objects,
+#   (C) the NATIVE element detection receives the ORIGINAL native dimensions,
+#   (D) the Jokinen search model receives the NATIVE element set and the NATIVE
+#       image shape,
+#   (E) the returned detected_elements are the NATIVE-coordinate elements, and
+#   (F) the mapped readability boxes stay inside the native image bounds.
+#
+# Saliency is disabled (spied to raise) so no ML weights are needed; OCR and
+# Jokinen are stubbed to keep the test fast and deterministic while still
+# capturing exactly what the endpoint passed them.
+# ---------------------------------------------------------------------------
+import app as app_module  # noqa: E402
+import canonical_layout as canonical_layout_mod  # noqa: E402
+import cognitive.element_detector as element_detector_mod  # noqa: E402
+import cognitive.text_reader as text_reader_mod  # noqa: E402
+import cognitive.jokinen_model as jokinen_mod  # noqa: E402
+
+
+def _synthetic_ui(h, w):
+    """Deterministic light-background UI with a few dark/colored boxes so the
+    real element detector returns a non-empty element set."""
+    img = np.full((h, w, 3), 240, np.uint8)
+    cv2.rectangle(img, (50, 50), (300, 150), (30, 30, 30), -1)
+    cv2.rectangle(img, (400, 200), (700, 320), (60, 60, 200), -1)
+    cv2.rectangle(img, (100, 400), (500, 520), (200, 60, 60), -1)
+    cv2.rectangle(img, (900, 600), (1200, 780), (40, 160, 40), -1)
+    return img
+
+
+def test_cognitive_load_endpoint_wires_two_paths(client, monkeypatch):
+    import io
+
+    NATIVE_H, NATIVE_W = 1000, 1600            # long side 1600 != canonical 1280
+    assert max(NATIVE_H, NATIVE_W) != CANONICAL_LONG_SIDE
+    img = _synthetic_ui(NATIVE_H, NATIVE_W)
+    ok, buf = cv2.imencode(".png", img)
+    assert ok
+
+    captured = {}
+    real_detect = element_detector_mod.detect_elements
+
+    # (A) score-driving canonical layout detection (called inside
+    #     measure_canonical_layout via canonical_layout.detect_elements).
+    def spy_canonical_detect(image, *a, **k):
+        captured["canonical_img_shape"] = tuple(image.shape[:2])
+        els = real_detect(image, *a, **k)
+        captured["canonical_elements"] = els
+        return els
+
+    # (C) native element detection (app.py re-imports this name at call time
+    #     from cognitive.element_detector).
+    def spy_native_detect(image, *a, **k):
+        captured["native_img_shape"] = tuple(image.shape[:2])
+        els = real_detect(image, *a, **k)
+        captured["native_elements"] = els
+        return els
+
+    # (B) score-driving OCR: capture what it received, return a minimal valid
+    #     readability report (canonical-coordinate text box) without running
+    #     the heavy OCR stack.
+    def stub_ocr(image_bgr, elements, *a, **k):
+        captured["ocr_img_shape"] = tuple(image_bgr.shape[:2])
+        captured["ocr_elements"] = elements
+        return {
+            "n_elements": len(elements),
+            "n_text_elements": 1 if elements else 0,
+            "text_elements": (
+                [{"id": 0, "bbox": [10, 10, 40, 15],
+                  "center": [30, 17], "text": "x", "reading_time_s": 0.1}]
+                if elements else []
+            ),
+        }
+
+    # (D) Jokinen search model: capture the element set and image shape it was
+    #     given, return a minimal result (empty per_element skips bottlenecks).
+    def spy_jokinen(self, elements=None, saliency_map=None, image_shape=None,
+                    *a, **k):
+        captured["jokinen_elements"] = elements
+        captured["jokinen_image_shape"] = tuple(image_shape)
+        return {"mean_search_time_s": 1.0, "per_element": []}
+
+    # Disable saliency so no ML weights are needed (endpoint degrades to s=None).
+    def raise_saliency(*a, **k):
+        raise RuntimeError("saliency disabled for wiring test")
+
+    monkeypatch.setattr(canonical_layout_mod, "detect_elements",
+                        spy_canonical_detect)
+    monkeypatch.setattr(element_detector_mod, "detect_elements",
+                        spy_native_detect)
+    monkeypatch.setattr(text_reader_mod, "compute_readability", stub_ocr)
+    monkeypatch.setattr(jokinen_mod.JokinenSearchModel, "predict_search_times",
+                        spy_jokinen)
+    monkeypatch.setattr(app_module, "_predict_saliency_cached", raise_saliency)
+
+    data = {"image": (io.BytesIO(buf.tobytes()), "wiring.png")}
+    resp = client.post("/api/cognitive-load", data=data,
+                       content_type="multipart/form-data")
+    assert resp.status_code == 200, resp.get_data(as_text=True)
+    body = resp.get_json()
+
+    # All four boundaries must have been exercised.
+    for key in ("canonical_img_shape", "canonical_elements", "ocr_img_shape",
+                "ocr_elements", "native_img_shape", "native_elements",
+                "jokinen_elements", "jokinen_image_shape"):
+        assert key in captured, f"boundary {key} was never called"
+
+    # (A) canonical layout detection saw the canonical long side.
+    assert max(captured["canonical_img_shape"]) == CANONICAL_LONG_SIDE
+
+    # (B) OCR saw the canonical image AND the exact canonical element objects.
+    assert max(captured["ocr_img_shape"]) == CANONICAL_LONG_SIDE
+    assert captured["ocr_elements"] is captured["canonical_elements"]
+
+    # (C) native detection saw the ORIGINAL native dimensions (not canonical).
+    assert captured["native_img_shape"] == (NATIVE_H, NATIVE_W)
+    assert max(captured["native_img_shape"]) != CANONICAL_LONG_SIDE
+
+    # (D) Jokinen received the native element set and the native image shape.
+    assert captured["jokinen_elements"] is captured["native_elements"]
+    assert captured["jokinen_image_shape"] == (NATIVE_H, NATIVE_W)
+
+    # (E) returned detected_elements are the native-coordinate elements.
+    returned = body["detected_elements"]
+    expected = [list(e["bbox"]) for e in captured["native_elements"]]
+    assert [e["bbox"] for e in returned] == expected
+    assert len(returned) >= 1
+    # Every returned native box lies within native bounds.
+    for e in returned:
+        x, y, bw, bh = e["bbox"]
+        assert 0 <= x and 0 <= y
+        assert x + bw <= NATIVE_W and y + bh <= NATIVE_H
+
+    # (F) mapped readability boxes stay inside the native image bounds.
+    rr = body.get("readability_report")
+    assert rr is not None and rr.get("coordinate_space") == "native"
+    assert rr["text_elements"], "expected at least one mapped text element"
+    for te in rr["text_elements"]:
+        x, y, bw, bh = te["bbox"]
+        assert 0 <= x and 0 <= y
+        assert x + bw <= NATIVE_W and y + bh <= NATIVE_H
+
+    # Provenance confirms the score-driving layout came from the canonical path.
+    prov = body["hceye_inputs"]["analysis_provenance"]
+    assert prov is not None
+    assert prov["analysis_path"] == f"canonical-analysis:long{CANONICAL_LONG_SIDE}"
+    assert prov["analysis_long_side"] == CANONICAL_LONG_SIDE
+    assert list(prov["native_shape"]) == [NATIVE_H, NATIVE_W]
+
+
+# ---------------------------------------------------------------------------
 # 5. Two-path layout-scale architecture regression tests.
 #
 # These prove the LAYOUT-SCALE fix: the score-driving layout measurements
