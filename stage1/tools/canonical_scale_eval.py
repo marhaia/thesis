@@ -9,10 +9,13 @@ and behind the corrective scale re-audit:
      synthetic fixtures plus a deterministic UEyes *selection* sample;
   2. per-fixture scale tables reporting, at 1x / 2x / 3x, the raw absolute and
      relative gap of all eight Stage-1 features, the five percentile-normalised
-     HCEye inputs, and the resulting HCEye cognitive-load index (the endpoint's
-     ``cognitive_load_index`` field);
+     HCEye inputs, and the resulting HCEye rule index computed from visual
+     features + whitespace only (no saliency, no OCR, no task/profile
+     modifiers), so it is deliberately NOT the full endpoint
+     ``cognitive_load_index``;
   3. a held-out real-UI scale evaluation on a seeded UEyes sample that EXCLUDES
-     the images used to select 1280.
+     the images used to select 1280 (variants are raster-enlarged, not natively
+     re-rendered, and are reported descriptively).
 
 Design notes for auditability:
   * No absolute paths are hard-coded. Inputs default to repo-relative locations
@@ -156,44 +159,68 @@ def normalized_hceye_inputs(vis: Dict[str, float],
             for stage1 in HCEYE_MAPPED_STAGE1}
 
 
-def hceye_load_index(vis: Dict[str, float],
-                     whitespace_ratio: Optional[float] = None,
-                     extractor: Optional[HCEyeFeatureExtractor] = None) -> float:
-    """HCEye cognitive-load index (h[5]) — the endpoint ``cognitive_load_index``.
+def hceye_rule_index_no_saliency_no_ocr(
+        vis: Dict[str, float],
+        whitespace_ratio: Optional[float] = None,
+        extractor: Optional[HCEyeFeatureExtractor] = None) -> float:
+    """HCEye rule index (h[5]) from visual features + whitespace ONLY.
 
-    This is the estimate path the live app always takes for novel screenshots
-    (no ``image_name`` is passed), so it faithfully reflects the endpoint's
-    scale behaviour for the visual-feature contribution.
+    This deliberately omits the saliency term, the OCR-derived text_density and
+    the task/profile modifiers, so it is NOT the full endpoint
+    ``cognitive_load_index``. It isolates the visual-feature + whitespace
+    contribution, which is exactly the part whose resolution behaviour this
+    audit measures. It is named accordingly to avoid overclaiming.
     """
     ex = extractor or _extractor()
     h = ex.extract_features(vis, whitespace_ratio=whitespace_ratio)
     return float(h[5])
 
 
-def detect_stats(img_bgr: np.ndarray) -> Dict[str, object]:
-    """Replicate the endpoint's native-resolution element / whitespace measures.
+def canonical_layout_stats(img_bgr: np.ndarray) -> Dict[str, object]:
+    """Score-driving layout stats via the PRODUCTION helper (analysis path).
 
-    Element detection and whitespace run on the ORIGINAL (native) image in the
-    app, deliberately NOT on the canonical image, so this reports them at native
-    scale to expose any residual scale sensitivity in that path.
+    Calls ``measure_canonical_layout`` — the exact code the endpoint runs — so
+    this evaluation cannot drift from runtime whitespace/element behaviour and
+    contains no separate reimplementation of production whitespace logic. OCR is
+    disabled here (``run_ocr=False``): OCR is heavy and nondeterministic and is
+    not the variable under test; whitespace and element geometry are what the
+    scale audit measures. Bounding boxes are normalised by the CANONICAL canvas
+    (long side 1280), matching the space in which the score is computed.
+    """
+    from canonical_layout import measure_canonical_layout
+    m = measure_canonical_layout(img_bgr, run_ocr=False)
+    ah, aw = m.analysis_shape
+    norm_boxes = []
+    for e in m.analysis_elements:
+        x, y, bw, bh = e["bbox"]
+        norm_boxes.append((x / aw, y / ah, bw / aw, bh / ah))
+    return {
+        "element_count": int(m.element_count),
+        "whitespace_ratio": float(m.whitespace_ratio),
+        "norm_covered_ratio": 1.0 - float(m.whitespace_ratio),
+        "norm_boxes": norm_boxes,
+        "analysis_long_side": int(m.analysis_long_side),
+    }
+
+
+def native_whitespace_stats(img_bgr: np.ndarray) -> Dict[str, object]:
+    """Old NATIVE-resolution whitespace, kept only to reproduce the baseline.
+
+    This is the pre-fix behaviour (element detection + whitespace on the native
+    image). It is retained solely so the held-out report can REPRODUCE the
+    baseline decomposition numbers and show, side by side, how the canonical
+    path removes the native scale defect. It no longer feeds any score.
     """
     from cognitive.element_detector import detect_elements
     elements = detect_elements(img_bgr)
     h_img, w_img = img_bgr.shape[:2]
     area = float(h_img * w_img) or 1.0
     mask = np.zeros((h_img, w_img), dtype=np.uint8)
-    norm_boxes = []
     for e in elements:
         x, y, bw, bh = e["bbox"]
         mask[int(y):int(y + bh), int(x):int(x + bw)] = 1
-        norm_boxes.append((x / w_img, y / h_img, bw / w_img, bh / h_img))
     whitespace = float(np.clip(1.0 - float(mask.sum()) / area, 0.0, 1.0))
-    return {
-        "element_count": int(len(elements)),
-        "whitespace_ratio": whitespace,
-        "norm_covered_ratio": 1.0 - whitespace,
-        "norm_boxes": norm_boxes,
-    }
+    return {"element_count": int(len(elements)), "whitespace_ratio": whitespace}
 
 
 def _gap(vals: List[float]) -> Tuple[float, float]:
@@ -226,13 +253,15 @@ def fixture_scale_report(scales: Tuple[int, ...] = (1, 2, 3)) -> Dict[str, dict]
             a, r = _gap(vals)
             norm_gaps[k] = {"by_scale": {str(s): norm[s][k] for s in scales},
                             "abs_gap": a, "rel_gap": r}
-        idx = {s: hceye_load_index(feats[s], extractor=ex) for s in scales}
+        idx = {s: hceye_rule_index_no_saliency_no_ocr(feats[s], extractor=ex)
+               for s in scales}
         ia, ir = _gap([idx[s] for s in scales])
         out[name] = {
             "raw_features": raw,
             "normalized_hceye_inputs": norm_gaps,
-            "endpoint_load_index": {"by_scale": {str(s): idx[s] for s in scales},
-                                    "abs_gap": ia, "rel_gap": ir},
+            "hceye_rule_index_no_saliency_no_ocr": {
+                "by_scale": {str(s): idx[s] for s in scales},
+                "abs_gap": ia, "rel_gap": ir},
         }
     return out
 
@@ -256,9 +285,9 @@ def _print_fixture_report(rep: Dict[str, dict]) -> None:
             print(f"        {k:28s} "
                   f"1x={bs['1']:.4f} 2x={bs['2']:.4f} 3x={bs['3']:.4f} "
                   f"abs={r['abs_gap']:.4f} rel={r['rel_gap']:7.2%}")
-        e = d["endpoint_load_index"]
+        e = d["hceye_rule_index_no_saliency_no_ocr"]
         bs = e["by_scale"]
-        print(f"  endpoint cognitive_load_index "
+        print(f"  HCEye rule index (no saliency, no OCR) "
               f"1x={bs['1']:.5f} 2x={bs['2']:.5f} 3x={bs['3']:.5f} "
               f"abs={e['abs_gap']:.5f} rel={e['rel_gap']:.2%}")
 
@@ -323,15 +352,110 @@ def ueyes_perturbation(sel_images: List[Tuple[str, str, str]],
     return rows
 
 
+def _iou(a: Tuple[float, float, float, float],
+         b: Tuple[float, float, float, float]) -> float:
+    """Intersection-over-union of two (x, y, w, h) boxes in the same space."""
+    ax, ay, aw, ah = a
+    bx, by, bw, bh = b
+    ix1, iy1 = max(ax, bx), max(ay, by)
+    ix2, iy2 = min(ax + aw, bx + bw), min(ay + ah, by + bh)
+    iw, ih = max(0.0, ix2 - ix1), max(0.0, iy2 - iy1)
+    inter = iw * ih
+    union = aw * ah + bw * bh - inter
+    return float(inter / union) if union > 0 else 0.0
+
+
+def _match_boxes(boxes_a: List[tuple], boxes_b: List[tuple],
+                 iou_thresh: float = 0.5) -> Tuple[float, float]:
+    """Greedy best-IoU one-to-one matching of two normalised box sets.
+
+    For each box in ``boxes_a`` the highest-IoU unused box in ``boxes_b`` is
+    taken as its match if their IoU >= ``iou_thresh``. Returns
+    ``(coverage, mean_iou_over_matched)`` where coverage is the fraction of
+    ``boxes_a`` that found a match.
+    """
+    used: set = set()
+    ious: List[float] = []
+    for a in boxes_a:
+        best, best_j = -1.0, -1
+        for j, b in enumerate(boxes_b):
+            if j in used:
+                continue
+            v = _iou(a, b)
+            if v > best:
+                best, best_j = v, j
+        if best_j >= 0 and best >= iou_thresh:
+            used.add(best_j)
+            ious.append(best)
+    coverage = (len(ious) / len(boxes_a)) if boxes_a else 0.0
+    mean_iou = float(np.mean(ious)) if ious else 0.0
+    return float(coverage), mean_iou
+
+
+def _index_decomposition(vis_by_scale: Dict[int, Dict[str, float]],
+                         ws_by_scale: Dict[int, Optional[float]],
+                         ex: HCEyeFeatureExtractor,
+                         scales: Tuple[int, ...]) -> Dict[str, object]:
+    """Decompose the scale gap of the HCEye rule index into contributions.
+
+    Reports (in displayed points, i.e. index*100):
+      * combined: both visual features and whitespace vary with scale;
+      * whitespace-only: visual inputs fixed to their 1x values, whitespace
+        varies (isolates the whitespace path);
+      * visual-input-only: whitespace fixed to its 1x value, visual inputs vary
+        (isolates the five normalized visual inputs).
+    """
+    base = scales[0]
+    actual = {s: hceye_rule_index_no_saliency_no_ocr(
+        vis_by_scale[s], ws_by_scale[s], ex) for s in scales}
+    ws_fixed = {s: hceye_rule_index_no_saliency_no_ocr(
+        vis_by_scale[s], ws_by_scale[base], ex) for s in scales}
+    vis_fixed = {s: hceye_rule_index_no_saliency_no_ocr(
+        vis_by_scale[base], ws_by_scale[s], ex) for s in scales}
+
+    def pt_gap(d: Dict[int, float]) -> float:
+        return (max(d.values()) - min(d.values())) * 100.0
+
+    return {
+        "index_actual_by_scale": {str(s): actual[s] for s in scales},
+        "index_whitespace_fixed_1x_by_scale": {str(s): ws_fixed[s] for s in scales},
+        "index_visual_fixed_1x_by_scale": {str(s): vis_fixed[s] for s in scales},
+        "combined_point_gap": pt_gap(actual),
+        "whitespace_only_point_gap": pt_gap(vis_fixed),
+        "visual_input_only_point_gap": pt_gap(ws_fixed),
+    }
+
+
 def heldout_ueyes(sample: List[Tuple[str, str, str]],
                   scales=(1, 2, 3)) -> List[dict]:
-    """Full scale evaluation for held-out real UEyes screenshots."""
+    """Descriptive scale evaluation for held-out real UEyes screenshots.
+
+    IMPORTANT: real screenshots exist at a single native capture only, so the
+    2x/3x variants here are produced by RASTER ENLARGEMENT (cv2.resize), which
+    is NOT equivalent to a native re-render at a higher resolution. Results are
+    therefore reported descriptively; the >=1x synthetic 1.0-point acceptance
+    guard is NOT applied to them, and remaining differences are not assumed to
+    vanish under a true native re-render.
+
+    For every image and scale two decompositions are reported:
+      * canonical_path — the CURRENT production behaviour (whitespace measured on
+        the canonical analysis image via the production helper);
+      * native_path_baseline — the pre-fix behaviour (whitespace on the native
+        image), retained only to reproduce/explain the baseline decomposition.
+
+    Canonical normalised bounding boxes are saved per scale, and their 1x->2x /
+    1x->3x matching coverage and mean IoU are summarised.
+    """
     ex = _extractor()
     results = []
     for img_id, cat, path in sample:
         base = cv2.imread(path)
         if base is None:
             continue
+        vis_by_scale: Dict[int, Dict[str, float]] = {}
+        ws_canon: Dict[int, Optional[float]] = {}
+        ws_native: Dict[int, Optional[float]] = {}
+        norm_boxes_by_scale: Dict[int, List[tuple]] = {}
         per_scale = {}
         for s in scales:
             if s == 1:
@@ -340,33 +464,57 @@ def heldout_ueyes(sample: List[Tuple[str, str, str]],
                 v = cv2.resize(base, (base.shape[1] * s, base.shape[0] * s),
                                interpolation=cv2.INTER_LINEAR)
             vis = canonical_features(v)
-            det = detect_stats(v)
-            idx = hceye_load_index(vis, whitespace_ratio=det["whitespace_ratio"],
-                                   extractor=ex)
+            can = canonical_layout_stats(v)
+            nat = native_whitespace_stats(v)
+            vis_by_scale[s] = vis
+            ws_canon[s] = can["whitespace_ratio"]
+            ws_native[s] = nat["whitespace_ratio"]
+            norm_boxes_by_scale[s] = [tuple(b) for b in can["norm_boxes"]]
             per_scale[s] = {
                 "raw_features": vis,
                 "normalized_hceye_inputs": normalized_hceye_inputs(vis, ex),
-                "whitespace_ratio": det["whitespace_ratio"],
-                "element_count": det["element_count"],
-                "norm_covered_ratio": det["norm_covered_ratio"],
-                "endpoint_load_index": idx,
+                "canonical_whitespace_ratio": can["whitespace_ratio"],
+                "canonical_element_count": can["element_count"],
+                "canonical_norm_boxes": [list(b) for b in can["norm_boxes"]],
+                "native_whitespace_ratio": nat["whitespace_ratio"],
+                "native_element_count": nat["element_count"],
+                "hceye_rule_index_no_saliency_no_ocr_canonical":
+                    hceye_rule_index_no_saliency_no_ocr(vis, can["whitespace_ratio"], ex),
+                "hceye_rule_index_no_saliency_no_ocr_native":
+                    hceye_rule_index_no_saliency_no_ocr(vis, nat["whitespace_ratio"], ex),
             }
-        raw_gaps = {k: _gap([per_scale[s]["raw_features"][k] for s in scales])[1]
-                    for k in FEATURE_KEYS}
-        norm_gaps = {k: _gap([per_scale[s]["normalized_hceye_inputs"][k]
-                              for s in scales])[1] for k in HCEYE_MAPPED_STAGE1}
-        ws_vals = [per_scale[s]["whitespace_ratio"] for s in scales]
-        ec_vals = [per_scale[s]["element_count"] for s in scales]
-        idx_vals = [per_scale[s]["endpoint_load_index"] for s in scales]
+
+        decomp_canon = _index_decomposition(vis_by_scale, ws_canon, ex, scales)
+        decomp_native = _index_decomposition(vis_by_scale, ws_native, ex, scales)
+
+        cov12, iou12 = _match_boxes(norm_boxes_by_scale[scales[0]],
+                                    norm_boxes_by_scale.get(2, []))
+        cov13, iou13 = _match_boxes(norm_boxes_by_scale[scales[0]],
+                                    norm_boxes_by_scale.get(3, []))
+
+        ws_canon_vals = [ws_canon[s] for s in scales]
+        ws_native_vals = [ws_native[s] for s in scales]
+        ec_vals = [per_scale[s]["canonical_element_count"] for s in scales]
         results.append({
             "image_id": img_id,
             "category": cat,
+            "scale_variant_method": "raster_enlargement_cv2_resize",
             "per_scale": {str(s): per_scale[s] for s in scales},
-            "raw_rel_gaps": raw_gaps,
-            "normalized_rel_gaps": norm_gaps,
-            "whitespace_ratio_abs_gap": max(ws_vals) - min(ws_vals),
-            "element_count_range": [int(min(ec_vals)), int(max(ec_vals))],
-            "endpoint_index_abs_gap": max(idx_vals) - min(idx_vals),
+            "decomposition_canonical_path": decomp_canon,
+            "decomposition_native_path_baseline": decomp_native,
+            "canonical_whitespace_abs_gap":
+                max(ws_canon_vals) - min(ws_canon_vals),
+            "native_whitespace_abs_gap":
+                max(ws_native_vals) - min(ws_native_vals),
+            "canonical_element_count_range": [int(min(ec_vals)), int(max(ec_vals))],
+            "bbox_stability": {
+                "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, "
+                                   "canonical-normalised boxes",
+                "coverage_1x_to_2x": cov12,
+                "coverage_1x_to_3x": cov13,
+                "mean_iou_1x_to_2x": iou12,
+                "mean_iou_1x_to_3x": iou13,
+            },
         })
     return results
 
@@ -517,16 +665,35 @@ def main() -> int:
                         f"{p.get('worst_rel_perturbation', float('nan')):.6f}"])
 
     if heldout:
-        print("\n== Held-out UEyes scale evaluation ==")
+        print("\n== Held-out UEyes scale evaluation "
+              "(raster enlargement, descriptive) ==")
         ho = heldout_ueyes(heldout)
         for r in ho:
-            print(f"    {r['image_id']} ({r['category']}): "
-                  f"endpoint_index_abs_gap={r['endpoint_index_abs_gap']:.5f} "
-                  f"whitespace_abs_gap={r['whitespace_ratio_abs_gap']:.5f} "
-                  f"elem_range={r['element_count_range']}")
+            dc = r["decomposition_canonical_path"]
+            dn = r["decomposition_native_path_baseline"]
+            bb = r["bbox_stability"]
+            print(f"    {r['image_id']} ({r['category']}):")
+            print(f"        canonical  combined={dc['combined_point_gap']:.4f}pt "
+                  f"ws_only={dc['whitespace_only_point_gap']:.4f}pt "
+                  f"vis_only={dc['visual_input_only_point_gap']:.4f}pt "
+                  f"ws_abs_gap={r['canonical_whitespace_abs_gap']:.4f}")
+            print(f"        native(base) combined={dn['combined_point_gap']:.4f}pt "
+                  f"ws_only={dn['whitespace_only_point_gap']:.4f}pt "
+                  f"vis_only={dn['visual_input_only_point_gap']:.4f}pt "
+                  f"ws_abs_gap={r['native_whitespace_abs_gap']:.4f}")
+            print(f"        bbox 1x->2x cov={bb['coverage_1x_to_2x']:.2f} "
+                  f"iou={bb['mean_iou_1x_to_2x']:.3f}  "
+                  f"1x->3x cov={bb['coverage_1x_to_3x']:.2f} "
+                  f"iou={bb['mean_iou_1x_to_3x']:.3f}  "
+                  f"elem_range={r['canonical_element_count_range']}")
         with open(os.path.join(args.out_dir, "heldout_ueyes_results.json"),
                   "w") as f:
-            json.dump({"seed": args.seed, "results": ho}, f, indent=2)
+            json.dump({"seed": args.seed,
+                       "scale_variant_method": "raster_enlargement_cv2_resize",
+                       "note": "Real screenshots are raster-enlarged, not "
+                               "natively re-rendered; the synthetic 1.0-point "
+                               "guard is not applied here.",
+                       "results": ho}, f, indent=2)
         with open(os.path.join(args.out_dir, "heldout_ueyes_manifest.csv"), "w",
                   newline="") as f:
             w = csv.writer(f)

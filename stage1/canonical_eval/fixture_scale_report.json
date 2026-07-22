@@ -137,7 +137,7 @@
         "rel_gap": 0.0
       }
     },
-    "endpoint_load_index": {
+    "hceye_rule_index_no_saliency_no_ocr": {
       "by_scale": {
         "1": 0.23557794094085693,
         "2": 0.23803481459617615,
@@ -285,7 +285,7 @@
         "rel_gap": 0.14343213450254452
       }
     },
-    "endpoint_load_index": {
+    "hceye_rule_index_no_saliency_no_ocr": {
       "by_scale": {
         "1": 0.5228722095489502,
         "2": 0.5209764242172241,
@@ -433,7 +433,7 @@
         "rel_gap": 0.010146558165865948
       }
     },
-    "endpoint_load_index": {
+    "hceye_rule_index_no_saliency_no_ocr": {
       "by_scale": {
         "1": 0.037154972553253174,
         "2": 0.03794705122709274,

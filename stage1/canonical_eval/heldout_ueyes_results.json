@@ -1,9 +1,12 @@
 {
   "seed": 20240607,
+  "scale_variant_method": "raster_enlargement_cv2_resize",
+  "note": "Real screenshots are raster-enlarged, not natively re-rendered; the synthetic 1.0-point guard is not applied here.",
   "results": [
     {
       "image_id": "1f3437",
       "category": "desktop",
+      "scale_variant_method": "raster_enlargement_cv2_resize",
       "per_scale": {
         "1": {
           "raw_features": {
@@ -23,10 +26,26 @@
             "layout_symmetry": 0.6800923156322465,
             "visual_hierarchy": 0.03066619439554055
           },
-          "whitespace_ratio": 0.9942090363320355,
-          "element_count": 1,
-          "norm_covered_ratio": 0.005790963667964499,
-          "endpoint_load_index": 0.49478524923324585
+          "canonical_whitespace_ratio": 0.9886512012534819,
+          "canonical_element_count": 2,
+          "canonical_norm_boxes": [
+            [
+              0.35625,
+              0.20473537604456823,
+              0.2171875,
+              0.026462395543175487
+            ],
+            [
+              0.35703125,
+              0.24373259052924792,
+              0.1828125,
+              0.03064066852367688
+            ]
+          ],
+          "native_whitespace_ratio": 0.9942090363320355,
+          "native_element_count": 1,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.4956395626068115,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.49478524923324585
         },
         "2": {
           "raw_features": {
@@ -46,10 +65,26 @@
             "layout_symmetry": 0.6814379634053886,
             "visual_hierarchy": 0.030670629973501447
           },
-          "whitespace_ratio": 0.9700449185495521,
-          "element_count": 10,
-          "norm_covered_ratio": 0.029955081450447896,
-          "endpoint_load_index": 0.48093026876449585
+          "canonical_whitespace_ratio": 0.9886512012534819,
+          "canonical_element_count": 2,
+          "canonical_norm_boxes": [
+            [
+              0.35625,
+              0.20473537604456823,
+              0.2171875,
+              0.026462395543175487
+            ],
+            [
+              0.35703125,
+              0.24373259052924792,
+              0.1828125,
+              0.03064066852367688
+            ]
+          ],
+          "native_whitespace_ratio": 0.9700449185495521,
+          "native_element_count": 10,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.4781820774078369,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.48093026876449585
         },
         "3": {
           "raw_features": {
@@ -69,39 +104,86 @@
             "layout_symmetry": 0.6808534206438123,
             "visual_hierarchy": 0.031521268580740835
           },
-          "whitespace_ratio": 0.9734945560556344,
-          "element_count": 21,
-          "norm_covered_ratio": 0.026505443944365603,
-          "endpoint_load_index": 0.48751115798950195
+          "canonical_whitespace_ratio": 0.9886512012534819,
+          "canonical_element_count": 2,
+          "canonical_norm_boxes": [
+            [
+              0.35625,
+              0.20473537604456823,
+              0.2171875,
+              0.026462395543175487
+            ],
+            [
+              0.35703125,
+              0.24373259052924792,
+              0.1828125,
+              0.03064066852367688
+            ]
+          ],
+          "native_whitespace_ratio": 0.9734945560556344,
+          "native_element_count": 21,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.4852345585823059,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.48751115798950195
         }
       },
-      "raw_rel_gaps": {
-        "shannon_entropy": 0.04027741165139834,
-        "edge_density": 0.007357525876044403,
-        "feature_congestion": 0.04875400664793129,
-        "subband_entropy": 0.007848765534938207,
-        "layout_symmetry": 0.0022339368680970935,
-        "chromatic_coherence": 0.0020739617879139307,
-        "visual_hierarchy": 0.02067773455195951,
-        "interactive_element_density": 0.375
+      "decomposition_canonical_path": {
+        "index_actual_by_scale": {
+          "1": 0.4956395626068115,
+          "2": 0.4781820774078369,
+          "3": 0.4852345585823059
+        },
+        "index_whitespace_fixed_1x_by_scale": {
+          "1": 0.4956395626068115,
+          "2": 0.4781820774078369,
+          "3": 0.4852345585823059
+        },
+        "index_visual_fixed_1x_by_scale": {
+          "1": 0.4956395626068115,
+          "2": 0.4956395626068115,
+          "3": 0.4956395626068115
+        },
+        "combined_point_gap": 1.745748519897461,
+        "whitespace_only_point_gap": 0.0,
+        "visual_input_only_point_gap": 1.745748519897461
       },
-      "normalized_rel_gaps": {
-        "edge_density": 0.008995763908778378,
-        "feature_congestion": 0.03991088859803172,
-        "interactive_element_density": 0.30834663618246544,
-        "layout_symmetry": 0.001976584184478238,
-        "visual_hierarchy": 0.027625191021186685
+      "decomposition_native_path_baseline": {
+        "index_actual_by_scale": {
+          "1": 0.49478524923324585,
+          "2": 0.48093026876449585,
+          "3": 0.48751115798950195
+        },
+        "index_whitespace_fixed_1x_by_scale": {
+          "1": 0.49478524923324585,
+          "2": 0.47736117243766785,
+          "3": 0.4843997359275818
+        },
+        "index_visual_fixed_1x_by_scale": {
+          "1": 0.49478524923324585,
+          "2": 0.4984995722770691,
+          "3": 0.4979693293571472
+        },
+        "combined_point_gap": 1.385498046875,
+        "whitespace_only_point_gap": 0.3714323043823242,
+        "visual_input_only_point_gap": 1.7424076795578003
       },
-      "whitespace_ratio_abs_gap": 0.024164117782483396,
-      "element_count_range": [
-        1,
-        21
+      "canonical_whitespace_abs_gap": 0.0,
+      "native_whitespace_abs_gap": 0.024164117782483396,
+      "canonical_element_count_range": [
+        2,
+        2
       ],
-      "endpoint_index_abs_gap": 0.01385498046875
+      "bbox_stability": {
+        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes",
+        "coverage_1x_to_2x": 1.0,
+        "coverage_1x_to_3x": 1.0,
+        "mean_iou_1x_to_2x": 1.0,
+        "mean_iou_1x_to_3x": 1.0
+      }
     },
     {
       "image_id": "9dd93b",
       "category": "desktop",
+      "scale_variant_method": "raster_enlargement_cv2_resize",
       "per_scale": {
         "1": {
           "raw_features": {
@@ -121,10 +203,32 @@
             "layout_symmetry": 0.5844826114079966,
             "visual_hierarchy": 0.7281155302117527
           },
-          "whitespace_ratio": 0.9914709592926977,
-          "element_count": 3,
-          "norm_covered_ratio": 0.008529040707302316,
-          "endpoint_load_index": 0.5302156805992126
+          "canonical_whitespace_ratio": 0.9916384548611111,
+          "canonical_element_count": 3,
+          "canonical_norm_boxes": [
+            [
+              0.01015625,
+              0.4125,
+              0.046875,
+              0.0875
+            ],
+            [
+              0.01875,
+              0.5388888888888889,
+              0.03125,
+              0.0875
+            ],
+            [
+              0.01953125,
+              0.6527777777777778,
+              0.0296875,
+              0.05138888888888889
+            ]
+          ],
+          "native_whitespace_ratio": 0.9914709592926977,
+          "native_element_count": 3,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.53018718957901,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.5302156805992126
         },
         "2": {
           "raw_features": {
@@ -144,10 +248,38 @@
             "layout_symmetry": 0.5807489429044974,
             "visual_hierarchy": 0.7530302783454033
           },
-          "whitespace_ratio": 0.9894079098730567,
-          "element_count": 11,
-          "norm_covered_ratio": 0.010592090126943288,
-          "endpoint_load_index": 0.5304139256477356
+          "canonical_whitespace_ratio": 0.9903298611111111,
+          "canonical_element_count": 4,
+          "canonical_norm_boxes": [
+            [
+              0.01015625,
+              0.4125,
+              0.046875,
+              0.0875
+            ],
+            [
+              0.01875,
+              0.5388888888888889,
+              0.03125,
+              0.0875
+            ],
+            [
+              0.01953125,
+              0.6527777777777778,
+              0.0296875,
+              0.05138888888888889
+            ],
+            [
+              0.0078125,
+              0.7125,
+              0.05234375,
+              0.025
+            ]
+          ],
+          "native_whitespace_ratio": 0.9894079098730567,
+          "native_element_count": 11,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.5302572250366211,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.5304139256477356
         },
         "3": {
           "raw_features": {
@@ -167,39 +299,98 @@
             "layout_symmetry": 0.5811583754493015,
             "visual_hierarchy": 0.7514162062453967
           },
-          "whitespace_ratio": 0.9888158787385397,
-          "element_count": 14,
-          "norm_covered_ratio": 0.01118412126146029,
-          "endpoint_load_index": 0.5303547382354736
+          "canonical_whitespace_ratio": 0.9903298611111111,
+          "canonical_element_count": 4,
+          "canonical_norm_boxes": [
+            [
+              0.01015625,
+              0.4125,
+              0.046875,
+              0.0875
+            ],
+            [
+              0.01875,
+              0.5388888888888889,
+              0.03125,
+              0.0875
+            ],
+            [
+              0.01953125,
+              0.6527777777777778,
+              0.0296875,
+              0.05138888888888889
+            ],
+            [
+              0.0078125,
+              0.7125,
+              0.05234375,
+              0.025
+            ]
+          ],
+          "native_whitespace_ratio": 0.9888158787385397,
+          "native_element_count": 14,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.5300973653793335,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.5303547382354736
         }
       },
-      "raw_rel_gaps": {
-        "shannon_entropy": 0.011356863506546981,
-        "edge_density": 0.012583153001522846,
-        "feature_congestion": 0.06374682031049378,
-        "subband_entropy": 0.014340646155152832,
-        "layout_symmetry": 0.007412462832268405,
-        "chromatic_coherence": 0.0043326239268818385,
-        "visual_hierarchy": 0.019529680970667457,
-        "interactive_element_density": 0.0
+      "decomposition_canonical_path": {
+        "index_actual_by_scale": {
+          "1": 0.53018718957901,
+          "2": 0.5302572250366211,
+          "3": 0.5300973653793335
+        },
+        "index_whitespace_fixed_1x_by_scale": {
+          "1": 0.53018718957901,
+          "2": 0.5300347805023193,
+          "3": 0.5298749208450317
+        },
+        "index_visual_fixed_1x_by_scale": {
+          "1": 0.53018718957901,
+          "2": 0.5304096341133118,
+          "3": 0.5304096341133118
+        },
+        "combined_point_gap": 0.015985965728759766,
+        "whitespace_only_point_gap": 0.02224445343017578,
+        "visual_input_only_point_gap": 0.03122687339782715
       },
-      "normalized_rel_gaps": {
-        "edge_density": 0.027573172128769897,
-        "feature_congestion": 0.0,
-        "interactive_element_density": 0.0,
-        "layout_symmetry": 0.00641380559954639,
-        "visual_hierarchy": 0.03347913469161218
+      "decomposition_native_path_baseline": {
+        "index_actual_by_scale": {
+          "1": 0.5302156805992126,
+          "2": 0.5304139256477356,
+          "3": 0.5303547382354736
+        },
+        "index_whitespace_fixed_1x_by_scale": {
+          "1": 0.5302156805992126,
+          "2": 0.5300632119178772,
+          "3": 0.5299033522605896
+        },
+        "index_visual_fixed_1x_by_scale": {
+          "1": 0.5302156805992126,
+          "2": 0.530566394329071,
+          "3": 0.5306670665740967
+        },
+        "combined_point_gap": 0.019824504852294922,
+        "whitespace_only_point_gap": 0.04513859748840332,
+        "visual_input_only_point_gap": 0.031232833862304688
       },
-      "whitespace_ratio_abs_gap": 0.0026550805541579736,
-      "element_count_range": [
+      "canonical_whitespace_abs_gap": 0.001308593750000031,
+      "native_whitespace_abs_gap": 0.0026550805541579736,
+      "canonical_element_count_range": [
         3,
-        14
+        4
       ],
-      "endpoint_index_abs_gap": 0.00019824504852294922
+      "bbox_stability": {
+        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes",
+        "coverage_1x_to_2x": 1.0,
+        "coverage_1x_to_3x": 1.0,
+        "mean_iou_1x_to_2x": 1.000000000000001,
+        "mean_iou_1x_to_3x": 1.000000000000001
+      }
     },
     {
       "image_id": "62f428",
       "category": "mobile",
+      "scale_variant_method": "raster_enlargement_cv2_resize",
       "per_scale": {
         "1": {
           "raw_features": {
@@ -219,10 +410,68 @@
             "layout_symmetry": 0.9630805918091989,
             "visual_hierarchy": 0.8517939100840344
           },
-          "whitespace_ratio": 0.9301350308641976,
-          "element_count": 8,
-          "norm_covered_ratio": 0.06986496913580242,
-          "endpoint_load_index": 0.512554407119751
+          "canonical_whitespace_ratio": 0.9364529079861111,
+          "canonical_element_count": 9,
+          "canonical_norm_boxes": [
+            [
+              0.0,
+              0.003125,
+              1.0,
+              0.0328125
+            ],
+            [
+              0.13472222222222222,
+              0.0578125,
+              0.49444444444444446,
+              0.0328125
+            ],
+            [
+              0.7083333333333334,
+              0.1296875,
+              0.21666666666666667,
+              0.02109375
+            ],
+            [
+              0.03611111111111111,
+              0.1296875,
+              0.1736111111111111,
+              0.02109375
+            ],
+            [
+              0.4722222222222222,
+              0.95234375,
+              0.05555555555555555,
+              0.03046875
+            ],
+            [
+              0.19583333333333333,
+              0.95234375,
+              0.04722222222222222,
+              0.03046875
+            ],
+            [
+              0.7569444444444444,
+              0.953125,
+              0.05,
+              0.028125
+            ],
+            [
+              0.041666666666666664,
+              0.06015625,
+              0.05277777777777778,
+              0.021875
+            ],
+            [
+              0.9486111111111111,
+              0.13046875,
+              0.025,
+              0.0234375
+            ]
+          ],
+          "native_whitespace_ratio": 0.9301350308641976,
+          "native_element_count": 8,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.5115233063697815,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.512554407119751
         },
         "2": {
           "raw_features": {
@@ -242,10 +491,68 @@
             "layout_symmetry": 0.9636553988733236,
             "visual_hierarchy": 0.8403410762142883
           },
-          "whitespace_ratio": 0.9440600887345679,
-          "element_count": 22,
-          "norm_covered_ratio": 0.055939911265432074,
-          "endpoint_load_index": 0.507793664932251
+          "canonical_whitespace_ratio": 0.9363812934027778,
+          "canonical_element_count": 9,
+          "canonical_norm_boxes": [
+            [
+              0.0,
+              0.003125,
+              1.0,
+              0.0328125
+            ],
+            [
+              0.13472222222222222,
+              0.0578125,
+              0.49444444444444446,
+              0.0328125
+            ],
+            [
+              0.7069444444444445,
+              0.1296875,
+              0.21805555555555556,
+              0.02109375
+            ],
+            [
+              0.03611111111111111,
+              0.1296875,
+              0.1736111111111111,
+              0.02109375
+            ],
+            [
+              0.4722222222222222,
+              0.95234375,
+              0.05555555555555555,
+              0.03046875
+            ],
+            [
+              0.19583333333333333,
+              0.95234375,
+              0.04861111111111111,
+              0.03046875
+            ],
+            [
+              0.7569444444444444,
+              0.953125,
+              0.05,
+              0.028125
+            ],
+            [
+              0.041666666666666664,
+              0.06015625,
+              0.05277777777777778,
+              0.021875
+            ],
+            [
+              0.9486111111111111,
+              0.13046875,
+              0.025,
+              0.0234375
+            ]
+          ],
+          "native_whitespace_ratio": 0.9440600887345679,
+          "native_element_count": 22,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.5090397596359253,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.507793664932251
         },
         "3": {
           "raw_features": {
@@ -265,39 +572,128 @@
             "layout_symmetry": 0.9633568637928746,
             "visual_hierarchy": 0.8555847119229106
           },
-          "whitespace_ratio": 0.9651914008916324,
-          "element_count": 31,
-          "norm_covered_ratio": 0.034808599108367644,
-          "endpoint_load_index": 0.5054664611816406
+          "canonical_whitespace_ratio": 0.9363812934027778,
+          "canonical_element_count": 9,
+          "canonical_norm_boxes": [
+            [
+              0.0,
+              0.003125,
+              1.0,
+              0.0328125
+            ],
+            [
+              0.13472222222222222,
+              0.0578125,
+              0.49444444444444446,
+              0.0328125
+            ],
+            [
+              0.7069444444444445,
+              0.1296875,
+              0.21805555555555556,
+              0.02109375
+            ],
+            [
+              0.03611111111111111,
+              0.1296875,
+              0.1736111111111111,
+              0.02109375
+            ],
+            [
+              0.4722222222222222,
+              0.95234375,
+              0.05555555555555555,
+              0.03046875
+            ],
+            [
+              0.19583333333333333,
+              0.95234375,
+              0.04861111111111111,
+              0.03046875
+            ],
+            [
+              0.7569444444444444,
+              0.953125,
+              0.05,
+              0.028125
+            ],
+            [
+              0.041666666666666664,
+              0.06015625,
+              0.05277777777777778,
+              0.021875
+            ],
+            [
+              0.9486111111111111,
+              0.13046875,
+              0.025,
+              0.0234375
+            ]
+          ],
+          "native_whitespace_ratio": 0.9651914008916324,
+          "native_element_count": 31,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.5101549029350281,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.5054664611816406
         }
       },
-      "raw_rel_gaps": {
-        "shannon_entropy": 0.01699631474627326,
-        "edge_density": 0.002882998318251048,
-        "feature_congestion": 0.04164473506447872,
-        "subband_entropy": 0.018591311764274962,
-        "layout_symmetry": 0.0030573683982193646,
-        "chromatic_coherence": 0.003058700993502534,
-        "visual_hierarchy": 0.013868061082952557,
-        "interactive_element_density": 0.0
+      "decomposition_canonical_path": {
+        "index_actual_by_scale": {
+          "1": 0.5115233063697815,
+          "2": 0.5090397596359253,
+          "3": 0.5101549029350281
+        },
+        "index_whitespace_fixed_1x_by_scale": {
+          "1": 0.5115233063697815,
+          "2": 0.5090281367301941,
+          "3": 0.5101432800292969
+        },
+        "index_visual_fixed_1x_by_scale": {
+          "1": 0.5115233063697815,
+          "2": 0.5115349888801575,
+          "3": 0.5115349888801575
+        },
+        "combined_point_gap": 0.24835467338562012,
+        "whitespace_only_point_gap": 0.0011682510375976562,
+        "visual_input_only_point_gap": 0.24951696395874023
       },
-      "normalized_rel_gaps": {
-        "edge_density": 0.003498419179115614,
-        "feature_congestion": 0.005687681190189106,
-        "interactive_element_density": 0.0,
-        "layout_symmetry": 0.0005966663630560621,
-        "visual_hierarchy": 0.017949740372850007
+      "decomposition_native_path_baseline": {
+        "index_actual_by_scale": {
+          "1": 0.512554407119751,
+          "2": 0.507793664932251,
+          "3": 0.5054664611816406
+        },
+        "index_whitespace_fixed_1x_by_scale": {
+          "1": 0.512554407119751,
+          "2": 0.5100533366203308,
+          "3": 0.5111714005470276
+        },
+        "index_visual_fixed_1x_by_scale": {
+          "1": 0.512554407119751,
+          "2": 0.5102818012237549,
+          "3": 0.5068331360816956
+        },
+        "combined_point_gap": 0.7087945938110352,
+        "whitespace_only_point_gap": 0.572127103805542,
+        "visual_input_only_point_gap": 0.2501070499420166
       },
-      "whitespace_ratio_abs_gap": 0.03505637002743478,
-      "element_count_range": [
-        8,
-        31
+      "canonical_whitespace_abs_gap": 7.161458333337922e-05,
+      "native_whitespace_abs_gap": 0.03505637002743478,
+      "canonical_element_count_range": [
+        9,
+        9
       ],
-      "endpoint_index_abs_gap": 0.0070879459381103516
+      "bbox_stability": {
+        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes",
+        "coverage_1x_to_2x": 1.0,
+        "coverage_1x_to_3x": 1.0,
+        "mean_iou_1x_to_2x": 0.9961176827418873,
+        "mean_iou_1x_to_3x": 0.9961176827418873
+      }
     },
     {
       "image_id": "e129e6",
       "category": "mobile",
+      "scale_variant_method": "raster_enlargement_cv2_resize",
       "per_scale": {
         "1": {
           "raw_features": {
@@ -317,10 +713,152 @@
             "layout_symmetry": 0.9537846557207228,
             "visual_hierarchy": 0.8257223753886106
           },
-          "whitespace_ratio": 0.8944309413580247,
-          "element_count": 15,
-          "norm_covered_ratio": 0.1055690586419753,
-          "endpoint_load_index": 0.5207773447036743
+          "canonical_whitespace_ratio": 0.9240321180555555,
+          "canonical_element_count": 23,
+          "canonical_norm_boxes": [
+            [
+              0.06527777777777778,
+              0.171875,
+              0.8694444444444445,
+              0.03203125
+            ],
+            [
+              0.17222222222222222,
+              0.05859375,
+              0.2513888888888889,
+              0.03125
+            ],
+            [
+              0.3902777777777778,
+              0.21875,
+              0.21944444444444444,
+              0.02578125
+            ],
+            [
+              0.5097222222222222,
+              0.296875,
+              0.2125,
+              0.02109375
+            ],
+            [
+              0.36944444444444446,
+              0.0,
+              0.10833333333333334,
+              0.03046875
+            ],
+            [
+              0.25277777777777777,
+              0.0,
+              0.10694444444444444,
+              0.03046875
+            ],
+            [
+              0.2777777777777778,
+              0.29921875,
+              0.14166666666666666,
+              0.01875
+            ],
+            [
+              0.7569444444444444,
+              0.00390625,
+              0.09861111111111111,
+              0.025
+            ],
+            [
+              0.4722222222222222,
+              0.95234375,
+              0.05555555555555555,
+              0.03046875
+            ],
+            [
+              0.9,
+              0.125,
+              0.06388888888888888,
+              0.02265625
+            ],
+            [
+              0.19583333333333333,
+              0.95234375,
+              0.04722222222222222,
+              0.03046875
+            ],
+            [
+              0.9111111111111111,
+              0.00703125,
+              0.07361111111111111,
+              0.01953125
+            ],
+            [
+              0.7569444444444444,
+              0.953125,
+              0.05,
+              0.028125
+            ],
+            [
+              0.19444444444444445,
+              0.003125,
+              0.04722222222222222,
+              0.0265625
+            ],
+            [
+              0.04583333333333333,
+              0.0578125,
+              0.04583333333333333,
+              0.0265625
+            ],
+            [
+              0.5458333333333333,
+              0.003125,
+              0.04583333333333333,
+              0.0265625
+            ],
+            [
+              0.6041666666666666,
+              0.003125,
+              0.044444444444444446,
+              0.0265625
+            ],
+            [
+              0.4875,
+              0.003125,
+              0.044444444444444446,
+              0.0265625
+            ],
+            [
+              0.1375,
+              0.003125,
+              0.044444444444444446,
+              0.0265625
+            ],
+            [
+              0.019444444444444445,
+              0.0046875,
+              0.05,
+              0.0234375
+            ],
+            [
+              0.08055555555555556,
+              0.0046875,
+              0.043055555555555555,
+              0.02421875
+            ],
+            [
+              0.8680555555555556,
+              0.00390625,
+              0.03333333333333333,
+              0.025
+            ],
+            [
+              0.7166666666666667,
+              0.0046875,
+              0.030555555555555555,
+              0.02421875
+            ]
+          ],
+          "native_whitespace_ratio": 0.8944309413580247,
+          "native_element_count": 15,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.515866756439209,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.5207773447036743
         },
         "2": {
           "raw_features": {
@@ -340,10 +878,146 @@
             "layout_symmetry": 0.954160304989088,
             "visual_hierarchy": 0.8307502648939105
           },
-          "whitespace_ratio": 0.9384818672839507,
-          "element_count": 33,
-          "norm_covered_ratio": 0.061518132716049334,
-          "endpoint_load_index": 0.5107771158218384
+          "canonical_whitespace_ratio": 0.9236197916666666,
+          "canonical_element_count": 22,
+          "canonical_norm_boxes": [
+            [
+              0.06527777777777778,
+              0.171875,
+              0.8694444444444445,
+              0.03203125
+            ],
+            [
+              0.17222222222222222,
+              0.05859375,
+              0.2513888888888889,
+              0.03125
+            ],
+            [
+              0.25277777777777777,
+              0.0,
+              0.225,
+              0.03046875
+            ],
+            [
+              0.3902777777777778,
+              0.21875,
+              0.21944444444444444,
+              0.02578125
+            ],
+            [
+              0.5097222222222222,
+              0.296875,
+              0.2125,
+              0.02109375
+            ],
+            [
+              0.2777777777777778,
+              0.29921875,
+              0.14166666666666666,
+              0.01875
+            ],
+            [
+              0.7569444444444444,
+              0.00390625,
+              0.09861111111111111,
+              0.025
+            ],
+            [
+              0.4722222222222222,
+              0.95234375,
+              0.05555555555555555,
+              0.03046875
+            ],
+            [
+              0.19583333333333333,
+              0.95234375,
+              0.04861111111111111,
+              0.03046875
+            ],
+            [
+              0.9,
+              0.125,
+              0.06388888888888888,
+              0.02265625
+            ],
+            [
+              0.9111111111111111,
+              0.00703125,
+              0.07361111111111111,
+              0.01953125
+            ],
+            [
+              0.7569444444444444,
+              0.953125,
+              0.05,
+              0.028125
+            ],
+            [
+              0.5444444444444444,
+              0.003125,
+              0.04722222222222222,
+              0.0265625
+            ],
+            [
+              0.19444444444444445,
+              0.003125,
+              0.04722222222222222,
+              0.0265625
+            ],
+            [
+              0.04583333333333333,
+              0.0578125,
+              0.04583333333333333,
+              0.0265625
+            ],
+            [
+              0.4861111111111111,
+              0.003125,
+              0.04583333333333333,
+              0.0265625
+            ],
+            [
+              0.6041666666666666,
+              0.003125,
+              0.044444444444444446,
+              0.0265625
+            ],
+            [
+              0.1375,
+              0.003125,
+              0.044444444444444446,
+              0.0265625
+            ],
+            [
+              0.019444444444444445,
+              0.0046875,
+              0.05,
+              0.0234375
+            ],
+            [
+              0.08055555555555556,
+              0.00390625,
+              0.043055555555555555,
+              0.025
+            ],
+            [
+              0.8680555555555556,
+              0.00390625,
+              0.03333333333333333,
+              0.025
+            ],
+            [
+              0.7180555555555556,
+              0.0046875,
+              0.029166666666666667,
+              0.02421875
+            ]
+          ],
+          "native_whitespace_ratio": 0.9384818672839507,
+          "native_element_count": 33,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.5132278203964233,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.5107771158218384
         },
         "3": {
           "raw_features": {
@@ -363,39 +1037,206 @@
             "layout_symmetry": 0.9539540859495415,
             "visual_hierarchy": 0.8197263031199837
           },
-          "whitespace_ratio": 0.9315406378600823,
-          "element_count": 36,
-          "norm_covered_ratio": 0.06845936213991766,
-          "endpoint_load_index": 0.5135367512702942
+          "canonical_whitespace_ratio": 0.9234266493055555,
+          "canonical_element_count": 22,
+          "canonical_norm_boxes": [
+            [
+              0.06527777777777778,
+              0.171875,
+              0.8694444444444445,
+              0.03203125
+            ],
+            [
+              0.17222222222222222,
+              0.0578125,
+              0.2513888888888889,
+              0.03203125
+            ],
+            [
+              0.25277777777777777,
+              0.0,
+              0.225,
+              0.03046875
+            ],
+            [
+              0.3902777777777778,
+              0.21875,
+              0.21944444444444444,
+              0.02578125
+            ],
+            [
+              0.5097222222222222,
+              0.296875,
+              0.2125,
+              0.02109375
+            ],
+            [
+              0.2777777777777778,
+              0.29921875,
+              0.14166666666666666,
+              0.01875
+            ],
+            [
+              0.7569444444444444,
+              0.00390625,
+              0.09861111111111111,
+              0.025
+            ],
+            [
+              0.4722222222222222,
+              0.95234375,
+              0.05555555555555555,
+              0.03046875
+            ],
+            [
+              0.19583333333333333,
+              0.95234375,
+              0.04861111111111111,
+              0.03046875
+            ],
+            [
+              0.9,
+              0.125,
+              0.06388888888888888,
+              0.02265625
+            ],
+            [
+              0.9111111111111111,
+              0.00703125,
+              0.07361111111111111,
+              0.01953125
+            ],
+            [
+              0.7569444444444444,
+              0.953125,
+              0.05,
+              0.028125
+            ],
+            [
+              0.5444444444444444,
+              0.003125,
+              0.04722222222222222,
+              0.0265625
+            ],
+            [
+              0.19444444444444445,
+              0.003125,
+              0.04722222222222222,
+              0.0265625
+            ],
+            [
+              0.04583333333333333,
+              0.0578125,
+              0.04583333333333333,
+              0.0265625
+            ],
+            [
+              0.6041666666666666,
+              0.003125,
+              0.044444444444444446,
+              0.0265625
+            ],
+            [
+              0.4875,
+              0.003125,
+              0.044444444444444446,
+              0.0265625
+            ],
+            [
+              0.1375,
+              0.003125,
+              0.044444444444444446,
+              0.0265625
+            ],
+            [
+              0.019444444444444445,
+              0.0046875,
+              0.05,
+              0.0234375
+            ],
+            [
+              0.08055555555555556,
+              0.00390625,
+              0.043055555555555555,
+              0.025
+            ],
+            [
+              0.8680555555555556,
+              0.00390625,
+              0.03333333333333333,
+              0.025
+            ],
+            [
+              0.7166666666666667,
+              0.0046875,
+              0.030555555555555555,
+              0.02421875
+            ]
+          ],
+          "native_whitespace_ratio": 0.9315406378600823,
+          "native_element_count": 36,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.5148789286613464,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.5135367512702942
         }
       },
-      "raw_rel_gaps": {
-        "shannon_entropy": 0.002238353060320052,
-        "edge_density": 0.013505084745762612,
-        "feature_congestion": 0.04007969317913458,
-        "subband_entropy": 0.014346523993237149,
-        "layout_symmetry": 0.0021031910818399857,
-        "chromatic_coherence": 0.0016107010507045248,
-        "visual_hierarchy": 0.01025151172724206,
-        "interactive_element_density": 0.0
+      "decomposition_canonical_path": {
+        "index_actual_by_scale": {
+          "1": 0.515866756439209,
+          "2": 0.5132278203964233,
+          "3": 0.5148789286613464
+        },
+        "index_whitespace_fixed_1x_by_scale": {
+          "1": 0.515866756439209,
+          "2": 0.5131598114967346,
+          "3": 0.5147787928581238
+        },
+        "index_visual_fixed_1x_by_scale": {
+          "1": 0.515866756439209,
+          "2": 0.5159351825714111,
+          "3": 0.5159671902656555
+        },
+        "combined_point_gap": 0.26389360427856445,
+        "whitespace_only_point_gap": 0.01004338264465332,
+        "visual_input_only_point_gap": 0.2706944942474365
       },
-      "normalized_rel_gaps": {
-        "edge_density": 0.030134659563505063,
-        "feature_congestion": 0.006031148520028372,
-        "interactive_element_density": 0.0,
-        "layout_symmetry": 0.00039377622575857745,
-        "visual_hierarchy": 0.013355908017768816
+      "decomposition_native_path_baseline": {
+        "index_actual_by_scale": {
+          "1": 0.5207773447036743,
+          "2": 0.5107771158218384,
+          "3": 0.5135367512702942
+        },
+        "index_whitespace_fixed_1x_by_scale": {
+          "1": 0.5207773447036743,
+          "2": 0.5180408954620361,
+          "3": 0.5196753144264221
+        },
+        "index_visual_fixed_1x_by_scale": {
+          "1": 0.5207773447036743,
+          "2": 0.5134696364402771,
+          "3": 0.5146211385726929
+        },
+        "combined_point_gap": 1.0000228881835938,
+        "whitespace_only_point_gap": 0.7307708263397217,
+        "visual_input_only_point_gap": 0.27364492416381836
       },
-      "whitespace_ratio_abs_gap": 0.044050925925925966,
-      "element_count_range": [
-        15,
-        36
+      "canonical_whitespace_abs_gap": 0.0006054687500000044,
+      "native_whitespace_abs_gap": 0.044050925925925966,
+      "canonical_element_count_range": [
+        22,
+        23
       ],
-      "endpoint_index_abs_gap": 0.010000228881835938
+      "bbox_stability": {
+        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes",
+        "coverage_1x_to_2x": 0.9130434782608695,
+        "coverage_1x_to_3x": 0.9130434782608695,
+        "mean_iou_1x_to_2x": 0.9921432967126245,
+        "mean_iou_1x_to_3x": 0.9945893601342978
+      }
     },
     {
       "image_id": "0e136e",
       "category": "poster",
+      "scale_variant_method": "raster_enlargement_cv2_resize",
       "per_scale": {
         "1": {
           "raw_features": {
@@ -415,10 +1256,13 @@
             "layout_symmetry": 0.559315298871356,
             "visual_hierarchy": 0.5586060285893988
           },
-          "whitespace_ratio": 1.0,
-          "element_count": 0,
-          "norm_covered_ratio": 0.0,
-          "endpoint_load_index": 0.49223777651786804
+          "canonical_whitespace_ratio": 1.0,
+          "canonical_element_count": 0,
+          "canonical_norm_boxes": [],
+          "native_whitespace_ratio": 1.0,
+          "native_element_count": 0,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.49223777651786804,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.49223777651786804
         },
         "2": {
           "raw_features": {
@@ -438,10 +1282,13 @@
             "layout_symmetry": 0.5703188862135173,
             "visual_hierarchy": 0.5757434611889998
           },
-          "whitespace_ratio": 1.0,
-          "element_count": 0,
-          "norm_covered_ratio": 0.0,
-          "endpoint_load_index": 0.4918762445449829
+          "canonical_whitespace_ratio": 1.0,
+          "canonical_element_count": 0,
+          "canonical_norm_boxes": [],
+          "native_whitespace_ratio": 1.0,
+          "native_element_count": 0,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.4918762445449829,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.4918762445449829
         },
         "3": {
           "raw_features": {
@@ -461,39 +1308,73 @@
             "layout_symmetry": 0.5663768366855814,
             "visual_hierarchy": 0.5709791791665287
           },
-          "whitespace_ratio": 1.0,
-          "element_count": 0,
-          "norm_covered_ratio": 0.0,
-          "endpoint_load_index": 0.4919838607311249
+          "canonical_whitespace_ratio": 1.0,
+          "canonical_element_count": 0,
+          "canonical_norm_boxes": [],
+          "native_whitespace_ratio": 1.0,
+          "native_element_count": 0,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.4919838607311249,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.4919838607311249
         }
       },
-      "raw_rel_gaps": {
-        "shannon_entropy": 0.05442186414285484,
-        "edge_density": 0.004054538930749858,
-        "feature_congestion": 0.07296145091274073,
-        "subband_entropy": 0.008897083833828463,
-        "layout_symmetry": 0.02259888066752398,
-        "chromatic_coherence": 0.009266148946072212,
-        "visual_hierarchy": 0.014887473329079682,
-        "interactive_element_density": 0.0
+      "decomposition_canonical_path": {
+        "index_actual_by_scale": {
+          "1": 0.49223777651786804,
+          "2": 0.4918762445449829,
+          "3": 0.4919838607311249
+        },
+        "index_whitespace_fixed_1x_by_scale": {
+          "1": 0.49223777651786804,
+          "2": 0.4918762445449829,
+          "3": 0.4919838607311249
+        },
+        "index_visual_fixed_1x_by_scale": {
+          "1": 0.49223777651786804,
+          "2": 0.49223777651786804,
+          "3": 0.49223777651786804
+        },
+        "combined_point_gap": 0.036153197288513184,
+        "whitespace_only_point_gap": 0.0,
+        "visual_input_only_point_gap": 0.036153197288513184
       },
-      "normalized_rel_gaps": {
-        "edge_density": 0.00028793176502546247,
-        "feature_congestion": 0.0,
-        "interactive_element_density": 0.0,
-        "layout_symmetry": 0.019463766215401294,
-        "visual_hierarchy": 0.03014802878474525
+      "decomposition_native_path_baseline": {
+        "index_actual_by_scale": {
+          "1": 0.49223777651786804,
+          "2": 0.4918762445449829,
+          "3": 0.4919838607311249
+        },
+        "index_whitespace_fixed_1x_by_scale": {
+          "1": 0.49223777651786804,
+          "2": 0.4918762445449829,
+          "3": 0.4919838607311249
+        },
+        "index_visual_fixed_1x_by_scale": {
+          "1": 0.49223777651786804,
+          "2": 0.49223777651786804,
+          "3": 0.49223777651786804
+        },
+        "combined_point_gap": 0.036153197288513184,
+        "whitespace_only_point_gap": 0.0,
+        "visual_input_only_point_gap": 0.036153197288513184
       },
-      "whitespace_ratio_abs_gap": 0.0,
-      "element_count_range": [
+      "canonical_whitespace_abs_gap": 0.0,
+      "native_whitespace_abs_gap": 0.0,
+      "canonical_element_count_range": [
         0,
         0
       ],
-      "endpoint_index_abs_gap": 0.00036153197288513184
+      "bbox_stability": {
+        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes",
+        "coverage_1x_to_2x": 0.0,
+        "coverage_1x_to_3x": 0.0,
+        "mean_iou_1x_to_2x": 0.0,
+        "mean_iou_1x_to_3x": 0.0
+      }
     },
     {
       "image_id": "dd0d82",
       "category": "poster",
+      "scale_variant_method": "raster_enlargement_cv2_resize",
       "per_scale": {
         "1": {
           "raw_features": {
@@ -513,10 +1394,50 @@
             "layout_symmetry": 0.0,
             "visual_hierarchy": 0.4067441963833349
           },
-          "whitespace_ratio": 0.31899057886749316,
-          "element_count": 5,
-          "norm_covered_ratio": 0.6810094211325068,
-          "endpoint_load_index": 0.6402415037155151
+          "canonical_whitespace_ratio": 0.49266288325471697,
+          "canonical_element_count": 6,
+          "canonical_norm_boxes": [
+            [
+              0.44375,
+              0.09433962264150944,
+              0.55625,
+              0.4056603773584906
+            ],
+            [
+              0.5078125,
+              0.5943396226415094,
+              0.4921875,
+              0.2562893081761006
+            ],
+            [
+              0.01328125,
+              0.2783018867924528,
+              0.23828125,
+              0.2908805031446541
+            ],
+            [
+              0.01328125,
+              0.5849056603773585,
+              0.45,
+              0.09119496855345911
+            ],
+            [
+              0.01171875,
+              0.8301886792452831,
+              0.221875,
+              0.15251572327044025
+            ],
+            [
+              0.01328125,
+              0.6949685534591195,
+              0.3140625,
+              0.036163522012578615
+            ]
+          ],
+          "native_whitespace_ratio": 0.31899057886749316,
+          "native_element_count": 5,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.610717236995697,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.6402415037155151
         },
         "2": {
           "raw_features": {
@@ -536,10 +1457,62 @@
             "layout_symmetry": 0.0,
             "visual_hierarchy": 0.4061608659807222
           },
-          "whitespace_ratio": 0.5619241135660367,
-          "element_count": 14,
-          "norm_covered_ratio": 0.43807588643396334,
-          "endpoint_load_index": 0.5992512106895447
+          "canonical_whitespace_ratio": 0.5384286556603773,
+          "canonical_element_count": 8,
+          "canonical_norm_boxes": [
+            [
+              0.44453125,
+              0.09433962264150944,
+              0.55546875,
+              0.3632075471698113
+            ],
+            [
+              0.5078125,
+              0.5943396226415094,
+              0.4921875,
+              0.20754716981132076
+            ],
+            [
+              0.4796875,
+              0.2893081761006289,
+              0.5203125,
+              0.15251572327044025
+            ],
+            [
+              0.01328125,
+              0.2783018867924528,
+              0.23828125,
+              0.2908805031446541
+            ],
+            [
+              0.01328125,
+              0.5849056603773585,
+              0.45,
+              0.09119496855345911
+            ],
+            [
+              0.01171875,
+              0.8301886792452831,
+              0.221875,
+              0.15251572327044025
+            ],
+            [
+              0.01328125,
+              0.6949685534591195,
+              0.3140625,
+              0.036163522012578615
+            ],
+            [
+              0.48203125,
+              0.4591194968553459,
+              0.0421875,
+              0.050314465408805034
+            ]
+          ],
+          "native_whitespace_ratio": 0.5619241135660367,
+          "native_element_count": 14,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.6032454371452332,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.5992512106895447
         },
         "3": {
           "raw_features": {
@@ -559,39 +1532,122 @@
             "layout_symmetry": 0.0,
             "visual_hierarchy": 0.41105467658440265
           },
-          "whitespace_ratio": 0.7107294041385532,
-          "element_count": 44,
-          "norm_covered_ratio": 0.28927059586144677,
-          "endpoint_load_index": 0.5735998749732971
+          "canonical_whitespace_ratio": 0.53901950668239,
+          "canonical_element_count": 8,
+          "canonical_norm_boxes": [
+            [
+              0.44375,
+              0.09433962264150944,
+              0.55625,
+              0.36163522012578614
+            ],
+            [
+              0.5078125,
+              0.5943396226415094,
+              0.4921875,
+              0.20754716981132076
+            ],
+            [
+              0.48125,
+              0.2893081761006289,
+              0.51875,
+              0.15251572327044025
+            ],
+            [
+              0.01328125,
+              0.2783018867924528,
+              0.23828125,
+              0.2908805031446541
+            ],
+            [
+              0.01328125,
+              0.5849056603773585,
+              0.45,
+              0.09119496855345911
+            ],
+            [
+              0.01171875,
+              0.8301886792452831,
+              0.221875,
+              0.15251572327044025
+            ],
+            [
+              0.01328125,
+              0.6949685534591195,
+              0.3140625,
+              0.036163522012578615
+            ],
+            [
+              0.48203125,
+              0.4591194968553459,
+              0.0421875,
+              0.050314465408805034
+            ]
+          ],
+          "native_whitespace_ratio": 0.7107294041385532,
+          "native_element_count": 44,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.6027905344963074,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.5735998749732971
         }
       },
-      "raw_rel_gaps": {
-        "shannon_entropy": 0.000138801853609096,
-        "edge_density": 0.01520790554414792,
-        "feature_congestion": 0.06862182872853358,
-        "subband_entropy": 0.018360984906649377,
-        "layout_symmetry": 0.0,
-        "chromatic_coherence": 0.0031119398471078775,
-        "visual_hierarchy": 0.007845017395711874,
-        "interactive_element_density": 0.0
+      "decomposition_canonical_path": {
+        "index_actual_by_scale": {
+          "1": 0.610717236995697,
+          "2": 0.6032454371452332,
+          "3": 0.6027905344963074
+        },
+        "index_whitespace_fixed_1x_by_scale": {
+          "1": 0.610717236995697,
+          "2": 0.6110256314277649,
+          "3": 0.6106711626052856
+        },
+        "index_visual_fixed_1x_by_scale": {
+          "1": 0.610717236995697,
+          "2": 0.6029370427131653,
+          "3": 0.6028366088867188
+        },
+        "combined_point_gap": 0.7926702499389648,
+        "whitespace_only_point_gap": 0.7880628108978271,
+        "visual_input_only_point_gap": 0.035446882247924805
       },
-      "normalized_rel_gaps": {
-        "edge_density": 0.024707324040621904,
-        "feature_congestion": 0.0,
-        "interactive_element_density": 0.0,
-        "layout_symmetry": 0.0,
-        "visual_hierarchy": 0.011995028385210257
+      "decomposition_native_path_baseline": {
+        "index_actual_by_scale": {
+          "1": 0.6402415037155151,
+          "2": 0.5992512106895447,
+          "3": 0.5735998749732971
+        },
+        "index_whitespace_fixed_1x_by_scale": {
+          "1": 0.6402415037155151,
+          "2": 0.6405499577522278,
+          "3": 0.6401954889297485
+        },
+        "index_visual_fixed_1x_by_scale": {
+          "1": 0.6402415037155151,
+          "2": 0.5989428162574768,
+          "3": 0.5736459493637085
+        },
+        "combined_point_gap": 6.664162874221802,
+        "whitespace_only_point_gap": 6.659555435180664,
+        "visual_input_only_point_gap": 0.035446882247924805
       },
-      "whitespace_ratio_abs_gap": 0.3917388252710601,
-      "element_count_range": [
-        5,
-        44
+      "canonical_whitespace_abs_gap": 0.046356623427672994,
+      "native_whitespace_abs_gap": 0.3917388252710601,
+      "canonical_element_count_range": [
+        6,
+        8
       ],
-      "endpoint_index_abs_gap": 0.06664162874221802
+      "bbox_stability": {
+        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes",
+        "coverage_1x_to_2x": 1.0,
+        "coverage_1x_to_3x": 1.0,
+        "mean_iou_1x_to_2x": 0.950651212619623,
+        "mean_iou_1x_to_3x": 0.9502148031895503
+      }
     },
     {
       "image_id": "a2d191",
       "category": "web",
+      "scale_variant_method": "raster_enlargement_cv2_resize",
       "per_scale": {
         "1": {
           "raw_features": {
@@ -611,10 +1667,128 @@
             "layout_symmetry": 0.2104758128054679,
             "visual_hierarchy": 0.18309302481305917
           },
-          "whitespace_ratio": 0.8932864583333333,
-          "element_count": 4,
-          "norm_covered_ratio": 0.10671354166666669,
-          "endpoint_load_index": 0.5228351950645447
+          "canonical_whitespace_ratio": 0.9371127658420139,
+          "canonical_element_count": 19,
+          "canonical_norm_boxes": [
+            [
+              0.08854166666666667,
+              0.0171875,
+              0.18489583333333334,
+              0.0515625
+            ],
+            [
+              0.3003472222222222,
+              0.60703125,
+              0.21006944444444445,
+              0.03671875
+            ],
+            [
+              0.0920138888888889,
+              0.60703125,
+              0.1987847222222222,
+              0.03671875
+            ],
+            [
+              0.09288194444444445,
+              0.65390625,
+              0.1892361111111111,
+              0.0359375
+            ],
+            [
+              0.4470486111111111,
+              0.65390625,
+              0.1371527777777778,
+              0.04375
+            ],
+            [
+              0.7239583333333334,
+              0.015625,
+              0.16493055555555555,
+              0.02578125
+            ],
+            [
+              0.08940972222222222,
+              0.7296875,
+              0.14322916666666666,
+              0.021875
+            ],
+            [
+              0.5199652777777778,
+              0.6078125,
+              0.0798611111111111,
+              0.0359375
+            ],
+            [
+              0.5928819444444444,
+              0.66171875,
+              0.07899305555555555,
+              0.0359375
+            ],
+            [
+              0.3654513888888889,
+              0.65390625,
+              0.0720486111111111,
+              0.0359375
+            ],
+            [
+              0.2925347222222222,
+              0.65390625,
+              0.06597222222222222,
+              0.0359375
+            ],
+            [
+              0.7907986111111112,
+              0.05625,
+              0.11197916666666667,
+              0.01328125
+            ],
+            [
+              0.4817708333333333,
+              0.79609375,
+              0.035590277777777776,
+              0.0328125
+            ],
+            [
+              0.4513888888888889,
+              0.05625,
+              0.0763888888888889,
+              0.01328125
+            ],
+            [
+              0.3706597222222222,
+              0.05625,
+              0.0720486111111111,
+              0.01328125
+            ],
+            [
+              0.59375,
+              0.05625,
+              0.06597222222222222,
+              0.01328125
+            ],
+            [
+              0.7282986111111112,
+              0.05625,
+              0.05295138888888889,
+              0.01328125
+            ],
+            [
+              0.6692708333333334,
+              0.05625,
+              0.049479166666666664,
+              0.01328125
+            ],
+            [
+              0.5373263888888888,
+              0.05625,
+              0.046875,
+              0.01328125
+            ]
+          ],
+          "native_whitespace_ratio": 0.8932864583333333,
+          "native_element_count": 4,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.5159102082252502,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.5228351950645447
         },
         "2": {
           "raw_features": {
@@ -634,10 +1808,128 @@
             "layout_symmetry": 0.21264524547268304,
             "visual_hierarchy": 0.35375453084529557
           },
-          "whitespace_ratio": 0.9400451388888889,
-          "element_count": 20,
-          "norm_covered_ratio": 0.059954861111111146,
-          "endpoint_load_index": 0.49432358145713806
+          "canonical_whitespace_ratio": 0.9370815700954861,
+          "canonical_element_count": 19,
+          "canonical_norm_boxes": [
+            [
+              0.08854166666666667,
+              0.0171875,
+              0.18489583333333334,
+              0.0515625
+            ],
+            [
+              0.3003472222222222,
+              0.60703125,
+              0.21006944444444445,
+              0.03671875
+            ],
+            [
+              0.0920138888888889,
+              0.60703125,
+              0.1987847222222222,
+              0.03671875
+            ],
+            [
+              0.0920138888888889,
+              0.65390625,
+              0.19010416666666666,
+              0.0359375
+            ],
+            [
+              0.4470486111111111,
+              0.65390625,
+              0.1371527777777778,
+              0.04375
+            ],
+            [
+              0.7239583333333334,
+              0.015625,
+              0.16493055555555555,
+              0.02578125
+            ],
+            [
+              0.08940972222222222,
+              0.7296875,
+              0.14322916666666666,
+              0.021875
+            ],
+            [
+              0.5199652777777778,
+              0.6078125,
+              0.0798611111111111,
+              0.0359375
+            ],
+            [
+              0.5928819444444444,
+              0.66171875,
+              0.07899305555555555,
+              0.0359375
+            ],
+            [
+              0.3654513888888889,
+              0.65390625,
+              0.0720486111111111,
+              0.0359375
+            ],
+            [
+              0.2925347222222222,
+              0.65390625,
+              0.06597222222222222,
+              0.0359375
+            ],
+            [
+              0.7907986111111112,
+              0.05625,
+              0.11197916666666667,
+              0.01328125
+            ],
+            [
+              0.4817708333333333,
+              0.79609375,
+              0.036458333333333336,
+              0.03203125
+            ],
+            [
+              0.4513888888888889,
+              0.05625,
+              0.0763888888888889,
+              0.01328125
+            ],
+            [
+              0.3706597222222222,
+              0.05625,
+              0.0720486111111111,
+              0.01328125
+            ],
+            [
+              0.59375,
+              0.05625,
+              0.06597222222222222,
+              0.01328125
+            ],
+            [
+              0.7282986111111112,
+              0.05625,
+              0.05295138888888889,
+              0.01328125
+            ],
+            [
+              0.6692708333333334,
+              0.05625,
+              0.049479166666666664,
+              0.01328125
+            ],
+            [
+              0.5373263888888888,
+              0.05625,
+              0.046875,
+              0.01328125
+            ]
+          ],
+          "native_whitespace_ratio": 0.9400451388888889,
+          "native_element_count": 20,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.4947730004787445,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.49432358145713806
         },
         "3": {
           "raw_features": {
@@ -657,39 +1949,188 @@
             "layout_symmetry": 0.21107029527726562,
             "visual_hierarchy": 0.19362185737857474
           },
-          "whitespace_ratio": 0.9388431712962964,
-          "element_count": 39,
-          "norm_covered_ratio": 0.06115682870370365,
-          "endpoint_load_index": 0.509657084941864
+          "canonical_whitespace_ratio": 0.9372212727864584,
+          "canonical_element_count": 19,
+          "canonical_norm_boxes": [
+            [
+              0.08854166666666667,
+              0.0171875,
+              0.18489583333333334,
+              0.0515625
+            ],
+            [
+              0.3003472222222222,
+              0.60703125,
+              0.21006944444444445,
+              0.03671875
+            ],
+            [
+              0.0920138888888889,
+              0.60703125,
+              0.1987847222222222,
+              0.03671875
+            ],
+            [
+              0.09288194444444445,
+              0.65390625,
+              0.1892361111111111,
+              0.0359375
+            ],
+            [
+              0.4470486111111111,
+              0.65390625,
+              0.1371527777777778,
+              0.04375
+            ],
+            [
+              0.7239583333333334,
+              0.015625,
+              0.16493055555555555,
+              0.02578125
+            ],
+            [
+              0.08940972222222222,
+              0.7296875,
+              0.14322916666666666,
+              0.02109375
+            ],
+            [
+              0.5199652777777778,
+              0.6078125,
+              0.0798611111111111,
+              0.0359375
+            ],
+            [
+              0.5928819444444444,
+              0.66171875,
+              0.07899305555555555,
+              0.0359375
+            ],
+            [
+              0.3654513888888889,
+              0.65390625,
+              0.0720486111111111,
+              0.0359375
+            ],
+            [
+              0.2916666666666667,
+              0.65390625,
+              0.06684027777777778,
+              0.0359375
+            ],
+            [
+              0.7907986111111112,
+              0.05625,
+              0.11197916666666667,
+              0.01328125
+            ],
+            [
+              0.4817708333333333,
+              0.796875,
+              0.035590277777777776,
+              0.03203125
+            ],
+            [
+              0.4513888888888889,
+              0.05625,
+              0.0763888888888889,
+              0.01328125
+            ],
+            [
+              0.3706597222222222,
+              0.05625,
+              0.0720486111111111,
+              0.01328125
+            ],
+            [
+              0.59375,
+              0.05625,
+              0.06597222222222222,
+              0.01328125
+            ],
+            [
+              0.7282986111111112,
+              0.05625,
+              0.05295138888888889,
+              0.01328125
+            ],
+            [
+              0.6692708333333334,
+              0.05625,
+              0.049479166666666664,
+              0.01328125
+            ],
+            [
+              0.5373263888888888,
+              0.05625,
+              0.046875,
+              0.01328125
+            ]
+          ],
+          "native_whitespace_ratio": 0.9388431712962964,
+          "native_element_count": 39,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.5099102258682251,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.509657084941864
         }
       },
-      "raw_rel_gaps": {
-        "shannon_entropy": 0.0007326315445543126,
-        "edge_density": 0.008643211172693446,
-        "feature_congestion": 0.049742520938677266,
-        "subband_entropy": 0.031010006544153697,
-        "layout_symmetry": 0.008803597449476468,
-        "chromatic_coherence": 0.004198232930949039,
-        "visual_hierarchy": 0.39611683056545643,
-        "interactive_element_density": 0.0
+      "decomposition_canonical_path": {
+        "index_actual_by_scale": {
+          "1": 0.5159102082252502,
+          "2": 0.4947730004787445,
+          "3": 0.5099102258682251
+        },
+        "index_whitespace_fixed_1x_by_scale": {
+          "1": 0.5159102082252502,
+          "2": 0.49476826190948486,
+          "3": 0.5099271535873413
+        },
+        "index_visual_fixed_1x_by_scale": {
+          "1": 0.5159102082252502,
+          "2": 0.5159151554107666,
+          "3": 0.5158930420875549
+        },
+        "combined_point_gap": 2.1137207746505737,
+        "whitespace_only_point_gap": 0.002211332321166992,
+        "visual_input_only_point_gap": 2.114194631576538
       },
-      "normalized_rel_gaps": {
-        "edge_density": 0.010433934176694066,
-        "feature_congestion": 0.04099315565171163,
-        "interactive_element_density": 0.0,
-        "layout_symmetry": 0.010262356881970207,
-        "visual_hierarchy": 0.7008979554231183
+      "decomposition_native_path_baseline": {
+        "index_actual_by_scale": {
+          "1": 0.5228351950645447,
+          "2": 0.49432358145713806,
+          "3": 0.509657084941864
+        },
+        "index_whitespace_fixed_1x_by_scale": {
+          "1": 0.5228351950645447,
+          "2": 0.5014143586158752,
+          "3": 0.5167664885520935
+        },
+        "index_visual_fixed_1x_by_scale": {
+          "1": 0.5228351950645447,
+          "2": 0.5154468417167664,
+          "3": 0.5156368017196655
+        },
+        "combined_point_gap": 2.8511613607406616,
+        "whitespace_only_point_gap": 0.738835334777832,
+        "visual_input_only_point_gap": 2.1420836448669434
       },
-      "whitespace_ratio_abs_gap": 0.04675868055555554,
-      "element_count_range": [
-        4,
-        39
+      "canonical_whitespace_abs_gap": 0.0001397026909722987,
+      "native_whitespace_abs_gap": 0.04675868055555554,
+      "canonical_element_count_range": [
+        19,
+        19
       ],
-      "endpoint_index_abs_gap": 0.028511613607406616
+      "bbox_stability": {
+        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes",
+        "coverage_1x_to_2x": 1.0,
+        "coverage_1x_to_3x": 1.0,
+        "mean_iou_1x_to_2x": 0.9973116927393338,
+        "mean_iou_1x_to_3x": 0.9961836409204823
+      }
     },
     {
       "image_id": "aa063a",
       "category": "web",
+      "scale_variant_method": "raster_enlargement_cv2_resize",
       "per_scale": {
         "1": {
           "raw_features": {
@@ -709,10 +2150,290 @@
             "layout_symmetry": 0.0,
             "visual_hierarchy": 0.559271914744023
           },
-          "whitespace_ratio": 0.31627343750000003,
-          "element_count": 46,
-          "norm_covered_ratio": 0.6837265625,
-          "endpoint_load_index": 0.6107801198959351
+          "canonical_whitespace_ratio": 0.31627343750000003,
+          "canonical_element_count": 46,
+          "canonical_norm_boxes": [
+            [
+              0.1125,
+              0.47875,
+              0.56171875,
+              0.52125
+            ],
+            [
+              0.31875,
+              0.20125,
+              0.51171875,
+              0.26125
+            ],
+            [
+              0.18046875,
+              0.17875,
+              0.34375,
+              0.25375
+            ],
+            [
+              0.80546875,
+              0.59375,
+              0.08125,
+              0.40625
+            ],
+            [
+              0.91796875,
+              0.26875,
+              0.08203125,
+              0.28125
+            ],
+            [
+              0.0,
+              0.2675,
+              0.08125,
+              0.2825
+            ],
+            [
+              0.915625,
+              0.615,
+              0.084375,
+              0.265
+            ],
+            [
+              0.0,
+              0.62375,
+              0.08515625,
+              0.25625
+            ],
+            [
+              0.6375,
+              0.62,
+              0.14609375,
+              0.115
+            ],
+            [
+              0.6375,
+              0.84625,
+              0.1390625,
+              0.115
+            ],
+            [
+              0.2078125,
+              0.29,
+              0.128125,
+              0.06625
+            ],
+            [
+              0.10625,
+              0.0125,
+              0.13359375,
+              0.0575
+            ],
+            [
+              0.79921875,
+              0.01125,
+              0.09375,
+              0.05875
+            ],
+            [
+              0.83125,
+              0.3625,
+              0.05078125,
+              0.0775
+            ],
+            [
+              0.6015625,
+              0.09625,
+              0.11484375,
+              0.03125
+            ],
+            [
+              0.82578125,
+              0.17125,
+              0.04609375,
+              0.0775
+            ],
+            [
+              0.62890625,
+              0.55,
+              0.0890625,
+              0.03875
+            ],
+            [
+              0.63984375,
+              0.97125,
+              0.115625,
+              0.02875
+            ],
+            [
+              0.10703125,
+              0.09625,
+              0.0609375,
+              0.04875
+            ],
+            [
+              0.3921875,
+              0.09625,
+              0.090625,
+              0.03125
+            ],
+            [
+              0.63984375,
+              0.745,
+              0.1125,
+              0.025
+            ],
+            [
+              0.91328125,
+              0.55875,
+              0.08671875,
+              0.03
+            ],
+            [
+              0.0,
+              0.55875,
+              0.08671875,
+              0.03
+            ],
+            [
+              0.91171875,
+              0.2025,
+              0.0609375,
+              0.0425
+            ],
+            [
+              0.784375,
+              0.09625,
+              0.09453125,
+              0.02625
+            ],
+            [
+              0.30234375,
+              0.09625,
+              0.07578125,
+              0.03125
+            ],
+            [
+              0.49765625,
+              0.09625,
+              0.0890625,
+              0.02625
+            ],
+            [
+              0.13984375,
+              0.18,
+              0.0375,
+              0.05875
+            ],
+            [
+              0.78828125,
+              0.555,
+              0.075,
+              0.02875
+            ],
+            [
+              0.17265625,
+              0.09625,
+              0.0609375,
+              0.03125
+            ],
+            [
+              0.11875,
+              0.2625,
+              0.021875,
+              0.08
+            ],
+            [
+              0.05546875,
+              0.2025,
+              0.03203125,
+              0.05125
+            ],
+            [
+              0.0,
+              0.2025,
+              0.02578125,
+              0.0425
+            ],
+            [
+              0.246875,
+              0.09625,
+              0.04140625,
+              0.02625
+            ],
+            [
+              0.73046875,
+              0.09625,
+              0.03984375,
+              0.02625
+            ],
+            [
+              0.68203125,
+              0.78,
+              0.03046875,
+              0.02625
+            ],
+            [
+              0.27734375,
+              0.02375,
+              0.021875,
+              0.035
+            ],
+            [
+              0.69609375,
+              0.02375,
+              0.0203125,
+              0.03375
+            ],
+            [
+              0.3140625,
+              0.0275,
+              0.02734375,
+              0.025
+            ],
+            [
+              0.725,
+              0.7825,
+              0.028125,
+              0.02375
+            ],
+            [
+              0.95390625,
+              0.925,
+              0.03984375,
+              0.01625
+            ],
+            [
+              0.00703125,
+              0.925,
+              0.03984375,
+              0.01625
+            ],
+            [
+              0.6375,
+              0.78125,
+              0.025,
+              0.02375
+            ],
+            [
+              0.7453125,
+              0.025,
+              0.01875,
+              0.03
+            ],
+            [
+              0.909375,
+              0.09625,
+              0.01328125,
+              0.03
+            ],
+            [
+              0.07734375,
+              0.09625,
+              0.01328125,
+              0.03
+            ]
+          ],
+          "native_whitespace_ratio": 0.31627343750000003,
+          "native_element_count": 46,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.6107801198959351,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.6107801198959351
         },
         "2": {
           "raw_features": {
@@ -732,10 +2453,272 @@
             "layout_symmetry": 0.0,
             "visual_hierarchy": 0.5728261376776917
           },
-          "whitespace_ratio": 0.459865478515625,
-          "element_count": 68,
-          "norm_covered_ratio": 0.540134521484375,
-          "endpoint_load_index": 0.5868311524391174
+          "canonical_whitespace_ratio": 0.313021484375,
+          "canonical_element_count": 43,
+          "canonical_norm_boxes": [
+            [
+              0.11328125,
+              0.47875,
+              0.5609375,
+              0.52125
+            ],
+            [
+              0.31875,
+              0.20125,
+              0.51171875,
+              0.26125
+            ],
+            [
+              0.18046875,
+              0.17875,
+              0.34375,
+              0.2525
+            ],
+            [
+              0.80546875,
+              0.59375,
+              0.08125,
+              0.40625
+            ],
+            [
+              0.0,
+              0.2675,
+              0.08671875,
+              0.32125
+            ],
+            [
+              0.91328125,
+              0.26875,
+              0.08671875,
+              0.32
+            ],
+            [
+              0.915625,
+              0.615,
+              0.084375,
+              0.265
+            ],
+            [
+              0.0,
+              0.62375,
+              0.08515625,
+              0.25625
+            ],
+            [
+              0.6375,
+              0.62,
+              0.14609375,
+              0.115
+            ],
+            [
+              0.6375,
+              0.84625,
+              0.13984375,
+              0.115
+            ],
+            [
+              0.2078125,
+              0.29,
+              0.128125,
+              0.06625
+            ],
+            [
+              0.10625,
+              0.0125,
+              0.134375,
+              0.0575
+            ],
+            [
+              0.79921875,
+              0.01125,
+              0.09375,
+              0.05875
+            ],
+            [
+              0.83125,
+              0.3625,
+              0.05078125,
+              0.0775
+            ],
+            [
+              0.6015625,
+              0.09625,
+              0.11484375,
+              0.03125
+            ],
+            [
+              0.82578125,
+              0.17125,
+              0.04609375,
+              0.0775
+            ],
+            [
+              0.62890625,
+              0.55,
+              0.0890625,
+              0.03875
+            ],
+            [
+              0.63984375,
+              0.97125,
+              0.115625,
+              0.02875
+            ],
+            [
+              0.10703125,
+              0.09625,
+              0.0609375,
+              0.04875
+            ],
+            [
+              0.3921875,
+              0.09625,
+              0.090625,
+              0.03125
+            ],
+            [
+              0.63984375,
+              0.745,
+              0.1125,
+              0.025
+            ],
+            [
+              0.91171875,
+              0.2025,
+              0.0609375,
+              0.0425
+            ],
+            [
+              0.784375,
+              0.09625,
+              0.09453125,
+              0.02625
+            ],
+            [
+              0.30234375,
+              0.09625,
+              0.07578125,
+              0.03125
+            ],
+            [
+              0.49765625,
+              0.09625,
+              0.0890625,
+              0.02625
+            ],
+            [
+              0.13984375,
+              0.18,
+              0.0375,
+              0.05875
+            ],
+            [
+              0.78828125,
+              0.555,
+              0.075,
+              0.02875
+            ],
+            [
+              0.17265625,
+              0.09625,
+              0.0609375,
+              0.03125
+            ],
+            [
+              0.11875,
+              0.2625,
+              0.021875,
+              0.08
+            ],
+            [
+              0.05546875,
+              0.2025,
+              0.03203125,
+              0.05125
+            ],
+            [
+              0.0,
+              0.2025,
+              0.02578125,
+              0.0425
+            ],
+            [
+              0.246875,
+              0.09625,
+              0.04140625,
+              0.02625
+            ],
+            [
+              0.73046875,
+              0.09625,
+              0.03984375,
+              0.02625
+            ],
+            [
+              0.68203125,
+              0.78,
+              0.03046875,
+              0.02625
+            ],
+            [
+              0.27734375,
+              0.02375,
+              0.021875,
+              0.035
+            ],
+            [
+              0.69609375,
+              0.02375,
+              0.0203125,
+              0.03375
+            ],
+            [
+              0.725,
+              0.7825,
+              0.028125,
+              0.02375
+            ],
+            [
+              0.95390625,
+              0.925,
+              0.03984375,
+              0.01625
+            ],
+            [
+              0.00703125,
+              0.925,
+              0.03984375,
+              0.01625
+            ],
+            [
+              0.6375,
+              0.78125,
+              0.025,
+              0.02375
+            ],
+            [
+              0.7453125,
+              0.025,
+              0.01875,
+              0.03
+            ],
+            [
+              0.909375,
+              0.09625,
+              0.01328125,
+              0.03
+            ],
+            [
+              0.07734375,
+              0.09625,
+              0.01328125,
+              0.03
+            ]
+          ],
+          "native_whitespace_ratio": 0.459865478515625,
+          "native_element_count": 68,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.6117945909500122,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.5868311524391174
         },
         "3": {
           "raw_features": {
@@ -755,35 +2738,327 @@
             "layout_symmetry": 0.0,
             "visual_hierarchy": 0.5743745829130253
           },
-          "whitespace_ratio": 0.4935928819444444,
-          "element_count": 80,
-          "norm_covered_ratio": 0.5064071180555556,
-          "endpoint_load_index": 0.5806723833084106
+          "canonical_whitespace_ratio": 0.3126123046875,
+          "canonical_element_count": 43,
+          "canonical_norm_boxes": [
+            [
+              0.1125,
+              0.47875,
+              0.56171875,
+              0.52125
+            ],
+            [
+              0.31875,
+              0.20125,
+              0.51171875,
+              0.26125
+            ],
+            [
+              0.18046875,
+              0.17875,
+              0.34375,
+              0.2525
+            ],
+            [
+              0.80546875,
+              0.59375,
+              0.08125,
+              0.40625
+            ],
+            [
+              0.0,
+              0.2675,
+              0.08671875,
+              0.32125
+            ],
+            [
+              0.91328125,
+              0.26875,
+              0.08671875,
+              0.32
+            ],
+            [
+              0.915625,
+              0.615,
+              0.084375,
+              0.265
+            ],
+            [
+              0.0,
+              0.62375,
+              0.08515625,
+              0.25625
+            ],
+            [
+              0.6375,
+              0.62,
+              0.14609375,
+              0.115
+            ],
+            [
+              0.6375,
+              0.84625,
+              0.13984375,
+              0.115
+            ],
+            [
+              0.2078125,
+              0.29,
+              0.128125,
+              0.06625
+            ],
+            [
+              0.10625,
+              0.0125,
+              0.13359375,
+              0.0575
+            ],
+            [
+              0.79921875,
+              0.01125,
+              0.09375,
+              0.05875
+            ],
+            [
+              0.83125,
+              0.3625,
+              0.05078125,
+              0.0775
+            ],
+            [
+              0.6015625,
+              0.09625,
+              0.11484375,
+              0.03125
+            ],
+            [
+              0.82578125,
+              0.17125,
+              0.04609375,
+              0.0775
+            ],
+            [
+              0.62890625,
+              0.55,
+              0.0890625,
+              0.03875
+            ],
+            [
+              0.63984375,
+              0.97125,
+              0.115625,
+              0.02875
+            ],
+            [
+              0.10703125,
+              0.09625,
+              0.0609375,
+              0.04875
+            ],
+            [
+              0.3921875,
+              0.09625,
+              0.090625,
+              0.03125
+            ],
+            [
+              0.63984375,
+              0.745,
+              0.1125,
+              0.025
+            ],
+            [
+              0.91171875,
+              0.2025,
+              0.0609375,
+              0.0425
+            ],
+            [
+              0.784375,
+              0.09625,
+              0.09453125,
+              0.02625
+            ],
+            [
+              0.30234375,
+              0.09625,
+              0.07578125,
+              0.03125
+            ],
+            [
+              0.49765625,
+              0.09625,
+              0.0890625,
+              0.02625
+            ],
+            [
+              0.13984375,
+              0.18,
+              0.0375,
+              0.05875
+            ],
+            [
+              0.78828125,
+              0.555,
+              0.075,
+              0.02875
+            ],
+            [
+              0.17265625,
+              0.09625,
+              0.0609375,
+              0.03125
+            ],
+            [
+              0.11875,
+              0.2625,
+              0.021875,
+              0.08
+            ],
+            [
+              0.05546875,
+              0.2025,
+              0.03203125,
+              0.05125
+            ],
+            [
+              0.0,
+              0.2025,
+              0.02578125,
+              0.0425
+            ],
+            [
+              0.246875,
+              0.09625,
+              0.04140625,
+              0.02625
+            ],
+            [
+              0.73046875,
+              0.09625,
+              0.03984375,
+              0.02625
+            ],
+            [
+              0.68203125,
+              0.78,
+              0.03046875,
+              0.02625
+            ],
+            [
+              0.27734375,
+              0.02375,
+              0.021875,
+              0.035
+            ],
+            [
+              0.69609375,
+              0.02375,
+              0.0203125,
+              0.03375
+            ],
+            [
+              0.725,
+              0.7825,
+              0.028125,
+              0.02375
+            ],
+            [
+              0.95390625,
+              0.925,
+              0.03984375,
+              0.01625
+            ],
+            [
+              0.00703125,
+              0.925,
+              0.03984375,
+              0.01625
+            ],
+            [
+              0.6375,
+              0.78125,
+              0.025,
+              0.02375
+            ],
+            [
+              0.7453125,
+              0.025,
+              0.01875,
+              0.03
+            ],
+            [
+              0.909375,
+              0.09625,
+              0.0140625,
+              0.03
+            ],
+            [
+              0.0765625,
+              0.09625,
+              0.0140625,
+              0.03
+            ]
+          ],
+          "native_whitespace_ratio": 0.4935928819444444,
+          "native_element_count": 80,
+          "hceye_rule_index_no_saliency_no_ocr_canonical": 0.6114391088485718,
+          "hceye_rule_index_no_saliency_no_ocr_native": 0.5806723833084106
         }
       },
-      "raw_rel_gaps": {
-        "shannon_entropy": 0.05987600847087738,
-        "edge_density": 0.036127121713766495,
-        "feature_congestion": 0.1552093393645248,
-        "subband_entropy": 0.010512335294647547,
-        "layout_symmetry": 0.0,
-        "chromatic_coherence": 0.006599957483250171,
-        "visual_hierarchy": 0.013115506802719962,
-        "interactive_element_density": 0.0425531914893617
+      "decomposition_canonical_path": {
+        "index_actual_by_scale": {
+          "1": 0.6107801198959351,
+          "2": 0.6117945909500122,
+          "3": 0.6114391088485718
+        },
+        "index_whitespace_fixed_1x_by_scale": {
+          "1": 0.6107801198959351,
+          "2": 0.6112417578697205,
+          "3": 0.6108167171478271
+        },
+        "index_visual_fixed_1x_by_scale": {
+          "1": 0.6107801198959351,
+          "2": 0.6113329529762268,
+          "3": 0.6114025115966797
+        },
+        "combined_point_gap": 0.10144710540771484,
+        "whitespace_only_point_gap": 0.06223917007446289,
+        "visual_input_only_point_gap": 0.04616379737854004
       },
-      "normalized_rel_gaps": {
-        "edge_density": 0.02103856888540621,
-        "feature_congestion": 0.0,
-        "interactive_element_density": 0.013162458904255098,
-        "layout_symmetry": 0.0,
-        "visual_hierarchy": 0.02655067744354384
+      "decomposition_native_path_baseline": {
+        "index_actual_by_scale": {
+          "1": 0.6107801198959351,
+          "2": 0.5868311524391174,
+          "3": 0.5806723833084106
+        },
+        "index_whitespace_fixed_1x_by_scale": {
+          "1": 0.6107801198959351,
+          "2": 0.6112417578697205,
+          "3": 0.6108167171478271
+        },
+        "index_visual_fixed_1x_by_scale": {
+          "1": 0.6107801198959351,
+          "2": 0.5863694548606873,
+          "3": 0.5806357860565186
+        },
+        "combined_point_gap": 3.0107736587524414,
+        "whitespace_only_point_gap": 3.0144333839416504,
+        "visual_input_only_point_gap": 0.04616379737854004
       },
-      "whitespace_ratio_abs_gap": 0.17731944444444436,
-      "element_count_range": [
-        46,
-        80
+      "canonical_whitespace_abs_gap": 0.003661132812500023,
+      "native_whitespace_abs_gap": 0.17731944444444436,
+      "canonical_element_count_range": [
+        43,
+        46
       ],
-      "endpoint_index_abs_gap": 0.030107736587524414
+      "bbox_stability": {
+        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes",
+        "coverage_1x_to_2x": 0.9347826086956522,
+        "coverage_1x_to_3x": 0.9347826086956522,
+        "mean_iou_1x_to_2x": 0.9915721285323359,
+        "mean_iou_1x_to_3x": 0.989155702089578
+      }
     }
   ]
 }

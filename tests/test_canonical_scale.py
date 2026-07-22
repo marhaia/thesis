@@ -54,7 +54,7 @@ from canonical_scale_eval import (  # noqa: E402
     PIXEL_SCALE_DRIVERS,
     canonical_features,
     normalized_hceye_inputs,
-    hceye_load_index,
+    hceye_rule_index_no_saliency_no_ocr,
 )
 
 
@@ -235,7 +235,7 @@ def test_scale_invariance_report_and_endpoint(fx_name):
     scales = (1, 2, 3)
     vecs = {s: _features_of(fx(s)) for s in scales}
     norm = {s: normalized_hceye_inputs(vecs[s]) for s in scales}
-    idx = {s: hceye_load_index(vecs[s]) for s in scales}
+    idx = {s: hceye_rule_index_no_saliency_no_ocr(vecs[s]) for s in scales}
 
     report = [f"\n[{fx_name}] scale report (D=pixel-scale driver, "
               f"M=HCEye-mapped):"]
@@ -261,14 +261,14 @@ def test_scale_invariance_report_and_endpoint(fx_name):
     idx_vals = [idx[s] for s in scales]
     idx_abs, idx_rel = _gap(idx_vals)
     report.append(
-        f"  endpoint cognitive_load_index 1x={idx_vals[0]:.5f} "
+        f"  HCEye rule index (no saliency, no OCR) 1x={idx_vals[0]:.5f} "
         f"2x={idx_vals[1]:.5f} 3x={idx_vals[2]:.5f} "
         f"abs={idx_abs:.5f} rel={idx_rel:.2%}")
     print("\n".join(report))
 
-    # (a) The meaningful criterion: the endpoint index barely moves.
+    # (a) The meaningful criterion: the HCEye rule index barely moves.
     assert idx_abs <= ENDPOINT_ABS_GUARD, (
-        f"{fx_name}: endpoint cognitive_load_index moved {idx_abs:.5f} "
+        f"{fx_name}: HCEye rule index moved {idx_abs:.5f} "
         f"across scales (> {ENDPOINT_ABS_GUARD})\n" + "\n".join(report))
     # (b) The proven defect drivers stay stable after normalization.
     assert not driver_fail, (
@@ -321,3 +321,214 @@ def test_analyze_normal_image_is_not_400(client):
     # A normal image must NOT hit the too-small 400 path (200 expected; the
     # saliency stage degrades gracefully without the ML stack).
     assert resp.status_code == 200, resp.get_data(as_text=True)
+
+
+# ---------------------------------------------------------------------------
+# 5. Two-path layout-scale architecture regression tests.
+#
+# These prove the LAYOUT-SCALE fix: the score-driving layout measurements
+# (whitespace_ratio, OCR text_density) run on the CANONICAL analysis image
+# (long side 1280) and in CANONICAL coordinates, while the Jokinen / target-
+# selection / overlay path keeps NATIVE images and native coordinates.
+# See stage1/canonical_layout.py.
+# ---------------------------------------------------------------------------
+import canonical_layout  # noqa: E402
+from canonical_layout import (  # noqa: E402
+    measure_canonical_layout,
+    scale_box_to_native,
+    CanonicalLayoutMeasurement,
+    _whitespace_from_boxes,
+    ANALYSIS_PATH,
+)
+
+
+@pytest.mark.parametrize("fx_name", list(FIXTURES))
+def test_layout_detector_always_receives_canonical_long_side(fx_name, monkeypatch):
+    """(1) For 1x/2x/3x inputs the score-driving detector always sees long=1280."""
+    seen = []
+    real_detect = canonical_layout.detect_elements
+
+    def spy(img, *a, **k):
+        seen.append(int(max(img.shape[:2])))
+        return real_detect(img, *a, **k)
+
+    monkeypatch.setattr(canonical_layout, "detect_elements", spy)
+    fx = FIXTURES[fx_name]
+    for s in (1, 2, 3):
+        measure_canonical_layout(fx(s), run_ocr=False)
+    assert seen, "layout detector was never called"
+    assert set(seen) == {CANONICAL_LONG_SIDE}, (
+        f"{fx_name}: detector saw long sides {seen}, expected all "
+        f"{CANONICAL_LONG_SIDE}")
+
+
+@pytest.mark.parametrize("fx_name", list(FIXTURES))
+def test_whitespace_from_canonical_boxes_on_canonical_canvas(fx_name):
+    """(2) Whitespace is computed from canonical boxes on the canonical canvas."""
+    m = measure_canonical_layout(FIXTURES[fx_name](2), run_ocr=False)
+    ah, aw = m.analysis_shape
+    assert max(ah, aw) == CANONICAL_LONG_SIDE
+    # It equals recomputation from the returned canonical boxes on the canonical
+    # canvas...
+    expected = _whitespace_from_boxes(m.analysis_elements, ah, aw)
+    assert abs(m.whitespace_ratio - expected) < 1e-9
+    # ...and differs from the value the same boxes would give on the native
+    # canvas, proving the measurement lives in canonical space (not native).
+    nh, nw = m.native_shape
+    if (nh, nw) != (ah, aw):
+        native_val = _whitespace_from_boxes(m.analysis_elements, nh, nw)
+        assert native_val != pytest.approx(m.whitespace_ratio, abs=1e-6)
+
+
+def test_score_driving_ocr_uses_canonical_image_and_elements(monkeypatch):
+    """(3) text_density OCR runs on the canonical image AND canonical elements."""
+    captured = {}
+
+    def fake_readability(img, elements):
+        captured["long_side"] = int(max(img.shape[:2]))
+        captured["elements_id"] = id(elements)
+        captured["n"] = len(elements)
+        n_text = sum(1 for i in range(len(elements)) if i % 2 == 0)
+        return {"n_elements": len(elements), "n_text_elements": n_text,
+                "text_elements": []}
+
+    import cognitive.text_reader as tr
+    monkeypatch.setattr(tr, "compute_readability", fake_readability)
+
+    m = measure_canonical_layout(FIXTURES["hard_edged"](2), run_ocr=True)
+    assert captured["long_side"] == CANONICAL_LONG_SIDE
+    # The exact canonical element list is what OCR received and what is stored.
+    assert captured["elements_id"] == id(m.analysis_elements)
+    assert m.text_density_source == "ocr"
+    n = captured["n"]
+    expected_td = (sum(1 for i in range(n) if i % 2 == 0) / n) if n else None
+    assert m.text_density == pytest.approx(expected_td)
+
+
+def test_native_path_uses_native_coordinates_not_canonical():
+    """(4) The native path yields native-coordinate elements distinct from the
+    canonical analysis elements (target selection / Jokinen / overlays)."""
+    from cognitive.element_detector import detect_elements
+    native = FIXTURES["hard_edged"](3)          # native 1800x2700
+    m = measure_canonical_layout(native, run_ocr=False)
+    native_elems = detect_elements(native)
+    # Canonical elements stay within the canonical canvas.
+    ah, aw = m.analysis_shape
+    for e in m.analysis_elements:
+        x, y, bw, bh = e["bbox"]
+        assert x + bw <= aw + 1 and y + bh <= ah + 1
+    # Native elements extend beyond the canonical long side (native coordinates).
+    max_native_x = max((e["bbox"][0] + e["bbox"][2]) for e in native_elems)
+    assert max_native_x > CANONICAL_LONG_SIDE
+
+
+def test_readability_native_mapping_stays_in_bounds():
+    """(5) Readability boxes mapped back to native coordinates stay in bounds."""
+    native_h, native_w = 1200, 1800
+    analysis_h, analysis_w = 853, 1280
+    sx, sy = native_w / analysis_w, native_h / analysis_h
+    report = {
+        "n_elements": 2, "n_text_elements": 2,
+        "text_elements": [
+            {"bbox": [analysis_w - 10, analysis_h - 10, 40, 40], "center": [0, 0]},
+            {"bbox": [0, 0, 5, 5], "center": [0, 0]},
+        ],
+    }
+    m = CanonicalLayoutMeasurement(
+        native_shape=(native_h, native_w),
+        analysis_shape=(analysis_h, analysis_w),
+        scale_x=sx, scale_y=sy, analysis_elements=[], whitespace_ratio=0.5,
+        text_density=1.0, text_density_source="ocr", readability_report=report)
+    nat = m.readability_report_native()
+    assert nat["coordinate_space"] == "native"
+    for te in nat["text_elements"]:
+        x, y, w, h = te["bbox"]
+        assert 0 <= x < native_w and 0 <= y < native_h
+        assert x + w <= native_w and y + h <= native_h
+    # The reusable helper clips an out-of-range canonical box in-bounds.
+    bx, by, bw, bh = scale_box_to_native(
+        (analysis_w + 500, analysis_h + 500, 100, 100), sx, sy, native_w, native_h)
+    assert 0 <= bx < native_w and 0 <= by < native_h
+    assert bx + bw <= native_w and by + bh <= native_h
+
+
+def test_analysis_path_provenance_identifier():
+    """The measurement is unmistakably tagged as the analysis path."""
+    m = measure_canonical_layout(FIXTURES["gradient"](1), run_ocr=False)
+    assert m.analysis_path == ANALYSIS_PATH
+    d = m.as_dict()
+    assert d["analysis_long_side"] == CANONICAL_LONG_SIDE
+    assert d["analysis_path"] == ANALYSIS_PATH
+
+
+def test_fixtures_are_independently_rendered_not_raster_enlarged():
+    """(8) Each scale is drawn natively, not produced by enlarging the 1x raster."""
+    for name, fx in FIXTURES.items():
+        one = fx(1)
+        two = fx(2)
+        assert two.shape[0] == one.shape[0] * 2 and two.shape[1] == one.shape[1] * 2
+        enlarged = cv2.resize(one, (one.shape[1] * 2, one.shape[0] * 2),
+                              interpolation=cv2.INTER_NEAREST)
+        # A true re-render is not byte-identical to a raster enlargement.
+        assert not np.array_equal(two, enlarged), name
+
+
+# ---------------------------------------------------------------------------
+# 6. End-to-end endpoint scale invariance.
+#
+# The prospective guard: the HCEye cognitive-load index lives in [0, 1]; a
+# maximum gap <= 0.01 across 1x/2x/3x equals <= 1.0 displayed point on the
+# 0-100 scale. This is exercised through the ACTUAL Flask endpoint, not a
+# formula helper.
+# ---------------------------------------------------------------------------
+SYNTHETIC_ENDPOINT_GUARD = 0.01   # == 1.0 displayed point on the 0-100 scale
+
+
+def test_cognitive_load_index_scale_invariant_through_endpoint(client, monkeypatch):
+    """(6,7,9) POST independently re-rendered 1x/2x/3x fixtures to
+    /api/cognitive-load and require the cognitive_load_index gap <= 0.01.
+
+    Explicitly mocked (and ONLY these):
+      * UMSI++ saliency: app._predict_saliency_cached is forced to raise, so the
+        saliency vector s is deterministically None (image-only path). Saliency
+        is a nondeterministic external ML component and is not what this scale
+        test measures.
+      * OCR: cognitive.text_reader.compute_readability returns None, so
+        text_density is the neutral fallback deterministically.
+    Nothing else is stubbed: the eight visual features, the canonical element
+    detector, whitespace_ratio and the HCEye rule all run for real.
+    """
+    import io
+    import app as app_module
+    import cognitive.text_reader as tr
+
+    def _no_saliency(*a, **k):
+        raise RuntimeError("saliency explicitly disabled in test")
+
+    monkeypatch.setattr(app_module, "_predict_saliency_cached", _no_saliency)
+    monkeypatch.setattr(tr, "compute_readability", lambda *a, **k: None)
+
+    per_fx = {}
+    for name, fx in FIXTURES.items():
+        idx = {}
+        for s in (1, 2, 3):
+            ok, buf = cv2.imencode(".png", fx(s))
+            assert ok
+            data = {"image": (io.BytesIO(buf.tobytes()), f"{name}_{s}x.png")}
+            resp = client.post("/api/cognitive-load", data=data,
+                               content_type="multipart/form-data")
+            assert resp.status_code == 200, resp.get_data(as_text=True)
+            body = resp.get_json()
+            idx[s] = float(body["cognitive_load_index"])
+        gap = max(idx.values()) - min(idx.values())
+        per_fx[name] = (idx, gap)
+
+    print("\n[endpoint /api/cognitive-load cognitive_load_index 1x/2x/3x]")
+    for name, (idx, gap) in per_fx.items():
+        print(f"  {name}: 1x={idx[1]:.5f} 2x={idx[2]:.5f} 3x={idx[3]:.5f} "
+              f"gap={gap:.5f} ({gap * 100:.3f} displayed pt)")
+
+    for name, (idx, gap) in per_fx.items():
+        assert gap <= SYNTHETIC_ENDPOINT_GUARD, (
+            f"{name}: cognitive_load_index gap {gap:.5f} exceeds "
+            f"{SYNTHETIC_ENDPOINT_GUARD} (= 1.0 displayed point). idx={idx}")

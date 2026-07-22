@@ -32,9 +32,14 @@ index and are reported in full below — they are not treated as non-score-drivi
 
 The fix computes all eight features on a fixed, aspect-ratio-preserving
 canonical resolution (resize so the long side equals `CANONICAL_LONG_SIDE`),
-applied once before feature extraction. The original image and its coordinate
-system are untouched for element detection, bounding boxes, overlays, target
-selection and the Jokinen search model.
+applied once before feature extraction. A later, separate change extended the
+same canonical analysis image to the two remaining score-driving,
+element-derived inputs — `whitespace_ratio` and the OCR-derived `text_density` —
+so every value that feeds the layout `experimental_complexity_index` now shares
+one analysis scale (see `stage1/canonical_layout.py`). The original image and
+its native coordinate system are deliberately kept for the interaction path:
+element detection for bounding boxes, overlays, target selection, native
+contrast diagnostics and the Jokinen search model still run natively.
 
 ## Native resolution of the reference corpus (UEyes, 1,485 GUI images)
 
@@ -129,61 +134,50 @@ This is an exploratory, evidence-based selection, not a default and not a
 pre-registered confirmatory test: 1024 tied 1280 on the primary objective and
 lost only on feature perturbation.
 
-## Held-out real-UI scale validation
+## Held-out real-UI scale evaluation
 
 A deterministic UEyes sample (seed 20240607, two images per category,
-**excluding** the eight images used to select 1280) was evaluated by
-`stage1/tools/canonical_scale_eval.py`; full per-image numbers are in
-`stage1/canonical_eval/heldout_ueyes_results.json` and the manifest in
-`heldout_ueyes_manifest.csv`. Each image is raster-**upscaled** 2x/3x (a lossy
-stress test — real re-rendering is not available from a single stored raster)
-and pushed through the exact endpoint path.
+**excluding** the eight images used to select 1280) is evaluated by
+`stage1/tools/canonical_scale_eval.py`. Sample IDs, category and seed are in
+`stage1/canonical_eval/heldout_ueyes_manifest.csv`; the full per-image numbers
+(eight raw features, five percentile-normalised HCEye inputs, the canonical and
+the baseline native `whitespace_ratio`, canonical element count, per-scale
+normalised canonical bounding boxes, and the contribution decomposition) are in
+`stage1/canonical_eval/heldout_ueyes_results.json`. The UEyes images themselves
+are not added to git.
 
-Findings (honest, including the negative ones):
+Important honesty caveat about the method: a real screenshot exists at a single
+native capture only, so the 2x/3x variants here are produced by **raster
+enlargement** (`cv2.resize`), which is *not* equivalent to a native re-render at
+a higher resolution. These results are therefore reported **descriptively** —
+the prospective ≤ 1.0-point synthetic acceptance guard is **not** applied to
+them, and any remaining differences are **not** assumed to disappear under a
+true native re-render. The reported index is the **HCEye rule index computed
+from visual features + whitespace only** (no saliency, no OCR, no task/profile
+modifiers); it is deliberately not the full endpoint `cognitive_load_index`.
 
-- **The canonicalized visual features are stable.** Across the held-out sample
-  the five HCEye-mapped, percentile-normalized inputs mostly move < 5 % between
-  scales (e.g. `feature_congestion` ≤ 4 %, `layout_symmetry` ≤ 2 %). This is the
-  property the fix claims and it holds on real screenshots, not only synthetic
-  fixtures. Two real images show a larger residual on a single feature
-  (`visual_hierarchy` up to ~0.70 normalized on one web page,
-  `interactive_element_density` up to ~0.31 on one desktop page), consistent
-  with the known sub-pixel-resampling sensitivity of those two operators.
-- **The dominant residual is OUTSIDE the scope of this fix.** The
-  whitespace-ratio / element-detection path runs on the **native-resolution**
-  image (by design, for coordinate-accurate boxes), and it is strongly
-  scale-sensitive under raster upscaling: whitespace ratio moved by up to 0.39
-  and detected-element counts by e.g. 5→44 and 46→80. Because whitespace and
-  element density feed the HCEye index, this pushes the final
-  `cognitive_load_index` by up to ~0.067 on the worst upscaled poster image,
-  even though the visual features themselves are stable. This is a separate,
-  pre-existing scale dependence of the detection stage, not a regression of this
-  change, and it is recorded here as Future Work rather than papered over.
+What the evaluation shows:
 
-The takeaway: canonicalization removes the proven root cause of the *headline*
-scale defect (the pixel-scale dependence of `feature_congestion` and the other
-visual-feature drivers), and the synthetic re-render tests confirm the eight
-features and the endpoint are materially scale-invariant. Full endpoint
-invariance on real captures additionally requires resolving the native-scale
-detection path, which is out of scope here.
+- **The score-driving layout path is now canonical.** `whitespace_ratio` and
+  `text_density` are measured on the canonical analysis image via the production
+  helper `measure_canonical_layout`, so on the canonical path the whitespace
+  gap and the whitespace-only contribution to the index collapse relative to the
+  baseline. For each image the report gives the combined, whitespace-only and
+  visual-input-only displayed-point gaps for both paths side by side.
+- **The baseline (pre-fix) native-whitespace path is retained for comparison
+  only.** Running whitespace on the native raster reproduces the previously
+  observed strong scale sensitivity (whitespace moving by up to ~0.39 and the
+  index by up to ~0.067 on the worst upscaled poster under raster enlargement).
+  This is kept purely to reproduce/explain the baseline decomposition, not
+  because it still feeds any score.
+- **Canonical element geometry is stable.** Per-scale normalised canonical
+  bounding boxes are saved, and their 1x→2x / 1x→3x matching coverage and mean
+  IoU (greedy best-IoU one-to-one, IoU ≥ 0.5) are summarised per image.
 
-## Held-out real-UI scale validation
-
-To check the fix on real screenshots that were **not** used to pick 1280, a
-seeded UEyes sample is drawn (per category) from the images excluding the
-selection sample, and each image is evaluated at 1x/2x/3x. Sample IDs, category
-and seed are recorded in `stage1/canonical_eval/heldout_ueyes_manifest.csv`; the
-per-image numbers (eight raw features, five percentile-normalised HCEye inputs,
-whitespace ratio, detected-element count and normalized bounding boxes, and the
-final endpoint gap) are in `stage1/canonical_eval/heldout_ueyes_results.json`.
-The UEyes images themselves are not added to git.
-
-Honest caveat surfaced by this evaluation: only the eight visual features are
-computed on the canonical image. Element detection and the derived
-`whitespace_ratio` still run on the native image (by design, to keep the
-coordinate system for boxes/overlays), so that path can retain a small residual
-scale sensitivity; the held-out results report it explicitly rather than hiding
-it.
+The native detection path (bounding boxes, overlays, target selection, contrast
+and the Jokinen search model) is kept native **by design** for coordinate
+accuracy. It no longer feeds the layout score, so its native-scale behaviour is
+a deliberate architectural choice rather than an unresolved defect of the score.
 
 ## Scope / limitations
 

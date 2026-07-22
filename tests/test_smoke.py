@@ -493,12 +493,29 @@ def test_cognitive_load_fullscreen_is_valid(client):
     assert 0.0 <= score <= 100.0
 
 
-def test_cognitive_load_scale_invariance_sanity(client):
-    # The same layout at 1x and 2x resolution should read similarly: the
-    # headline must not be strongly resolution-dependent.
+def test_cognitive_load_scale_invariance_sanity(client, monkeypatch):
+    # The SAME layout re-rendered at 1x and 2x must read within 1.0 displayed
+    # point (== 0.01 on the 0-1 HCEye index): the layout score now runs on the
+    # canonical analysis image, so it is resolution-invariant.
+    #
+    # Explicitly disabled here so the check is deterministic and isolates the
+    # layout-scale path (both also degrade gracefully in CI-light):
+    #   * UMSI++ saliency (app._predict_saliency_cached) -> forced unavailable;
+    #   * OCR (cognitive.text_reader.compute_readability) -> returns None.
+    # The task/profile modifiers are identical across both requests, so the
+    # headline difference reflects only the scale behaviour of the score.
+    import app as app_module
+    import cognitive.text_reader as tr
+
+    def _no_saliency(*a, **k):
+        raise RuntimeError("saliency explicitly disabled in test")
+
+    monkeypatch.setattr(app_module, "_predict_saliency_cached", _no_saliency)
+    monkeypatch.setattr(tr, "compute_readability", lambda *a, **k: None)
+
     s1 = _headline(_cognitive_load(client, _scaled_multibox_png(1)))
     s2 = _headline(_cognitive_load(client, _scaled_multibox_png(2)))
-    assert abs(s1 - s2) <= 20.0, f"scale changed headline too much: {s1} vs {s2}"
+    assert abs(s1 - s2) <= 1.0, f"scale changed headline too much: {s1} vs {s2}"
 
 
 def test_multi_target_layout_stable_and_targets_valid(client):

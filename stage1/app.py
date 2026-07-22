@@ -1224,51 +1224,51 @@ def cognitive_load():
                 # Cosmetic only: real features are unaffected. Log, don't crash.
                 print(f"[Saliency] Overlay rendering failed (features unaffected): {e!r}")
 
-        # Step 2.5: Element-derived measurements for the HCEye stage.
-        # Detect UI elements ONCE here (reused later by the Jokinen block) and
-        # derive two real measurements the HCEye rules need:
-        #   - whitespace_ratio: 1 - (union area of element bboxes / image area).
-        #     A binary mask is used so overlapping boxes are not double-counted
-        #     (a plain area sum could saturate whitespace to 0).
-        #   - text_density: share of detected elements that carry text (OCR).
-        #     OCR is optional (EasyOCR/torch); if unavailable, text_density stays
-        #     None (a neutral value is used downstream) and the source is flagged.
+        # Step 2.5: Layout measurements for the HCEye stage — TWO explicit paths.
+        #
+        # ANALYSIS PATH (canonical, score-driving): whitespace_ratio and OCR-
+        # derived text_density are computed on a single canonical analysis image
+        # (long side 1280 px) with canonical element detection, so they share the
+        # SAME analysis scale as the eight visual features and are therefore
+        # resolution-invariant. These are the ONLY element-derived values that
+        # feed the layout experimental_complexity_index.
+        #
+        # NATIVE PATH (interaction only): the Jokinen search model, target
+        # selection, native overlays, native contrast diagnostics and the
+        # detected_elements returned to the target selector use a SEPARATE native
+        # element detection on the original image. Analysis elements are never
+        # reused as native elements.
         import cv2
-        jokinen_img = cv2.imread(str(filepath))
-        elements = None
+        native_img = cv2.imread(str(filepath))
+
+        # --- Analysis path (canonical) -----------------------------------
+        analysis_measurement = None
         whitespace_ratio = None
         text_density = None
         text_density_source = "fallback_neutral"
         readability_report = None
-        if jokinen_img is not None:
+        if native_img is not None:
+            try:
+                from canonical_layout import measure_canonical_layout
+                analysis_measurement = measure_canonical_layout(native_img)
+                whitespace_ratio = analysis_measurement.whitespace_ratio
+                text_density = analysis_measurement.text_density
+                text_density_source = analysis_measurement.text_density_source
+                # Readability boxes are on the canonical image; map ONLY their
+                # display coordinates back to native for the UI. This mapped
+                # report is display-only and never feeds the layout score.
+                readability_report = analysis_measurement.readability_report_native()
+            except Exception as e:
+                print(f"[HCEye] Canonical layout measurement unavailable: {e!r}")
+
+        # --- Native path (Jokinen / interaction) -------------------------
+        native_elements = None
+        if native_img is not None:
             try:
                 from cognitive.element_detector import detect_elements
-                elements = detect_elements(jokinen_img)
-                h_img, w_img = jokinen_img.shape[:2]
-                img_area = float(h_img * w_img) or 1.0
-                mask = np.zeros((h_img, w_img), dtype=np.uint8)
-                for e in elements:
-                    x, y, bw, bh = e["bbox"]
-                    mask[int(y):int(y + bh), int(x):int(x + bw)] = 1
-                whitespace_ratio = float(
-                    np.clip(1.0 - float(mask.sum()) / img_area, 0.0, 1.0)
-                )
+                native_elements = detect_elements(native_img)
             except Exception as e:
-                print(f"[HCEye] Whitespace/element measurement unavailable: {e!r}")
-            try:
-                # OCR runs ONCE here; the full report is reused for the
-                # readability_report below (no second, expensive OCR pass).
-                from cognitive.text_reader import compute_readability
-                if elements:
-                    readability_report = compute_readability(jokinen_img, elements)
-                    rr = readability_report
-                    if rr and rr.get("n_elements"):
-                        text_density = float(rr["n_text_elements"]) / float(
-                            max(rr["n_elements"], 1)
-                        )
-                        text_density_source = "ocr"
-            except Exception as e:
-                print(f"[HCEye] OCR text density unavailable (neutral fallback): {e!r}")
+                print(f"[HCEye] Native element detection unavailable: {e!r}")
 
         # Step 3: HCEye cognitive load features (h∈ℝ⁶)
         lookup_path = Path(__file__).parent.parent / "hceye" / "sensitivity_lookup.json"
@@ -1336,23 +1336,23 @@ def cognitive_load():
             import cv2
             from cognitive.jokinen_model import JokinenSearchModel, JokinenParams
             from cognitive.element_detector import detect_elements
-            # Reuse the image and element boxes already loaded in Step 2.5.
+            # Reuse the native image and native element boxes from Step 2.5.
             # Only re-read/re-detect if that earlier step failed for any reason.
-            if jokinen_img is None:
-                jokinen_img = cv2.imread(str(filepath))
-            if jokinen_img is None:
+            if native_img is None:
+                native_img = cv2.imread(str(filepath))
+            if native_img is None:
                 raise ValueError(f"Cannot read image for Jokinen search model: {filepath}")
-            if elements is None:
-                elements = detect_elements(jokinen_img)
+            if native_elements is None:
+                native_elements = detect_elements(native_img)
             # Reuse the already-computed UMSI++ heatmap when saliency succeeded
             # (avoids re-running the slow saliency step). s is not None implies
             # the saliency block ran past the heatmap assignment above.
             jokinen_saliency = heatmap if s is not None else None
             jokinen_model = JokinenSearchModel(JokinenParams())
             jresult = jokinen_model.predict_search_times(
-                elements=elements,
+                elements=native_elements,
                 saliency_map=jokinen_saliency,
-                image_shape=jokinen_img.shape[:2],
+                image_shape=native_img.shape[:2],
                 screen_width_cm=screen_w_cm,
                 screen_height_cm=screen_h_cm,
                 viewing_distance_cm=viewing_cm,
@@ -1404,15 +1404,16 @@ def cognitive_load():
 
             # Accessibility / legibility report (WCAG 2.1, ISO 15008): the
             # element detector already measures a per-element contrast ratio.
+            # This is a NATIVE contrast diagnostic, so it uses native_elements.
             # Here we summarise it and list the worst offenders so the designer
             # sees WHICH elements are hard to read, not just an average. We use
             # the 3:1 threshold (WCAG AA for large text / non-text UI elements,
             # also the common ISO 15008 in-vehicle minimum).
-            if elements:
+            if native_elements:
                 wcag_threshold = 3.0
-                ratios = [float(e.get("contrast_ratio", 1.0)) for e in elements]
+                ratios = [float(e.get("contrast_ratio", 1.0)) for e in native_elements]
                 failing = sorted(
-                    (e for e in elements
+                    (e for e in native_elements
                      if float(e.get("contrast_ratio", 1.0)) < wcag_threshold),
                     key=lambda e: float(e.get("contrast_ratio", 1.0)),
                 )
@@ -1426,9 +1427,9 @@ def cognitive_load():
                 n_pass = sum(1 for r in ratios if r >= wcag_threshold)
                 contrast_report = {
                     "wcag_threshold": wcag_threshold,
-                    "n_elements": len(elements),
+                    "n_elements": len(native_elements),
                     "n_pass": n_pass,
-                    "n_fail": len(elements) - n_pass,
+                    "n_fail": len(native_elements) - n_pass,
                     "min_contrast_ratio": round(min(ratios), 2),
                     "mean_contrast_ratio": round(float(sum(ratios) / len(ratios)), 2),
                     # Lowest-contrast (hardest to read) elements first (top 5).
@@ -1467,11 +1468,16 @@ def cognitive_load():
             "cognitive_load_features": cog_dict,
             "hceye_inputs": {
                 # Real element-derived measurements fed into the HCEye rules.
+                # These come from the CANONICAL analysis path (long side 1280),
+                # so they share the analysis scale of the eight visual features.
                 # text_density_source flags whether OCR ran or a neutral fallback
                 # was used (mirrors the saliency "missing weights" transparency).
                 "whitespace_ratio": whitespace_ratio,
                 "text_density": text_density,
                 "text_density_source": text_density_source,
+                "analysis_provenance": (
+                    analysis_measurement.as_dict() if analysis_measurement else None
+                ),
             },
             "task_descriptor": t_dict,
             "big_five_profile": profile,
@@ -1506,10 +1512,11 @@ def cognitive_load():
             "readability_report": readability_report,
             # Lightweight list of every detected element's box, so the target
             # selector in the UI can offer the detected elements as one-tap
-            # suggestions (in addition to free drag-box selection).
+            # suggestions (in addition to free drag-box selection). These are
+            # NATIVE-coordinate elements (target selection is the native path).
             "detected_elements": [
                 {"id": e["id"], "bbox": list(e["bbox"]), "center": list(e["center"])}
-                for e in (elements or [])
+                for e in (native_elements or [])
             ],
         })
     except ImageTooSmallError as e:
