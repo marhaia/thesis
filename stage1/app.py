@@ -34,7 +34,7 @@ from flask import Flask, jsonify, request, send_from_directory
 # Add stage1 and project root to path
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from visual_complexity import compute_complexity_vector
+from visual_complexity import compute_complexity_vector, CANONICAL_ANALYSIS_VERSION
 from stage2.coherence_check import run_coherence_check
 
 # Lazy-load saliency model (heavy TF import — only when needed)
@@ -326,13 +326,18 @@ def _compute_visual_cached(image_hash, image_path):
     single most expensive step in the pipeline, so caching it by image hash
     gives the largest speedup for repeated analyses of the same screenshot.
     """
-    cached = _visual_cache.get(image_hash)
+    # The cache key includes the canonicalisation-contract version so that a
+    # result computed by an earlier extractor (a different canonical resolution
+    # or preprocessing) can never be silently served after the preprocessing
+    # change. Bumping CANONICAL_ANALYSIS_VERSION invalidates every prior entry.
+    cache_key = f"{image_hash}:{CANONICAL_ANALYSIS_VERSION}"
+    cached = _visual_cache.get(cache_key)
     if cached is not None:
-        _visual_cache.move_to_end(image_hash)  # mark as most-recently-used
+        _visual_cache.move_to_end(cache_key)  # mark as most-recently-used
         return cached, True
 
     results = compute_complexity_vector(str(image_path))
-    _visual_cache[image_hash] = results
+    _visual_cache[cache_key] = results
     # Evict the oldest entries once the cache grows beyond its size limit.
     while len(_visual_cache) > _visual_cache_max:
         _visual_cache.popitem(last=False)

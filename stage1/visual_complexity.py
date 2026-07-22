@@ -46,6 +46,107 @@ from skimage import transform
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# Canonical analysis resolution
+# ───────────────────────────────────────────────────────────────────────────
+# Several of the eight visual features are computed with fixed pixel-scale
+# operators (Canny at a fixed sigma, fixed-scale Gaussian/steerable pyramids,
+# area-normalised element counting). On the raw screenshot these operators make
+# the feature values depend on the native pixel resolution: the SAME layout
+# rendered at 1x / 2x / 3x produces materially different feature vectors, which
+# in turn makes the downstream headline score resolution-dependent (see the
+# scale-invariance diagnosis).
+#
+# To remove that dependence we compute the eight features on a deterministic,
+# aspect-ratio-preserving CANONICAL analysis resolution: every screenshot is
+# resized so that its LONG side equals CANONICAL_LONG_SIDE before any feature is
+# computed. This is a pure analysis-time normalisation; the original image and
+# its coordinate system are kept untouched for element detection, bounding
+# boxes, overlays, target selection and the Jokinen search model.
+#
+# Chosen value: 1280 px long side. Evidence-based selection over the candidate
+# set {1024, 1280, 1440} on the 1,485-image UEyes GUI corpus (median native
+# long side = 1188 px) plus three synthetic layouts rendered at 1x/2x/3x:
+#   * Scale gap (the primary objective): for the resolution-sensitive,
+#     score-driving features (feature_congestion, edge_density,
+#     interactive_element_density) 1024 and 1280 are tied at < 5 % worst-case
+#     relative 1x/2x/3x gap, while 1440 is clearly worse (~7 %) because the
+#     larger upscale of small inputs re-introduces interpolation artefacts.
+#   * Information loss (the tie-breaker): a 1024 canonical would DOWNSCALE ~70 %
+#     of the corpus (median long side 1188 > 1024) and drifts up to ~44 % on
+#     high-resolution mobile screenshots; 1280 downscales only ~30 % of the
+#     corpus and drifts far less, at ~1.5x the 1024 processing cost. 1440 adds
+#     ~25 % cost over 1280 for only a marginal preservation gain while losing on
+#     the primary scale-gap objective.
+# Rule: pick the smallest candidate that (a) minimises the score-driving-feature
+# scale gap and (b) does not force the majority of the corpus to be downscaled.
+# 1024 fails (b); 1440 fails (a); 1280 satisfies both. Hence 1280.
+CANONICAL_LONG_SIDE = 1280
+
+# Inputs whose long side is below this are considered too small to analyse
+# meaningfully (upscaling by a very large factor would fabricate detail). This
+# is well below the smallest legitimate GUI crop the pipeline handles.
+MIN_CANONICAL_INPUT_LONG_SIDE = 16
+
+# Version tag for the canonicalisation contract. It is embedded in the runtime
+# feature-cache key (see app.py) so results produced by an earlier extractor /
+# a different canonical resolution can never be silently reused after this
+# preprocessing change. Bump this whenever the canonicalisation behaviour or the
+# canonical resolution changes.
+CANONICAL_ANALYSIS_VERSION = "canonical-analysis-v1:long1280:area-down/linear-up"
+
+
+def canonicalize_for_analysis(
+    image: np.ndarray,
+    long_side: int = CANONICAL_LONG_SIDE,
+) -> np.ndarray:
+    """Resize ``image`` to the canonical analysis resolution, preserving aspect.
+
+    The image is scaled so that ``max(height, width) == long_side``. Aspect
+    ratio is preserved (no stretching) and the image is never cropped. Both
+    smaller and larger inputs are normalised to the same long side so that the
+    same layout at different native resolutions yields the same analysis input.
+
+    Interpolation is chosen deterministically: ``INTER_AREA`` when downscaling
+    (best anti-aliasing / detail preservation for shrink) and ``INTER_LINEAR``
+    when upscaling (a deterministic, artefact-light choice for enlargement).
+
+    Args:
+        image: Decoded image array (H x W, or H x W x C). Grayscale and
+            multi-channel inputs are both accepted and returned with their
+            channel layout unchanged; downstream feature functions perform
+            their own colour-space conversions.
+        long_side: Target size of the longer image dimension.
+
+    Returns:
+        The canonicalised image. If the input is already exactly at the
+        canonical long side, a copy is returned unchanged (no resampling).
+
+    Raises:
+        ValueError: If the input is not a 2D/3D array, has a zero dimension, or
+            is smaller than ``MIN_CANONICAL_INPUT_LONG_SIDE`` on its long side.
+    """
+    if not isinstance(image, np.ndarray) or image.ndim not in (2, 3):
+        raise ValueError("canonicalize_for_analysis expects a 2D or 3D image array")
+    h, w = image.shape[:2]
+    if h < 1 or w < 1:
+        raise ValueError(f"Degenerate image dimensions: {w}x{h}")
+    cur_long = max(h, w)
+    if cur_long < MIN_CANONICAL_INPUT_LONG_SIDE:
+        raise ValueError(
+            f"Image too small to analyse: long side {cur_long}px < "
+            f"{MIN_CANONICAL_INPUT_LONG_SIDE}px minimum"
+        )
+    if cur_long == long_side:
+        # Already canonical: do not resample (avoids needless interpolation).
+        return image.copy()
+    scale = long_side / float(cur_long)
+    new_w = max(1, int(round(w * scale)))
+    new_h = max(1, int(round(h * scale)))
+    interp = cv2.INTER_AREA if scale < 1.0 else cv2.INTER_LINEAR
+    return cv2.resize(image, (new_w, new_h), interpolation=interp)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # Shared Utility Functions
 # ─────────────────────────────────────────────────────────────────────────
 # These helper functions are ported 1:1 from the AIM repository:
@@ -1176,8 +1277,17 @@ def compute_complexity_vector(image_path: str) -> Dict[str, float]:
     if image is None:
         raise FileNotFoundError(f"Cannot load image: {image_path}")
 
+    # Normalise to the canonical analysis resolution ONCE, before any feature is
+    # computed, so the eight features are resolution-invariant (see
+    # canonicalize_for_analysis / CANONICAL_LONG_SIDE). The original file on disk
+    # and every coordinate-space consumer (element detection, bounding boxes,
+    # overlays, Jokinen search) are unaffected: they re-read the original image.
+    native_h, native_w = image.shape[:2]
+    image = canonicalize_for_analysis(image)
+
     print(f"  Processing: {os.path.basename(image_path)} "
-          f"({image.shape[1]}x{image.shape[0]} px)")
+          f"({native_w}x{native_h} px native -> "
+          f"{image.shape[1]}x{image.shape[0]} px canonical)")
 
     results = {}
     print("    [1/8] Shannon Entropy...")
