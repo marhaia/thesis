@@ -87,12 +87,30 @@ CANONICAL_LONG_SIDE = 1280
 # is well below the smallest legitimate GUI crop the pipeline handles.
 MIN_CANONICAL_INPUT_LONG_SIDE = 16
 
+# Both image dimensions must clear this minimum. Validating the SHORT side too
+# rejects degenerate strip inputs (e.g. an 8x1280 sliver) whose long side would
+# otherwise pass the long-side check while the aspect ratio is unusable for the
+# fixed-scale feature operators.
+MIN_CANONICAL_INPUT_SHORT_SIDE = 16
+
 # Version tag for the canonicalisation contract. It is embedded in the runtime
 # feature-cache key (see app.py) so results produced by an earlier extractor /
 # a different canonical resolution can never be silently reused after this
-# preprocessing change. Bump this whenever the canonicalisation behaviour or the
-# canonical resolution changes.
-CANONICAL_ANALYSIS_VERSION = "canonical-analysis-v1:long1280:area-down/linear-up"
+# preprocessing change. Bump this whenever the canonicalisation behaviour, the
+# canonical resolution, or the input-validation contract changes.
+CANONICAL_ANALYSIS_VERSION = (
+    "canonical-analysis-v1.1:long1280:both-dims-min16:area-down/linear-up"
+)
+
+
+class ImageTooSmallError(ValueError):
+    """Raised when an input image is too small to analyse at canonical scale.
+
+    This is an EXPECTED, client-correctable input condition (the caller uploaded
+    a degenerate / sub-minimum image), so the HTTP layer maps it to a documented
+    400 response rather than a generic 500. It subclasses ``ValueError`` for
+    backward compatibility with callers that catch ``ValueError``.
+    """
 
 
 def canonicalize_for_analysis(
@@ -122,24 +140,28 @@ def canonicalize_for_analysis(
         canonical long side, a copy is returned unchanged (no resampling).
 
     Raises:
-        ValueError: If the input is not a 2D/3D array, has a zero dimension, or
-            is smaller than ``MIN_CANONICAL_INPUT_LONG_SIDE`` on its long side.
+        TypeError: If the input is not a 2D/3D numpy array (programming error).
+        ImageTooSmallError: If either image dimension is zero or below the
+            configured minimum (an expected, client-correctable input problem).
     """
     if not isinstance(image, np.ndarray) or image.ndim not in (2, 3):
-        raise ValueError("canonicalize_for_analysis expects a 2D or 3D image array")
+        raise TypeError("canonicalize_for_analysis expects a 2D or 3D image array")
     h, w = image.shape[:2]
-    if h < 1 or w < 1:
-        raise ValueError(f"Degenerate image dimensions: {w}x{h}")
-    cur_long = max(h, w)
-    if cur_long < MIN_CANONICAL_INPUT_LONG_SIDE:
-        raise ValueError(
-            f"Image too small to analyse: long side {cur_long}px < "
-            f"{MIN_CANONICAL_INPUT_LONG_SIDE}px minimum"
+    long_dim = max(h, w)
+    short_dim = min(h, w)
+    # Validate BOTH dimensions, not only the long side, so degenerate strips are
+    # rejected rather than silently analysed.
+    if short_dim < MIN_CANONICAL_INPUT_SHORT_SIDE or \
+            long_dim < MIN_CANONICAL_INPUT_LONG_SIDE:
+        raise ImageTooSmallError(
+            f"Image too small to analyse: dimensions {w}x{h} "
+            f"(min short side {MIN_CANONICAL_INPUT_SHORT_SIDE}px, "
+            f"min long side {MIN_CANONICAL_INPUT_LONG_SIDE}px)"
         )
-    if cur_long == long_side:
+    if long_dim == long_side:
         # Already canonical: do not resample (avoids needless interpolation).
         return image.copy()
-    scale = long_side / float(cur_long)
+    scale = long_side / float(long_dim)
     new_w = max(1, int(round(w * scale)))
     new_h = max(1, int(round(h * scale)))
     interp = cv2.INTER_AREA if scale < 1.0 else cv2.INTER_LINEAR

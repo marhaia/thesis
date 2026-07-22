@@ -34,7 +34,11 @@ from flask import Flask, jsonify, request, send_from_directory
 # Add stage1 and project root to path
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from visual_complexity import compute_complexity_vector, CANONICAL_ANALYSIS_VERSION
+from visual_complexity import (
+    compute_complexity_vector,
+    CANONICAL_ANALYSIS_VERSION,
+    ImageTooSmallError,
+)
 from stage2.coherence_check import run_coherence_check
 
 # Lazy-load saliency model (heavy TF import — only when needed)
@@ -432,6 +436,16 @@ def _server_error(exc):
     return jsonify({"error": "Internal server error"}), 500
 
 
+def _too_small_error(exc):
+    """Return a documented JSON 400 for an image that is too small to analyse.
+
+    Unlike ``_server_error`` this is an EXPECTED, client-correctable condition
+    (the upload is degenerate / below the minimum analysable size), so the
+    message is safe to surface to the client and the status code is 400.
+    """
+    return jsonify({"error": str(exc)}), 400
+
+
 @app.route("/")
 def index():
     from flask import make_response
@@ -470,6 +484,8 @@ def analyze():
         results["filename"] = file.filename
         results["visual_cache_hit"] = cache_hit
         return jsonify(results)
+    except ImageTooSmallError as e:
+        return _too_small_error(e)
     except Exception as e:
         return _server_error(e)
     finally:
@@ -1496,6 +1512,8 @@ def cognitive_load():
                 for e in (elements or [])
             ],
         })
+    except ImageTooSmallError as e:
+        return _too_small_error(e)
     except Exception as e:
         return _server_error(e)
     finally:

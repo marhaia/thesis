@@ -1,0 +1,48 @@
+{
+  "seed": 20240607,
+  "selection_ids": [
+    "003eb9",
+    "7f066d",
+    "006450",
+    "78666b",
+    "00398c",
+    "88c9d1",
+    "009085",
+    "81627a"
+  ],
+  "scale_objective_source": "synthetic re-rendered fixtures",
+  "scale_gap": [
+    {
+      "candidate": 1024,
+      "mean_rel_gap": 0.00720489683879055,
+      "worst_rel_gap": 0.04433181281965261
+    },
+    {
+      "candidate": 1280,
+      "mean_rel_gap": 0.00725530943423306,
+      "worst_rel_gap": 0.04379113960324474
+    },
+    {
+      "candidate": 1440,
+      "mean_rel_gap": 0.013177926111630914,
+      "worst_rel_gap": 0.06663627391392996
+    }
+  ],
+  "ueyes_native_to_candidate_perturbation": [
+    {
+      "candidate": 1024,
+      "mean_rel_perturbation": 0.12984952110528028,
+      "worst_rel_perturbation": 1.1141868512110729
+    },
+    {
+      "candidate": 1280,
+      "mean_rel_perturbation": 0.10719562421146552,
+      "worst_rel_perturbation": 0.8725298705497259
+    },
+    {
+      "candidate": 1440,
+      "mean_rel_perturbation": 0.1373882115387649,
+      "worst_rel_perturbation": 1.1145846856905461
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+candidate_long_side,driver_scale_mean_rel_gap,driver_scale_worst_rel_gap,ueyes_mean_rel_perturbation,ueyes_worst_rel_perturbation
+1024,0.007205,0.044332,0.129850,1.114187
+1280,0.007255,0.043791,0.107196,0.872530
+1440,0.013178,0.066636,0.137388,1.114585

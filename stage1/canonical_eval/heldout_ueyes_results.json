@@ -1,0 +1,789 @@
+{
+  "seed": 20240607,
+  "results": [
+    {
+      "image_id": "1f3437",
+      "category": "desktop",
+      "per_scale": {
+        "1": {
+          "raw_features": {
+            "shannon_entropy": 1.1980979442596436,
+            "edge_density": 0.008760228064066853,
+            "feature_congestion": 6.5341619106688436,
+            "subband_entropy": 1.7147992787632096,
+            "layout_symmetry": 0.4202877270749308,
+            "chromatic_coherence": 0.3387185751765657,
+            "visual_hierarchy": 0.10733527005886001,
+            "interactive_element_density": 0.03264275766016713
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.04376947959718766,
+            "feature_congestion": 0.9041856925802478,
+            "interactive_element_density": 0.09360991398793392,
+            "layout_symmetry": 0.6800923156322465,
+            "visual_hierarchy": 0.03066619439554055
+          },
+          "whitespace_ratio": 0.9942090363320355,
+          "element_count": 1,
+          "norm_covered_ratio": 0.005790963667964499,
+          "endpoint_load_index": 0.49478524923324585
+        },
+        "2": {
+          "raw_features": {
+            "shannon_entropy": 1.247446060180664,
+            "edge_density": 0.008696030640668524,
+            "feature_congestion": 6.223588643708249,
+            "subband_entropy": 1.7283067533323506,
+            "layout_symmetry": 0.42122771918606017,
+            "chromatic_coherence": 0.33942199761385206,
+            "visual_hierarchy": 0.1073468634700435,
+            "interactive_element_density": 0.02176183844011142
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.0433776514447563,
+            "feature_congestion": 0.8688434627912367,
+            "interactive_element_density": 0.06743584101520321,
+            "layout_symmetry": 0.6814379634053886,
+            "visual_hierarchy": 0.030670629973501447
+          },
+          "whitespace_ratio": 0.9700449185495521,
+          "element_count": 10,
+          "norm_covered_ratio": 0.029955081450447896,
+          "endpoint_load_index": 0.48093026876449585
+        },
+        "3": {
+          "raw_features": {
+            "shannon_entropy": 1.2300732135772705,
+            "edge_density": 0.008719968662952646,
+            "feature_congestion": 6.352879831552811,
+            "subband_entropy": 1.719798061171143,
+            "layout_symmetry": 0.42081939124507417,
+            "chromatic_coherence": 0.33936482396124346,
+            "visual_hierarchy": 0.10957020465110616,
+            "interactive_element_density": 0.03264275766016713
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.04352375685752731,
+            "feature_congestion": 0.8835563803427544,
+            "interactive_element_density": 0.09360991398793392,
+            "layout_symmetry": 0.6808534206438123,
+            "visual_hierarchy": 0.031521268580740835
+          },
+          "whitespace_ratio": 0.9734945560556344,
+          "element_count": 21,
+          "norm_covered_ratio": 0.026505443944365603,
+          "endpoint_load_index": 0.48751115798950195
+        }
+      },
+      "raw_rel_gaps": {
+        "shannon_entropy": 0.04027741165139834,
+        "edge_density": 0.007357525876044403,
+        "feature_congestion": 0.04875400664793129,
+        "subband_entropy": 0.007848765534938207,
+        "layout_symmetry": 0.0022339368680970935,
+        "chromatic_coherence": 0.0020739617879139307,
+        "visual_hierarchy": 0.02067773455195951,
+        "interactive_element_density": 0.375
+      },
+      "normalized_rel_gaps": {
+        "edge_density": 0.008995763908778378,
+        "feature_congestion": 0.03991088859803172,
+        "interactive_element_density": 0.30834663618246544,
+        "layout_symmetry": 0.001976584184478238,
+        "visual_hierarchy": 0.027625191021186685
+      },
+      "whitespace_ratio_abs_gap": 0.024164117782483396,
+      "element_count_range": [
+        1,
+        21
+      ],
+      "endpoint_index_abs_gap": 0.01385498046875
+    },
+    {
+      "image_id": "9dd93b",
+      "category": "desktop",
+      "per_scale": {
+        "1": {
+          "raw_features": {
+            "shannon_entropy": 2.777371406555176,
+            "edge_density": 0.013565538194444445,
+            "feature_congestion": 10.58394759722306,
+            "subband_entropy": 2.248252054084427,
+            "layout_symmetry": 0.353500288703633,
+            "chromatic_coherence": 0.2567549125496573,
+            "visual_hierarchy": 0.573164407102975,
+            "interactive_element_density": 0.043402777777777776
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.1281613818807505,
+            "feature_congestion": 1.0,
+            "interactive_element_density": 0.1194931639276343,
+            "layout_symmetry": 0.5844826114079966,
+            "visual_hierarchy": 0.7281155302117527
+          },
+          "whitespace_ratio": 0.9914709592926977,
+          "element_count": 3,
+          "norm_covered_ratio": 0.008529040707302316,
+          "endpoint_load_index": 0.5302156805992126
+        },
+        "2": {
+          "raw_features": {
+            "shannon_entropy": 2.7828660011291504,
+            "edge_density": 0.013439670138888889,
+            "feature_congestion": 9.932825939610694,
+            "subband_entropy": 2.2807040007463955,
+            "layout_symmetry": 0.3508921627074325,
+            "chromatic_coherence": 0.2556441469051106,
+            "visual_hierarchy": 0.5844995833590917,
+            "interactive_element_density": 0.043402777777777776
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.12556182337173177,
+            "feature_congestion": 1.0,
+            "interactive_element_density": 0.1194931639276343,
+            "layout_symmetry": 0.5807489429044974,
+            "visual_hierarchy": 0.7530302783454033
+          },
+          "whitespace_ratio": 0.9894079098730567,
+          "element_count": 11,
+          "norm_covered_ratio": 0.010592090126943288,
+          "endpoint_load_index": 0.5304139256477356
+        },
+        "3": {
+          "raw_features": {
+            "shannon_entropy": 2.809054374694824,
+            "edge_density": 0.013610026041666667,
+            "feature_congestion": 10.125774018052569,
+            "subband_entropy": 2.259848224460565,
+            "layout_symmetry": 0.35117816872612245,
+            "chromatic_coherence": 0.2567184522140453,
+            "visual_hierarchy": 0.5835589624076989,
+            "interactive_element_density": 0.043402777777777776
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.12908019135376572,
+            "feature_congestion": 1.0,
+            "interactive_element_density": 0.1194931639276343,
+            "layout_symmetry": 0.5811583754493015,
+            "visual_hierarchy": 0.7514162062453967
+          },
+          "whitespace_ratio": 0.9888158787385397,
+          "element_count": 14,
+          "norm_covered_ratio": 0.01118412126146029,
+          "endpoint_load_index": 0.5303547382354736
+        }
+      },
+      "raw_rel_gaps": {
+        "shannon_entropy": 0.011356863506546981,
+        "edge_density": 0.012583153001522846,
+        "feature_congestion": 0.06374682031049378,
+        "subband_entropy": 0.014340646155152832,
+        "layout_symmetry": 0.007412462832268405,
+        "chromatic_coherence": 0.0043326239268818385,
+        "visual_hierarchy": 0.019529680970667457,
+        "interactive_element_density": 0.0
+      },
+      "normalized_rel_gaps": {
+        "edge_density": 0.027573172128769897,
+        "feature_congestion": 0.0,
+        "interactive_element_density": 0.0,
+        "layout_symmetry": 0.00641380559954639,
+        "visual_hierarchy": 0.03347913469161218
+      },
+      "whitespace_ratio_abs_gap": 0.0026550805541579736,
+      "element_count_range": [
+        3,
+        14
+      ],
+      "endpoint_index_abs_gap": 0.00019824504852294922
+    },
+    {
+      "image_id": "62f428",
+      "category": "mobile",
+      "per_scale": {
+        "1": {
+          "raw_features": {
+            "shannon_entropy": 1.535858392715454,
+            "edge_density": 0.009045138888888889,
+            "feature_congestion": 7.4994716250881055,
+            "subband_entropy": 1.218053228275005,
+            "layout_symmetry": 0.8012163719896004,
+            "chromatic_coherence": 0.42196918826051555,
+            "visual_hierarchy": 0.6420553401611733,
+            "interactive_element_density": 0.18446180555555555
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.04550842917161282,
+            "feature_congestion": 0.9600149047955069,
+            "interactive_element_density": 0.49,
+            "layout_symmetry": 0.9630805918091989,
+            "visual_hierarchy": 0.8517939100840344
+          },
+          "whitespace_ratio": 0.9301350308641976,
+          "element_count": 8,
+          "norm_covered_ratio": 0.06986496913580242,
+          "endpoint_load_index": 0.512554407119751
+        },
+        "2": {
+          "raw_features": {
+            "shannon_entropy": 1.5622138977050781,
+            "edge_density": 0.009019097222222222,
+            "feature_congestion": 7.19354599568507,
+            "subband_entropy": 1.2083096174244978,
+            "layout_symmetry": 0.8036696875314299,
+            "chromatic_coherence": 0.4206806846818407,
+            "visual_hierarchy": 0.6353810562238815,
+            "interactive_element_density": 0.18446180555555555
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.04534948419226495,
+            "feature_congestion": 0.9545701732549503,
+            "interactive_element_density": 0.49,
+            "layout_symmetry": 0.9636553988733236,
+            "visual_hierarchy": 0.8403410762142883
+          },
+          "whitespace_ratio": 0.9440600887345679,
+          "element_count": 22,
+          "norm_covered_ratio": 0.055939911265432074,
+          "endpoint_load_index": 0.507793664932251
+        },
+        "3": {
+          "raw_features": {
+            "shannon_entropy": 1.5539076328277588,
+            "edge_density": 0.009034288194444445,
+            "feature_congestion": 7.345227712955302,
+            "subband_entropy": 1.2309745171377104,
+            "layout_symmetry": 0.80239551955689,
+            "chromatic_coherence": 0.42112541736415543,
+            "visual_hierarchy": 0.6442644779265873,
+            "interactive_element_density": 0.18446180555555555
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.04544220209688454,
+            "feature_congestion": 0.9572697386093096,
+            "interactive_element_density": 0.49,
+            "layout_symmetry": 0.9633568637928746,
+            "visual_hierarchy": 0.8555847119229106
+          },
+          "whitespace_ratio": 0.9651914008916324,
+          "element_count": 31,
+          "norm_covered_ratio": 0.034808599108367644,
+          "endpoint_load_index": 0.5054664611816406
+        }
+      },
+      "raw_rel_gaps": {
+        "shannon_entropy": 0.01699631474627326,
+        "edge_density": 0.002882998318251048,
+        "feature_congestion": 0.04164473506447872,
+        "subband_entropy": 0.018591311764274962,
+        "layout_symmetry": 0.0030573683982193646,
+        "chromatic_coherence": 0.003058700993502534,
+        "visual_hierarchy": 0.013868061082952557,
+        "interactive_element_density": 0.0
+      },
+      "normalized_rel_gaps": {
+        "edge_density": 0.003498419179115614,
+        "feature_congestion": 0.005687681190189106,
+        "interactive_element_density": 0.0,
+        "layout_symmetry": 0.0005966663630560621,
+        "visual_hierarchy": 0.017949740372850007
+      },
+      "whitespace_ratio_abs_gap": 0.03505637002743478,
+      "element_count_range": [
+        8,
+        31
+      ],
+      "endpoint_index_abs_gap": 0.0070879459381103516
+    },
+    {
+      "image_id": "e129e6",
+      "category": "mobile",
+      "per_scale": {
+        "1": {
+          "raw_features": {
+            "shannon_entropy": 2.274801731109619,
+            "edge_density": 0.013455946180555555,
+            "feature_congestion": 8.388527382598422,
+            "subband_entropy": 1.6504823710977854,
+            "layout_symmetry": 0.7615406861724168,
+            "chromatic_coherence": 0.4080940800183052,
+            "visual_hierarchy": 0.6268618232362595,
+            "interactive_element_density": 0.2604166666666667
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.12589797317893242,
+            "feature_congestion": 0.97583793320171,
+            "interactive_element_density": 0.607671601615074,
+            "layout_symmetry": 0.9537846557207228,
+            "visual_hierarchy": 0.8257223753886106
+          },
+          "whitespace_ratio": 0.8944309413580247,
+          "element_count": 15,
+          "norm_covered_ratio": 0.1055690586419753,
+          "endpoint_load_index": 0.5207773447036743
+        },
+        "2": {
+          "raw_features": {
+            "shannon_entropy": 2.279897451400757,
+            "edge_density": 0.013275824652777778,
+            "feature_congestion": 8.058818632910327,
+            "subband_entropy": 1.6721297060384304,
+            "layout_symmetry": 0.7631439827320378,
+            "chromatic_coherence": 0.40743726126362545,
+            "visual_hierarchy": 0.6297918895015484,
+            "interactive_element_density": 0.2604166666666667
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.1221779153125781,
+            "feature_congestion": 0.969969920011291,
+            "interactive_element_density": 0.607671601615074,
+            "layout_symmetry": 0.954160304989088,
+            "visual_hierarchy": 0.8307502648939105
+          },
+          "whitespace_ratio": 0.9384818672839507,
+          "element_count": 33,
+          "norm_covered_ratio": 0.061518132716049334,
+          "endpoint_load_index": 0.5107771158218384
+        },
+        "3": {
+          "raw_features": {
+            "shannon_entropy": 2.2749476432800293,
+            "edge_density": 0.013280164930555555,
+            "feature_congestion": 8.231641536701902,
+            "subband_entropy": 1.6483576605015384,
+            "layout_symmetry": 0.7622638258823461,
+            "chromatic_coherence": 0.4078218459388868,
+            "visual_hierarchy": 0.6233675362078714,
+            "interactive_element_density": 0.2604166666666667
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.12226755526116494,
+            "feature_congestion": 0.9730457470253294,
+            "interactive_element_density": 0.607671601615074,
+            "layout_symmetry": 0.9539540859495415,
+            "visual_hierarchy": 0.8197263031199837
+          },
+          "whitespace_ratio": 0.9315406378600823,
+          "element_count": 36,
+          "norm_covered_ratio": 0.06845936213991766,
+          "endpoint_load_index": 0.5135367512702942
+        }
+      },
+      "raw_rel_gaps": {
+        "shannon_entropy": 0.002238353060320052,
+        "edge_density": 0.013505084745762612,
+        "feature_congestion": 0.04007969317913458,
+        "subband_entropy": 0.014346523993237149,
+        "layout_symmetry": 0.0021031910818399857,
+        "chromatic_coherence": 0.0016107010507045248,
+        "visual_hierarchy": 0.01025151172724206,
+        "interactive_element_density": 0.0
+      },
+      "normalized_rel_gaps": {
+        "edge_density": 0.030134659563505063,
+        "feature_congestion": 0.006031148520028372,
+        "interactive_element_density": 0.0,
+        "layout_symmetry": 0.00039377622575857745,
+        "visual_hierarchy": 0.013355908017768816
+      },
+      "whitespace_ratio_abs_gap": 0.044050925925925966,
+      "element_count_range": [
+        15,
+        36
+      ],
+      "endpoint_index_abs_gap": 0.010000228881835938
+    },
+    {
+      "image_id": "0e136e",
+      "category": "poster",
+      "per_scale": {
+        "1": {
+          "raw_features": {
+            "shannon_entropy": 4.932934761047363,
+            "edge_density": 0.07105557817589576,
+            "feature_congestion": 34.698712891873114,
+            "subband_entropy": 3.9809028324188827,
+            "layout_symmetry": 0.33591985219198284,
+            "chromatic_coherence": 0.4117276302627424,
+            "visual_hierarchy": 0.4990443731737902,
+            "interactive_element_density": 0.0
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.9504653597245364,
+            "feature_congestion": 1.0,
+            "interactive_element_density": 0.0,
+            "layout_symmetry": 0.559315298871356,
+            "visual_hierarchy": 0.5586060285893988
+          },
+          "whitespace_ratio": 1.0,
+          "element_count": 0,
+          "norm_covered_ratio": 0.0,
+          "endpoint_load_index": 0.49223777651786804
+        },
+        "2": {
+          "raw_features": {
+            "shannon_entropy": 5.20978307723999,
+            "edge_density": 0.0707680171009772,
+            "feature_congestion": 32.26159331821411,
+            "subband_entropy": 4.01651128839592,
+            "layout_symmetry": 0.343606325206836,
+            "chromatic_coherence": 0.40793097189336847,
+            "visual_hierarchy": 0.5065379182174861,
+            "interactive_element_density": 0.0
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.9501917268121595,
+            "feature_congestion": 1.0,
+            "interactive_element_density": 0.0,
+            "layout_symmetry": 0.5703188862135173,
+            "visual_hierarchy": 0.5757434611889998
+          },
+          "whitespace_ratio": 1.0,
+          "element_count": 0,
+          "norm_covered_ratio": 0.0,
+          "endpoint_load_index": 0.4918762445449829
+        },
+        "3": {
+          "raw_features": {
+            "shannon_entropy": 5.118518829345703,
+            "edge_density": 0.07094615228013029,
+            "feature_congestion": 33.24820978723214,
+            "subband_entropy": 4.009370340959169,
+            "layout_symmetry": 0.3408526362163742,
+            "chromatic_coherence": 0.4095440768003754,
+            "visual_hierarchy": 0.5044546795684781,
+            "interactive_element_density": 0.0
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.9503612339260212,
+            "feature_congestion": 1.0,
+            "interactive_element_density": 0.0,
+            "layout_symmetry": 0.5663768366855814,
+            "visual_hierarchy": 0.5709791791665287
+          },
+          "whitespace_ratio": 1.0,
+          "element_count": 0,
+          "norm_covered_ratio": 0.0,
+          "endpoint_load_index": 0.4919838607311249
+        }
+      },
+      "raw_rel_gaps": {
+        "shannon_entropy": 0.05442186414285484,
+        "edge_density": 0.004054538930749858,
+        "feature_congestion": 0.07296145091274073,
+        "subband_entropy": 0.008897083833828463,
+        "layout_symmetry": 0.02259888066752398,
+        "chromatic_coherence": 0.009266148946072212,
+        "visual_hierarchy": 0.014887473329079682,
+        "interactive_element_density": 0.0
+      },
+      "normalized_rel_gaps": {
+        "edge_density": 0.00028793176502546247,
+        "feature_congestion": 0.0,
+        "interactive_element_density": 0.0,
+        "layout_symmetry": 0.019463766215401294,
+        "visual_hierarchy": 0.03014802878474525
+      },
+      "whitespace_ratio_abs_gap": 0.0,
+      "element_count_range": [
+        0,
+        0
+      ],
+      "endpoint_index_abs_gap": 0.00036153197288513184
+    },
+    {
+      "image_id": "dd0d82",
+      "category": "poster",
+      "per_scale": {
+        "1": {
+          "raw_features": {
+            "shannon_entropy": 6.798414707183838,
+            "edge_density": 0.01924380896226415,
+            "feature_congestion": 12.740792224940492,
+            "subband_entropy": 2.73346693525635,
+            "layout_symmetry": 0.0,
+            "chromatic_coherence": 0.5510088760168675,
+            "visual_hierarchy": 0.41174249052278267,
+            "interactive_element_density": 0.3562303459119497
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.24543495876923077,
+            "feature_congestion": 1.0,
+            "interactive_element_density": 0.7501042431366968,
+            "layout_symmetry": 0.0,
+            "visual_hierarchy": 0.4067441963833349
+          },
+          "whitespace_ratio": 0.31899057886749316,
+          "element_count": 5,
+          "norm_covered_ratio": 0.6810094211325068,
+          "endpoint_load_index": 0.6402415037155151
+        },
+        "2": {
+          "raw_features": {
+            "shannon_entropy": 6.799190998077393,
+            "edge_density": 0.018952682783018867,
+            "feature_congestion": 11.894128960297207,
+            "subband_entropy": 2.784030151561993,
+            "layout_symmetry": 0.0,
+            "chromatic_coherence": 0.5492968698228555,
+            "visual_hierarchy": 0.4113566988437863,
+            "interactive_element_density": 0.3562303459119497
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.239422316934773,
+            "feature_congestion": 1.0,
+            "interactive_element_density": 0.7501042431366968,
+            "layout_symmetry": 0.0,
+            "visual_hierarchy": 0.4061608659807222
+          },
+          "whitespace_ratio": 0.5619241135660367,
+          "element_count": 14,
+          "norm_covered_ratio": 0.43807588643396334,
+          "endpoint_load_index": 0.5992512106895447
+        },
+        "3": {
+          "raw_features": {
+            "shannon_entropy": 6.798247337341309,
+            "edge_density": 0.01923275353773585,
+            "feature_congestion": 12.379391038617436,
+            "subband_entropy": 2.7440231795588312,
+            "layout_symmetry": 0.0,
+            "chromatic_coherence": 0.5501177309537879,
+            "visual_hierarchy": 0.41459327180660127,
+            "interactive_element_density": 0.3562303459119497
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.245206630598302,
+            "feature_congestion": 1.0,
+            "interactive_element_density": 0.7501042431366968,
+            "layout_symmetry": 0.0,
+            "visual_hierarchy": 0.41105467658440265
+          },
+          "whitespace_ratio": 0.7107294041385532,
+          "element_count": 44,
+          "norm_covered_ratio": 0.28927059586144677,
+          "endpoint_load_index": 0.5735998749732971
+        }
+      },
+      "raw_rel_gaps": {
+        "shannon_entropy": 0.000138801853609096,
+        "edge_density": 0.01520790554414792,
+        "feature_congestion": 0.06862182872853358,
+        "subband_entropy": 0.018360984906649377,
+        "layout_symmetry": 0.0,
+        "chromatic_coherence": 0.0031119398471078775,
+        "visual_hierarchy": 0.007845017395711874,
+        "interactive_element_density": 0.0
+      },
+      "normalized_rel_gaps": {
+        "edge_density": 0.024707324040621904,
+        "feature_congestion": 0.0,
+        "interactive_element_density": 0.0,
+        "layout_symmetry": 0.0,
+        "visual_hierarchy": 0.011995028385210257
+      },
+      "whitespace_ratio_abs_gap": 0.3917388252710601,
+      "element_count_range": [
+        5,
+        44
+      ],
+      "endpoint_index_abs_gap": 0.06664162874221802
+    },
+    {
+      "image_id": "a2d191",
+      "category": "web",
+      "per_scale": {
+        "1": {
+          "raw_features": {
+            "shannon_entropy": 5.486281394958496,
+            "edge_density": 0.009290907118055556,
+            "feature_congestion": 6.756376893736526,
+            "subband_entropy": 2.1286607555048276,
+            "layout_symmetry": 0.1509692870473946,
+            "chromatic_coherence": 0.17379374397090208,
+            "visual_hierarchy": 0.25782778287354785,
+            "interactive_element_density": 0.14241536458333334
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.047008472414208295,
+            "feature_congestion": 0.9294730364363297,
+            "interactive_element_density": 0.37375,
+            "layout_symmetry": 0.2104758128054679,
+            "visual_hierarchy": 0.18309302481305917
+          },
+          "whitespace_ratio": 0.8932864583333333,
+          "element_count": 4,
+          "norm_covered_ratio": 0.10671354166666669,
+          "endpoint_load_index": 0.5228351950645447
+        },
+        "2": {
+          "raw_features": {
+            "shannon_entropy": 5.4899115562438965,
+            "edge_density": 0.009210883246527777,
+            "feature_congestion": 6.427426524765308,
+            "subband_entropy": 2.1954514982780506,
+            "layout_symmetry": 0.15230334749320548,
+            "chromatic_coherence": 0.17306547809943157,
+            "visual_hierarchy": 0.37669721953088026,
+            "interactive_element_density": 0.14241536458333334
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.046520047738087246,
+            "feature_congestion": 0.892039552082907,
+            "interactive_element_density": 0.37375,
+            "layout_symmetry": 0.21264524547268304,
+            "visual_hierarchy": 0.35375453084529557
+          },
+          "whitespace_ratio": 0.9400451388888889,
+          "element_count": 20,
+          "norm_covered_ratio": 0.059954861111111146,
+          "endpoint_load_index": 0.49432358145713806
+        },
+        "3": {
+          "raw_features": {
+            "shannon_entropy": 5.485891342163086,
+            "edge_density": 0.009273952907986112,
+            "feature_congestion": 6.6553822176714235,
+            "subband_entropy": 2.1374222845722968,
+            "layout_symmetry": 0.15133485522719492,
+            "chromatic_coherence": 0.17354963812067287,
+            "visual_hierarchy": 0.2657354320308853,
+            "interactive_element_density": 0.14241536458333334
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.046904992609945365,
+            "feature_congestion": 0.9179801700866561,
+            "interactive_element_density": 0.37375,
+            "layout_symmetry": 0.21107029527726562,
+            "visual_hierarchy": 0.19362185737857474
+          },
+          "whitespace_ratio": 0.9388431712962964,
+          "element_count": 39,
+          "norm_covered_ratio": 0.06115682870370365,
+          "endpoint_load_index": 0.509657084941864
+        }
+      },
+      "raw_rel_gaps": {
+        "shannon_entropy": 0.0007326315445543126,
+        "edge_density": 0.008643211172693446,
+        "feature_congestion": 0.049742520938677266,
+        "subband_entropy": 0.031010006544153697,
+        "layout_symmetry": 0.008803597449476468,
+        "chromatic_coherence": 0.004198232930949039,
+        "visual_hierarchy": 0.39611683056545643,
+        "interactive_element_density": 0.0
+      },
+      "normalized_rel_gaps": {
+        "edge_density": 0.010433934176694066,
+        "feature_congestion": 0.04099315565171163,
+        "interactive_element_density": 0.0,
+        "layout_symmetry": 0.010262356881970207,
+        "visual_hierarchy": 0.7008979554231183
+      },
+      "whitespace_ratio_abs_gap": 0.04675868055555554,
+      "element_count_range": [
+        4,
+        39
+      ],
+      "endpoint_index_abs_gap": 0.028511613607406616
+    },
+    {
+      "image_id": "aa063a",
+      "category": "web",
+      "per_scale": {
+        "1": {
+          "raw_features": {
+            "shannon_entropy": 5.562901496887207,
+            "edge_density": 0.0520869140625,
+            "feature_congestion": 29.554431523489214,
+            "subband_entropy": 3.46904535676046,
+            "layout_symmetry": 0.0,
+            "chromatic_coherence": 0.4684615594599071,
+            "visual_hierarchy": 0.4993355397685908,
+            "interactive_element_density": 0.44921875
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.7863932084095955,
+            "feature_congestion": 1.0,
+            "interactive_element_density": 0.800607958003556,
+            "layout_symmetry": 0.0,
+            "visual_hierarchy": 0.559271914744023
+          },
+          "whitespace_ratio": 0.31627343750000003,
+          "element_count": 46,
+          "norm_covered_ratio": 0.6837265625,
+          "endpoint_load_index": 0.6107801198959351
+        },
+        "2": {
+          "raw_features": {
+            "shannon_entropy": 5.853096961975098,
+            "edge_density": 0.050236328125,
+            "feature_congestion": 25.377285998340238,
+            "subband_entropy": 3.505756920084767,
+            "layout_symmetry": 0.0,
+            "chromatic_coherence": 0.46537848030772655,
+            "visual_hierarchy": 0.505262284016624,
+            "interactive_element_density": 0.46875
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.7700092960588634,
+            "feature_congestion": 1.0,
+            "interactive_element_density": 0.811215739593821,
+            "layout_symmetry": 0.0,
+            "visual_hierarchy": 0.5728261376776917
+          },
+          "whitespace_ratio": 0.459865478515625,
+          "element_count": 68,
+          "norm_covered_ratio": 0.540134521484375,
+          "endpoint_load_index": 0.5868311524391174
+        },
+        "3": {
+          "raw_features": {
+            "shannon_entropy": 5.908679008483887,
+            "edge_density": 0.051349609375,
+            "feature_congestion": 25.80721627400086,
+            "subband_entropy": 3.501907881838179,
+            "layout_symmetry": 0.0,
+            "chromatic_coherence": 0.4675686026387696,
+            "visual_hierarchy": 0.5059393600051789,
+            "interactive_element_density": 0.458984375
+          },
+          "normalized_hceye_inputs": {
+            "edge_density": 0.7798655810614146,
+            "feature_congestion": 1.0,
+            "interactive_element_density": 0.8059118487986885,
+            "layout_symmetry": 0.0,
+            "visual_hierarchy": 0.5743745829130253
+          },
+          "whitespace_ratio": 0.4935928819444444,
+          "element_count": 80,
+          "norm_covered_ratio": 0.5064071180555556,
+          "endpoint_load_index": 0.5806723833084106
+        }
+      },
+      "raw_rel_gaps": {
+        "shannon_entropy": 0.05987600847087738,
+        "edge_density": 0.036127121713766495,
+        "feature_congestion": 0.1552093393645248,
+        "subband_entropy": 0.010512335294647547,
+        "layout_symmetry": 0.0,
+        "chromatic_coherence": 0.006599957483250171,
+        "visual_hierarchy": 0.013115506802719962,
+        "interactive_element_density": 0.0425531914893617
+      },
+      "normalized_rel_gaps": {
+        "edge_density": 0.02103856888540621,
+        "feature_congestion": 0.0,
+        "interactive_element_density": 0.013162458904255098,
+        "layout_symmetry": 0.0,
+        "visual_hierarchy": 0.02655067744354384
+      },
+      "whitespace_ratio_abs_gap": 0.17731944444444436,
+      "element_count_range": [
+        46,
+        80
+      ],
+      "endpoint_index_abs_gap": 0.030107736587524414
+    }
+  ]
+}
