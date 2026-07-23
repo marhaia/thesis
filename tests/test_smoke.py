@@ -359,6 +359,20 @@ def _cognitive_load(client, img_bytes):
     ).get_json()
 
 
+def _fixed_valid_saliency(*args, **kwargs):
+    """Deterministic stand-in for ``_predict_saliency_cached``.
+
+    Returns ``(heatmap, aux_classif, cache_hit)`` with a valid [0, 1] heatmap
+    (single central Gaussian peak) that is identical regardless of input. Lets
+    tests exercise /api/cognitive-load (which now REQUIRES saliency) without ML
+    weights and without adding any scale variance.
+    """
+    yy, xx = np.mgrid[0:64, 0:64]
+    hm = np.exp(-(((xx - 32) ** 2 + (yy - 32) ** 2) / (2 * 12.0 ** 2)))
+    hm = (hm - hm.min()) / (hm.max() - hm.min())
+    return hm.astype(np.float32), np.zeros(6, dtype=np.float32), False
+
+
 def _scanpath(client, img_bytes, target_id, n=30):
     return client.post(
         f"/api/scanpath-to-target?target_id={target_id}&n_simulations={n}",
@@ -499,19 +513,16 @@ def test_cognitive_load_scale_invariance_sanity(client, monkeypatch):
     # canonical analysis image (a standardised analysis scale), so its measured
     # scale sensitivity is reduced. This is a scale-stability regression guard.
     #
-    # Explicitly disabled here so the check is deterministic and isolates the
-    # layout-scale path (both also degrade gracefully in CI-light):
-    #   * UMSI++ saliency (app._predict_saliency_cached) -> forced unavailable;
-    #   * OCR (cognitive.text_reader.compute_readability) -> returns None.
-    # The task/profile modifiers are identical across both requests, so the
-    # headline difference reflects only the scale behaviour of the score.
+    # UMSI++ is now REQUIRED by /api/cognitive-load (no silent degrade), so we
+    # replace it with a DETERMINISTIC, valid saliency map that is identical
+    # across scales. This needs no ML weights and adds no scale variance, so the
+    # headline difference reflects only the layout-scale behaviour of the score.
+    # OCR is stubbed to None so text_density is the neutral fallback.
     import app as app_module
     import cognitive.text_reader as tr
 
-    def _no_saliency(*a, **k):
-        raise RuntimeError("saliency explicitly disabled in test")
-
-    monkeypatch.setattr(app_module, "_predict_saliency_cached", _no_saliency)
+    monkeypatch.setattr(app_module, "_predict_saliency_cached",
+                        _fixed_valid_saliency)
     monkeypatch.setattr(tr, "compute_readability", lambda *a, **k: None)
 
     s1 = _headline(_cognitive_load(client, _scaled_multibox_png(1)))
@@ -689,16 +700,17 @@ def test_standard_ui_final_framing_acceptance():
 
 
 def test_standard_ui_hides_unverified_umsi_class_mapping():
-    # The unverified six-class softmax mapping must not drive any rendered
-    # semantic label or in/out-of-domain reliability decision. The banner is
-    # forced hidden and the render branch is dead-coded (if (false)).
+    # The unverified six-class softmax head must not drive any rendered semantic
+    # label or in/out-of-domain reliability decision. The classification is now
+    # fully REMOVED (not merely hidden): the backend returns no
+    # design_classification field and the UI has no render path for it.
     html = _standard_ui_html()
-    assert "if (false) {" in html, "design-type banner render branch must be dead-coded"
-    # The forced-hidden assignment must precede the dead branch.
-    disabled_idx = html.find("dcBanner.style.display = 'none';\n                dcBanner.innerHTML = '';")
-    assert disabled_idx != -1, "design-type banner must be forced hidden"
     lower = html.lower()
-    # No rendered in/out-of-domain verdict from the mapping.
-    assert "within the model's intended ui domain" not in lower or "if (false)" in html
-    # The explanatory comment must state why it is disabled.
-    assert "index-to-label mapping" in lower
+    # No rendered in/out-of-domain verdict or semantic design-type label.
+    assert "within the model's intended ui domain" not in lower
+    assert "detected design type" not in lower
+    # If the (legacy) banner element still exists it must be forced hidden.
+    assert ("dcbanner.style.display = 'none';" in lower
+            or "designclassbanner" not in lower)
+    # The explanatory comment must state that the head is unvalidated.
+    assert "unvalidated" in lower

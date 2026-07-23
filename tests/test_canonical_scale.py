@@ -58,6 +58,22 @@ from canonical_scale_eval import (  # noqa: E402
 )
 
 
+def _fixed_valid_saliency(*args, **kwargs):
+    """Deterministic stand-in for ``app._predict_saliency_cached``.
+
+    Returns ``(heatmap, aux_classif, cache_hit)`` with a valid [0, 1] heatmap
+    (single central Gaussian peak) that is identical regardless of input.
+    /api/cognitive-load now REQUIRES saliency (no silent degrade), so tests that
+    isolate the layout-scale path substitute this fixed, weight-free map: it is
+    deterministic and adds no scale variance, so only the layout behaviour is
+    measured.
+    """
+    yy, xx = np.mgrid[0:64, 0:64]
+    hm = np.exp(-(((xx - 32) ** 2 + (yy - 32) ** 2) / (2 * 12.0 ** 2)))
+    hm = (hm - hm.min()) / (hm.max() - hm.min())
+    return hm.astype(np.float32), np.zeros(6, dtype=np.float32), False
+
+
 # ---------------------------------------------------------------------------
 # Scale-stability guards.
 #
@@ -415,10 +431,9 @@ def test_cognitive_load_endpoint_wires_two_paths(client, monkeypatch):
         captured["jokinen_image_shape"] = tuple(image_shape)
         return {"mean_search_time_s": 1.0, "per_element": []}
 
-    # Disable saliency so no ML weights are needed (endpoint degrades to s=None).
-    def raise_saliency(*a, **k):
-        raise RuntimeError("saliency disabled for wiring test")
-
+    # Substitute a deterministic valid saliency map so no ML weights are needed
+    # (the endpoint now requires saliency); this wiring test is independent of
+    # the saliency content.
     monkeypatch.setattr(canonical_layout_mod, "detect_elements",
                         spy_canonical_detect)
     monkeypatch.setattr(element_detector_mod, "detect_elements",
@@ -426,7 +441,8 @@ def test_cognitive_load_endpoint_wires_two_paths(client, monkeypatch):
     monkeypatch.setattr(text_reader_mod, "compute_readability", stub_ocr)
     monkeypatch.setattr(jokinen_mod.JokinenSearchModel, "predict_search_times",
                         spy_jokinen)
-    monkeypatch.setattr(app_module, "_predict_saliency_cached", raise_saliency)
+    monkeypatch.setattr(app_module, "_predict_saliency_cached",
+                        _fixed_valid_saliency)
 
     data = {"image": (io.BytesIO(buf.tobytes()), "wiring.png")}
     resp = client.post("/api/cognitive-load", data=data,
@@ -649,10 +665,10 @@ def test_cognitive_load_index_scale_invariant_through_endpoint(client, monkeypat
     /api/cognitive-load and require the cognitive_load_index gap <= 0.01.
 
     Explicitly mocked (and ONLY these):
-      * UMSI++ saliency: app._predict_saliency_cached is forced to raise, so the
-        saliency vector s is deterministically None (image-only path). Saliency
-        is a nondeterministic external ML component and is not what this scale
-        test measures.
+      * UMSI++ saliency: app._predict_saliency_cached is replaced with a
+        deterministic, valid [0, 1] map that is identical across scales, so the
+        saliency contribution is constant and adds no scale variance. (The
+        endpoint now REQUIRES saliency, so it can no longer be disabled.)
       * OCR: cognitive.text_reader.compute_readability returns None, so
         text_density is the neutral fallback deterministically.
     Nothing else is stubbed: the eight visual features, the canonical element
@@ -662,10 +678,8 @@ def test_cognitive_load_index_scale_invariant_through_endpoint(client, monkeypat
     import app as app_module
     import cognitive.text_reader as tr
 
-    def _no_saliency(*a, **k):
-        raise RuntimeError("saliency explicitly disabled in test")
-
-    monkeypatch.setattr(app_module, "_predict_saliency_cached", _no_saliency)
+    monkeypatch.setattr(app_module, "_predict_saliency_cached",
+                        _fixed_valid_saliency)
     monkeypatch.setattr(tr, "compute_readability", lambda *a, **k: None)
 
     per_fx = {}

@@ -15,7 +15,7 @@ data:
 
 | Layer | Calibrated on |
 |---|---|
-| Saliency model (UMSI++) + design-type classifier | UEyes (web/mobile/desktop/poster/infographic/natural_image) |
+| Saliency model (UMSI++) | UEyes (web/mobile/desktop/poster) — the auxiliary 6-way softmax head is unvalidated and not used |
 | Feature-norms percentiles (`feature_norms.json`) | 1,485 UEyes images (web+mobile+desktop) |
 | HCEye cognitive-load coefficients (the score that is actually reported) | Das et al., ETRA 2024 — 27 participants, 150 **webpages** |
 

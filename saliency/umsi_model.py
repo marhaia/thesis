@@ -23,7 +23,14 @@ Input(256×256×3, BGR, VGG-mean-subtracted)
     + tiled dense embedding fused via concatenation      → 32×32×1280
   → Decoder (Conv-Dropout-UpSample chain)
     → 512×512×1 heatmap
-Outputs: [heatmap_512×512, classification_6]
+Outputs: [heatmap_512×512, aux_classif_6]
+
+NOTE: The second output head (``out_classif``, Dense(6, softmax)) is an
+UNVALIDATED auxiliary tensor. At the pinned upstream commit the official
+training notebook compiles with loss_weights={'dec_c_cout': 1, 'out_classif': 0},
+so the six-way softmax receives no training signal. It is never mapped to
+semantic labels and never exposed via the API; the head is retained only so the
+authoritative checkpoint loads strictly.
 
 Weights
 -------
@@ -40,12 +47,6 @@ Usage
 
 from __future__ import annotations
 
-import os
-
-# ── Suppress TF noise ──────────────────────────────────────────────────────
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-
-import warnings
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
@@ -53,11 +54,14 @@ import cv2
 import numpy as np
 
 # ── TF / Keras 3 imports ──────────────────────────────────────────────────
+# NOTE: This reusable model module deliberately does NOT set
+# TF_CPP_MIN_LOG_LEVEL or globally silence warnings. Weight-loading, numerical
+# and compatibility warnings must remain visible so future model/runtime
+# problems stay observable. Any benign-noise suppression belongs in the
+# application entry point, scoped to explicitly identified messages.
 import tensorflow as tf
 import keras
 from keras import layers, Model
-
-warnings.filterwarnings("ignore", category=UserWarning)
 
 # ============================================================================
 # Constants (matching original sal_imp_utilities.py)
@@ -71,6 +75,20 @@ SHAPE_C_OUT: int = 512      # model output width
 VGG_MEAN_B: float = 103.939
 VGG_MEAN_G: float = 116.779
 VGG_MEAN_R: float = 123.68
+
+
+# ============================================================================
+# Errors
+# ============================================================================
+
+class InvalidSaliencyOutputError(RuntimeError):
+    """Raised when the UMSI++ model produces an unusable saliency output.
+
+    Covers non-finite maps (NaN / +Inf / -Inf) and constant / zero-dynamic-range
+    maps that carry no spatial saliency information. Callers must treat this as a
+    hard failure of the saliency stage rather than silently substituting a
+    plausible-looking result.
+    """
 
 # ============================================================================
 # Custom Xception Backbone (stride-modified for saliency)
@@ -439,11 +457,31 @@ def postprocess_saliency(pred: np.ndarray,
         original_w: Original image width in pixels.
 
     Returns:
-        Saliency heatmap of shape (original_h, original_w), float32,
-        normalized to [0, 1].
+        Saliency heatmap of shape (original_h, original_w), float32, with exact
+        range [0, 1] (min-max normalised once, matching the official metric
+        semantics in ``eval.py::calculate_metrics``).
+
+    Raises:
+        InvalidSaliencyOutputError: if the raw model output is non-finite
+            (NaN / Inf) or constant (zero dynamic range).
     """
     if pred.ndim == 3:
         pred = pred[:, :, 0]
+
+    # The UMSI++ decoder head is linear (no final activation), so the raw map
+    # can be negative and, for degenerate inputs, non-finite. Reject non-finite
+    # output up front rather than letting NaN/Inf propagate through resize, and
+    # reject a genuinely constant raw output (checked BEFORE resize, since
+    # interpolation injects ~1e-7 float noise that would otherwise mask it).
+    if not np.isfinite(pred).all():
+        raise InvalidSaliencyOutputError(
+            "UMSI++ produced a non-finite raw saliency map (NaN or Inf)."
+        )
+    if float(pred.max()) - float(pred.min()) <= 0.0:
+        raise InvalidSaliencyOutputError(
+            "UMSI++ produced a constant saliency map (zero dynamic range); "
+            "no spatial saliency information is present."
+        )
 
     pred_shape = pred.shape
     rows_rate = original_h / pred_shape[0]
@@ -460,11 +498,22 @@ def postprocess_saliency(pred: np.ndarray,
         offset = (pred.shape[0] - original_h) // 2
         img = pred[offset:offset + original_h, :]
 
-    # Normalize to [0, 1]
-    vmax = img.max()
-    if vmax > 0:
-        img = img / vmax
-
+    # Min-max normalisation to exact [0, 1], applied exactly once. This mirrors
+    # the official evaluation ((p - min) / (max - min) in calculate_metrics) and,
+    # unlike a max-only divide, never leaves negative pixels behind.
+    img = img.astype(np.float32)
+    if not np.isfinite(img).all():
+        raise InvalidSaliencyOutputError(
+            "UMSI++ produced a non-finite saliency map after resize."
+        )
+    vmin = float(img.min())
+    vmax = float(img.max())
+    if vmax - vmin <= 0.0:
+        raise InvalidSaliencyOutputError(
+            "UMSI++ produced a constant saliency map (zero dynamic range); "
+            "no spatial saliency information is present."
+        )
+    img = (img - vmin) / (vmax - vmin)
     return img.astype(np.float32)
 
 
@@ -480,27 +529,18 @@ class UMSIPlus:
         heatmap = model.predict_saliency("screenshot.png")
     """
 
-    # Design-type labels (6-class head from Jiang et al., CHI 2023, §3.2).
-    # The model was trained on UEyes (1,980 screenshots, 62 participants)
-    # across six UI/image categories.
-    #
-    # NOTE ON ORDERING: the exact index-to-label mapping of the softmax head
-    # is NOT recoverable from the published checkpoint alone (it depends on the
-    # training-time label encoder, which is not shipped with umsi++.hdf5). This
-    # list is therefore a best-effort guess and is used ONLY for the optional,
-    # informational class printout in predict_saliency(return_classif=True).
-    # It has NO effect on the saliency heatmap or on any downstream scoring in
-    # this project, which consume the heatmap exclusively. Do not rely on the
-    # specific label at a given index without cross-checking the UEyes training
-    # label map.
-    DESIGN_CLASSES = [
-        "poster",
-        "infographic",
-        "mobile_ui",
-        "desktop_ui",
-        "web_page",
-        "natural_image",
-    ]
+    # ── Auxiliary classification output (UNVALIDATED) ────────────────────
+    # The model graph has a second output head, ``out_classif`` (Dense(6,
+    # softmax)), inherited from the original UMSI architecture. At the pinned
+    # upstream commit (7bc0641) the official training notebook compiles the
+    # model with loss_weights={'dec_c_cout': 1, 'out_classif': 0} — i.e. the
+    # six-way softmax receives ZERO training signal. There is therefore NO
+    # authoritative evidence that its six probabilities form a trained semantic
+    # UI-type classifier. This project treats the vector as an UNVALIDATED
+    # auxiliary tensor: it is never mapped to semantic labels and never exposed
+    # via the API. The head is kept in the graph solely so the authoritative
+    # checkpoint still loads strictly (all tensors present).
+    AUX_CLASSIF_DIM = 6
 
     def __init__(self, weights_path: Union[str, Path],
                  verbose: bool = False):
@@ -544,12 +584,14 @@ class UMSIPlus:
 
         Args:
             image_path: Path to input image (PNG, JPG, etc.).
-            return_classif: If True, also return the 6-class classification.
+            return_classif: If True, also return the RAW auxiliary output vector.
 
         Returns:
             heatmap: Saliency map of shape (H, W), float32 in [0, 1],
                      at the original image resolution.
-            classif: (optional) 6-class probability vector, shape (6,).
+            aux_classif: (optional) raw 6-dim auxiliary output vector, shape
+                (6,). UNVALIDATED — see the ``UMSIPlus`` class docstring; do NOT
+                interpret it as semantic UI-type probabilities.
         """
         image_path = str(image_path)
 
@@ -565,13 +607,13 @@ class UMSIPlus:
         # Predict
         preds = self.model.predict(img_batch, verbose=0)
         raw_heatmap = preds[0][0]   # (512, 512, 1)
-        classif = preds[1][0]       # (6,)
+        aux_classif = preds[1][0]   # (6,) UNVALIDATED auxiliary output
 
         # Postprocess
         heatmap = postprocess_saliency(raw_heatmap, orig_h, orig_w)
 
         if return_classif:
-            return heatmap, classif
+            return heatmap, aux_classif
         return heatmap
 
     def predict_batch(self, image_paths: list,
@@ -583,14 +625,15 @@ class UMSIPlus:
             batch_size: How many to process at once.
 
         Returns:
-            List of (heatmap, classif) tuples.
+            List of (heatmap, aux_classif) tuples, where aux_classif is the RAW,
+            UNVALIDATED 6-dim auxiliary output vector (not a semantic classifier).
         """
         results = []
         for path in image_paths:
-            heatmap, classif = self.predict_saliency(
+            heatmap, aux_classif = self.predict_saliency(
                 path, return_classif=True
             )
-            results.append((heatmap, classif))
+            results.append((heatmap, aux_classif))
         return results
 
 
@@ -611,11 +654,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     model = UMSIPlus(args.weights, verbose=args.verbose)
-    heatmap, classif = model.predict_saliency(args.image, return_classif=True)
+    heatmap, aux_classif = model.predict_saliency(args.image, return_classif=True)
 
-    # Print classification
-    for i, (cls, prob) in enumerate(zip(UMSIPlus.DESIGN_CLASSES, classif)):
-        print(f"  {cls}: {prob:.4f}")
+    # The auxiliary output head is UNVALIDATED (zero training-loss weight in the
+    # official setup); print the raw vector only, with NO semantic labels.
+    print("Auxiliary output vector (UNVALIDATED, not a UI-type classifier):")
+    print("  " + ", ".join(f"{float(p):.4f}" for p in aux_classif))
 
     print(f"\nHeatmap shape: {heatmap.shape}")
     print(f"Heatmap range: [{heatmap.min():.4f}, {heatmap.max():.4f}]")

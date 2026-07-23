@@ -305,9 +305,12 @@ def _build_region_target_element(
 def _predict_saliency_cached(image_hash, image_path):
     """Run UMSI++ saliency prediction with an LRU hash cache.
 
-    Returns ``(heatmap, classif, cache_hit)`` where ``cache_hit`` is True when
-    the result was served from cache. Caching avoids repeated (expensive)
-    TensorFlow inference for identical images.
+    Returns ``(heatmap, aux_classif, cache_hit)`` where ``cache_hit`` is True
+    when the result was served from cache. ``aux_classif`` is the RAW,
+    UNVALIDATED 6-dim auxiliary output vector (zero training-loss weight in the
+    official setup); it must never be surfaced as a semantic classification.
+    Caching avoids repeated (expensive) TensorFlow inference for identical
+    images.
     """
     cached = _saliency_cache.get(image_hash)
     if cached is not None:
@@ -315,12 +318,12 @@ def _predict_saliency_cached(image_hash, image_path):
         return cached["heatmap"], cached["classif"], True
 
     model = _get_saliency_model()
-    heatmap, classif = model.predict_saliency(str(image_path), return_classif=True)
-    _saliency_cache[image_hash] = {"heatmap": heatmap, "classif": classif}
+    heatmap, aux_classif = model.predict_saliency(str(image_path), return_classif=True)
+    _saliency_cache[image_hash] = {"heatmap": heatmap, "classif": aux_classif}
     # Evict the oldest entries once the cache grows beyond its size limit.
     while len(_saliency_cache) > _saliency_cache_max:
         _saliency_cache.popitem(last=False)
-    return heatmap, classif, False
+    return heatmap, aux_classif, False
 
 
 def _compute_visual_cached(image_hash, image_path):
@@ -583,8 +586,12 @@ def saliency():
         import numpy as np
         from saliency.saliency_features import extract_saliency_features
 
-        heatmap, classif, cache_hit = _predict_saliency_cached(image_hash, filepath)
-        model = _get_saliency_model()
+        # The auxiliary output vector is intentionally ignored: it is UNVALIDATED
+        # (zero training-loss weight in the official setup) and must never be
+        # exposed as a semantic UI-type classification.
+        heatmap, _aux_classif, cache_hit = _predict_saliency_cached(
+            image_hash, filepath
+        )
 
         # Extract saliency features
         features = extract_saliency_features(heatmap)
@@ -596,22 +603,23 @@ def saliency():
         _, buf = cv2.imencode(".png", heatmap_colored)
         heatmap_b64 = base64.b64encode(buf).decode("utf-8")
 
-        # Classification results
-        classif_dict = {
-            cls: float(prob)
-            for cls, prob in zip(model.DESIGN_CLASSES, classif)
-        }
-
         return jsonify({
             "filename": file.filename,
             "features": features,
-            "classification": classif_dict,
-            "predicted_class": model.DESIGN_CLASSES[int(np.argmax(classif))],
+            # Semantic UI-type classification is deliberately NOT returned: the
+            # model's six-way softmax head is unvalidated (see umsi_model.py).
+            "classification_used": False,
+            "classification_status": "disabled_unvalidated",
             "heatmap_png_base64": heatmap_b64,
             "saliency_cache_hit": cache_hit,
         })
-    except Exception as e:
-        return _server_error(e)
+    except Exception:
+        # Any failure of the saliency stage is a controlled error. Do not leak
+        # filesystem paths or tracebacks in the response body.
+        return jsonify({
+            "error": "saliency_unavailable",
+            "saliency_used": False,
+        }), 503
     finally:
         if filepath.exists():
             filepath.unlink()
@@ -1140,15 +1148,17 @@ def cognitive_load():
             vis_results["interactive_element_density"],
         ], dtype=np.float32)
 
-        # Step 2: Saliency features (s∈ℝ⁵) — optional
-        s = None
-        saliency_dict = {}
+        # Step 2: Saliency features (s∈ℝ⁵) — UMSI++ is REQUIRED here.
+        # Any failure of the saliency stage is a controlled 503, NOT a silent
+        # degrade: a partial load estimate that still looks "green" would be
+        # misleading for the study. The auxiliary softmax head is UNVALIDATED
+        # and is never surfaced as a semantic UI-type classification.
         saliency_overlay_b64 = None
-        design_classification = None
         try:
-            import base64, cv2
             from saliency.saliency_features import extract_saliency_features
-            heatmap, classif, cache_hit = _predict_saliency_cached(image_hash, filepath)
+            heatmap, _aux_classif, cache_hit = _predict_saliency_cached(
+                image_hash, filepath
+            )
             saliency_dict = extract_saliency_features(heatmap)
             s = np.array([
                 saliency_dict["saliency_dispersion"],
@@ -1157,43 +1167,14 @@ def cognitive_load():
                 saliency_dict["saliency_peak_count"],
                 saliency_dict["saliency_center_bias"],
             ], dtype=np.float32)
-            # UMSI++ 6-class design-type head (Jiang et al., CHI 2023). The model
-            # was trained on UEyes; if it classifies the screenshot as something
-            # other than a desktop/automotive-style UI (e.g. "mobile_ui" or
-            # "web_page"), the saliency prediction is out of its training domain
-            # and the downstream load estimate should be read with caution.
-            try:
-                sal_model = _get_saliency_model()
-                classif_probs = [float(p) for p in classif]
-                top_idx = int(np.argmax(classif_probs))
-                predicted_class = sal_model.DESIGN_CLASSES[top_idx]
-                # Classes that indicate the screenshot is outside the
-                # automotive/desktop-style domain this thesis targets.
-                OUT_OF_DOMAIN = {"mobile_ui", "web_page", "poster",
-                                 "infographic", "natural_image"}
-                design_classification = {
-                    "predicted_class": predicted_class,
-                    "confidence": round(classif_probs[top_idx], 4),
-                    "probabilities": {
-                        cls: round(prob, 4)
-                        for cls, prob in zip(sal_model.DESIGN_CLASSES,
-                                             classif_probs)
-                    },
-                    "out_of_domain": predicted_class in OUT_OF_DOMAIN,
-                }
-            except Exception as ce:
-                # Classification is a non-critical add-on; never fail the
-                # analysis because of it.
-                print(f"[Saliency] Design classification unavailable: {ce!r}")
-        except Exception as e:
-            # Do NOT fail silently: the cognitive-load model degrades to image-only
-            # features (s=None) when saliency is missing. Log loudly so a broken
-            # saliency stage is visible during the study instead of silently
-            # producing a partial result that still looks "green".
-            cache_hit = False
-            s = None
-            saliency_dict = {}
-            print(f"[Saliency] Saliency features unavailable: {e!r}")
+        except Exception:
+            # UMSI++ unavailable or produced an invalid/degenerate map. Return a
+            # controlled 503 with no cognitive_load_index, no layout score and no
+            # full feature vector, and never leak filesystem paths or tracebacks.
+            return jsonify({
+                "error": "saliency_unavailable",
+                "saliency_used": False,
+            }), 503
 
         # Build colored overlay: original image blended with JET-colormap heatmap.
         # This is purely cosmetic (visualization only) and is kept in a SEPARATE
@@ -1465,7 +1446,7 @@ def cognitive_load():
             "saliency_features": saliency_dict,
             "saliency_overlay_b64": saliency_overlay_b64,
             "saliency_cache_hit": cache_hit,
-            "design_classification": design_classification,
+            "saliency_used": True,
             "cognitive_load_features": cog_dict,
             "hceye_inputs": {
                 # Real element-derived measurements fed into the HCEye rules.

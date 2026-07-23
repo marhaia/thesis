@@ -7,3 +7,11 @@ cleanly. The demo can still be run directly: `python tests/test_pipeline.py`.
 """
 
 collect_ignore = ["test_pipeline.py"]
+
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "real_checkpoint: requires the authoritative UMSI++ checkpoint "
+        "(umsi++.hdf5) and TensorFlow; skipped otherwise.",
+    )

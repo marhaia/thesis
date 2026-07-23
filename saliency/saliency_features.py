@@ -56,11 +56,21 @@ import numpy as np
 from scipy import ndimage
 
 
+class InvalidSaliencyMapError(ValueError):
+    """Raised when a saliency map handed to feature extraction is invalid.
+
+    Covers non-2D input, non-finite values (NaN / Inf) and values outside the
+    documented [0, 1] range. Feature extraction refuses to return plausible
+    numbers for an invalid map instead of masking a broken upstream stage.
+    """
+
+
 def extract_saliency_features(saliency_map: np.ndarray) -> Dict[str, float]:
     """Extract all saliency-derived features from a heatmap.
 
     Args:
-        saliency_map: 2D array of shape (H, W), values in [0, 1].
+        saliency_map: 2D array of shape (H, W), finite values within [0, 1]
+            (as produced by ``postprocess_saliency``).
 
     Returns:
         Dictionary with keys:
@@ -69,24 +79,53 @@ def extract_saliency_features(saliency_map: np.ndarray) -> Dict[str, float]:
           - saliency_center_bias
           - saliency_entropy
           - saliency_coverage
+
+    Raises:
+        InvalidSaliencyMapError: if the input is not 2D, contains non-finite
+            values, or lies outside [0, 1].
     """
-    # Ensure 2D
-    if saliency_map.ndim == 3:
-        saliency_map = saliency_map[:, :, 0]
+    smap = np.asarray(saliency_map)
+    if smap.ndim == 3 and smap.shape[2] == 1:
+        smap = smap[:, :, 0]
+    if smap.ndim != 2:
+        raise InvalidSaliencyMapError(
+            f"Saliency map must be 2D, got shape {tuple(np.shape(saliency_map))}."
+        )
 
-    # Normalize to [0, 1]
-    smap = saliency_map.astype(np.float64)
-    vmax = smap.max()
-    if vmax > 0:
-        smap = smap / vmax
+    smap = smap.astype(np.float64)
+    if not np.isfinite(smap).all():
+        raise InvalidSaliencyMapError(
+            "Saliency map contains non-finite values (NaN or Inf)."
+        )
 
-    return {
+    vmin = float(smap.min())
+    vmax = float(smap.max())
+    tol = 1e-6
+    if vmin < -tol or vmax > 1.0 + tol:
+        raise InvalidSaliencyMapError(
+            f"Saliency map values must lie within [0, 1]; got "
+            f"[{vmin:.6g}, {vmax:.6g}]. Callers must min-max normalise the map "
+            "(see postprocess_saliency) before feature extraction."
+        )
+
+    # Clip away sub-epsilon float overshoot only. Do NOT re-normalise: the map is
+    # already in [0, 1] from postprocess_saliency, and a second (max-only)
+    # normalisation here would silently rescale a correctly-normalised map.
+    smap = np.clip(smap, 0.0, 1.0)
+
+    features = {
         "saliency_dispersion": _compute_dispersion(smap),
         "saliency_peak_count": _compute_peak_count(smap),
         "saliency_center_bias": _compute_center_bias(smap),
         "saliency_entropy": _compute_entropy(smap),
         "saliency_coverage": _compute_coverage(smap),
     }
+    for _name, _val in features.items():
+        if not np.isfinite(_val):
+            raise InvalidSaliencyMapError(
+                f"Computed non-finite saliency feature '{_name}' ({_val})."
+            )
+    return features
 
 
 # ============================================================================

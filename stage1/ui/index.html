@@ -3954,55 +3954,18 @@
             // proxies. They remain only in the technical details / PDF export,
             // explicitly labelled as exploratory proxies.
 
-            // ── UMSI++ design-type classification banner — INTENTIONALLY DISABLED ──
-            // The six-class softmax index-to-label mapping of the saliency model's
-            // design-type head is NOT verified. Until the label mapping is
-            // confirmed against the official code, the standard UI must not:
-            //   (a) render a semantic design-type label from that mapping,
-            //   (b) classify a screenshot as in-domain / out-of-domain, or
-            //   (c) warn that downstream outputs are more or less reliable
-            //       based on it.
-            // Rendering an unverified label would be an unfounded claim, so the
-            // banner is kept hidden. The backend field data.design_classification
-            // is left unchanged for API compatibility but is deliberately not used
-            // here. Re-enable only after the mapping is independently verified.
+            // ── UMSI++ design-type classification banner — REMOVED ──
+            // The saliency model's six-class softmax head is UNVALIDATED: at the
+            // pinned upstream commit it is trained with zero loss weight
+            // (loss_weights={'dec_c_cout': 1, 'out_classif': 0}), so its class
+            // probabilities carry no trained meaning. The backend no longer
+            // returns any design_classification / predicted_class field, and the
+            // UI must not render a semantic design-type label from it. The banner
+            // element (if present) is kept permanently hidden.
             const dcBanner = document.getElementById('designClassBanner');
             if (dcBanner) {
                 dcBanner.style.display = 'none';
                 dcBanner.innerHTML = '';
-            }
-            if (false) {
-                const dc = data.design_classification;
-                if (dc && dc.predicted_class) {
-                    const label = dc.predicted_class.replace(/_/g, ' ');
-                    const conf = Math.round((dc.confidence || 0) * 100);
-                    if (dc.out_of_domain) {
-                        dcBanner.style.cssText =
-                            'display:block; margin-bottom:16px; padding:10px 14px; border-radius:8px; ' +
-                            'border:1px solid var(--warning, #d97706); background:rgba(217,119,6,0.12); ' +
-                            'font-size:12px; color:var(--text);';
-                        dcBanner.innerHTML =
-                            `<strong>Caution:</strong> the saliency model classifies this screenshot as ` +
-                            `<strong>${label}</strong> (${conf}% confidence), which is outside the ` +
-                            `general GUI domain it was trained for. Saliency and other learned ` +
-                            `models are known to lose accuracy on inputs that differ from their ` +
-                            `training distribution ` +
-                            `(<a class="cite-link" href="https://doi.org/10.1109/CVPR.2011.5995347" target="_blank" rel="noopener">Torralba &amp; Efros, 2011</a>; ` +
-                            `<a class="cite-link" href="https://doi.org/10.1145/3544548.3581096" target="_blank" rel="noopener">Jiang et al., 2023</a>), ` +
-                            `so the saliency map and the cognitive-load score may be less reliable ` +
-                            `for this image.`;
-                    } else {
-                        dcBanner.style.cssText =
-                            'display:block; margin-bottom:16px; padding:8px 14px; border-radius:8px; ' +
-                            'border:1px solid var(--border); background:var(--surface2); ' +
-                            'font-size:11px; color:var(--text-dim);';
-                        dcBanner.innerHTML =
-                            `Detected design type: <strong>${label}</strong> (${conf}% confidence) — ` +
-                            `within the model's intended UI domain.`;
-                    }
-                } else {
-                    dcBanner.style.display = 'none';
-                }
             }
 
             renderContextSummary();

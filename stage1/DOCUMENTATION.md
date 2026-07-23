@@ -103,7 +103,7 @@ Input:  GUI screenshot (PNG/JPG)
    │                                                          │
    │  Outputs:                                                │
    │    • Saliency heatmap (512×512 → original resolution)   │
-   │    • Design classification (6-class softmax)             │
+   │    • Auxiliary 6-dim head (UNVALIDATED, unused)          │
    │                                                          │
    │  Derived features (saliency/saliency_features.py):       │
    │    s₁  Saliency Dispersion                               │
@@ -188,9 +188,9 @@ Thesis_G/
 **Stage 1b (Saliency; added 06.05.2026):**
 1. Image is loaded as BGR, resized with aspect-ratio padding to 256×256.
 2. VGG mean subtraction applied (B: 103.939, G: 116.779, R: 123.68).
-3. Forward pass through UMSI++ model → 512×512 heatmap + 6-class softmax.
+3. Forward pass through UMSI++ model → 512×512 heatmap + 6-dim auxiliary head (UNVALIDATED, unused).
 4. Heatmap is unpadded and resized to original image resolution.
-5. Five scalar features are extracted from the normalized heatmap.
+5. Five scalar features are extracted from the min-max normalized heatmap.
 6. Results returned via `/api/saliency` endpoint.
 
 ---
@@ -642,8 +642,8 @@ Input(256×256×3, BGR, VGG-mean-subtracted)
 **Validierung der Portierung:**
 - 107 gewichtete Layer im Modell ↔ 107 Layer in der HDF5-Datei
 - Layer-Namen und Tensor-Shapes stimmen 1:1 überein
-- Klassifikations-Output summiert zu 1.0 (Softmax korrekt)
-- Vorhersagt "web_page" für BMW Navigation Screenshot (plausibel)
+- Der Auxiliary-Softmax-Head (`out_classif`) summiert zu 1.0, ist aber
+  UNVALIDIERT (kein Trainingssignal, siehe §6.5) und wird nicht interpretiert
 
 ### 6.4 Saliency-Features (s ∈ ℝ⁵)
 
@@ -657,20 +657,28 @@ Aus der normalisierten Saliency-Map $S(x,y) \in [0,1]$ werden folgende Features 
 | s₄ | **Entropy** | $H = -\sum_b p_b \log_2 p_b$ (32 Bins, normiert) | [0, 1] | Gleichmäßigkeit der Salienz-Verteilung |
 | s₅ | **Coverage** | $\frac{|\{(x,y): S > 0.5 \cdot \max(S)\}|}{W \cdot H}$ | [0, 1] | Flächenanteil mit signifikanter Salienz |
 
-### 6.5 Design-Klassifikation (6 Klassen)
+### 6.5 Auxiliary-Output-Head (6-dim, UNVALIDIERT — nicht verwendet)
 
-UMSI++ klassifiziert den Designtyp des Input-Bildes:
+Der UMSI++-Graph besitzt einen zweiten Output-Head `out_classif` (Dense(6,
+softmax)), der aus der ursprünglichen UMSI-Architektur stammt. Am gepinnten
+Upstream-Commit (7bc0641) kompiliert das offizielle Training-Notebook das Modell
+mit `loss_weights={'dec_c_cout': 1, 'out_classif': 0}` — der Softmax-Head erhält
+also **kein Trainingssignal**. Es gibt daher **keinen** belastbaren Nachweis,
+dass seine sechs Wahrscheinlichkeiten einen trainierten semantischen
+UI-Typ-Klassifikator bilden.
 
-| Klasse | Beschreibung |
-|--------|--------------|
-| poster | Plakate, Werbung |
-| infographic | Infografiken, Daten-Visualisierungen |
-| mobile_ui | Mobile App Interfaces |
-| desktop_ui | Desktop-Anwendungen |
-| web_page | Webseiten |
-| natural_image | Natürliche Fotos/Szenen |
+Konsequenz in diesem Projekt:
 
-**Nutzen für Stage 2:** Die Klassifikation liefert einen Prior für das Saliency-Modell und kann als bedingender Faktor in der Cognitive Load Estimation verwendet werden.
+- Der Head wird als **unvalidierter** Hilfs-Tensor behandelt.
+- Es werden **keine** semantischen Labels vergeben (frühere Labels wie
+  `infographic` oder `natural_image` waren erfunden bzw. aus dem alten UMSI
+  übernommen und sind entfernt).
+- Weder `/api/saliency` noch `/api/cognitive-load` geben eine
+  Klassenwahrscheinlichkeit oder eine `predicted_class` zurück; `/api/saliency`
+  meldet stattdessen `classification_used: false` und
+  `classification_status: "disabled_unvalidated"`.
+- Der Head bleibt ausschließlich im Graphen, damit der autoritative Checkpoint
+  weiterhin strikt (alle Tensoren vorhanden) geladen werden kann.
 
 ### 6.6 API-Endpoints
 
@@ -983,13 +991,9 @@ Saliency Features s ∈ ℝ⁵ (UMSI++):
   saliency_entropy             0.7169
   saliency_coverage            0.0642
 
-Design Classification:
-  poster                       0.1555
-  infographic                  0.1672
-  mobile_ui                    0.1654
-  desktop_ui                   0.1640
-  web_page                     0.2446  ← predicted class
-  natural_image                0.1032
+Auxiliary output head (out_classif, 6-dim):
+  UNVALIDATED — zero training-loss weight in the official setup.
+  Not mapped to semantic labels and not returned by the API.
 ```
 
 **Interpretation:**
@@ -998,7 +1002,7 @@ Design Classification:
 - Center Bias 0.31 → Aufmerksamkeit nicht besonders zentrumslastig (Karte füllt Rand-zu-Rand)
 - Entropy 0.72 → relativ gleichmäßig verteilte Salienz
 - Coverage 0.06 → nur 6.4% der Fläche erhält >50% der maximalen Salienz (wenige dominante Punkte)
-- Klasse "web_page" (24.5%) → plausibel für ein Navigations-UI mit kartenähnlichem Layout
+- Der 6-dim Auxiliary-Head wird nicht interpretiert (unvalidiert, siehe §6.5)
 
 ---
 
