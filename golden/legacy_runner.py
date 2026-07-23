@@ -114,14 +114,42 @@ def run_worker(out_json):
         json.dump(hashes, fh)
 
 
+def run_layers(fixture, out_npz):
+    """Capture intermediate activations for the on-failure layer sweep."""
+    import keras
+    from common import LAYER_SPINE
+    from sal_imp_utilities import preprocess_images
+    model = build_and_load()          # raw keras model
+    names = [n for n in LAYER_SPINE
+             if n in [l.name for l in model.layers]]
+    sub = keras.Model(inputs=model.inputs,
+                      outputs=[model.get_layer(n).output for n in names])
+    x = np.asarray(preprocess_images([_fixture_path(fixture)], 256, 256, pad=True))
+    outs = sub.predict(x, verbose=0)
+    if not isinstance(outs, list):
+        outs = [outs]
+    saved = {"__names__": np.array(names)}
+    for n, a in zip(names, outs):
+        # float32 (not float16): decoder activations reach ~1e6 and would
+        # overflow float16 (max 65504) to +inf, corrupting the comparison.
+        saved[n] = np.asarray(a)[0].astype(np.float32)
+    np.savez_compressed(out_npz, **saved)
+    print("SAVED layers %s (%d layers)" % (out_npz, len(names)), flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--worker", default="")
+    ap.add_argument("--layers", default="")
+    ap.add_argument("--layers-out", default="")
     ap.add_argument("--out-dir", default=".")
     args = ap.parse_args()
 
     if args.worker:
         run_worker(args.worker)
+        return
+    if args.layers:
+        run_layers(args.layers, args.layers_out)
         return
 
     t0 = time.time()

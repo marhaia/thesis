@@ -120,6 +120,8 @@ jobs:
             export UMSI_CKPT="$GITHUB_WORKSPACE/${CKPT_REL}"
             cd golden
             python legacy_runner.py --out-dir "$GITHUB_WORKSPACE/out"
+            echo "########## intermediate-activation capture (ui1) ##########"
+            python legacy_runner.py --layers ui1 --layers-out "$GITHUB_WORKSPACE/out/legacy_layers_ui1.npz"
           } 2>&1 | tee out/legacy_run.log
 
       - uses: actions/upload-artifact@v4
@@ -128,6 +130,7 @@ jobs:
           path: |
             out/legacy_meta.json
             out/legacy_arrays.npz
+            out/legacy_layers_ui1.npz
             out/legacy_run.log
           retention-days: 14
 
@@ -187,6 +190,8 @@ jobs:
             export UMSI_CKPT="$GITHUB_WORKSPACE/${CKPT_REL}"
             cd golden
             python modern_runner.py --out-dir "$GITHUB_WORKSPACE/out"
+            echo "########## intermediate-activation capture (ui1) ##########"
+            python modern_runner.py --layers ui1 --layers-out "$GITHUB_WORKSPACE/out/modern_layers_ui1.npz"
           } 2>&1 | tee out/modern_run.log
 
       - uses: actions/upload-artifact@v4
@@ -195,6 +200,7 @@ jobs:
           path: |
             out/modern_meta.json
             out/modern_arrays.npz
+            out/modern_layers_ui1.npz
             out/modern_run.log
           retention-days: 14
 
@@ -252,6 +258,13 @@ jobs:
             2>&1 | tee "$GITHUB_WORKSPACE/deliver/compare_run.log"
           cd "$GITHUB_WORKSPACE"
 
+          # On-failure intermediate-activation sweep: first divergent layer.
+          python golden/layer_compare.py \
+            --legacy-npz "$GITHUB_WORKSPACE/dl/legacy/legacy_layers_ui1.npz" \
+            --modern-npz "$GITHUB_WORKSPACE/dl/modern/modern_layers_ui1.npz" \
+            --out-json "$GITHUB_WORKSPACE/deliver/umsi_tf1_tf2_golden_layers_6a17288.json" \
+            2>&1 | tee -a "$GITHUB_WORKSPACE/deliver/compare_run.log"
+
           # Assemble the single comprehensive .log deliverable.
           LOG=deliver/umsi_tf1_tf2_golden_6a17288.log
           {
@@ -290,6 +303,7 @@ jobs:
             umsi_tf1_tf2_golden_6a17288.json \
             umsi_tf1_tf2_golden_6a17288.log \
             umsi_tf1_tf2_golden_arrays_6a17288.npz \
+            umsi_tf1_tf2_golden_layers_6a17288.json \
             > SHA256SUMS
           echo "----- SHA256SUMS -----"
           cat SHA256SUMS
@@ -305,6 +319,7 @@ jobs:
             deliver/umsi_tf1_tf2_golden_6a17288.json
             deliver/umsi_tf1_tf2_golden_6a17288.log
             deliver/umsi_tf1_tf2_golden_arrays_6a17288.npz
+            deliver/umsi_tf1_tf2_golden_layers_6a17288.json
             deliver/SHA256SUMS
             deliver/golden_protocol_manifest.json
           retention-days: 30

@@ -84,6 +84,39 @@ CONTINUOUS_FEATURES = [
     "saliency_coverage",
 ]
 
+# ---------------------------------------------------------------------------
+# Ordered layer "spine" for the on-failure intermediate-activation comparison.
+# These names are shared by BOTH the upstream UMSI builder and the modern port
+# (standard Xception block names + the explicit UMSI ASPP/decoder names). The
+# runners filter to those actually present in each graph; the comparator
+# intersects, so any non-matching name is simply skipped.
+# ---------------------------------------------------------------------------
+LAYER_SPINE = [
+    "block1_conv1_act",
+    "block2_sepconv2_act",
+    "block3_sepconv2_act",
+    "block4_sepconv2_act",
+    "block13_sepconv2_act",
+    "block14_sepconv2_act",
+    "aspp0_activation",
+    "concatenate_1",
+    "out_classif",
+    "concat_projection",
+    "activation_8",
+    "dec_c1",
+    "dec_c2",
+    "dec_ups1",
+    "dec_c3",
+    "dec_c4",
+    "dec_ups2",
+    "dec_c5",
+    "dec_ups3",
+    "dec_c_cout",
+]
+
+# The fixture used for the (single-fixture) intermediate-activation sweep.
+LAYER_DIAG_FIXTURE = "ui1"
+
 
 def sha256_file(path):
     h = hashlib.sha256()
