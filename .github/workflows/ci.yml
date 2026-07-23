@@ -28,6 +28,10 @@ jobs:
           pip install -r requirements-ci.txt
 
       - name: Run pytest
+        # Runs the two CI-light-safe test files only (smoke + canonical-scale).
+        # These are NOT the entire repository test suite: cognitive/test_jokinen.py,
+        # tests/test_pipeline.py and saliency/test_full_pipeline.py exist too but
+        # need the heavy ML stack and are not run in this lightweight job.
         run: python -m pytest tests/test_smoke.py tests/test_canonical_scale.py -q
 
   deps-check:

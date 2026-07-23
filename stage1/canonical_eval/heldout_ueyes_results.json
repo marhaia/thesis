@@ -173,11 +173,28 @@
         2
       ],
       "bbox_stability": {
-        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes",
-        "coverage_1x_to_2x": 1.0,
-        "coverage_1x_to_3x": 1.0,
-        "mean_iou_1x_to_2x": 1.0,
-        "mean_iou_1x_to_3x": 1.0
+        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes; 1x is the reference set",
+        "not_applicable_reason": null,
+        "match_1x_to_2x": {
+          "applicable": true,
+          "n_reference_boxes": 2,
+          "n_candidate_boxes": 2,
+          "n_matched": 2,
+          "reference_coverage": 1.0,
+          "candidate_coverage": 1.0,
+          "symmetric_coverage": 1.0,
+          "mean_iou_matched": 0.9999999999999998
+        },
+        "match_1x_to_3x": {
+          "applicable": true,
+          "n_reference_boxes": 2,
+          "n_candidate_boxes": 2,
+          "n_matched": 2,
+          "reference_coverage": 1.0,
+          "candidate_coverage": 1.0,
+          "symmetric_coverage": 1.0,
+          "mean_iou_matched": 0.9999999999999998
+        }
       }
     },
     {
@@ -380,11 +397,28 @@
         4
       ],
       "bbox_stability": {
-        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes",
-        "coverage_1x_to_2x": 1.0,
-        "coverage_1x_to_3x": 1.0,
-        "mean_iou_1x_to_2x": 1.000000000000001,
-        "mean_iou_1x_to_3x": 1.000000000000001
+        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes; 1x is the reference set",
+        "not_applicable_reason": null,
+        "match_1x_to_2x": {
+          "applicable": true,
+          "n_reference_boxes": 3,
+          "n_candidate_boxes": 4,
+          "n_matched": 3,
+          "reference_coverage": 1.0,
+          "candidate_coverage": 0.75,
+          "symmetric_coverage": 0.8571428571428571,
+          "mean_iou_matched": 1.0
+        },
+        "match_1x_to_3x": {
+          "applicable": true,
+          "n_reference_boxes": 3,
+          "n_candidate_boxes": 4,
+          "n_matched": 3,
+          "reference_coverage": 1.0,
+          "candidate_coverage": 0.75,
+          "symmetric_coverage": 0.8571428571428571,
+          "mean_iou_matched": 1.0
+        }
       }
     },
     {
@@ -683,11 +717,28 @@
         9
       ],
       "bbox_stability": {
-        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes",
-        "coverage_1x_to_2x": 1.0,
-        "coverage_1x_to_3x": 1.0,
-        "mean_iou_1x_to_2x": 0.9961176827418873,
-        "mean_iou_1x_to_3x": 0.9961176827418873
+        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes; 1x is the reference set",
+        "not_applicable_reason": null,
+        "match_1x_to_2x": {
+          "applicable": true,
+          "n_reference_boxes": 9,
+          "n_candidate_boxes": 9,
+          "n_matched": 9,
+          "reference_coverage": 1.0,
+          "candidate_coverage": 1.0,
+          "symmetric_coverage": 1.0,
+          "mean_iou_matched": 0.9961176827418865
+        },
+        "match_1x_to_3x": {
+          "applicable": true,
+          "n_reference_boxes": 9,
+          "n_candidate_boxes": 9,
+          "n_matched": 9,
+          "reference_coverage": 1.0,
+          "candidate_coverage": 1.0,
+          "symmetric_coverage": 1.0,
+          "mean_iou_matched": 0.9961176827418865
+        }
       }
     },
     {
@@ -1226,11 +1277,28 @@
         23
       ],
       "bbox_stability": {
-        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes",
-        "coverage_1x_to_2x": 0.9130434782608695,
-        "coverage_1x_to_3x": 0.9130434782608695,
-        "mean_iou_1x_to_2x": 0.9921432967126245,
-        "mean_iou_1x_to_3x": 0.9945893601342978
+        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes; 1x is the reference set",
+        "not_applicable_reason": null,
+        "match_1x_to_2x": {
+          "applicable": true,
+          "n_reference_boxes": 23,
+          "n_candidate_boxes": 22,
+          "n_matched": 21,
+          "reference_coverage": 0.9130434782608695,
+          "candidate_coverage": 0.9545454545454546,
+          "symmetric_coverage": 0.9333333333333333,
+          "mean_iou_matched": 0.9921432967126241
+        },
+        "match_1x_to_3x": {
+          "applicable": true,
+          "n_reference_boxes": 23,
+          "n_candidate_boxes": 22,
+          "n_matched": 21,
+          "reference_coverage": 0.9130434782608695,
+          "candidate_coverage": 0.9545454545454546,
+          "symmetric_coverage": 0.9333333333333333,
+          "mean_iou_matched": 0.9945893601342974
+        }
       }
     },
     {
@@ -1364,11 +1432,28 @@
         0
       ],
       "bbox_stability": {
-        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes",
-        "coverage_1x_to_2x": 0.0,
-        "coverage_1x_to_3x": 0.0,
-        "mean_iou_1x_to_2x": 0.0,
-        "mean_iou_1x_to_3x": 0.0
+        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes; 1x is the reference set",
+        "not_applicable_reason": "1x reference detected zero boxes",
+        "match_1x_to_2x": {
+          "applicable": false,
+          "n_reference_boxes": 0,
+          "n_candidate_boxes": 0,
+          "n_matched": 0,
+          "reference_coverage": null,
+          "candidate_coverage": null,
+          "symmetric_coverage": null,
+          "mean_iou_matched": null
+        },
+        "match_1x_to_3x": {
+          "applicable": false,
+          "n_reference_boxes": 0,
+          "n_candidate_boxes": 0,
+          "n_matched": 0,
+          "reference_coverage": null,
+          "candidate_coverage": null,
+          "symmetric_coverage": null,
+          "mean_iou_matched": null
+        }
       }
     },
     {
@@ -1637,11 +1722,28 @@
         8
       ],
       "bbox_stability": {
-        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes",
-        "coverage_1x_to_2x": 1.0,
-        "coverage_1x_to_3x": 1.0,
-        "mean_iou_1x_to_2x": 0.950651212619623,
-        "mean_iou_1x_to_3x": 0.9502148031895503
+        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes; 1x is the reference set",
+        "not_applicable_reason": null,
+        "match_1x_to_2x": {
+          "applicable": true,
+          "n_reference_boxes": 6,
+          "n_candidate_boxes": 8,
+          "n_matched": 6,
+          "reference_coverage": 1.0,
+          "candidate_coverage": 0.75,
+          "symmetric_coverage": 0.8571428571428571,
+          "mean_iou_matched": 0.9506512126196226
+        },
+        "match_1x_to_3x": {
+          "applicable": true,
+          "n_reference_boxes": 6,
+          "n_candidate_boxes": 8,
+          "n_matched": 6,
+          "reference_coverage": 1.0,
+          "candidate_coverage": 0.75,
+          "symmetric_coverage": 0.8571428571428571,
+          "mean_iou_matched": 0.9502148031895498
+        }
       }
     },
     {
@@ -2120,11 +2222,28 @@
         19
       ],
       "bbox_stability": {
-        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes",
-        "coverage_1x_to_2x": 1.0,
-        "coverage_1x_to_3x": 1.0,
-        "mean_iou_1x_to_2x": 0.9973116927393338,
-        "mean_iou_1x_to_3x": 0.9961836409204823
+        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes; 1x is the reference set",
+        "not_applicable_reason": null,
+        "match_1x_to_2x": {
+          "applicable": true,
+          "n_reference_boxes": 19,
+          "n_candidate_boxes": 19,
+          "n_matched": 19,
+          "reference_coverage": 1.0,
+          "candidate_coverage": 1.0,
+          "symmetric_coverage": 1.0,
+          "mean_iou_matched": 0.9973116927393336
+        },
+        "match_1x_to_3x": {
+          "applicable": true,
+          "n_reference_boxes": 19,
+          "n_candidate_boxes": 19,
+          "n_matched": 19,
+          "reference_coverage": 1.0,
+          "candidate_coverage": 1.0,
+          "symmetric_coverage": 1.0,
+          "mean_iou_matched": 0.9961836409204822
+        }
       }
     },
     {
@@ -3053,11 +3172,28 @@
         46
       ],
       "bbox_stability": {
-        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes",
-        "coverage_1x_to_2x": 0.9347826086956522,
-        "coverage_1x_to_3x": 0.9347826086956522,
-        "mean_iou_1x_to_2x": 0.9915721285323359,
-        "mean_iou_1x_to_3x": 0.989155702089578
+        "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, canonical-normalised boxes; 1x is the reference set",
+        "not_applicable_reason": null,
+        "match_1x_to_2x": {
+          "applicable": true,
+          "n_reference_boxes": 46,
+          "n_candidate_boxes": 43,
+          "n_matched": 43,
+          "reference_coverage": 0.9347826086956522,
+          "candidate_coverage": 1.0,
+          "symmetric_coverage": 0.9662921348314607,
+          "mean_iou_matched": 0.9915721285323352
+        },
+        "match_1x_to_3x": {
+          "applicable": true,
+          "n_reference_boxes": 46,
+          "n_candidate_boxes": 43,
+          "n_matched": 43,
+          "reference_coverage": 0.9347826086956522,
+          "candidate_coverage": 1.0,
+          "symmetric_coverage": 0.9662921348314607,
+          "mean_iou_matched": 0.9891557020895771
+        }
       }
     }
   ]

@@ -354,7 +354,11 @@ def ueyes_perturbation(sel_images: List[Tuple[str, str, str]],
 
 def _iou(a: Tuple[float, float, float, float],
          b: Tuple[float, float, float, float]) -> float:
-    """Intersection-over-union of two (x, y, w, h) boxes in the same space."""
+    """Intersection-over-union of two (x, y, w, h) boxes in the same space.
+
+    The result is clamped to [0, 1] so floating-point rounding can never
+    report an IoU outside the mathematically valid range.
+    """
     ax, ay, aw, ah = a
     bx, by, bw, bh = b
     ix1, iy1 = max(ax, bx), max(ay, by)
@@ -362,23 +366,48 @@ def _iou(a: Tuple[float, float, float, float],
     iw, ih = max(0.0, ix2 - ix1), max(0.0, iy2 - iy1)
     inter = iw * ih
     union = aw * ah + bw * bh - inter
-    return float(inter / union) if union > 0 else 0.0
+    if union <= 0:
+        return 0.0
+    return float(min(max(inter / union, 0.0), 1.0))
 
 
-def _match_boxes(boxes_a: List[tuple], boxes_b: List[tuple],
-                 iou_thresh: float = 0.5) -> Tuple[float, float]:
-    """Greedy best-IoU one-to-one matching of two normalised box sets.
+def _match_boxes(ref_boxes: List[tuple], cand_boxes: List[tuple],
+                 iou_thresh: float = 0.5) -> Dict[str, object]:
+    """Greedy best-IoU one-to-one matching of a 1x reference box set against a
+    scaled candidate box set.
 
-    For each box in ``boxes_a`` the highest-IoU unused box in ``boxes_b`` is
-    taken as its match if their IoU >= ``iou_thresh``. Returns
-    ``(coverage, mean_iou_over_matched)`` where coverage is the fraction of
-    ``boxes_a`` that found a match.
+    Semantics:
+      * If the 1x reference set is EMPTY the comparison is NOT APPLICABLE
+        (``applicable=False``); coverages and mean IoU are returned as ``None``
+        rather than a misleading 0.0.
+      * ``reference_coverage`` is the DIRECTIONAL fraction of 1x-reference boxes
+        that found a match (it can be 1.0 even when the scaled image detects
+        EXTRA boxes).
+      * ``candidate_coverage`` is the directional fraction of scaled-image boxes
+        that were matched, so spurious extra 2x/3x detections are visible and
+        cannot be hidden behind ``reference_coverage == 1.0``.
+      * ``symmetric_coverage`` = 2 * matched / (n_ref + n_cand) collapses both
+        directions into a single figure.
+      * ``mean_iou_matched`` averages IoU over matched pairs only.
     """
+    n_ref = len(ref_boxes)
+    n_cand = len(cand_boxes)
+    if n_ref == 0:
+        return {
+            "applicable": False,
+            "n_reference_boxes": n_ref,
+            "n_candidate_boxes": n_cand,
+            "n_matched": 0,
+            "reference_coverage": None,
+            "candidate_coverage": None,
+            "symmetric_coverage": None,
+            "mean_iou_matched": None,
+        }
     used: set = set()
     ious: List[float] = []
-    for a in boxes_a:
+    for a in ref_boxes:
         best, best_j = -1.0, -1
-        for j, b in enumerate(boxes_b):
+        for j, b in enumerate(cand_boxes):
             if j in used:
                 continue
             v = _iou(a, b)
@@ -387,9 +416,20 @@ def _match_boxes(boxes_a: List[tuple], boxes_b: List[tuple],
         if best_j >= 0 and best >= iou_thresh:
             used.add(best_j)
             ious.append(best)
-    coverage = (len(ious) / len(boxes_a)) if boxes_a else 0.0
-    mean_iou = float(np.mean(ious)) if ious else 0.0
-    return float(coverage), mean_iou
+    n_matched = len(ious)
+    candidate_coverage = (n_matched / n_cand) if n_cand else None
+    symmetric_coverage = (2.0 * n_matched / (n_ref + n_cand))
+    return {
+        "applicable": True,
+        "n_reference_boxes": n_ref,
+        "n_candidate_boxes": n_cand,
+        "n_matched": n_matched,
+        "reference_coverage": float(n_matched / n_ref),
+        "candidate_coverage": (float(candidate_coverage)
+                               if candidate_coverage is not None else None),
+        "symmetric_coverage": float(symmetric_coverage),
+        "mean_iou_matched": float(np.mean(ious)) if ious else 0.0,
+    }
 
 
 def _index_decomposition(vis_by_scale: Dict[int, Dict[str, float]],
@@ -487,10 +527,10 @@ def heldout_ueyes(sample: List[Tuple[str, str, str]],
         decomp_canon = _index_decomposition(vis_by_scale, ws_canon, ex, scales)
         decomp_native = _index_decomposition(vis_by_scale, ws_native, ex, scales)
 
-        cov12, iou12 = _match_boxes(norm_boxes_by_scale[scales[0]],
-                                    norm_boxes_by_scale.get(2, []))
-        cov13, iou13 = _match_boxes(norm_boxes_by_scale[scales[0]],
-                                    norm_boxes_by_scale.get(3, []))
+        match_12 = _match_boxes(norm_boxes_by_scale[scales[0]],
+                                norm_boxes_by_scale.get(2, []))
+        match_13 = _match_boxes(norm_boxes_by_scale[scales[0]],
+                                norm_boxes_by_scale.get(3, []))
 
         ws_canon_vals = [ws_canon[s] for s in scales]
         ws_native_vals = [ws_native[s] for s in scales]
@@ -509,11 +549,13 @@ def heldout_ueyes(sample: List[Tuple[str, str, str]],
             "canonical_element_count_range": [int(min(ec_vals)), int(max(ec_vals))],
             "bbox_stability": {
                 "matching_method": "greedy best-IoU one-to-one, IoU>=0.5, "
-                                   "canonical-normalised boxes",
-                "coverage_1x_to_2x": cov12,
-                "coverage_1x_to_3x": cov13,
-                "mean_iou_1x_to_2x": iou12,
-                "mean_iou_1x_to_3x": iou13,
+                                   "canonical-normalised boxes; 1x is the "
+                                   "reference set",
+                "not_applicable_reason": (
+                    "1x reference detected zero boxes"
+                    if not match_12["applicable"] else None),
+                "match_1x_to_2x": match_12,
+                "match_1x_to_3x": match_13,
             },
         })
     return results
@@ -681,10 +723,20 @@ def main() -> int:
                   f"ws_only={dn['whitespace_only_point_gap']:.4f}pt "
                   f"vis_only={dn['visual_input_only_point_gap']:.4f}pt "
                   f"ws_abs_gap={r['native_whitespace_abs_gap']:.4f}")
-            print(f"        bbox 1x->2x cov={bb['coverage_1x_to_2x']:.2f} "
-                  f"iou={bb['mean_iou_1x_to_2x']:.3f}  "
-                  f"1x->3x cov={bb['coverage_1x_to_3x']:.2f} "
-                  f"iou={bb['mean_iou_1x_to_3x']:.3f}  "
+
+            def _fmt_match(m: dict) -> str:
+                if not m["applicable"]:
+                    return "N/A (1x has zero boxes)"
+                cc = ("n/a" if m["candidate_coverage"] is None
+                      else f"{m['candidate_coverage']:.2f}")
+                return (f"ref_cov={m['reference_coverage']:.2f} "
+                        f"cand_cov={cc} sym_cov={m['symmetric_coverage']:.2f} "
+                        f"iou={m['mean_iou_matched']:.3f} "
+                        f"(ref={m['n_reference_boxes']} "
+                        f"cand={m['n_candidate_boxes']})")
+
+            print(f"        bbox 1x->2x {_fmt_match(bb['match_1x_to_2x'])}")
+            print(f"        bbox 1x->3x {_fmt_match(bb['match_1x_to_3x'])}  "
                   f"elem_range={r['canonical_element_count_range']}")
         with open(os.path.join(args.out_dir, "heldout_ueyes_results.json"),
                   "w") as f:

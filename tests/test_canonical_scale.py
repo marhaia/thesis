@@ -1,6 +1,6 @@
 """Canonical-analysis-resolution regression tests.
 
-These tests validate the ROOT-CAUSE fix for the deterministic scale-invariance
+These tests validate the ROOT-CAUSE fix for the deterministic scale-sensitivity
 defect: the eight Stage-1 visual features are computed on a fixed,
 aspect-ratio-preserving canonical resolution, so the same layout rendered at
 different native resolutions yields a materially equivalent analysis input.
@@ -59,7 +59,7 @@ from canonical_scale_eval import (  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Scale-invariance guards.
+# Scale-stability guards.
 #
 # HONEST STATUS: these thresholds are POST-HOC regression guards, not
 # pre-registered materiality thresholds. They were chosen AFTER observing the
@@ -82,7 +82,7 @@ from canonical_scale_eval import (  # noqa: E402
 # particular retains a real sub-pixel resampling residual (up to ~20 % raw /
 # ~14 % normalized on the text-heavy fixture). The tests demonstrate that this
 # residual does not materially move the endpoint index (ENDPOINT_ABS_GUARD),
-# rather than pretending the raw feature is scale-invariant.
+# rather than pretending the raw feature has a fully standardised scale.
 # ---------------------------------------------------------------------------
 ENDPOINT_ABS_GUARD = 0.02
 DRIVER_NORM_GUARD = 0.05
@@ -220,7 +220,7 @@ def test_feature_vector_is_deterministic():
 
 
 # ---------------------------------------------------------------------------
-# 3. Scale invariance across 1x / 2x / 3x, per fixture.
+# 3. Scale-stability across 1x / 2x / 3x, per fixture.
 #
 #    Reports (for transparency) every raw feature's absolute + relative gap and
 #    every normalized HCEye input, and ASSERTS on what actually matters:
@@ -634,7 +634,7 @@ def test_fixtures_are_independently_rendered_not_raster_enlarged():
 
 
 # ---------------------------------------------------------------------------
-# 6. End-to-end endpoint scale invariance.
+# 6. End-to-end endpoint scale-stability.
 #
 # The prospective guard: the HCEye cognitive-load index lives in [0, 1]; a
 # maximum gap <= 0.01 across 1x/2x/3x equals <= 1.0 displayed point on the

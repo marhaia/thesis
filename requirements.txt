@@ -10,10 +10,11 @@ pandas==2.3.3
 # Headless OpenCV: the app is a server-side image pipeline with NO GUI calls
 # (no cv2.imshow/namedWindow/waitKey anywhere), so the non-GUI wheel is the
 # correct distribution and avoids the unused Qt/GTK GUI dependencies. Pinned to
-# 4.10.0.84 because its wheels declare numpy 1.x compatibility, whereas
-# opencv-python(-headless) >= 4.11 require numpy >= 2 on Python 3.9 and would
-# conflict with numpy==1.26.4 (kept for TensorFlow 2.16.2). This is the SAME
-# numerical OpenCV version used by requirements-ci.txt.
+# 4.10.0.84, whose wheels declare numpy 1.x compatibility. The previously pinned
+# opencv-python==4.13.0.92 required a numpy version incompatible with the pinned
+# numpy==1.26.4 / TensorFlow 2.16.2 stack on Python 3.9, which made
+# `pip install -r requirements.txt` unresolvable (verified by dry-run). This is
+# the SAME numerical OpenCV version used by requirements-ci.txt.
 opencv-python-headless==4.10.0.84
 scikit-image==0.24.0
 pillow==11.3.0

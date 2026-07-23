@@ -177,8 +177,19 @@ What the evaluation shows:
   This is kept purely to reproduce/explain the baseline decomposition, not
   because it still feeds any score.
 - **Canonical element geometry is stable.** Per-scale normalised canonical
-  bounding boxes are saved, and their 1x→2x / 1x→3x matching coverage and mean
-  IoU (greedy best-IoU one-to-one, IoU ≥ 0.5) are summarised per image.
+  bounding boxes are saved, and the 1x set is matched against the 2x and 3x sets
+  (greedy best-IoU one-to-one, IoU ≥ 0.5). To avoid hiding extra detections, the
+  report gives both the **directional 1x-reference coverage** (fraction of 1x
+  boxes matched — this can be 1.0 even when the enlarged image finds extra
+  boxes), the **candidate-side coverage** (fraction of 2x/3x boxes matched, so
+  spurious extra detections are visible) and a **symmetric coverage**
+  (`2·matched / (n_ref + n_cand)`). IoU values are clamped to [0, 1]. Images
+  whose 1x reference detects **zero** boxes (e.g. the low-detail poster
+  `0e136e`) are marked **not applicable** and excluded from the numeric ranges,
+  rather than reported as coverage/IoU = 0. Across the applicable held-out
+  images the mean matched IoU is ~0.95–1.00; reference coverage is 0.91–1.00 and
+  candidate coverage 0.75–1.00 (the candidate figure exposes a few extra
+  enlarged-image detections that a reference-only coverage of 1.0 would mask).
 - **A raster-stress residual remains on the canonical path.** Even with
   whitespace canonicalised, the canonical combined displayed-point gap is not
   zero on raster-enlarged real images: the maximum is **≈ 2.114 displayed

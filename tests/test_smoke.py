@@ -496,7 +496,8 @@ def test_cognitive_load_fullscreen_is_valid(client):
 def test_cognitive_load_scale_invariance_sanity(client, monkeypatch):
     # The SAME layout re-rendered at 1x and 2x must read within 1.0 displayed
     # point (== 0.01 on the 0-1 HCEye index): the layout score now runs on the
-    # canonical analysis image, so it is resolution-invariant.
+    # canonical analysis image (a standardised analysis scale), so its measured
+    # scale sensitivity is reduced. This is a scale-stability regression guard.
     #
     # Explicitly disabled here so the check is deterministic and isolates the
     # layout-scale path (both also degrade gracefully in CI-light):
