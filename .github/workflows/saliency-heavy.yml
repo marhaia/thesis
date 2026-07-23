@@ -1,0 +1,62 @@
+name: Saliency real-checkpoint regression (heavy)
+
+# Optional, opt-in heavy job. It downloads the authoritative UMSI++ checkpoint
+# from the GitHub release, verifies its exact size + SHA-256, installs the full
+# ML stack, and runs the marked real-checkpoint regression test. It is NOT part
+# of the fast CI-light gate: it runs only on manual dispatch or when the
+# saliency code / this workflow changes.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "saliency/**"
+      - "tests/test_saliency_integrity.py"
+      - ".github/workflows/saliency-heavy.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  real-checkpoint:
+    name: UMSI++ strict-load + saliency-map regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+          cache: pip
+
+      - name: Install full runtime + test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Download authoritative UMSI++ checkpoint
+        env:
+          # download_weights.py falls back to the authenticated asset API when a
+          # token is present (needed while the repo/release is private).
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/download_weights.py
+
+      - name: Verify checkpoint provenance (exact size + SHA-256)
+        shell: bash
+        run: |
+          set -euo pipefail
+          WP="saliency/weights/model_weights/saliency_models/UMSI++/umsi++.hdf5"
+          EXPECTED_SIZE=120093896
+          EXPECTED_SHA=f4290c3f11f18befbb47de50d81e4555ec8e7a63066c71c343a32fe32799e9fe
+          ACTUAL_SIZE=$(stat -c%s "$WP")
+          ACTUAL_SHA=$(sha256sum "$WP" | cut -d' ' -f1)
+          echo "size: $ACTUAL_SIZE (expected $EXPECTED_SIZE)"
+          echo "sha256: $ACTUAL_SHA"
+          test "$ACTUAL_SIZE" = "$EXPECTED_SIZE"
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+
+      - name: Run marked real-checkpoint regression test
+        run: python -m pytest tests/test_saliency_integrity.py -m real_checkpoint -q
