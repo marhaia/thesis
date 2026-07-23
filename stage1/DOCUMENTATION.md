@@ -64,7 +64,7 @@
 
 ## 1. Overview
 
-Stage 1 extracts a **visual complexity vector v ∈ ℝ⁸** from a single GUI screenshot, plus an optional **saliency feature vector s ∈ ℝ⁵** predicted by UMSI++. Together they form the **extended feature vector v̂ ∈ ℝ¹³** that feeds into the cognitive-load layer.
+Stage 1 extracts a **visual complexity vector v ∈ ℝ⁸** from a single GUI screenshot, plus a **saliency feature vector s ∈ ℝ⁵** predicted by UMSI++. Together they form the **extended feature vector v̂ ∈ ℝ¹³** that feeds into the cognitive-load layer. The saliency vector is optional for the image-only `/api/analyze` route, but it is **required** by `/api/saliency` and `/api/cognitive-load`, which fail closed (HTTP 503) if the UMSI++ checkpoint is unavailable or produces an invalid map.
 
 Additionally, the **Jokinen 2020 Cognitive Search Model** provides per-element **predicted visual search time** — the central cognitive metric that bridges the gap between AIM's existing visual metrics and actual user performance.
 

@@ -99,6 +99,29 @@ def test_extract_rejects_non_2d_map():
         extract_saliency_features(np.linspace(0, 1, 100).astype(np.float32))
 
 
+def test_extract_rejects_hxwx1_map():
+    # An (H, W, 1) array is a raw-model-output shape, NOT a feature-extraction
+    # input. It must be rejected, never silently squeezed to 2D.
+    m = _valid_map()[:, :, None]
+    assert m.ndim == 3 and m.shape[2] == 1
+    with pytest.raises(InvalidSaliencyMapError):
+        extract_saliency_features(m)
+
+
+def test_extract_rejects_hxwx3_map():
+    m = np.stack([_valid_map()] * 3, axis=-1)
+    assert m.ndim == 3 and m.shape[2] == 3
+    with pytest.raises(InvalidSaliencyMapError):
+        extract_saliency_features(m)
+
+
+def test_extract_accepts_exact_2d_map():
+    m = _valid_map()
+    assert m.ndim == 2
+    feats = extract_saliency_features(m)
+    assert set(feats.keys()) == _FEATURE_KEYS
+
+
 def test_extract_does_not_hidden_renormalise():
     # A correctly [0, 1] map and the SAME map scaled into [0, 0.5] must produce
     # DIFFERENT features: the old code divided by max() internally, which would
@@ -363,6 +386,37 @@ def test_subtly_out_of_range_map_at_boundary_fails_closed(
     # return a sanitized 503.
     import app as app_module
     monkeypatch.setattr(app_module, "_predict_saliency_cached", boundary_fn)
+    r = client.post(
+        url, data={"image": (io.BytesIO(_png_bytes()), "s.png")},
+        content_type="multipart/form-data",
+    )
+    assert r.status_code == 503, r.get_data(as_text=True)
+    body = r.get_json()
+    assert body.get("error") == "saliency_unavailable"
+    assert body.get("saliency_used") is False
+    for banned in ("cognitive_load_index", "layout", "full_feature_vector"):
+        assert banned not in body
+    text = r.get_data(as_text=True)
+    assert "Traceback" not in text
+    assert ROOT not in text
+
+
+def _hxwx1_map_saliency(*args, **kwargs):
+    # A valid-looking but WRONG-SHAPE (H, W, 1) map at the cache boundary. The
+    # 2D contract must reject it (no silent squeeze) so both endpoints fail
+    # closed rather than returning plausible features.
+    yy, xx = np.mgrid[0:64, 0:64]
+    hm = np.exp(-(((xx - 32) ** 2 + (yy - 32) ** 2) / (2 * 12.0 ** 2)))
+    hm = (hm - hm.min()) / (hm.max() - hm.min())
+    hm = hm.astype(np.float32)[:, :, None]  # (64, 64, 1)
+    return hm, np.zeros(6, dtype=np.float32), False
+
+
+@pytest.mark.parametrize("url", ["/api/saliency", "/api/cognitive-load"])
+def test_hxwx1_map_at_boundary_fails_closed(client, monkeypatch, url):
+    import app as app_module
+    monkeypatch.setattr(app_module, "_predict_saliency_cached",
+                        _hxwx1_map_saliency)
     r = client.post(
         url, data={"image": (io.BytesIO(_png_bytes()), "s.png")},
         content_type="multipart/form-data",

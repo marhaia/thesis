@@ -345,8 +345,9 @@ def test_analyze_normal_image_is_not_400(client):
     data = {"image": (io.BytesIO(_png_bytes(300, 400)), "ok.png")}
     resp = client.post("/api/analyze", data=data,
                        content_type="multipart/form-data")
-    # A normal image must NOT hit the too-small 400 path (200 expected; the
-    # saliency stage degrades gracefully without the ML stack).
+    # A normal image must NOT hit the too-small 400 path (200 expected).
+    # /api/analyze returns only the 8-feature visual-complexity vector and does
+    # not run the saliency stage, so no ML weights are needed here.
     assert resp.status_code == 200, resp.get_data(as_text=True)
 
 
@@ -368,9 +369,10 @@ def test_analyze_normal_image_is_not_400(client):
 #   (E) the returned detected_elements are the NATIVE-coordinate elements, and
 #   (F) the mapped readability boxes stay inside the native image bounds.
 #
-# Saliency is disabled (spied to raise) so no ML weights are needed; OCR and
-# Jokinen are stubbed to keep the test fast and deterministic while still
-# capturing exactly what the endpoint passed them.
+# Saliency is provided a deterministic valid [0, 1] map so no ML weights are
+# needed (the endpoint now REQUIRES saliency); OCR and Jokinen are stubbed to
+# keep the test fast and deterministic while still capturing exactly what the
+# endpoint passed them.
 # ---------------------------------------------------------------------------
 import app as app_module  # noqa: E402
 import canonical_layout as canonical_layout_mod  # noqa: E402
@@ -717,3 +719,53 @@ def test_cognitive_load_index_scale_invariant_through_endpoint(client, monkeypat
         assert gap <= SYNTHETIC_ENDPOINT_GUARD, (
             f"{name}: cognitive_load_index gap {gap:.5f} exceeds "
             f"{SYNTHETIC_ENDPOINT_GUARD} (= 1.0 displayed point). idx={idx}")
+
+
+# ---------------------------------------------------------------------------
+# 7. Endpoint-scale-matrix generator contract.
+#
+# endpoint_scale_matrix.py regenerates a committed scale/wiring artifact by
+# installing deterministic mocks on the real /api/cognitive-load route. Because
+# the route now REQUIRES a valid saliency map (no silent degradation), the
+# generator's saliency mock must itself satisfy that contract: it must return a
+# finite, non-constant 2D map in exact [0, 1] so the route answers HTTP 200 with
+# saliency_used=true. This test drives the generator's OWN installed mocks
+# through the real route and proves that contract, so the artifact can never
+# silently regress to a fail-closed 503 (which would previously have been the
+# case when the mock raised).
+# ---------------------------------------------------------------------------
+def test_endpoint_scale_matrix_mock_satisfies_saliency_contract(client):
+    import io
+    import app as app_module
+    import cognitive.text_reader as text_reader_mod
+    import endpoint_scale_matrix as esm
+
+    # The generator's saliency mock must be a VALID 2D map (not a raiser).
+    heatmap, aux, cache_hit = esm._deterministic_valid_saliency()
+    assert heatmap.ndim == 2, heatmap.shape
+    assert np.isfinite(heatmap).all()
+    assert float(heatmap.min()) >= 0.0 and float(heatmap.max()) <= 1.0
+    assert float(heatmap.max()) > float(heatmap.min())  # non-constant
+    assert aux.shape == (6,)
+    assert cache_hit is False
+
+    # Install exactly the generator's own mocks on the real route and confirm
+    # the required-saliency contract is met (HTTP 200, saliency_used=true).
+    saved_saliency = app_module._predict_saliency_cached
+    saved_ocr = text_reader_mod.compute_readability
+    esm._install_mocks()
+    try:
+        ok, buf = cv2.imencode(".png", _synthetic_ui(400, 640))
+        assert ok
+        data = {"image": (io.BytesIO(buf.tobytes()), "gen.png")}
+        resp = client.post("/api/cognitive-load", data=data,
+                           content_type="multipart/form-data")
+        assert resp.status_code == 200, resp.get_data(as_text=True)
+        body = resp.get_json()
+        assert body.get("saliency_used") is True
+        assert "cognitive_load_index" in body
+    finally:
+        # Restore the real boundary functions patched by _install_mocks so the
+        # module-level side effects do not leak into other tests.
+        app_module._predict_saliency_cached = saved_saliency
+        text_reader_mod.compute_readability = saved_ocr

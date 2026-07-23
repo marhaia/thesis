@@ -126,8 +126,10 @@ The weights are derived from the **UEyes CHI2023** model. See the original
 project page for the source dataset and weights:
 <https://userinterfaces.aalto.fi/ueyeschi23>.
 
-> The visual complexity metrics (Stage 1) run **without** the weights. Only the
-> saliency endpoints require them.
+> The visual complexity metrics (Stage 1) run **without** the weights. The
+> `/api/saliency` and `/api/cognitive-load` endpoints **require** the UMSI++
+> checkpoint and fail closed (HTTP 503) without it; the search-time, scanpath
+> and learning-curve endpoints remain usable without it.
 
 ---
 
@@ -168,7 +170,7 @@ The Flask app exposes a small JSON API (default port `5001`):
 | `/api/saliency`             | POST   | Upload an image → returns saliency features (needs weights) |
 | `/api/search-time`          | POST   | Predicted visual search time per element             |
 | `/api/scanpath-to-target`   | POST   | Predicted scanpath to a selected target element + glance metrics |
-| `/api/cognitive-load`       | POST   | Main orchestrator: runs v → s → h, task/profile modifiers, coherence check, reference norms and feedback; returns the deployed 0–100 load score |
+| `/api/cognitive-load`       | POST   | Main orchestrator: runs v → s → h, task/profile modifiers, coherence check, reference norms and feedback; returns the deployed 0–100 load score (requires UMSI++ checkpoint) |
 | `/api/screen-consistency`   | POST   | Inter-screen consistency across several screens or one animated GIF |
 | `/api/learning-curve`       | POST   | Predicted novice→expert search-effort curve for a screen |
 | `/api/features`             | GET    | Metadata describing the 8 features                   |

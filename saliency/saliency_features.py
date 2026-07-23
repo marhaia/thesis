@@ -82,16 +82,21 @@ def extract_saliency_features(saliency_map: np.ndarray) -> Dict[str, float]:
           - saliency_coverage
 
     Raises:
-        InvalidSaliencyMapError: if the input is empty, not 2D, contains
-            non-finite values, lies outside [0, 1], or is constant
+        InvalidSaliencyMapError: if the input is empty, not exactly 2D,
+            contains non-finite values, lies outside [0, 1], or is constant
             (zero dynamic range).
     """
     smap = np.asarray(saliency_map)
-    if smap.ndim == 3 and smap.shape[2] == 1:
-        smap = smap[:, :, 0]
+    # Enforce the actual 2D feature contract EXACTLY. An (H, W, 1) array is a
+    # raw-model-output shape, not a feature-extraction input: silently squeezing
+    # it here would mask an upstream wiring bug (e.g. a caller forwarding the
+    # unpostprocessed model tensor). postprocess_saliency owns the H×W×1 → H×W
+    # contract; feature extraction requires the already-2D heatmap it returns.
     if smap.ndim != 2:
         raise InvalidSaliencyMapError(
-            f"Saliency map must be 2D, got shape {tuple(np.shape(saliency_map))}."
+            f"Saliency map must be exactly 2D (H, W), got shape "
+            f"{tuple(np.shape(saliency_map))}. Callers must pass the 2D heatmap "
+            "produced by postprocess_saliency, not a raw H×W×1 model tensor."
         )
     if smap.size == 0:
         raise InvalidSaliencyMapError("Saliency map is empty (zero elements).")

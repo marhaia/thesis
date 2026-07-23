@@ -27,7 +27,7 @@
 #
 # This module is OPTIONAL. If EasyOCR (and its torch backend) is not installed,
 # every public function degrades gracefully and returns None, so the rest of
-# the pipeline keeps working (mirrors the optional saliency block).
+# the pipeline keeps working (text_density then uses its neutral fallback).
 #
 # References:
 #   Smith, R. (2007). An overview of the Tesseract OCR engine. ICDAR.

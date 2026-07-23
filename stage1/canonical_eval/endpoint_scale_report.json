@@ -1,10 +1,11 @@
 {
-  "description": "TRUE endpoint scale matrix produced through the real Flask /api/cognitive-load route. NOT the reduced HCEye-rule fixture_scale_report.json.",
+  "description": "Production-route scale/wiring matrix produced through the real Flask /api/cognitive-load route using a DETERMINISTIC VALID SALIENCY MOCK (not real UMSI++ output). saliency_used=true on every call. This is a synthetic scale/wiring artifact, not real-UMSI evidence; it is DISTINCT from the reduced HCEye-rule fixture_scale_report.json and from the separate real-checkpoint scale evidence.",
   "environment": {
     "numpy": "1.26.4",
     "opencv": "4.10.0",
     "python": "3.9.6"
   },
+  "evidence_class": "synthetic_mocked_saliency_scale_wiring",
   "fixtures": {
     "gradient": {
       "analysis_provenance_by_scale": {
@@ -65,23 +66,23 @@
       },
       "cognitive_load_index": {
         "by_scale": {
-          "1": 0.0468866266310215,
-          "2": 0.0468754805624485,
-          "3": 0.04687537997961044
+          "1": 0.04398320987820625,
+          "2": 0.04397900775074959,
+          "3": 0.04397709295153618
         },
-        "displayed_point_gap": 0.0011246651411056519,
-        "raw_abs_gap": 1.1246651411056519e-05,
-        "raw_rel_gap": 0.00023990726022889118
+        "displayed_point_gap": 0.0006116926670074463,
+        "raw_abs_gap": 6.116926670074463e-06,
+        "raw_rel_gap": 0.00013908500756511198
       },
       "layout_experimental_complexity_index": {
         "by_scale": {
-          "1": 4.688662746548651,
-          "2": 4.687548139691351,
-          "3": 4.687538081407546
+          "1": 4.398321071267127,
+          "2": 4.39790085852146,
+          "3": 4.397709378600119
         },
-        "displayed_point_gap": 0.0011246651411056519,
-        "raw_abs_gap": 0.0011246651411056519,
-        "raw_rel_gap": 0.00023990725595846057
+        "displayed_point_gap": 0.0006116926670074463,
+        "raw_abs_gap": 0.0006116926670074463,
+        "raw_rel_gap": 0.00013908500492613567
       },
       "profile": {
         "modifier": 0.0,
@@ -154,23 +155,23 @@
       },
       "cognitive_load_index": {
         "by_scale": {
-          "1": 0.23485925793647766,
-          "2": 0.23722657561302185,
-          "3": 0.23614703118801117
+          "1": 0.23158599436283112,
+          "2": 0.2340317964553833,
+          "3": 0.23291507363319397
         },
-        "displayed_point_gap": 0.23673176765441895,
-        "raw_abs_gap": 0.0023673176765441895,
-        "raw_rel_gap": 0.010027708940427009
+        "displayed_point_gap": 0.2445802092552185,
+        "raw_abs_gap": 0.002445802092552185,
+        "raw_rel_gap": 0.01050402443615731
       },
       "layout_experimental_complexity_index": {
         "by_scale": {
-          "1": 23.485925877094267,
-          "2": 23.722657644748686,
-          "3": 23.614703202247618
+          "1": 23.158599519729613,
+          "2": 23.40317972898483,
+          "3": 23.2915074467659
         },
-        "displayed_point_gap": 0.23673176765441895,
-        "raw_abs_gap": 0.23673176765441895,
-        "raw_rel_gap": 0.010027708904982006
+        "displayed_point_gap": 0.2445802092552185,
+        "raw_abs_gap": 0.2445802092552185,
+        "raw_rel_gap": 0.010504024398513093
       },
       "profile": {
         "modifier": 0.0,
@@ -243,23 +244,23 @@
       },
       "cognitive_load_index": {
         "by_scale": {
-          "1": 0.5560059547424316,
-          "2": 0.5534077882766724,
-          "3": 0.5535963773727417
+          "1": 0.6072466969490051,
+          "2": 0.6046091914176941,
+          "3": 0.6048191785812378
         },
-        "displayed_point_gap": 0.25981664657592773,
-        "raw_abs_gap": 0.0025981664657592773,
-        "raw_rel_gap": 0.004686982539493662
+        "displayed_point_gap": 0.2637505531311035,
+        "raw_abs_gap": 0.002637505531311035,
+        "raw_rel_gap": 0.0043554935815937335
       },
       "layout_experimental_complexity_index": {
         "by_scale": {
-          "1": 55.600595557689665,
-          "2": 55.34077891111374,
-          "3": 55.35963782072067
+          "1": 60.724669778347014,
+          "2": 60.46091922521591,
+          "3": 60.48191794157028
         },
-        "displayed_point_gap": 0.25981664657592773,
-        "raw_abs_gap": 0.25981664657592773,
-        "raw_rel_gap": 0.0046869825324381605
+        "displayed_point_gap": 0.2637505531311035,
+        "raw_abs_gap": 0.2637505531311035,
+        "raw_rel_gap": 0.0043554935755918235
       },
       "profile": {
         "modifier": 0.0,
@@ -277,7 +278,8 @@
   "mocked_components": [
     {
       "component": "saliency_umsi_plus_plus",
-      "effect": "raises -> endpoint sets s=None (saliency vector = zeros(5))",
+      "effect": "returns a deterministic, finite, non-constant 2D saliency map in exact [0, 1] (a fixed Gaussian blob), plus a zeros(6) auxiliary vector and cache_hit=false. The required-saliency contract is satisfied: the endpoint returns HTTP 200 with saliency_used=true. This is a VALID SALIENCY MOCK for a scale/wiring run; it is not real UMSI++ output.",
+      "mock_type": "deterministic_valid_saliency_map",
       "route_symbol": "app._predict_saliency_cached"
     },
     {
@@ -287,6 +289,7 @@
     }
   ],
   "route": "/api/cognitive-load",
+  "saliency_used": true,
   "scales": [
     1,
     2,

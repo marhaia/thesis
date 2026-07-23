@@ -1,4 +1,4 @@
-"""Endpoint scale matrix — the TRUE two-path endpoint evidence.
+"""Endpoint scale matrix — production-route scale/wiring run (MOCKED saliency).
 
 This script drives the REAL Flask ``/api/cognitive-load`` route (via the Flask
 test client) for every deterministic synthetic fixture at 1x/2x/3x and records
@@ -11,11 +11,16 @@ For each metric the per-scale values and the 1x/2x/3x gap are saved in both the
 raw units and in *displayed points* (the index shown on a 0..100 scale, i.e.
 ``cognitive_load_index * 100``; the complexity index is already 0..100).
 
-Two heavy ML stages are deterministically neutralised so the artifact can be
-regenerated without model weights, and every neutralised component is written
-into the report under ``mocked_components`` (exactly as required):
+This is a SCALE / WIRING run, NOT real-UMSI evidence. Two heavy ML stages are
+deterministically neutralised so the artifact can be regenerated without model
+weights, and every neutralised component is written into the report under
+``mocked_components``:
 
-  * UMSI++ saliency is disabled -> the endpoint degrades to ``s = None``.
+  * UMSI++ saliency is replaced by a DETERMINISTIC VALID SALIENCY MOCK: a
+    finite, non-constant 2D map in exact [0, 1] returned at the
+    ``_predict_saliency_cached`` boundary. The endpoint therefore satisfies its
+    required-saliency contract and returns HTTP 200 with ``saliency_used=true``.
+    It does not exercise any fail-closed path and it is not a real-UMSI score.
   * EasyOCR ``compute_readability`` is disabled -> ``text_density`` uses the
     neutral fallback (``text_density_source = "fallback_neutral"``).
 
@@ -23,9 +28,12 @@ Everything else (the canonical layout path, the eight visual features, the
 HCEye rule mapping, the task/profile modifiers and the native element / Jokinen
 path) runs through the real route unchanged.
 
-This is DISTINCT from ``fixture_scale_report.json`` (the reduced HCEye-rule
-calculation produced by ``canonical_scale_eval.py``): that file is the
-feature-only rule index and must never be substituted for this endpoint matrix.
+This synthetic mocked-saliency matrix is DISTINCT from:
+  * ``fixture_scale_report.json`` (the reduced HCEye-rule feature-only index
+    from ``canonical_scale_eval.py``); and
+  * the separate real-checkpoint scale evidence (real UMSI++ output).
+None of these may be substituted for one another, and this file must never be
+called a "TRUE production score" or real-UMSI evidence.
 
 Usage:
     python stage1/tools/endpoint_scale_matrix.py [--out-dir DIR]
@@ -60,7 +68,14 @@ MOCKED_COMPONENTS = [
     {
         "component": "saliency_umsi_plus_plus",
         "route_symbol": "app._predict_saliency_cached",
-        "effect": "raises -> endpoint sets s=None (saliency vector = zeros(5))",
+        "mock_type": "deterministic_valid_saliency_map",
+        "effect": (
+            "returns a deterministic, finite, non-constant 2D saliency map in "
+            "exact [0, 1] (a fixed Gaussian blob), plus a zeros(6) auxiliary "
+            "vector and cache_hit=false. The required-saliency contract is "
+            "satisfied: the endpoint returns HTTP 200 with saliency_used=true. "
+            "This is a VALID SALIENCY MOCK for a scale/wiring run; it is not "
+            "real UMSI++ output."),
     },
     {
         "component": "ocr_easyocr_compute_readability",
@@ -71,22 +86,38 @@ MOCKED_COMPONENTS = [
 ]
 
 
-def _install_mocks():
-    """Neutralise saliency and OCR on the real route (deterministic, no weights).
+def _deterministic_valid_saliency(*_a, **_k):
+    """A deterministic, finite, non-constant 2D saliency map in exact [0, 1].
 
-    The native element detector and the Jokinen search model are left REAL:
-    they are deterministic and do not affect either saved score.
+    Returned at the ``_predict_saliency_cached`` boundary in the normal internal
+    tuple shape ``(heatmap_2d, aux_zeros(6), cache_hit=False)`` so the real
+    route runs its required-saliency path and returns HTTP 200. This is a VALID
+    SALIENCY MOCK, not real UMSI++ output.
+    """
+    yy, xx = np.mgrid[0:64, 0:64]
+    hm = np.exp(-(((xx - 32) ** 2 + (yy - 20) ** 2) / (2 * 12.0 ** 2)))
+    hm += 0.5 * np.exp(-(((xx - 44) ** 2 + (yy - 46) ** 2) / (2 * 8.0 ** 2)))
+    hm = (hm - hm.min()) / (hm.max() - hm.min())  # exact [0, 1], non-constant
+    return hm.astype(np.float32), np.zeros(6, dtype=np.float32), False
+
+
+def _install_mocks():
+    """Install a VALID deterministic saliency mock and neutralise OCR.
+
+    Saliency is replaced by a deterministic valid 2D map (see
+    ``_deterministic_valid_saliency``) so the required-saliency route returns
+    HTTP 200 with saliency_used=true. OCR is neutralised so text_density uses
+    its neutral fallback. The native element detector and the Jokinen search
+    model are left REAL: they are deterministic and do not affect either saved
+    score.
     """
     import app as app_module
     import cognitive.text_reader as text_reader_mod
 
-    def _no_saliency(*_a, **_k):
-        raise RuntimeError("saliency disabled for endpoint scale matrix")
-
     def _no_ocr(*_a, **_k):
         return None
 
-    app_module._predict_saliency_cached = _no_saliency
+    app_module._predict_saliency_cached = _deterministic_valid_saliency
     text_reader_mod.compute_readability = _no_ocr
 
 
@@ -170,10 +201,16 @@ def build_matrix() -> dict:
 
     return {
         "description": (
-            "TRUE endpoint scale matrix produced through the real Flask "
-            "/api/cognitive-load route. NOT the reduced HCEye-rule "
-            "fixture_scale_report.json."),
+            "Production-route scale/wiring matrix produced through the real "
+            "Flask /api/cognitive-load route using a DETERMINISTIC VALID "
+            "SALIENCY MOCK (not real UMSI++ output). saliency_used=true on every "
+            "call. This is a synthetic scale/wiring artifact, not real-UMSI "
+            "evidence; it is DISTINCT from the reduced HCEye-rule "
+            "fixture_scale_report.json and from the separate real-checkpoint "
+            "scale evidence."),
+        "evidence_class": "synthetic_mocked_saliency_scale_wiring",
         "route": "/api/cognitive-load",
+        "saliency_used": True,
         "scales": list(SCALES),
         "mocked_components": MOCKED_COMPONENTS,
         "environment": {
@@ -186,7 +223,8 @@ def build_matrix() -> dict:
 
 
 def _print_matrix(matrix: dict) -> None:
-    print("Endpoint scale matrix (real /api/cognitive-load route)")
+    print("Endpoint scale matrix (real /api/cognitive-load route, "
+          "DETERMINISTIC VALID SALIENCY MOCK — not real UMSI++)")
     print(f"  python={matrix['environment']['python']} "
           f"numpy={matrix['environment']['numpy']} "
           f"opencv={matrix['environment']['opencv']}")

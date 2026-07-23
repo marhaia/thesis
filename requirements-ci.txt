@@ -1,8 +1,10 @@
 # Lightweight dependency set for CI smoke/regression tests (tests/test_smoke.py).
 # Deliberately EXCLUDES the heavy ML stack (tensorflow, torch, easyocr, shap):
-# the saliency stage degrades gracefully to image-only features, so the tested
-# endpoints run without it. Keeping CI light makes it fast and avoids pulling
-# multi-hundred-MB wheels on every push.
+# the CI-light tests never load the real UMSI++ checkpoint. Routes that require
+# saliency (/api/saliency, /api/cognitive-load) are exercised either with a
+# deterministic valid saliency mock or by asserting the fail-closed (HTTP 503)
+# contract, so no ML weights are needed. Keeping CI light makes it fast and
+# avoids pulling multi-hundred-MB wheels on every push.
 #
 # The full, pinned runtime stack lives in requirements.txt; a separate CI job
 # dry-run-resolves that file to catch real dependency conflicts.
