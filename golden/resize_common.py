@@ -20,8 +20,10 @@ edit) is:
 
 which reproduces the TF1.14 / Keras 2.3.1 UpSampling2D(interpolation='bilinear')
 semantics. align_corners=True is deliberately NOT used or tested.
+
+numpy is imported lazily (inside oracle_inputs) so this module — and the Phase 0
+manifest that imports it — loads with only the standard library present.
 """
-import numpy as np
 
 # Ordered decoder resize layers with (name, src_h, src_w, factor_h, factor_w).
 # Channel count is irrelevant to bilinear resize (applied per channel); the
@@ -69,6 +71,7 @@ def oracle_inputs():
     """Deterministic float32 ramp + checkerboard tensors for every decoder
     source shape. Returns a dict name -> (1, H, W, C) float32 array. The exact
     same bytes are consumed by the legacy operator and the modern candidate."""
+    import numpy as np
     out = {}
     for d in DECODER_RESIZE:
         h, w, c = d["src_h"], d["src_w"], ORACLE_CHANNELS

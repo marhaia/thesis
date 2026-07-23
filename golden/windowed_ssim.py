@@ -12,9 +12,11 @@ and JSON record exactly how it was computed:
     data_range = 1.0          (inputs are min-max normalised to [0, 1])
     boundary   = 'reflect'
     C1 = (K1*data_range)^2,  C2 = (K2*data_range)^2
+
+numpy + scipy are imported lazily (inside windowed_ssim) so this module — and
+the Phase 0 manifest that imports WINDOWED_SSIM_PARAMS — loads with only the
+standard library present.
 """
-import numpy as np
-from scipy.ndimage import uniform_filter
 
 WINDOWED_SSIM_PARAMS = {
     "implementation": "wang2004_uniform_window",
@@ -29,6 +31,8 @@ WINDOWED_SSIM_PARAMS = {
 
 def windowed_ssim(a, b):
     """Mean windowed SSIM between two 2D arrays already in [0, 1]."""
+    import numpy as np
+    from scipy.ndimage import uniform_filter
     a = np.asarray(a, dtype=np.float64)
     b = np.asarray(b, dtype=np.float64)
     if a.shape != b.shape:
