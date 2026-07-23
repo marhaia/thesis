@@ -290,7 +290,7 @@ jobs:
             cat deliver/causality_run.log
             echo
             echo "########## ARTIFACT VERIFICATION ##########"
-            python golden/verify_json.py deliver/umsi_resize_causality_6a17288.json
+            python golden/verify_causality.py deliver/umsi_resize_causality_6a17288.json
             cd deliver
             sha256sum umsi_resize_causality_6a17288.json \
                       umsi_resize_causality_arrays_6a17288.npz
