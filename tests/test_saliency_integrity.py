@@ -148,6 +148,53 @@ def test_extract_features_within_documented_ranges():
         assert float(pk) == float(int(pk)), "peak_count must be integer-valued"
 
 
+def test_extract_rejects_subtly_negative_map():
+    # A single -5e-7 pixel in an otherwise valid map must be REJECTED, not
+    # tolerated by a 1e-6 band and then clipped to constant zero territory.
+    m = _valid_map().astype(np.float64)
+    m[10, 10] = -5e-7
+    assert float(m.min()) < 0.0
+    with pytest.raises(InvalidSaliencyMapError):
+        extract_saliency_features(m)
+
+
+def test_extract_rejects_subtly_above_one_map():
+    # A single 1.0 + 5e-7 pixel must be REJECTED (strict upper bound).
+    m = _valid_map().astype(np.float64)
+    m[10, 10] = 1.0 + 5e-7
+    assert float(m.max()) > 1.0
+    with pytest.raises(InvalidSaliencyMapError):
+        extract_saliency_features(m)
+
+
+def test_extract_rejects_clip_to_zero_example():
+    # The exact example the independent review reproduced: a map whose only
+    # out-of-range content is a tiny negative that np.clip would flatten to 0.
+    # It must be rejected up front, never clipped into plausible features.
+    m = np.zeros((120, 160), dtype=np.float64)
+    m[:] = -5e-7  # would clip to constant 0.0
+    with pytest.raises(InvalidSaliencyMapError):
+        extract_saliency_features(m)
+
+
+def test_extract_rejects_clip_to_one_example():
+    # Mirror case: a map slightly above 1.0 everywhere would clip to constant 1.
+    m = np.full((120, 160), 1.0 + 5e-7, dtype=np.float64)
+    with pytest.raises(InvalidSaliencyMapError):
+        extract_saliency_features(m)
+
+
+def test_extract_accepts_valid_very_low_dynamic_range_map():
+    # A legitimate non-constant map fully inside [0, 1] with a TINY dynamic
+    # range must be accepted exactly (no tolerance band may reject it).
+    m = np.full((120, 160), 0.5, dtype=np.float64)
+    m[60, 80] = 0.5 + 1e-4  # non-constant, well inside [0, 1]
+    feats = extract_saliency_features(m)
+    assert set(feats.keys()) == _FEATURE_KEYS
+    for v in feats.values():
+        assert np.isfinite(v)
+
+
 # ---------------------------------------------------------------------------
 # B. postprocess_saliency: min-max once, reject non-finite / constant output
 # ---------------------------------------------------------------------------
@@ -265,6 +312,26 @@ def _constant_map_saliency(*args, **kwargs):
             np.zeros(6, dtype=np.float32), False)
 
 
+def _subtly_negative_saliency(*args, **kwargs):
+    # A non-constant map whose single out-of-range pixel is -5e-7. This must be
+    # rejected by the strict [0, 1] check (not tolerated then clipped).
+    yy, xx = np.mgrid[0:64, 0:64]
+    hm = np.exp(-(((xx - 32) ** 2 + (yy - 32) ** 2) / (2 * 12.0 ** 2)))
+    hm = (hm - hm.min()) / (hm.max() - hm.min())
+    hm = hm.astype(np.float32)
+    hm[0, 0] = np.float32(-5e-7)
+    return hm, np.zeros(6, dtype=np.float32), False
+
+
+def _subtly_above_one_saliency(*args, **kwargs):
+    yy, xx = np.mgrid[0:64, 0:64]
+    hm = np.exp(-(((xx - 32) ** 2 + (yy - 32) ** 2) / (2 * 12.0 ** 2)))
+    hm = (hm - hm.min()) / (hm.max() - hm.min())
+    hm = hm.astype(np.float64)
+    hm[0, 0] = 1.0 + 5e-7
+    return hm, np.zeros(6, dtype=np.float32), False
+
+
 @pytest.mark.parametrize("url", ["/api/saliency", "/api/cognitive-load"])
 def test_constant_map_at_cache_boundary_fails_closed(client, monkeypatch, url):
     # A constant heatmap returned at the _predict_saliency_cached boundary must
@@ -284,6 +351,31 @@ def test_constant_map_at_cache_boundary_fails_closed(client, monkeypatch, url):
     assert body.get("saliency_used") is False
     for banned in ("cognitive_load_index", "layout", "full_feature_vector"):
         assert banned not in body
+
+
+@pytest.mark.parametrize("boundary_fn", [_subtly_negative_saliency,
+                                         _subtly_above_one_saliency])
+@pytest.mark.parametrize("url", ["/api/saliency", "/api/cognitive-load"])
+def test_subtly_out_of_range_map_at_boundary_fails_closed(
+        client, monkeypatch, url, boundary_fn):
+    # A subtly out-of-range map (-5e-7 or 1.0 + 5e-7) supplied at the cache
+    # boundary must NOT be clipped into plausible features: both endpoints must
+    # return a sanitized 503.
+    import app as app_module
+    monkeypatch.setattr(app_module, "_predict_saliency_cached", boundary_fn)
+    r = client.post(
+        url, data={"image": (io.BytesIO(_png_bytes()), "s.png")},
+        content_type="multipart/form-data",
+    )
+    assert r.status_code == 503, r.get_data(as_text=True)
+    body = r.get_json()
+    assert body.get("error") == "saliency_unavailable"
+    assert body.get("saliency_used") is False
+    for banned in ("cognitive_load_index", "layout", "full_feature_vector"):
+        assert banned not in body
+    text = r.get_data(as_text=True)
+    assert "Traceback" not in text
+    assert ROOT not in text
 
 
 @pytest.mark.parametrize("url", ["/api/saliency", "/api/cognitive-load"])
@@ -494,3 +586,72 @@ def test_real_cognitive_load_endpoint_success(client, monkeypatch):
     for banned in ("design_classification", "predicted_class", "probabilities",
                    "out_of_domain"):
         assert banned not in body
+
+
+# ---------------------------------------------------------------------------
+# C (cleanup). Repository-hygiene regression: the previously-missed diagnostic
+# scripts and documentation must not resurrect the semantic-classification
+# vocabulary, and the diagnostic scripts must be import-safe (main()-guarded).
+# ---------------------------------------------------------------------------
+
+def _read(relpath: str) -> str:
+    with open(os.path.join(ROOT, relpath), encoding="utf-8") as fh:
+        return fh.read()
+
+
+def test_diagnostic_scripts_have_no_semantic_classification():
+    for rel in ("cognitive/test_jokinen.py", "saliency/test_full_pipeline.py"):
+        src = _read(rel)
+        assert "DESIGN_CLASSES" not in src, f"{rel} still references DESIGN_CLASSES"
+        assert "Predicted class" not in src, f"{rel} still prints a predicted class"
+        assert "aux_classif" in src, f"{rel} should use the aux_classif label"
+        assert "UNVALIDATED" in src, f"{rel} must label the aux tensor unvalidated"
+
+
+def test_diagnostic_scripts_are_main_guarded():
+    # Heavy imports/execution must live inside main() so pytest collection never
+    # triggers inference or writes files.
+    for rel in ("cognitive/test_jokinen.py", "saliency/test_full_pipeline.py"):
+        src = _read(rel)
+        assert "def main(" in src, f"{rel} must define main()"
+        assert 'if __name__ == "__main__":' in src, f"{rel} needs a main guard"
+
+
+def test_full_pipeline_has_no_warning_suppression_and_fails_hard():
+    src = _read("saliency/test_full_pipeline.py")
+    assert "TF_CPP_MIN_LOG_LEVEL" not in src
+    assert "filterwarnings('ignore')" not in src
+    assert 'filterwarnings("ignore")' not in src
+    # No unqualified "fully operational" / parity claim after a partial run.
+    assert "fully operational" not in src
+    assert "SUCCESS - UMSI++ saliency pipeline fully operational" not in src
+
+
+def test_jokinen_script_no_unconditional_success():
+    src = _read("cognitive/test_jokinen.py")
+    assert "SUCCESS — Jokinen 2020 model operational!" not in src
+
+
+def test_docs_have_no_semantic_classification_labels():
+    html = _read("planning/status/dev_status_presentation.html")
+    assert "Design-Klassifikation (6-class Softmax)" not in html
+    doc = _read("stage1/DOCUMENTATION.md")
+    assert "out_classif (6-Klassen)" not in doc
+    heavy = _read(".github/workflows/saliency-heavy.yml")
+    # Stale intro that claimed it runs only the marked test must be gone.
+    assert "runs the marked real-checkpoint regression test" not in heavy
+
+
+def test_diagnostic_scripts_collectable_no_inference():
+    # A pure import of each diagnostic module must succeed quickly and define a
+    # main() without executing it. (If module-level code ran a model, importing
+    # here would attempt to load TF/weights and fail or hang.) We also assert no
+    # saliency/output artifacts are written as a side effect of import.
+    import importlib
+    out_dir = os.path.join(ROOT, "saliency", "output")
+    before = set(os.listdir(out_dir)) if os.path.isdir(out_dir) else set()
+    for mod in ("cognitive.test_jokinen", "saliency.test_full_pipeline"):
+        m = importlib.import_module(mod)
+        assert hasattr(m, "main"), f"{mod}.main missing"
+    after = set(os.listdir(out_dir)) if os.path.isdir(out_dir) else set()
+    assert before == after, "importing a diagnostic script wrote output files"

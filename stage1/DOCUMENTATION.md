@@ -609,13 +609,13 @@ Input(256×256×3, BGR, VGG-mean-subtracted)
   │   • DepthwiseConv rate=18 → Pointwise (256)
   │   → Concat: (batch, 32, 32, 1024)
   │
-  ├── Classification Branch
+  ├── Auxiliary Branch (unvalidated, not exposed)
   │   • Conv 3×3 stride 3 → BN → ReLU → Dropout
   │   • GlobalAveragePooling → Dense(256) → Dropout
-  │   • Dense(6, softmax) → out_classif (6-Klassen)
+  │   • Dense(6, softmax) → out_classif (6-dim auxiliary output; unvalidated, not exposed)
   │   • Dense(256) → Tile zu (32, 32, 256) via Lambda
   │
-  ├── Concatenate [ASPP, Classification Tile]
+  ├── Concatenate [ASPP, Auxiliary Tile]
   │   → (batch, 32, 32, 1280)
   │
   └── Decoder

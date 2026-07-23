@@ -104,12 +104,19 @@ def extract_saliency_features(saliency_map: np.ndarray) -> Dict[str, float]:
 
     vmin = float(smap.min())
     vmax = float(smap.max())
-    tol = 1e-6
-    if vmin < -tol or vmax > 1.0 + tol:
+    # Strict [0, 1] contract: reject ANY out-of-range value. A tolerance band
+    # here is unsafe because a subtly out-of-range map (e.g. containing -5e-7 or
+    # 1.0 + 5e-7) would be accepted and then collapsed by clipping into a
+    # constant zero/one map, yielding plausible-but-invalid features. The
+    # authoritative producer (postprocess_saliency) min-max normalises to exact
+    # [0, 1], so legitimate maps — including very-low-dynamic-range ones fully
+    # inside [0, 1] — always pass this check without any tolerance.
+    if vmin < 0.0 or vmax > 1.0:
         raise InvalidSaliencyMapError(
             f"Saliency map values must lie within [0, 1]; got "
             f"[{vmin:.6g}, {vmax:.6g}]. Callers must min-max normalise the map "
-            "(see postprocess_saliency) before feature extraction."
+            "(see postprocess_saliency) before feature extraction; "
+            "out-of-range values are rejected, never silently clipped."
         )
 
     # Reject a genuinely constant map (exact zero dynamic range): constant 0,
@@ -124,10 +131,11 @@ def extract_saliency_features(saliency_map: np.ndarray) -> Dict[str, float]:
             "no spatial saliency information is present."
         )
 
-    # Clip away sub-epsilon float overshoot only. Do NOT re-normalise: the map is
-    # already in [0, 1] from postprocess_saliency, and a second (max-only)
-    # normalisation here would silently rescale a correctly-normalised map.
-    smap = np.clip(smap, 0.0, 1.0)
+    # No clipping: the map is guaranteed within [0, 1] by the strict check above
+    # and is non-constant by the guard above, so features are computed on the
+    # accepted map as-is. Clipping is deliberately omitted so that no rounding
+    # step can silently turn an accepted map into a constant one, and so that a
+    # second (max-only) normalisation can never rescale a correct map.
 
     features = {
         "saliency_dispersion": _compute_dispersion(smap),

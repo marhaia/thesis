@@ -2,8 +2,10 @@ name: Saliency real-checkpoint regression (heavy)
 
 # Optional, opt-in heavy job. It downloads the authoritative UMSI++ checkpoint
 # from the GitHub release, verifies its exact size + SHA-256, installs the full
-# ML stack, and runs the marked real-checkpoint regression test. It is NOT part
-# of the fast CI-light gate: it runs only on manual dispatch or when the
+# ML stack, and runs the COMPLETE tests/test_saliency_integrity.py file with the
+# real checkpoint present — the feature-validation, postprocessing, endpoint
+# (real UMSI++, not a mock) and marked real-checkpoint tests all execute. It is
+# NOT part of the fast CI-light gate: it runs only on manual dispatch or when the
 # saliency code / this workflow changes.
 
 on:
