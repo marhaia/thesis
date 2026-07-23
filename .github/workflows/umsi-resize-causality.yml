@@ -1,0 +1,331 @@
+name: UMSI++ resize causality test
+
+# AUDIT-ONLY controlled experiment testing whether the legacy-vs-modern bilinear
+# resize semantics causally explain the failed TF1/Keras2 <-> TF2/Keras3 golden
+# comparison (Actions run 30028284848, first divergence at dec_ups1).
+#
+# Legacy (Python 3.7.9 / TF 1.14.0 / Keras 2.3.1) produces the L_REF reference,
+# the byte-identical legacy preprocessing tensors and the genuine legacy resize
+# operator oracle. Modern (Python 3.9.6 / TF 2.16.2 / Keras 3.10.0) runs the
+# frozen production model AND an audit-only legacy-resize variant (weights copied
+# by name; only the decoder bilinear resize op differs) across all controlled
+# conditions + cumulative ablations. Both on x86_64 CPU in digest-pinned Linux
+# containers, using the same checkpoint and identical input bytes.
+#
+# Runs only on the audit branch (push) or manual dispatch. No production edit;
+# no PR. All experimental code lives under golden/.
+
+on:
+  push:
+    branches:
+      - audit/umsi-resize-causality
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  LEGACY_IMAGE: "python:3.7.9-buster"
+  LEGACY_IMAGE_DIGEST: "sha256:83ab4e9e275cb279e5639097aa0780ef82c4fd78622ae36ab35810ab7b57f491"
+  MODERN_IMAGE: "python:3.9.6-bullseye"
+  MODERN_IMAGE_DIGEST: "sha256:fb7ca75a4d29e32e2f6a0c8a60ba96608673afc7ed5bc9192f15c0f50135a371"
+  CKPT_REL: "saliency/weights/model_weights/saliency_models/UMSI++/umsi++.hdf5"
+  EXPECTED_CKPT_SHA: "f4290c3f11f18befbb47de50d81e4555ec8e7a63066c71c343a32fe32799e9fe"
+  EXPECTED_CKPT_SIZE: "120093896"
+  UPSTREAM_COMMIT: "7bc064175310284c74e64e0c3c2ef264bfbe66e2"
+
+jobs:
+  # --------------------------------------------------------------------------
+  # PHASE 0 — freeze the test protocol before any prediction.
+  # --------------------------------------------------------------------------
+  manifest:
+    name: Phase 0 - freeze protocol manifest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write frozen protocol manifest
+        run: |
+          cd golden
+          python manifest_resize.py --out "$GITHUB_WORKSPACE/resize_causality_manifest.json"
+          echo "----- frozen manifest -----"
+          cat "$GITHUB_WORKSPACE/resize_causality_manifest.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: manifest
+          path: resize_causality_manifest.json
+          retention-days: 14
+
+  # --------------------------------------------------------------------------
+  # PHASE 1a — legacy runtime: L_REF + byte-identical inputs + resize oracle.
+  # --------------------------------------------------------------------------
+  legacy:
+    name: Legacy TF1.14/Keras2.3.1 (L_REF + inputs + oracle)
+    runs-on: ubuntu-latest
+    needs: manifest
+    container:
+      image: python@sha256:83ab4e9e275cb279e5639097aa0780ef82c4fd78622ae36ab35810ab7b57f491
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run legacy causality producer (full log)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Pure-Python protobuf backend so TF 1.14 runs against pinned protobuf
+          # 3.19.6. Compatibility shim, NOT log/output suppression.
+          PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION: python
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p out
+          {
+            echo "########## LEGACY RUNTIME (TF1.14 / Keras2.3.1) ##########"
+            echo "date: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "image: ${LEGACY_IMAGE}  digest: ${LEGACY_IMAGE_DIGEST}"
+            uname -a
+            cat /etc/os-release | head -2
+            python --version
+
+            echo "########## apt: EOL buster -> archive.debian.org; libglib for opencv ##########"
+            sed -i 's|deb.debian.org|archive.debian.org|g; s|security.debian.org|archive.debian.org|g' /etc/apt/sources.list
+            sed -i '/buster-updates/d' /etc/apt/sources.list
+            apt-get -o Acquire::Check-Valid-Until=false update
+            apt-get install -y --no-install-recommends libglib2.0-0
+
+            echo "########## pip: install pinned legacy stack ##########"
+            python -m pip install --upgrade "pip==23.3.2" "setuptools<60" wheel
+            python -m pip install --no-cache-dir -r golden/requirements-legacy.txt
+            echo "----- pip freeze -----"
+            python -m pip freeze
+
+            echo "########## clone upstream at pinned commit ##########"
+            git clone --quiet https://github.com/YueJiang-nj/UEyes-CHI2023.git /tmp/upstream
+            git -C /tmp/upstream checkout --quiet "${UPSTREAM_COMMIT}"
+            echo "upstream HEAD: $(git -C /tmp/upstream rev-parse HEAD)"
+            test "$(git -C /tmp/upstream rev-parse HEAD)" = "${UPSTREAM_COMMIT}"
+
+            echo "########## download + verify authoritative checkpoint ##########"
+            python scripts/download_weights.py
+            ACTUAL_SIZE=$(stat -c%s "${CKPT_REL}")
+            ACTUAL_SHA=$(sha256sum "${CKPT_REL}" | cut -d' ' -f1)
+            echo "checkpoint size: ${ACTUAL_SIZE} (expected ${EXPECTED_CKPT_SIZE})"
+            echo "checkpoint sha : ${ACTUAL_SHA}"
+            test "${ACTUAL_SIZE}" = "${EXPECTED_CKPT_SIZE}"
+            test "${ACTUAL_SHA}" = "${EXPECTED_CKPT_SHA}"
+
+            echo "########## verify fixtures by SHA-256 ##########"
+            sha256sum golden/fixtures/*.png
+
+            echo "########## run legacy_causality.py ##########"
+            export UMSI_LEGACY_SRC="/tmp/upstream/saliency_models/UMSI++/src"
+            export UMSI_FIXTURES_DIR="$GITHUB_WORKSPACE/golden/fixtures"
+            export UMSI_CKPT="$GITHUB_WORKSPACE/${CKPT_REL}"
+            cd golden
+            python legacy_causality.py --out-dir "$GITHUB_WORKSPACE/out"
+          } 2>&1 | tee out/legacy_run.log
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: legacy
+          path: |
+            out/legacy_causality_meta.json
+            out/legacy_causality_arrays.npz
+            out/legacy_oracle_inputs.npz
+            out/legacy_oracle.npz
+            out/legacy_boundary_ui1.npz
+            out/legacy_preproc_*.npy
+            out/legacy_run.log
+          retention-days: 14
+
+  # --------------------------------------------------------------------------
+  # PHASE 1b — modern runtime: all conditions + ablations + oracle candidate.
+  # Needs the legacy artifacts (byte-identical inputs + oracle inputs).
+  # --------------------------------------------------------------------------
+  modern:
+    name: Modern TF2.16/Keras3 (conditions + ablations)
+    runs-on: ubuntu-latest
+    needs: [manifest, legacy]
+    container:
+      image: python@sha256:fb7ca75a4d29e32e2f6a0c8a60ba96608673afc7ed5bc9192f15c0f50135a371
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download legacy artifact (byte-identical inputs + oracle)
+        uses: actions/download-artifact@v4
+        with:
+          name: legacy
+          path: dl/legacy
+      - name: Run modern causality experiment (full log)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p out
+          {
+            echo "########## MODERN RUNTIME (TF2.16.2 / Keras3.10.0) ##########"
+            echo "date: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "image: ${MODERN_IMAGE}  digest: ${MODERN_IMAGE_DIGEST}"
+            uname -a
+            cat /etc/os-release | head -2
+            python --version
+
+            echo "########## apt: minimal shared libs ##########"
+            apt-get update
+            apt-get install -y --no-install-recommends libglib2.0-0 git
+
+            echo "########## pip: install modern runtime ##########"
+            python -m pip install --upgrade pip
+            python -m pip install --no-cache-dir -r requirements.txt
+            echo "----- pip freeze -----"
+            python -m pip freeze
+
+            echo "########## download + verify authoritative checkpoint ##########"
+            python scripts/download_weights.py
+            ACTUAL_SIZE=$(stat -c%s "${CKPT_REL}")
+            ACTUAL_SHA=$(sha256sum "${CKPT_REL}" | cut -d' ' -f1)
+            echo "checkpoint size: ${ACTUAL_SIZE} (expected ${EXPECTED_CKPT_SIZE})"
+            echo "checkpoint sha : ${ACTUAL_SHA}"
+            test "${ACTUAL_SIZE}" = "${EXPECTED_CKPT_SIZE}"
+            test "${ACTUAL_SHA}" = "${EXPECTED_CKPT_SHA}"
+
+            echo "########## verify fixtures by SHA-256 ##########"
+            sha256sum golden/fixtures/*.png
+
+            echo "########## verify legacy byte-identical inputs present ##########"
+            ls -la dl/legacy
+            sha256sum dl/legacy/legacy_preproc_*.npy
+
+            echo "########## run modern_causality.py ##########"
+            export UMSI_REPO="$GITHUB_WORKSPACE"
+            export UMSI_FIXTURES_DIR="$GITHUB_WORKSPACE/golden/fixtures"
+            export UMSI_CKPT="$GITHUB_WORKSPACE/${CKPT_REL}"
+            export UMSI_LEGACY_DIR="$GITHUB_WORKSPACE/dl/legacy"
+            cd golden
+            python modern_causality.py --out-dir "$GITHUB_WORKSPACE/out"
+          } 2>&1 | tee out/modern_run.log
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: modern
+          path: |
+            out/modern_causality_meta.json
+            out/modern_causality_arrays.npz
+            out/modern_oracle_candidate.npz
+            out/modern_boundary_*.npz
+            out/modern_run.log
+          retention-days: 14
+
+  # --------------------------------------------------------------------------
+  # PHASE 2 — compare, decide causality, assemble deliverables.
+  # --------------------------------------------------------------------------
+  compare:
+    name: Compare + causality verdict + evidence
+    runs-on: ubuntu-latest
+    needs: [manifest, legacy, modern]
+    container:
+      image: python@sha256:fb7ca75a4d29e32e2f6a0c8a60ba96608673afc7ed5bc9192f15c0f50135a371
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download manifest
+        uses: actions/download-artifact@v4
+        with:
+          name: manifest
+          path: dl/manifest
+      - name: Download legacy artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: legacy
+          path: dl/legacy
+      - name: Download modern artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: modern
+          path: dl/modern
+
+      - name: Compare, assemble evidence, verify artifacts (full log)
+        shell: bash
+        run: |
+          set -o pipefail
+          apt-get update
+          apt-get install -y --no-install-recommends libglib2.0-0
+          python -m pip install --upgrade pip
+          python -m pip install --no-cache-dir \
+            numpy==1.26.4 scipy==1.13.1 opencv-python-headless==4.10.0.84
+
+          export UMSI_REPO="$GITHUB_WORKSPACE"
+          export AUDIT_COMMIT="${GITHUB_SHA}"
+          mkdir -p deliver
+          cp dl/manifest/resize_causality_manifest.json deliver/
+
+          cd golden
+          python causality_compare.py \
+            --legacy-dir "$GITHUB_WORKSPACE/dl/legacy" \
+            --modern-dir "$GITHUB_WORKSPACE/dl/modern" \
+            --manifest "$GITHUB_WORKSPACE/dl/manifest/resize_causality_manifest.json" \
+            --out-json "$GITHUB_WORKSPACE/deliver/umsi_resize_causality_6a17288.json" \
+            --out-npz  "$GITHUB_WORKSPACE/deliver/umsi_resize_causality_arrays_6a17288.npz" \
+            2>&1 | tee "$GITHUB_WORKSPACE/deliver/causality_run.log"
+          cd "$GITHUB_WORKSPACE"
+
+          # Assemble the single comprehensive .log deliverable (tee only; no
+          # grep/head/tail/devnull filtering of the experiment output).
+          LOG=deliver/umsi_resize_causality_6a17288.log
+          {
+            echo "===== umsi_resize_causality_6a17288.log ====="
+            echo "assembled: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "audit_commit: ${GITHUB_SHA}"
+            echo "run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo
+            echo "########## FROZEN PROTOCOL MANIFEST (Phase 0) ##########"
+            cat dl/manifest/resize_causality_manifest.json
+            echo
+            echo "########## LEGACY JOB LOG ##########"
+            cat dl/legacy/legacy_run.log
+            echo
+            echo "########## MODERN JOB LOG ##########"
+            cat dl/modern/modern_run.log
+            echo
+            echo "########## COMPARISON + DECISION LOG ##########"
+            cat deliver/causality_run.log
+            echo
+            echo "########## ARTIFACT VERIFICATION ##########"
+            python golden/verify_json.py deliver/umsi_resize_causality_6a17288.json
+            cd deliver
+            sha256sum umsi_resize_causality_6a17288.json \
+                      umsi_resize_causality_arrays_6a17288.npz
+            for f in umsi_resize_causality_6a17288.json umsi_resize_causality_arrays_6a17288.npz; do
+              echo "bytes $(stat -c%s "$f")  $f"
+            done
+            cd "$GITHUB_WORKSPACE"
+            echo "===== END OF LOG ====="
+          } | tee "$LOG"
+
+          cd deliver
+          sha256sum \
+            umsi_resize_causality_6a17288.json \
+            umsi_resize_causality_6a17288.log \
+            umsi_resize_causality_arrays_6a17288.npz \
+            > SHA256SUMS
+          echo "----- SHA256SUMS -----"
+          cat SHA256SUMS
+          for f in umsi_resize_causality_6a17288.json umsi_resize_causality_6a17288.log umsi_resize_causality_arrays_6a17288.npz; do
+            echo "bytes $(stat -c%s "$f")  $f"
+          done
+
+      - name: Upload resize causality evidence deliverables
+        uses: actions/upload-artifact@v4
+        with:
+          name: umsi-resize-causality-evidence-6a17288
+          path: |
+            deliver/umsi_resize_causality_6a17288.json
+            deliver/umsi_resize_causality_6a17288.log
+            deliver/umsi_resize_causality_arrays_6a17288.npz
+            deliver/SHA256SUMS
+            deliver/resize_causality_manifest.json
+          retention-days: 30
+
+      - name: Print causality verdict
+        shell: bash
+        run: |
+          python -c "import json; d=json.load(open('deliver/umsi_resize_causality_6a17288.json')); print('VERDICT:', d['verdict']); print('decision:', json.dumps(d['decision'], indent=2))"
