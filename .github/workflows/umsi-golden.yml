@@ -81,9 +81,14 @@ jobs:
             cat /etc/os-release | head -2
             python --version
 
-            echo "########## apt: minimal shared libs for opencv-headless ##########"
-            apt-get update
-            apt-get install -y --no-install-recommends libglib2.0-0 git
+            echo "########## apt: EOL buster -> archive.debian.org; libglib for opencv ##########"
+            # Debian 10 (buster) is end-of-life: its repos are served from
+            # archive.debian.org and the normal mirror 404s. git is already
+            # present in the image; we only need libglib2.0-0 for opencv.
+            sed -i 's|deb.debian.org|archive.debian.org|g; s|security.debian.org|archive.debian.org|g' /etc/apt/sources.list
+            sed -i '/buster-updates/d' /etc/apt/sources.list
+            apt-get -o Acquire::Check-Valid-Until=false update
+            apt-get install -y --no-install-recommends libglib2.0-0
 
             echo "########## pip: install pinned legacy stack ##########"
             python -m pip install --upgrade "pip==23.3.2" "setuptools<60" wheel
