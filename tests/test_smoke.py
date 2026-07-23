@@ -48,6 +48,18 @@ def client():
     return app.test_client()
 
 
+@pytest.fixture(autouse=True)
+def _stub_saliency(monkeypatch):
+    # /api/cognitive-load now REQUIRES saliency and fails closed (HTTP 503) when
+    # UMSI++ is unavailable. CI-light has neither the model weights nor
+    # TensorFlow, so provide a deterministic, valid saliency map for every test
+    # in this file. Tests that need a different behaviour (e.g. the scale guard)
+    # re-patch it themselves afterwards, which takes precedence.
+    import app as app_module
+    monkeypatch.setattr(app_module, "_predict_saliency_cached",
+                        _fixed_valid_saliency, raising=False)
+
+
 def _png_bytes(cx: int = 40) -> io.BytesIO:
     """A small synthetic screenshot with a couple of coloured boxes."""
     im = np.full((300, 400, 3), 240, np.uint8)
