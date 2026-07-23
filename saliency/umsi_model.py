@@ -3,9 +3,12 @@
 """
 umsi_model.py — UMSI++ (Unified Model of Saliency and Importance ++)
 =====================================================================
-Faithful TF2 / Keras 3 port of the UMSI++ architecture from:
+Source-matched TF2 / Keras 3 port of the UMSI++ architecture from:
   Jiang et al., "UEyes: Understanding Visual Saliency across User
   Interface Types", CHI 2023.
+The port reproduces the published architecture, layer names and checkpoint
+tensors; numerical TF1 parity (a golden run against the original TF1.14 /
+Keras2.3.1 stack) remains UNVERIFIED.
 
 Original code: https://github.com/YueJiang-nj/UEyes-CHI2023
 Original env:  TF 1.14 + Keras 2.3.1 + CUDA 9.0 + Python 3.7

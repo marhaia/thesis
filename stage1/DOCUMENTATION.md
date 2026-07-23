@@ -686,7 +686,7 @@ Konsequenz in diesem Projekt:
 |----------|---------|-------|--------|------|
 | `/api/analyze` | POST | Image (multipart) | v∈ℝ⁸ + Metadaten | 04.05.2026 |
 | `/api/features` | GET | — | Feature-Metadaten (8 Features) | 04.05.2026 |
-| `/api/saliency` | POST | Image (multipart) | s∈ℝ⁵ + Klassifikation + Heatmap (Base64) | 06.05.2026 |
+| `/api/saliency` | POST | Image (multipart) | s∈ℝ⁵ + Heatmap (Base64); `classification_used: false` | 06.05.2026 |
 
 ### 6.7 Bezug zu UEyes-Datensatz
 
@@ -927,9 +927,11 @@ from saliency.saliency_features import extract_saliency_features
 model = UMSIPlus("saliency/weights/model_weights/saliency_models/UMSI++/umsi++.hdf5")
 
 # Predict saliency
-heatmap, classif = model.predict_saliency("screenshot.png", return_classif=True)
+heatmap, aux_classif = model.predict_saliency("screenshot.png", return_classif=True)
 # heatmap: np.ndarray shape (H, W), float32 in [0,1]
-# classif: np.ndarray shape (6,), softmax probabilties
+# aux_classif: np.ndarray shape (6,), RAW auxiliary output — UNVALIDATED
+#   (zero training-loss weight in the official setup); NOT a semantic
+#   UI-type classifier and never exposed via the API.
 
 # Extract scalar features
 features = extract_saliency_features(heatmap)
@@ -1041,7 +1043,7 @@ For the web UI radar chart and bar display, features are normalized to [0, 1] us
 
 6. **UMSI++ auf CPU only** — TF 2.16 auf M4 Mac nutzt nur die CPU. Inference dauert ~3–5s pro Bild. Metal-Plugin (tensorflow-metal) könnte GPU-Beschleunigung bringen.
 
-7. **Klassifikation nicht kalibriert** — Die 6-Klassen-Klassifikation zeigt relativ gleichverteilte Wahrscheinlichkeiten (~16% pro Klasse). Auto-UI war nicht im Trainingsset → das Modell hat keine Auto-Dashboard-Klasse. Für uns hauptsächlich als Feature, nicht als harte Klassifikation relevant.
+7. **Auxiliary-Head unvalidiert und ungenutzt** — Der 6-dim `out_classif`-Head erhält im offiziellen Setup kein Trainingssignal (`loss_weights={'dec_c_cout': 1, 'out_classif': 0}`) und ist daher KEIN trainierter Klassifikator. Er wird nicht interpretiert, nicht als Feature verwendet und nicht über die API ausgegeben (siehe §6.5).
 
 8. **Keine formale Validierung** — Die UMSI++ Predictions müssen noch gegen die UEyes Ground-Truth Saliency Maps evaluiert werden (KL, CC, NSS Metriken).
 

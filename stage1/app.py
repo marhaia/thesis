@@ -49,7 +49,7 @@ _saliency_model = None
 # end, and once the cache exceeds its max size the oldest (front) entry is
 # evicted. These caches only avoid recomputation; identical inputs always yield
 # identical results.
-_saliency_cache = OrderedDict()   # image_hash -> {"heatmap", "classif"}
+_saliency_cache = OrderedDict()   # image_hash -> {"heatmap", "aux_classif"}
 _saliency_cache_max = 32          # max distinct images kept for saliency
 _visual_cache = OrderedDict()     # image_hash -> visual complexity results dict
 _visual_cache_max = 64            # max distinct images kept for visual features
@@ -315,11 +315,11 @@ def _predict_saliency_cached(image_hash, image_path):
     cached = _saliency_cache.get(image_hash)
     if cached is not None:
         _saliency_cache.move_to_end(image_hash)  # mark as most-recently-used
-        return cached["heatmap"], cached["classif"], True
+        return cached["heatmap"], cached["aux_classif"], True
 
     model = _get_saliency_model()
     heatmap, aux_classif = model.predict_saliency(str(image_path), return_classif=True)
-    _saliency_cache[image_hash] = {"heatmap": heatmap, "classif": aux_classif}
+    _saliency_cache[image_hash] = {"heatmap": heatmap, "aux_classif": aux_classif}
     # Evict the oldest entries once the cache grows beyond its size limit.
     while len(_saliency_cache) > _saliency_cache_max:
         _saliency_cache.popitem(last=False)
@@ -614,8 +614,10 @@ def saliency():
             "saliency_cache_hit": cache_hit,
         })
     except Exception:
-        # Any failure of the saliency stage is a controlled error. Do not leak
-        # filesystem paths or tracebacks in the response body.
+        # Any failure of the saliency stage is a controlled error. Log the full
+        # cause server-side for diagnosis, but never leak filesystem paths,
+        # exception strings or tracebacks in the response body.
+        app.logger.exception("/api/saliency failed during saliency stage")
         return jsonify({
             "error": "saliency_unavailable",
             "saliency_used": False,
@@ -1168,9 +1170,13 @@ def cognitive_load():
                 saliency_dict["saliency_center_bias"],
             ], dtype=np.float32)
         except Exception:
-            # UMSI++ unavailable or produced an invalid/degenerate map. Return a
-            # controlled 503 with no cognitive_load_index, no layout score and no
-            # full feature vector, and never leak filesystem paths or tracebacks.
+            # UMSI++ unavailable or produced an invalid/degenerate map. Log the
+            # full cause server-side for diagnosis, then return a controlled 503
+            # with no cognitive_load_index, no layout score and no full feature
+            # vector, and never leak filesystem paths or tracebacks.
+            app.logger.exception(
+                "/api/cognitive-load failed during required saliency stage"
+            )
             return jsonify({
                 "error": "saliency_unavailable",
                 "saliency_used": False,

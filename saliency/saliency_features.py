@@ -59,9 +59,10 @@ from scipy import ndimage
 class InvalidSaliencyMapError(ValueError):
     """Raised when a saliency map handed to feature extraction is invalid.
 
-    Covers non-2D input, non-finite values (NaN / Inf) and values outside the
-    documented [0, 1] range. Feature extraction refuses to return plausible
-    numbers for an invalid map instead of masking a broken upstream stage.
+    Covers empty input, non-2D input, non-finite values (NaN / Inf), values
+    outside the documented [0, 1] range, and zero-dynamic-range (constant) maps.
+    Feature extraction refuses to return plausible numbers for an invalid map
+    instead of masking a broken upstream stage.
     """
 
 
@@ -81,8 +82,9 @@ def extract_saliency_features(saliency_map: np.ndarray) -> Dict[str, float]:
           - saliency_coverage
 
     Raises:
-        InvalidSaliencyMapError: if the input is not 2D, contains non-finite
-            values, or lies outside [0, 1].
+        InvalidSaliencyMapError: if the input is empty, not 2D, contains
+            non-finite values, lies outside [0, 1], or is constant
+            (zero dynamic range).
     """
     smap = np.asarray(saliency_map)
     if smap.ndim == 3 and smap.shape[2] == 1:
@@ -91,6 +93,8 @@ def extract_saliency_features(saliency_map: np.ndarray) -> Dict[str, float]:
         raise InvalidSaliencyMapError(
             f"Saliency map must be 2D, got shape {tuple(np.shape(saliency_map))}."
         )
+    if smap.size == 0:
+        raise InvalidSaliencyMapError("Saliency map is empty (zero elements).")
 
     smap = smap.astype(np.float64)
     if not np.isfinite(smap).all():
@@ -106,6 +110,18 @@ def extract_saliency_features(saliency_map: np.ndarray) -> Dict[str, float]:
             f"Saliency map values must lie within [0, 1]; got "
             f"[{vmin:.6g}, {vmax:.6g}]. Callers must min-max normalise the map "
             "(see postprocess_saliency) before feature extraction."
+        )
+
+    # Reject a genuinely constant map (exact zero dynamic range): constant 0,
+    # constant positive and constant 1 all carry no spatial saliency
+    # information, so features such as center-bias would be undefined (0/0) or
+    # meaningless. This mirrors postprocess_saliency's constant-output guard. The
+    # test is exact equality (max == min), NOT a near-constant threshold, so
+    # legitimate low-contrast predictions are preserved.
+    if vmax == vmin:
+        raise InvalidSaliencyMapError(
+            f"Saliency map is constant (value {vmin:.6g}, zero dynamic range); "
+            "no spatial saliency information is present."
         )
 
     # Clip away sub-epsilon float overshoot only. Do NOT re-normalise: the map is

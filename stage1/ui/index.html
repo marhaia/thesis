@@ -1827,11 +1827,6 @@
                 <!-- 2. Score summary -->
                 <div class="summary-grid" id="summaryGrid"></div>
 
-                <!-- 2a. UMSI++ design-type classification (6-class head). Shows a
-                     caution banner when the screenshot is classified outside the
-                     general GUI domain the saliency model targets. -->
-                <div id="designClassBanner" style="display:none;"></div>
-
                 <!-- 2b. Context summary: shows exactly which task context the
                      score was computed with, so the declared mode stays visible
                      after analysis (not hidden in the Step 2 dropdowns). -->
@@ -3953,20 +3948,6 @@
             // as headline cards: they are exploratory, unvalidated rule-based
             // proxies. They remain only in the technical details / PDF export,
             // explicitly labelled as exploratory proxies.
-
-            // ── UMSI++ design-type classification banner — REMOVED ──
-            // The saliency model's six-class softmax head is UNVALIDATED: at the
-            // pinned upstream commit it is trained with zero loss weight
-            // (loss_weights={'dec_c_cout': 1, 'out_classif': 0}), so its class
-            // probabilities carry no trained meaning. The backend no longer
-            // returns any design_classification / predicted_class field, and the
-            // UI must not render a semantic design-type label from it. The banner
-            // element (if present) is kept permanently hidden.
-            const dcBanner = document.getElementById('designClassBanner');
-            if (dcBanner) {
-                dcBanner.style.display = 'none';
-                dcBanner.innerHTML = '';
-            }
 
             renderContextSummary();
 

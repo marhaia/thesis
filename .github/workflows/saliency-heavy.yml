@@ -11,7 +11,11 @@ on:
   push:
     paths:
       - "saliency/**"
+      - "stage1/app.py"
+      - "stage1/ui/index.html"
       - "tests/test_saliency_integrity.py"
+      - "scripts/download_weights.py"
+      - "requirements.txt"
       - ".github/workflows/saliency-heavy.yml"
 
 permissions:
@@ -58,5 +62,9 @@ jobs:
           test "$ACTUAL_SIZE" = "$EXPECTED_SIZE"
           test "$ACTUAL_SHA" = "$EXPECTED_SHA"
 
-      - name: Run marked real-checkpoint regression test
-        run: python -m pytest tests/test_saliency_integrity.py -m real_checkpoint -q
+      - name: Run the complete saliency-integrity file (incl. real checkpoint)
+        # Runs ALL integrity tests with the authoritative checkpoint present and
+        # TensorFlow installed: the lightweight feature-validation tests, the
+        # postprocessing tests, the endpoint tests (real UMSI++, not a mock) and
+        # the marked real-checkpoint regression. Nothing is deselected here.
+        run: python -m pytest tests/test_saliency_integrity.py -rs -q

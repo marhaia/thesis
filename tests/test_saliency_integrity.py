@@ -118,6 +118,36 @@ def test_extract_rejects_negative_map():
         extract_saliency_features(m)
 
 
+def test_extract_rejects_empty_map():
+    with pytest.raises(InvalidSaliencyMapError):
+        extract_saliency_features(np.zeros((0, 0), dtype=np.float32))
+
+
+@pytest.mark.parametrize("value", [0.0, 0.5, 1.0])
+def test_extract_rejects_constant_feature_map(value):
+    # Constant 0, constant 0.5 and constant 1 all have zero dynamic range and
+    # must be rejected (mirrors postprocess_saliency's constant guard).
+    m = np.full((120, 160), value, dtype=np.float32)
+    with pytest.raises(InvalidSaliencyMapError):
+        extract_saliency_features(m)
+
+
+def test_extract_features_within_documented_ranges():
+    # Every returned feature must be finite and within its documented range:
+    # dispersion/center_bias/entropy/coverage in [0, 1]; peak_count a
+    # non-negative integer-valued count.
+    for seed in range(4):
+        feats = extract_saliency_features(_valid_map(seed))
+        for key in ("saliency_dispersion", "saliency_center_bias",
+                    "saliency_entropy", "saliency_coverage"):
+            v = feats[key]
+            assert np.isfinite(v), f"{key} not finite"
+            assert -1e-9 <= v <= 1.0 + 1e-9, f"{key}={v} out of [0, 1]"
+        pk = feats["saliency_peak_count"]
+        assert np.isfinite(pk) and pk >= 0
+        assert float(pk) == float(int(pk)), "peak_count must be integer-valued"
+
+
 # ---------------------------------------------------------------------------
 # B. postprocess_saliency: min-max once, reject non-finite / constant output
 # ---------------------------------------------------------------------------
@@ -151,6 +181,18 @@ def test_postprocess_removes_negatives():
     assert float(out.max()) == pytest.approx(1.0, abs=1e-6)
 
 
+def test_postprocess_all_negative_nonconstant_ok():
+    # An all-negative but non-constant raw map is valid: min-max maps it to
+    # exact [0, 1] (the largest, i.e. least-negative, pixel becomes 1).
+    postprocess_saliency, _ = _import_postprocess()
+    raw = (np.random.default_rng(7).random((512, 512, 1)) - 1.5).astype(np.float32)
+    assert float(raw.max()) < 0.0
+    out = postprocess_saliency(raw, 200, 200)
+    assert np.isfinite(out).all()
+    assert float(out.min()) == pytest.approx(0.0, abs=1e-6)
+    assert float(out.max()) == pytest.approx(1.0, abs=1e-6)
+
+
 def test_postprocess_rejects_nonfinite_output():
     postprocess_saliency, InvalidSaliencyOutputError = _import_postprocess()
     raw = np.random.default_rng(3).random((512, 512, 1)).astype(np.float32)
@@ -159,9 +201,28 @@ def test_postprocess_rejects_nonfinite_output():
         postprocess_saliency(raw, 200, 200)
 
 
-def test_postprocess_rejects_constant_output():
+def test_postprocess_rejects_pos_inf_output():
     postprocess_saliency, InvalidSaliencyOutputError = _import_postprocess()
-    raw = np.full((512, 512, 1), 0.7, dtype=np.float32)
+    raw = np.random.default_rng(4).random((512, 512, 1)).astype(np.float32)
+    raw[1, 1, 0] = np.inf
+    with pytest.raises(InvalidSaliencyOutputError):
+        postprocess_saliency(raw, 200, 200)
+
+
+def test_postprocess_rejects_neg_inf_output():
+    postprocess_saliency, InvalidSaliencyOutputError = _import_postprocess()
+    raw = np.random.default_rng(5).random((512, 512, 1)).astype(np.float32)
+    raw[2, 2, 0] = -np.inf
+    with pytest.raises(InvalidSaliencyOutputError):
+        postprocess_saliency(raw, 200, 200)
+
+
+@pytest.mark.parametrize("value", [0.0, 0.7, -0.7])
+def test_postprocess_rejects_constant_output(value):
+    # Constant positive, zero and negative raw outputs all have zero dynamic
+    # range and must be rejected before resize can inject float noise.
+    postprocess_saliency, InvalidSaliencyOutputError = _import_postprocess()
+    raw = np.full((512, 512, 1), value, dtype=np.float32)
     with pytest.raises(InvalidSaliencyOutputError):
         postprocess_saliency(raw, 200, 200)
 
@@ -195,6 +256,79 @@ def _fixed_valid_saliency(*args, **kwargs):
 
 def _raise_saliency(*args, **kwargs):
     raise RuntimeError("simulated saliency failure")
+
+
+def _constant_map_saliency(*args, **kwargs):
+    # Simulates a degenerate map that slips past postprocess_saliency and only
+    # fails inside extract_saliency_features (constant / zero dynamic range).
+    return (np.full((64, 64), 0.5, dtype=np.float32),
+            np.zeros(6, dtype=np.float32), False)
+
+
+@pytest.mark.parametrize("url", ["/api/saliency", "/api/cognitive-load"])
+def test_constant_map_at_cache_boundary_fails_closed(client, monkeypatch, url):
+    # A constant heatmap returned at the _predict_saliency_cached boundary must
+    # be rejected by extract_saliency_features and surfaced as a controlled 503
+    # (this is the feature-extraction layer, distinct from postprocess_saliency
+    # which rejects a constant RAW model output earlier).
+    import app as app_module
+    monkeypatch.setattr(app_module, "_predict_saliency_cached",
+                        _constant_map_saliency)
+    r = client.post(
+        url, data={"image": (io.BytesIO(_png_bytes()), "s.png")},
+        content_type="multipart/form-data",
+    )
+    assert r.status_code == 503, r.get_data(as_text=True)
+    body = r.get_json()
+    assert body.get("error") == "saliency_unavailable"
+    assert body.get("saliency_used") is False
+    for banned in ("cognitive_load_index", "layout", "full_feature_vector"):
+        assert banned not in body
+
+
+@pytest.mark.parametrize("url", ["/api/saliency", "/api/cognitive-load"])
+def test_failure_cause_is_logged_but_response_sanitized(client, monkeypatch, url):
+    # The full cause must be logged server-side (app.logger.exception) while the
+    # client response stays generic (no exception string, path or traceback).
+    import logging
+    import app as app_module
+
+    secret = "SENTINEL_secret_cause_marker_12345"
+
+    def _raise_with_marker(*a, **k):
+        raise RuntimeError(secret)
+
+    monkeypatch.setattr(app_module, "_predict_saliency_cached", _raise_with_marker)
+
+    records = []
+
+    class _Capture(logging.Handler):
+        def emit(self, record):
+            records.append(record)
+
+    handler = _Capture()
+    app_module.app.logger.addHandler(handler)
+    try:
+        r = client.post(
+            url, data={"image": (io.BytesIO(_png_bytes()), "s.png")},
+            content_type="multipart/form-data",
+        )
+    finally:
+        app_module.app.logger.removeHandler(handler)
+
+    assert r.status_code == 503
+    text = r.get_data(as_text=True)
+    # Client response must NOT contain the underlying cause / traceback / path.
+    assert secret not in text
+    assert "Traceback" not in text
+    assert ROOT not in text
+    # Server-side log MUST contain the cause with traceback info.
+    logged = "\n".join(
+        (rec.getMessage() + "\n" +
+         (logging.Formatter().formatException(rec.exc_info) if rec.exc_info else ""))
+        for rec in records
+    )
+    assert secret in logged, "underlying cause was not logged server-side"
 
 
 def test_saliency_endpoint_exposes_no_semantic_classification(client, monkeypatch):
@@ -305,3 +439,58 @@ def test_real_checkpoint_loads_strict_and_predicts(tmp_path):
     assert set(feats.keys()) == _FEATURE_KEYS
     for k, v in feats.items():
         assert np.isfinite(v), f"{k} not finite"
+
+
+# ---------------------------------------------------------------------------
+# E. Real-checkpoint ENDPOINT coverage (marked; real UMSI++, not a mock).
+#
+# Saliency itself is REAL here (the whole point). The only thing mocked is OCR
+# (cognitive.text_reader.compute_readability -> None), which is an unrelated,
+# very heavy easyocr/torch dependency; text_density then uses its neutral
+# fallback. Jokinen, visual complexity, canonical layout and HCEye all run for
+# real. No other mocks are applied.
+# ---------------------------------------------------------------------------
+
+@pytest.mark.real_checkpoint
+@pytest.mark.skipif(not os.path.exists(WEIGHTS_PATH),
+                    reason="authoritative umsi++.hdf5 checkpoint not present")
+def test_real_saliency_endpoint_success(client):
+    pytest.importorskip("tensorflow", reason="TensorFlow is required for umsi_model")
+    r = client.post(
+        "/api/saliency",
+        data={"image": (io.BytesIO(_png_bytes()), "real.png")},
+        content_type="multipart/form-data",
+    )
+    assert r.status_code == 200, r.get_data(as_text=True)
+    body = r.get_json()
+    assert set(body["features"].keys()) == _FEATURE_KEYS
+    assert body.get("classification_used") is False
+    assert body.get("classification_status") == "disabled_unvalidated"
+    for banned in ("classification", "predicted_class", "design_classification",
+                   "probabilities", "out_of_domain"):
+        assert banned not in body
+
+
+@pytest.mark.real_checkpoint
+@pytest.mark.skipif(not os.path.exists(WEIGHTS_PATH),
+                    reason="authoritative umsi++.hdf5 checkpoint not present")
+def test_real_cognitive_load_endpoint_success(client, monkeypatch):
+    pytest.importorskip("tensorflow", reason="TensorFlow is required for umsi_model")
+    # ONLY OCR is mocked (heavy, unrelated). Saliency stays real.
+    import cognitive.text_reader as tr
+    monkeypatch.setattr(tr, "compute_readability", lambda *a, **k: None)
+
+    r = client.post(
+        "/api/cognitive-load",
+        data={"image": (io.BytesIO(_png_bytes()), "real.png")},
+        content_type="multipart/form-data",
+    )
+    assert r.status_code == 200, r.get_data(as_text=True)
+    body = r.get_json()
+    assert body.get("saliency_used") is True
+    assert "cognitive_load_index" in body
+    assert np.isfinite(body["cognitive_load_index"])
+    assert set(body["saliency_features"].keys()) == _FEATURE_KEYS
+    for banned in ("design_classification", "predicted_class", "probabilities",
+                   "out_of_domain"):
+        assert banned not in body

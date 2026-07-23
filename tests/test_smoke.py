@@ -8,9 +8,12 @@ core endpoints, (b) input validation rejects malformed requests cleanly, and
 (c) the specific bugs fixed after the July-2026 security/robustness audit stay
 fixed (regression guards).
 
-These tests do NOT require the UMSI++ weights or TensorFlow: the saliency stage
-degrades gracefully to image-only features, so the endpoints still return 200.
-Anything needing the heavy ML stack is intentionally out of scope here.
+These tests do NOT require the UMSI++ weights or TensorFlow. Endpoints that need
+saliency (``/api/cognitive-load``, ``/api/saliency``) now fail closed with HTTP
+503 when UMSI++ is unavailable rather than degrading to image-only features, so
+an autouse fixture substitutes a deterministic, valid saliency map for every
+test in this file. Anything needing the heavy ML stack itself is intentionally
+out of scope here.
 
 Run: python -m pytest tests/test_smoke.py -q
 """
@@ -707,22 +710,22 @@ def test_standard_ui_final_framing_acceptance():
     assert "internal checks and source-study correspondence" in html
     assert "not independent validation" in html
     assert "hceye-derived rule index (exploratory)" in html
-    # The design-type banner must be intentionally disabled.
-    assert "intentionally disabled" in html
 
 
-def test_standard_ui_hides_unverified_umsi_class_mapping():
+def test_standard_ui_has_no_design_class_banner_at_all():
     # The unverified six-class softmax head must not drive any rendered semantic
-    # label or in/out-of-domain reliability decision. The classification is now
-    # fully REMOVED (not merely hidden): the backend returns no
-    # design_classification field and the UI has no render path for it.
+    # label or in/out-of-domain reliability decision. The banner and its render
+    # path are now fully REMOVED (not merely hidden): the backend returns no
+    # design_classification field and the UI must contain no banner element,
+    # variable or render code for it.
     html = _standard_ui_html()
     lower = html.lower()
+    # The banner element and JS handle must be gone entirely.
+    assert "designclassbanner" not in lower, "design-type banner element still present"
+    assert "dcbanner" not in lower, "design-type banner JS handle still present"
     # No rendered in/out-of-domain verdict or semantic design-type label.
     assert "within the model's intended ui domain" not in lower
     assert "detected design type" not in lower
-    # If the (legacy) banner element still exists it must be forced hidden.
-    assert ("dcbanner.style.display = 'none';" in lower
-            or "designclassbanner" not in lower)
-    # The explanatory comment must state that the head is unvalidated.
-    assert "unvalidated" in lower
+    # The backend field must not be read anywhere in the UI.
+    assert "design_classification" not in lower
+    assert "predicted_class" not in lower
