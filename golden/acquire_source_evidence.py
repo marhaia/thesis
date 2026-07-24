@@ -52,13 +52,35 @@ def api_get(url):
         return json.load(r)
 
 
+class _StripAuthOnRedirect(urllib.request.HTTPRedirectHandler):
+    """The artifact/log zip endpoints 302-redirect to signed cloud-storage URLs
+    that already carry their own auth in the query string. Re-sending the
+    GitHub Authorization header to that host yields HTTP 401, so we drop it on
+    any cross-host redirect."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        newreq = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if newreq is not None:
+            for h in list(newreq.headers):
+                if h.lower() == "authorization":
+                    del newreq.headers[h]
+            try:
+                newreq.unredirected_hdrs.pop("Authorization", None)
+            except AttributeError:
+                pass
+        return newreq
+
+
+_OPENER = urllib.request.build_opener(_StripAuthOnRedirect())
+
+
 def download(url, dest):
     req = urllib.request.Request(url, headers={
         "Authorization": "Bearer " + TOKEN,
         "Accept": "application/vnd.github+json"})
     h = hashlib.sha256()
     n = 0
-    with urllib.request.urlopen(req) as r, open(dest, "wb") as fh:
+    with _OPENER.open(req) as r, open(dest, "wb") as fh:
         while True:
             b = r.read(1 << 20)
             if not b:
