@@ -21,6 +21,7 @@ consolidated NPZ (which was already proven byte-identical to the source NPZs).
 import os
 import sys
 import io
+import re
 import json
 import shutil
 import hashlib
@@ -33,6 +34,12 @@ from scipy.stats import pearsonr, spearmanr
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 from windowed_ssim import windowed_ssim, WINDOWED_SSIM_PARAMS  # noqa: E402
 from common import sha256_array  # noqa: E402
+
+
+def sha256_array_native(a):
+    """Hash the array's native-dtype bytes (matches the consolidated index,
+    which recorded per-array data hashes without forcing float32)."""
+    return hashlib.sha256(np.ascontiguousarray(a).tobytes()).hexdigest()
 
 # ---- inputs
 SRC = os.environ["RC_SRC_DIR"]
@@ -133,21 +140,30 @@ def parse_pip_freeze(log_path):
     if not starts:
         raise RuntimeError("no pip-freeze output marker in %s" % log_path)
     i = starts[-1] + 1
+    pkg_re = re.compile(
+        r"^[A-Za-z0-9][A-Za-z0-9._-]*\s*(==|===| @ )|"
+        r"^[A-Za-z0-9._-]+ @ |^-e |^# Editable")
+    noise = ("WARNING:", "[notice]", "You should consider", "pip install",
+             "DEPRECATION:", "Defaulting to user")
     pkgs = []
     while i < len(stripped):
         s = stripped[i].strip()
         i += 1
+        if s.startswith("-----") or s.startswith("+ ") or s.startswith("##["):
+            break
         if not s:
+            # blank line only terminates once packages have been collected
             if pkgs:
                 break
             continue
-        if s.startswith("-----") or s.startswith("+ ") or "python" in s.lower() \
-                and ":" in s and "==" not in s:
-            break
-        if "==" in s or (s and s[0].isalpha() and " " not in s):
+        if any(s.startswith(n) for n in noise):
+            continue
+        if pkg_re.match(s):
             pkgs.append(s)
-        else:
+        elif pkgs:
+            # first non-package, non-noise line after the block ends it
             break
+        # else: still inside pre-package noise -> keep scanning
     return sorted(set(pkgs))
 
 
@@ -454,7 +470,7 @@ assert len(idx) == 183, "expected 183 arrays, got %d" % len(idx)
 bad = 0
 for e in idx:
     k = e["consolidated_key"]
-    h = sha256_array(z[k])
+    h = sha256_array_native(z[k])
     ok = (h == e["consolidated_array_data_sha256"]
           == e["source_array_data_sha256"])
     e["reverified_npz_array_data_sha256"] = h
@@ -479,10 +495,10 @@ for c in corr:
     rk = "shared/" + fixture_ref
     ok = True
     if ck in z.files:
-        ok = ok and sha256_array(z[ck]) == \
+        ok = ok and sha256_array_native(z[ck]) == \
             c["corrected_condition_array_data_sha256"]
     if rk in z.files:
-        ok = ok and sha256_array(z[rk]) == \
+        ok = ok and sha256_array_native(z[rk]) == \
             c["corrected_reference_array_data_sha256"]
     ok = ok and c["original_value_equals_reference_hash"] and \
         c["verified_against_consolidated_npz"]
@@ -588,7 +604,7 @@ shutil.copyfile(cons_npz, OUT_NPZ)
 # integrity: reopen the copy and re-hash every array
 zc = np.load(OUT_NPZ, allow_pickle=False)
 copy_bad = sum(1 for e in idx
-               if sha256_array(zc[e["consolidated_key"]]) !=
+               if sha256_array_native(zc[e["consolidated_key"]]) !=
                e["consolidated_array_data_sha256"])
 assert copy_bad == 0, "copied NPZ array mismatch"
 line("[emit] NPZ copied byte-identical (%d arrays, all hashes match)"
