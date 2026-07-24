@@ -1,0 +1,183 @@
+name: UMSI++ resize causality evidence remediation
+
+# EVIDENCE REMEDIATION ONLY — no model inference. Produces a truthful successor
+# to the consolidated resize-causality bundle that corrects six provenance
+# defects (compare_env freeze misattribution, the unrecoverable historical
+# Compare freeze, the validator gap, the missing scripts/download_weights.py in
+# the source-hash inventory, and the lack of independent artifact-to-job
+# attribution). Reads the immutable artifacts + logs of BOTH the causality run
+# (30034973775) and the consolidation run (30083793554). Never runs TF1/TF2 and
+# never instantiates UMSI++.
+#
+# Runs only on the remediation branch (push) or manual dispatch. No PR.
+
+on:
+  push:
+    branches:
+      - audit/umsi-resize-evidence-remediation
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  SOURCE_RUN_CAUSALITY: "30034973775"
+  SOURCE_RUN_CONSOLIDATION: "30083793554"
+  CAUSALITY_COMMIT: "a03c42a8ac508d61f8b7fd1cffde3c0e0df8d5f3"
+  CONSOLIDATION_COMMIT: "048aba5c33057681009087a7d06ec555b2990d20"
+  MODERN_IMAGE: "python:3.9.6-bullseye"
+  MODERN_IMAGE_DIGEST: "sha256:fb7ca75a4d29e32e2f6a0c8a60ba96608673afc7ed5bc9192f15c0f50135a371"
+
+jobs:
+  remediate:
+    name: remediate resize causality evidence
+    runs-on: ubuntu-latest
+    container:
+      image: python@sha256:fb7ca75a4d29e32e2f6a0c8a60ba96608673afc7ed5bc9192f15c0f50135a371
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Remediate immutable source evidence (full log, no suppression)
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -o pipefail
+          apt-get update
+          apt-get install -y --no-install-recommends libglib2.0-0 git
+          python -m pip install --upgrade pip
+          # Clean remediation environment: numpy/scipy/opencv only. NO TF/keras.
+          python -m pip install --no-cache-dir \
+            numpy==1.26.4 scipy==1.13.1 opencv-python-headless==4.10.0.84
+
+          # git needs to trust the checked-out workspace to read old commits.
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+          # --- clean-environment pip freeze --all (must contain no TF/keras) ---
+          export RC_REM_FREEZE="$GITHUB_WORKSPACE/deliver/remediation_env_freeze.txt"
+          mkdir -p deliver src src/logs
+          python -m pip freeze --all > "$RC_REM_FREEZE"
+
+          # --- resolve this job's numeric id for provenance ---
+          RC_JOB_ID=$(python -c "import os,json,urllib.request; tok=os.environ['GITHUB_TOKEN']; repo=os.environ['GH_REPO']; run=os.environ['GITHUB_RUN_ID']; name=os.environ.get('RUNNER_NAME',''); req=urllib.request.Request('https://api.github.com/repos/%s/actions/runs/%s/jobs?per_page=100'%(repo,run), headers={'Authorization':'Bearer '+tok,'Accept':'application/vnd.github+json'}); jobs=json.load(urllib.request.urlopen(req))['jobs']; print(next((str(j['id']) for j in jobs if j.get('runner_name')==name or j['name']=='remediate resize causality evidence'),''))")
+          echo "resolved RC_JOB_ID=${RC_JOB_ID}"
+
+          export SOURCE_RUN_CAUSALITY="${SOURCE_RUN_CAUSALITY}"
+          export SOURCE_RUN_CONSOLIDATION="${SOURCE_RUN_CONSOLIDATION}"
+          export RC_SRC_DIR="$GITHUB_WORKSPACE/src"
+          export RC_LOG_DIR="$GITHUB_WORKSPACE/src/logs"
+          export RC_ATTRIB_OUT="$GITHUB_WORKSPACE/src/attribution.json"
+          export RC_ATTRIB="$RC_ATTRIB_OUT"
+          export RC_GIT_DIR="$GITHUB_WORKSPACE"
+          export RC_CAUS_COMMIT="${CAUSALITY_COMMIT}"
+          export RC_CONS_COMMIT="${CONSOLIDATION_COMMIT}"
+          export RC_REM_COMMIT="${GITHUB_SHA}"
+          export RC_BRANCH="${GITHUB_REF_NAME}"
+          export RC_JOB_ID="${RC_JOB_ID}"
+          export RC_JOB_STEP="remediate-evidence"
+          export RC_RUNNER_IMAGE="${MODERN_IMAGE}"
+          export RC_CONTAINER_DIGEST="${MODERN_IMAGE_DIGEST}"
+          export RC_PYTHON_VERSION="$(python -c 'import platform;print(platform.python_version())')"
+
+          # Phase 0: emit the freeze remediation protocol manifest (committed).
+          export RC_MANIFEST_OUT="$GITHUB_WORKSPACE/deliver/resize_remediation_manifest.json"
+          MAN="$GITHUB_WORKSPACE/deliver/manifest.log"
+          python golden/remediation_manifest.py 2>&1 | tee "$MAN"
+
+          ACQ="$GITHUB_WORKSPACE/deliver/acquisition.log"
+          REM="$GITHUB_WORKSPACE/deliver/remediation.log"
+          VAL="$GITHUB_WORKSPACE/deliver/validation.log"
+
+          # Phase 1: acquire + map immutable evidence from BOTH runs.
+          python golden/acquire_remediation_evidence.py 2>&1 | tee "$ACQ"
+
+          export RC_OUT_JSON="$GITHUB_WORKSPACE/deliver/umsi_resize_causality_6a17288_remediated.json"
+          export RC_OUT_NPZ="$GITHUB_WORKSPACE/deliver/umsi_resize_causality_arrays_6a17288_remediated.npz"
+
+          # Phases 2-5: correct provenance, complete inventory, reverify, emit.
+          python golden/remediate_evidence.py 2>&1 | tee "$REM"
+
+          # Phase 6: strict validation.
+          python golden/verify_remediation.py 2>&1 | tee "$VAL"
+
+          # --- Assemble the single comprehensive .log deliverable (tee only) ---
+          LOG=deliver/umsi_resize_causality_6a17288_remediated.log
+          {
+            echo "===== umsi_resize_causality_6a17288_remediated.log ====="
+            echo "assembled_utc: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "remediation_commit: ${GITHUB_SHA}"
+            echo "remediation_run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo "source_causality_run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_CAUSALITY}"
+            echo "source_consolidation_run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_CONSOLIDATION}"
+            echo
+            echo "########## PHASE 0 — FREEZE REMEDIATION PROTOCOL MANIFEST ##########"
+            cat "$MAN"
+            echo
+            echo "########## PHASE 1 — EVIDENCE ACQUISITION + ATTRIBUTION ##########"
+            cat "$ACQ"
+            echo
+            echo "########## PHASES 2-5 — REMEDIATION STDOUT/STDERR ##########"
+            cat "$REM"
+            echo
+            echo "########## PHASE 6 — VALIDATION STDOUT/STDERR ##########"
+            cat "$VAL"
+            echo
+            echo "########## INCORPORATED SOURCE JOB-STEP LOGS ##########"
+            for f in "$RC_LOG_DIR"/causality/*.txt "$RC_LOG_DIR"/consolidation/*.txt; do
+              [ -e "$f" ] || continue
+              echo
+              echo "----- SOURCE LOG: $(basename "$f") -----"
+              echo "bytes $(stat -c%s "$f")  sha256 $(sha256sum "$f" | cut -d' ' -f1)"
+              echo "----- BEGIN $(basename "$f") -----"
+              cat "$f"
+              echo "----- END $(basename "$f") -----"
+            done
+            echo
+            echo "########## ARTIFACT-TO-JOB ATTRIBUTION (Phase 1 output) ##########"
+            cat "$RC_ATTRIB"
+            echo
+            echo "########## REMEDIATION-ENVIRONMENT pip freeze --all ##########"
+            echo "bytes $(stat -c%s "$RC_REM_FREEZE")  sha256 $(sha256sum "$RC_REM_FREEZE" | cut -d' ' -f1)"
+            cat "$RC_REM_FREEZE"
+            echo
+            echo "===== END OF REMEDIATED LOG ====="
+          } | tee "$LOG"
+
+          # --- SHA256SUMS over the three other deliverables ---
+          cd deliver
+          sha256sum \
+            umsi_resize_causality_6a17288_remediated.json \
+            umsi_resize_causality_6a17288_remediated.log \
+            umsi_resize_causality_arrays_6a17288_remediated.npz \
+            > SHA256SUMS
+          echo "----- SHA256SUMS -----"
+          cat SHA256SUMS
+          echo "----- SHA256SUMS self + byte sizes -----"
+          echo "SHA256SUMS bytes $(stat -c%s SHA256SUMS) sha256 $(sha256sum SHA256SUMS | cut -d' ' -f1)"
+          for f in umsi_resize_causality_6a17288_remediated.json \
+                   umsi_resize_causality_6a17288_remediated.log \
+                   umsi_resize_causality_arrays_6a17288_remediated.npz \
+                   SHA256SUMS; do
+            echo "bytes $(stat -c%s "$f")  $f"
+          done
+
+      - name: Upload remediated evidence deliverables
+        uses: actions/upload-artifact@v4
+        with:
+          name: umsi-resize-causality-evidence-remediated-048aba5
+          path: |
+            deliver/umsi_resize_causality_6a17288_remediated.json
+            deliver/umsi_resize_causality_6a17288_remediated.log
+            deliver/umsi_resize_causality_arrays_6a17288_remediated.npz
+            deliver/SHA256SUMS
+          retention-days: 30
+
+      - name: Print remediation verdict
+        shell: bash
+        run: |
+          python -c "import json; d=json.load(open('deliver/umsi_resize_causality_6a17288_remediated.json')); ok = (d['scientific_verdict_changed'] is False and d['historical_compare_pip_freeze_available'] is False and d['historical_compare_environment_reconstructed'] is False and d['remediation_validation_pip_freeze_complete'] is True and d['remediation_no_model_inference'] is True); print('VERDICT:', 'UMSI RESIZE CAUSALITY EVIDENCE REMEDIATED - SCIENTIFIC VERDICT UNCHANGED; HISTORICAL COMPARE FREEZE TRANSPARENTLY UNAVAILABLE' if ok else 'UMSI RESIZE CAUSALITY EVIDENCE REMEDIATION BLOCKED - PROVENANCE OR REVERIFICATION INCOMPLETE'); print('scientific_verdict (unchanged):', d['scientific_verdict']); print('bitwise_equal:', d['bitwise_equal']); print('numerical_parity_within_preregistered_thresholds:', d['numerical_parity_within_preregistered_thresholds']); print('historical_compare_pip_freeze_available:', d['historical_compare_pip_freeze_available']); print('remediation_no_model_inference:', d['remediation_no_model_inference'])"
