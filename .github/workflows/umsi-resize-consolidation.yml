@@ -1,0 +1,140 @@
+name: UMSI++ resize causality evidence consolidation
+
+# EVIDENCE CONSOLIDATION ONLY — no model inference. Rebuilds ONE corrected,
+# self-contained evidence bundle from the immutable Actions artifacts of the
+# source run (30034973775, audit commit a03c42a). Corrects three evidence-
+# packaging defects (shared-map condition hash, missing raw-tensor metrics,
+# unconsolidated pip freeze + executed-source hashes). Never runs TF1/TF2 and
+# never instantiates UMSI++.
+#
+# Runs only on the consolidation branch (push) or manual dispatch. No PR.
+
+on:
+  push:
+    branches:
+      - audit/umsi-resize-evidence-consolidation
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  SOURCE_RUN_ID: "30034973775"
+  MODERN_IMAGE: "python:3.9.6-bullseye"
+  MODERN_IMAGE_DIGEST: "sha256:fb7ca75a4d29e32e2f6a0c8a60ba96608673afc7ed5bc9192f15c0f50135a371"
+
+jobs:
+  consolidate:
+    name: Consolidate + correct resize causality evidence
+    runs-on: ubuntu-latest
+    container:
+      image: python@sha256:fb7ca75a4d29e32e2f6a0c8a60ba96608673afc7ed5bc9192f15c0f50135a371
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Consolidate immutable source evidence (full log, no suppression)
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -o pipefail
+          apt-get update
+          apt-get install -y --no-install-recommends libglib2.0-0
+          python -m pip install --upgrade pip
+          # Pinned dependencies matching the original comparison environment.
+          python -m pip install --no-cache-dir \
+            numpy==1.26.4 scipy==1.13.1 opencv-python-headless==4.10.0.84
+
+          export SOURCE_RUN_ID="${SOURCE_RUN_ID}"
+          export RC_SRC_DIR="$GITHUB_WORKSPACE/src"
+          export RC_LOG_DIR="$GITHUB_WORKSPACE/src/logs"
+          export RC_ARTIFACT_META="$GITHUB_WORKSPACE/src/artifact_meta.json"
+          export UMSI_REPO="$GITHUB_WORKSPACE"
+          export AUDIT_COMMIT="${GITHUB_SHA}"
+          mkdir -p deliver "$RC_SRC_DIR" "$RC_LOG_DIR"
+
+          ACQ="$GITHUB_WORKSPACE/deliver/acquisition.log"
+          CON="$GITHUB_WORKSPACE/deliver/consolidation.log"
+          VAL="$GITHUB_WORKSPACE/deliver/validation.log"
+
+          # --- Phase 1: acquire every immutable source artifact + full logs ---
+          python golden/acquire_source_evidence.py 2>&1 | tee "$ACQ"
+
+          export RC_OUT_JSON="$GITHUB_WORKSPACE/deliver/umsi_resize_causality_6a17288_consolidated.json"
+          export RC_OUT_NPZ="$GITHUB_WORKSPACE/deliver/umsi_resize_causality_arrays_6a17288_consolidated.npz"
+
+          # --- Phases 2-4: correct + consolidate ---
+          python golden/consolidate_evidence.py 2>&1 | tee "$CON"
+
+          # --- Phase 5: validate ---
+          python golden/verify_consolidated.py 2>&1 | tee "$VAL"
+
+          # --- Assemble the single comprehensive .log deliverable (tee only) ---
+          LOG=deliver/umsi_resize_causality_6a17288_consolidated.log
+          {
+            echo "===== umsi_resize_causality_6a17288_consolidated.log ====="
+            echo "assembled_utc: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "consolidation_commit: ${GITHUB_SHA}"
+            echo "consolidation_run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo "source_run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}"
+            echo
+            echo "########## PHASE 1 — SOURCE EVIDENCE ACQUISITION ##########"
+            cat "$ACQ"
+            echo
+            echo "########## PHASES 2-4 — CONSOLIDATION STDOUT/STDERR ##########"
+            cat "$CON"
+            echo
+            echo "########## PHASE 5 — VALIDATION STDOUT/STDERR ##########"
+            cat "$VAL"
+            echo
+            echo "########## INCORPORATED SOURCE JOB-STEP LOGS ##########"
+            for f in "$RC_LOG_DIR"/*.txt; do
+              echo
+              echo "----- SOURCE LOG: $(basename "$f") -----"
+              echo "bytes $(stat -c%s "$f")  sha256 $(sha256sum "$f" | cut -d' ' -f1)"
+              echo "----- BEGIN $(basename "$f") -----"
+              cat "$f"
+              echo "----- END $(basename "$f") -----"
+            done
+            echo
+            echo "########## SOURCE ARTIFACT PROVENANCE (archive-level) ##########"
+            cat "$RC_ARTIFACT_META"
+            echo
+            echo "===== END OF CONSOLIDATED LOG ====="
+          } | tee "$LOG"
+
+          # --- SHA256SUMS over the three other deliverables ---
+          cd deliver
+          sha256sum \
+            umsi_resize_causality_6a17288_consolidated.json \
+            umsi_resize_causality_6a17288_consolidated.log \
+            umsi_resize_causality_arrays_6a17288_consolidated.npz \
+            > SHA256SUMS
+          echo "----- SHA256SUMS -----"
+          cat SHA256SUMS
+          echo "----- byte sizes -----"
+          for f in umsi_resize_causality_6a17288_consolidated.json \
+                   umsi_resize_causality_6a17288_consolidated.log \
+                   umsi_resize_causality_arrays_6a17288_consolidated.npz \
+                   SHA256SUMS; do
+            echo "bytes $(stat -c%s "$f")  $f"
+          done
+
+      - name: Upload consolidated evidence deliverables
+        uses: actions/upload-artifact@v4
+        with:
+          name: umsi-resize-causality-evidence-consolidated-a03c42a
+          path: |
+            deliver/umsi_resize_causality_6a17288_consolidated.json
+            deliver/umsi_resize_causality_6a17288_consolidated.log
+            deliver/umsi_resize_causality_arrays_6a17288_consolidated.npz
+            deliver/SHA256SUMS
+          retention-days: 30
+
+      - name: Print consolidation verdict
+        shell: bash
+        run: |
+          python -c "import json; d=json.load(open('deliver/umsi_resize_causality_6a17288_consolidated.json')); print('SCIENTIFIC VERDICT (unchanged):', d['scientific_verdict']); print('bitwise_equal:', d['bitwise_equal']); print('numerical_parity_within_preregistered_thresholds:', d['numerical_parity_within_preregistered_thresholds']); print('corrections:', len(d['correction_history'])); print('consolidation_no_model_inference:', d['consolidation_no_model_inference'])"
