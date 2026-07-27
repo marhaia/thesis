@@ -93,6 +93,59 @@ class InvalidSaliencyOutputError(RuntimeError):
     plausible-looking result.
     """
 
+
+# ============================================================================
+# Legacy-compatible bilinear upsampling (decoder resize)
+# ============================================================================
+
+@keras.saving.register_keras_serializable(package="umsi_plus_plus")
+class LegacyBilinearUpSampling2D(layers.Layer):
+    """Bilinear upsampling matching the original TF1.14/Keras2.3.1 decoder.
+
+    The authoritative UMSI++ checkpoint was trained with Keras 2.3.1, whose
+    ``UpSampling2D(interpolation='bilinear')`` lowers to
+    ``tf.image.resize_bilinear`` == ``tf.raw_ops.ResizeBilinear`` with
+    ``align_corners=False, half_pixel_centers=False``. TF2/Keras3 changed the
+    default bilinear resize to half-pixel-centre sampling, which shifts the
+    decoder output. That shift was the confirmed sole material cause of the
+    pre-registered TF1/Keras2 golden-threshold failures (resize causality
+    experiment, run 30034973775, commit a03c42a). This layer restores the
+    legacy sampling grid so the loaded weights produce the trained output.
+
+    It carries no trainable parameters and no weights, keeps the same layer
+    name and ``size`` factor as the ``UpSampling2D`` it replaces, and therefore
+    does not change model topology, parameter counts or checkpoint-loading
+    behaviour.
+    """
+
+    def __init__(self, size=(2, 2), **kwargs):
+        super().__init__(**kwargs)
+        if isinstance(size, int):
+            size = (size, size)
+        self.size = (int(size[0]), int(size[1]))
+
+    def call(self, inputs):
+        shp = tf.shape(inputs)
+        out_h = shp[1] * self.size[0]
+        out_w = shp[2] * self.size[1]
+        target = tf.stack([out_h, out_w])
+        return tf.raw_ops.ResizeBilinear(
+            images=inputs, size=target,
+            align_corners=False, half_pixel_centers=False)
+
+    def compute_output_shape(self, input_shape):
+        b, h, w, c = input_shape
+        return (b,
+                None if h is None else h * self.size[0],
+                None if w is None else w * self.size[1],
+                c)
+
+    def get_config(self):
+        cfg = super().get_config()
+        cfg["size"] = self.size
+        return cfg
+
+
 # ============================================================================
 # Custom Xception Backbone (stride-modified for saliency)
 # ============================================================================
@@ -344,8 +397,7 @@ def build_umsi_model(input_shape: Tuple[int, int, int] = (SHAPE_R, SHAPE_C, 3),
     x = layers.Conv2D(256, (3, 3), padding='same', use_bias=False,
                        name='dec_c2')(x)
     x = layers.Dropout(0.3, name='dec_dp1')(x)
-    x = layers.UpSampling2D(size=(2, 2), interpolation='bilinear',
-                              name='dec_ups1')(x)
+    x = LegacyBilinearUpSampling2D(size=(2, 2), name='dec_ups1')(x)
     # → (batch, 64, 64, 256)
 
     x = layers.Conv2D(128, (3, 3), padding='same', use_bias=False,
@@ -353,15 +405,13 @@ def build_umsi_model(input_shape: Tuple[int, int, int] = (SHAPE_R, SHAPE_C, 3),
     x = layers.Conv2D(128, (3, 3), padding='same', use_bias=False,
                        name='dec_c4')(x)
     x = layers.Dropout(0.3, name='dec_dp2')(x)
-    x = layers.UpSampling2D(size=(2, 2), interpolation='bilinear',
-                              name='dec_ups2')(x)
+    x = LegacyBilinearUpSampling2D(size=(2, 2), name='dec_ups2')(x)
     # → (batch, 128, 128, 128)
 
     x = layers.Conv2D(64, (3, 3), padding='same', use_bias=False,
                        name='dec_c5')(x)
     x = layers.Dropout(0.3, name='dec_dp3')(x)
-    x = layers.UpSampling2D(size=(4, 4), interpolation='bilinear',
-                              name='dec_ups3')(x)
+    x = LegacyBilinearUpSampling2D(size=(4, 4), name='dec_ups3')(x)
     # → (batch, 512, 512, 64)
 
     out_heatmap = layers.Conv2D(1, (1, 1), padding='same', use_bias=False,

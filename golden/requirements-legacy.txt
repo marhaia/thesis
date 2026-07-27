@@ -1,0 +1,18 @@
+# Pinned legacy stack for the original UMSI++ (TF1.14 / Keras 2.3.1) runtime.
+# Mirrors saliency_models/UMSI++/environment.yaml (Python 3.7.9), using the
+# CPU x86_64 PyPI wheels. protobuf/gast are pinned to the versions TF 1.14
+# requires at runtime (newer protobuf>=3.20 and gast>=0.3 break TF 1.14).
+numpy==1.19.2
+protobuf==3.19.6
+gast==0.2.2
+h5py==2.10.0
+tensorflow==1.14.0
+Keras==2.3.1
+keras-applications==1.0.8
+keras-preprocessing==1.1.0
+scipy==1.5.2
+opencv-python-headless==4.4.0.46
+matplotlib==3.3.2
+Pillow==8.4.0
+ipython==7.34.0
+wrapt==1.12.1

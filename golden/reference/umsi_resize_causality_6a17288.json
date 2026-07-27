@@ -1,0 +1,2053 @@
+{
+  "audit_commit": "a03c42a8ac508d61f8b7fd1cffde3c0e0df8d5f3",
+  "checkpoint": {
+    "byte_size": 120093896,
+    "path": "/__w/thesis/thesis/saliency/weights/model_weights/saliency_models/UMSI++/umsi++.hdf5",
+    "sha256": "f4290c3f11f18befbb47de50d81e4555ec8e7a63066c71c343a32fe32799e9fe"
+  },
+  "decision": {
+    "M_CL_passes_all_fixtures": true,
+    "M_LC_reproduces_failure": true,
+    "M_LL_passes_all_fixtures": true,
+    "abl_all_final_layer_matches_legacy": true,
+    "activation_supports_hypothesis": true,
+    "oracle_pass": true
+  },
+  "environments": {
+    "legacy": {
+      "keras": "2.3.1",
+      "numpy": "1.19.2",
+      "platform": "Linux-6.17.0-1020-azure-x86_64-with-debian-10.8",
+      "python": "3.7.9",
+      "role": "legacy_tf1_keras2",
+      "tensorflow": "1.14.0"
+    },
+    "modern": {
+      "keras": "3.10.0",
+      "numpy": "1.26.4",
+      "platform": "Linux-6.17.0-1020-azure-x86_64-with-glibc2.31",
+      "python": "3.9.6",
+      "role": "modern_tf2_keras3",
+      "tensorflow": "2.16.2"
+    }
+  },
+  "experiment": "umsi_resize_causality",
+  "first_divergent_boundary_all_modern_resize": "dec_ups1__out",
+  "frozen_manifest": {
+    "audit_base_commit": "77241fc6e635949dada502e6c2d902eac1e8b030",
+    "audit_experiment_branch_ref": "refs/heads/audit/umsi-resize-causality",
+    "audit_experiment_commit": "a03c42a8ac508d61f8b7fd1cffde3c0e0df8d5f3",
+    "byte_identical_input_control": "legacy preprocessing tensor saved as uncompressed float32 .npy, loaded in the modern job with allow_pickle=False; controlled tensor difference must be exactly 0.0. The genuine modern preprocessing result is preserved separately (its ~e-6 difference is NOT hidden).",
+    "candidate_legacy_resize_operator": "tf.raw_ops.ResizeBilinear(align_corners=False, half_pixel_centers=False)  # align_corners=True is NOT used",
+    "checkpoint": {
+      "byte_size": 120093896,
+      "path": "saliency/weights/model_weights/saliency_models/UMSI++/umsi++.hdf5",
+      "sha256": "f4290c3f11f18befbb47de50d81e4555ec8e7a63066c71c343a32fe32799e9fe"
+    },
+    "conditions": {
+      "L_REF": {
+        "input": "legacy_preproc",
+        "resize": "legacy_native"
+      },
+      "M_CC": {
+        "input": "modern_preproc",
+        "resize": "modern"
+      },
+      "M_CL": {
+        "input": "modern_preproc",
+        "resize": "legacy"
+      },
+      "M_LC": {
+        "input": "legacy_controlled",
+        "resize": "modern"
+      },
+      "M_LL": {
+        "input": "legacy_controlled",
+        "resize": "legacy"
+      }
+    },
+    "containers": {
+      "legacy_image": "python:3.7.9-buster",
+      "legacy_image_digest": "sha256:83ab4e9e275cb279e5639097aa0780ef82c4fd78622ae36ab35810ab7b57f491",
+      "modern_image": "python:3.9.6-bullseye",
+      "modern_image_digest": "sha256:fb7ca75a4d29e32e2f6a0c8a60ba96608673afc7ed5bc9192f15c0f50135a371"
+    },
+    "continuous_features": [
+      "saliency_dispersion",
+      "saliency_center_bias",
+      "saliency_entropy",
+      "saliency_coverage"
+    ],
+    "cumulative_ablations": {
+      "abl_all": [
+        "dec_ups1",
+        "dec_ups2",
+        "dec_ups3"
+      ],
+      "abl_ups1": [
+        "dec_ups1"
+      ],
+      "abl_ups1_ups2": [
+        "dec_ups1",
+        "dec_ups2"
+      ]
+    },
+    "decision_rules": {
+      "BLOCKED": "the authentic experiment cannot be executed / a required runtime or artifact is unavailable",
+      "CONFIRMED": "oracle passes AND M_LC still reproduces a meaningful parity failure AND M_LL passes every unchanged golden threshold for all five fixtures AND the activation comparison shows the resize replacement removes the divergence from the first affected resize layer",
+      "NOT_CONFIRMED": "controlled results do not causally support the resize hypothesis",
+      "PARTIAL": "legacy resize substantially improves results but M_LL still fails any threshold"
+    },
+    "decoder_resize_layers": [
+      {
+        "fh": 2,
+        "fw": 2,
+        "name": "dec_ups1",
+        "out_h": 64,
+        "out_w": 64,
+        "src_h": 32,
+        "src_w": 32
+      },
+      {
+        "fh": 2,
+        "fw": 2,
+        "name": "dec_ups2",
+        "out_h": 128,
+        "out_w": 128,
+        "src_h": 64,
+        "src_w": 64
+      },
+      {
+        "fh": 4,
+        "fw": 4,
+        "name": "dec_ups3",
+        "out_h": 512,
+        "out_w": 512,
+        "src_h": 128,
+        "src_w": 128
+      }
+    ],
+    "experiment": "umsi_resize_causality",
+    "feature_keys": [
+      "saliency_dispersion",
+      "saliency_peak_count",
+      "saliency_center_bias",
+      "saliency_entropy",
+      "saliency_coverage"
+    ],
+    "fixtures": {
+      "lowcontrast": {
+        "dims_hw": [
+          800,
+          1280
+        ],
+        "required_sha256": "4a467bdd72d41b9fd490573468db171a254e7cbf4aa8727ac8fb86bef05a3562"
+      },
+      "ui1": {
+        "dims_hw": [
+          800,
+          1280
+        ],
+        "required_sha256": "b0741b0660e3cede9a8f11db92c3973e4336e4c8c859315ba69c8677963ece3b"
+      },
+      "ui2": {
+        "dims_hw": [
+          768,
+          1024
+        ],
+        "required_sha256": "1e693f150402276b819aaa133c17ef5e9540e66789518a47856b17892d7266a6"
+      },
+      "ui3": {
+        "dims_hw": [
+          600,
+          800
+        ],
+        "required_sha256": "38c4348cbf93da4e95f07d5e2bf7b7a315eec57b9841a8dfc174b8a3bab6cab0"
+      },
+      "uniform": {
+        "dims_hw": [
+          800,
+          1280
+        ],
+        "required_sha256": "2987ab872f4a798686ce3f975c7a8a3ad41bbf619fae113678b5afc53a634db6"
+      }
+    },
+    "for_commit": "6a17288bbac848bb023fccc98aee606c034ea54b",
+    "forbidden": "No production edit; no threshold change after results; no rotate/shift/align of maps; no norms rebuild; no parity claim from source inspection alone.",
+    "frozen_utc": "2026-07-23T18:43:58Z",
+    "hceye_keys": [
+      "fixation_reduction",
+      "duration_increase",
+      "exploration_reduction",
+      "aoi_sensitivity",
+      "highlight_effectiveness",
+      "cognitive_load_index"
+    ],
+    "metrics": [
+      "shape",
+      "dtype",
+      "min",
+      "max",
+      "mean",
+      "std",
+      "nonfinite_pct",
+      "sha256",
+      "mae",
+      "rmse",
+      "max_abs_diff",
+      "pearson",
+      "spearman",
+      "legacy_audit_global_ssim",
+      "windowed_ssim"
+    ],
+    "modern_resize_operator": "keras UpSampling2D(interpolation='bilinear')  # TF2/Keras3 half-pixel resize semantics",
+    "oracle_acceptance_max_abs_diff": 1e-06,
+    "phase": "0_frozen_protocol",
+    "pre_registered_thresholds": {
+      "cli_abs_max": 0.01,
+      "feature_abs_max": 0.02,
+      "peak_count_exact": true,
+      "pearson_min": 0.999,
+      "preproc_abs_max": 0.0,
+      "repeatability_abs_max": 0.0,
+      "spearman_min": 0.99,
+      "ssim_min": 0.99
+    },
+    "prior_golden_run": "30028284848",
+    "provisional_note": "All HCEye and cognitive_load_index values are PROVISIONAL: the saliency norm distributions are stale.",
+    "scope_disclaimer": "An x86_64 CPU comparison is a source-matched legacy numerical golden run, NOT a claim of bitwise CUDA 9 reproduction.",
+    "target_legacy_environment": {
+      "arch": "x86_64",
+      "device": "CPU",
+      "keras": "2.3.1",
+      "numpy": "1.19.2",
+      "python": "3.7.9",
+      "tensorflow": "1.14.0"
+    },
+    "target_modern_environment": {
+      "arch": "x86_64",
+      "device": "CPU",
+      "keras": "3.10.0",
+      "numpy": "1.26.4",
+      "python": "3.9.6",
+      "tensorflow": "2.16.2"
+    },
+    "thresholds_note": "Identical to the frozen golden thresholds; BOTH reported SSIM values (legacy_audit_global_ssim and windowed_ssim) must be >= ssim_min.",
+    "upstream": {
+      "commit": "7bc064175310284c74e64e0c3c2ef264bfbe66e2",
+      "model_builder": "singleduration_models.py::UMSI",
+      "preprocessing": "sal_imp_utilities.py",
+      "repo": "YueJiang-nj/UEyes-CHI2023"
+    },
+    "windowed_ssim_params": {
+      "K1": 0.01,
+      "K2": 0.03,
+      "boundary": "reflect",
+      "data_range": 1.0,
+      "filter": "scipy.ndimage.uniform_filter",
+      "implementation": "wang2004_uniform_window",
+      "win_size": 7
+    },
+    "workflow_run": {
+      "repository": "marhaia/thesis",
+      "run_id": "30034973775",
+      "run_number": "3",
+      "server_url": "https://github.com"
+    }
+  },
+  "model_info": {
+    "abl_all": {
+      "copied": 107,
+      "params": 29919854
+    },
+    "abl_ups1": {
+      "copied": 107,
+      "params": 29919854
+    },
+    "abl_ups1_ups2": {
+      "copied": 107,
+      "params": 29919854
+    },
+    "prod_params": 29919854
+  },
+  "phase1_resize_operator_oracle": {
+    "oracle_pass": true,
+    "per_tensor": {
+      "checker_dec_ups1": {
+        "finite": true,
+        "mae": 0.0,
+        "max_abs_diff": 0.0,
+        "pass": true,
+        "shapes_match": true
+      },
+      "checker_dec_ups2": {
+        "finite": true,
+        "mae": 0.0,
+        "max_abs_diff": 0.0,
+        "pass": true,
+        "shapes_match": true
+      },
+      "checker_dec_ups3": {
+        "finite": true,
+        "mae": 0.0,
+        "max_abs_diff": 0.0,
+        "pass": true,
+        "shapes_match": true
+      },
+      "ramp_dec_ups1": {
+        "finite": true,
+        "mae": 0.0,
+        "max_abs_diff": 0.0,
+        "pass": true,
+        "shapes_match": true
+      },
+      "ramp_dec_ups2": {
+        "finite": true,
+        "mae": 0.0,
+        "max_abs_diff": 0.0,
+        "pass": true,
+        "shapes_match": true
+      },
+      "ramp_dec_ups3": {
+        "finite": true,
+        "mae": 0.0,
+        "max_abs_diff": 0.0,
+        "pass": true,
+        "shapes_match": true
+      }
+    }
+  },
+  "phase2_byte_identical_input_control": {
+    "all_byte_identical": true,
+    "per_fixture": {
+      "lowcontrast": {
+        "byte_identical": true,
+        "controlled_tensor_max_abs_diff": 0.0,
+        "legacy_preproc_sha256": "6486898bc81a5666f407f0a277138ffe19358b82be942dfe0bf8c99546e3d393",
+        "modern_controlled_sha256": "6486898bc81a5666f407f0a277138ffe19358b82be942dfe0bf8c99546e3d393",
+        "modern_vs_legacy_preproc_max_abs_diff": 3.814697265625e-06
+      },
+      "ui1": {
+        "byte_identical": true,
+        "controlled_tensor_max_abs_diff": 0.0,
+        "legacy_preproc_sha256": "97abf3939e057b919260bbf29c125d8fc9a12b69aa929f373a67b9713c307fda",
+        "modern_controlled_sha256": "97abf3939e057b919260bbf29c125d8fc9a12b69aa929f373a67b9713c307fda",
+        "modern_vs_legacy_preproc_max_abs_diff": 3.814697265625e-06
+      },
+      "ui2": {
+        "byte_identical": true,
+        "controlled_tensor_max_abs_diff": 0.0,
+        "legacy_preproc_sha256": "a703328c72947aa8094bd2a92788deb5da8be1be39b4a6147fc89c9d7d6a94dd",
+        "modern_controlled_sha256": "a703328c72947aa8094bd2a92788deb5da8be1be39b4a6147fc89c9d7d6a94dd",
+        "modern_vs_legacy_preproc_max_abs_diff": 3.814697265625e-06
+      },
+      "ui3": {
+        "byte_identical": true,
+        "controlled_tensor_max_abs_diff": 0.0,
+        "legacy_preproc_sha256": "40893d34b8348aec7cef8db8646c8abd45193289644173feea94e1a2b7bc050a",
+        "modern_controlled_sha256": "40893d34b8348aec7cef8db8646c8abd45193289644173feea94e1a2b7bc050a",
+        "modern_vs_legacy_preproc_max_abs_diff": 3.814697265625e-06
+      },
+      "uniform": {
+        "byte_identical": true,
+        "controlled_tensor_max_abs_diff": 0.0,
+        "legacy_preproc_sha256": "37a0da52791ae28ee4fcf87fee148d2afbd3ac993b021d157394d605732ee4e6",
+        "modern_controlled_sha256": "37a0da52791ae28ee4fcf87fee148d2afbd3ac993b021d157394d605732ee4e6",
+        "modern_vs_legacy_preproc_max_abs_diff": 2.86102294921875e-06
+      }
+    }
+  },
+  "phase3_condition_all_pass": {
+    "M_CC": false,
+    "M_CL": true,
+    "M_LC": false,
+    "M_LL": true
+  },
+  "phase3_conditions_vs_L_REF": {
+    "lowcontrast": {
+      "conditions": {
+        "M_CC": {
+          "checks": {
+            "all_pass": false,
+            "cli_le_001": true,
+            "continuous_features_le_002": false,
+            "finite": true,
+            "legacy_audit_global_ssim_ge_099": false,
+            "peak_count_exact": true,
+            "pearson_ge_0999": false,
+            "spearman_ge_099": false,
+            "windowed_ssim_ge_099": false
+          },
+          "cognitive_load_index_abs_diff": 0.0014201998710632324,
+          "continuous_feature_abs_max": 0.03380361599883541,
+          "failed_checks": [
+            "pearson=0.9741094625674285",
+            "spearman=0.9783634746864154",
+            "global_ssim=0.973654",
+            "windowed_ssim=0.956249",
+            "feature_abs_max=0.0338"
+          ],
+          "features_cond": {
+            "saliency_center_bias": 0.5711459985585088,
+            "saliency_coverage": 0.0554365234375,
+            "saliency_dispersion": 0.3779026536514773,
+            "saliency_entropy": 0.5838140600926334,
+            "saliency_peak_count": 4.0
+          },
+          "features_ref": {
+            "saliency_center_bias": 0.5373423825596734,
+            "saliency_coverage": 0.05275390625,
+            "saliency_dispersion": 0.37780161655313743,
+            "saliency_entropy": 0.5711189154422278,
+            "saliency_peak_count": 4.0
+          },
+          "hceye_PROVISIONAL_cond": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.3290746808052063,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.6197012662887573
+          },
+          "hceye_PROVISIONAL_ref": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.32765448093414307,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.6253820657730103
+          },
+          "peak_count_cond": 4.0,
+          "peak_count_ref": 4.0,
+          "shared_map_metrics": {
+            "dtype": "float32",
+            "legacy_audit_global_ssim": 0.9736540367122081,
+            "mae": 0.019730074188858453,
+            "max_a": 1.0,
+            "max_abs_diff": 0.39164820313453674,
+            "mean_a": 0.10954813659191132,
+            "min_a": 0.0,
+            "nonfinite_pct": 0.0,
+            "pearson": 0.9741094625674285,
+            "rmse": 0.0401329503981658,
+            "sha256": "ec2d223cfe3820f4e7f341871a2557f3ed6e3af13063fe636ba5a3165da3f45a",
+            "shape": [
+              800,
+              1280
+            ],
+            "spearman": 0.9783634746864154,
+            "std_a": 0.17260970175266266,
+            "windowed_ssim": 0.9562487401175479
+          }
+        },
+        "M_CL": {
+          "checks": {
+            "all_pass": true,
+            "cli_le_001": true,
+            "continuous_features_le_002": true,
+            "finite": true,
+            "legacy_audit_global_ssim_ge_099": true,
+            "peak_count_exact": true,
+            "pearson_ge_0999": true,
+            "spearman_ge_099": true,
+            "windowed_ssim_ge_099": true
+          },
+          "cognitive_load_index_abs_diff": 5.364418029785156e-07,
+          "continuous_feature_abs_max": 1.819625528032276e-06,
+          "failed_checks": [],
+          "features_cond": {
+            "saliency_center_bias": 0.5373416974724767,
+            "saliency_coverage": 0.0527548828125,
+            "saliency_dispersion": 0.3778014947889009,
+            "saliency_entropy": 0.5711207350677558,
+            "saliency_peak_count": 4.0
+          },
+          "features_ref": {
+            "saliency_center_bias": 0.5373423825596734,
+            "saliency_coverage": 0.05275390625,
+            "saliency_dispersion": 0.37780161655313743,
+            "saliency_entropy": 0.5711189154422278,
+            "saliency_peak_count": 4.0
+          },
+          "hceye_PROVISIONAL_cond": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.32765501737594604,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.6253799200057983
+          },
+          "hceye_PROVISIONAL_ref": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.32765448093414307,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.6253820657730103
+          },
+          "peak_count_cond": 4.0,
+          "peak_count_ref": 4.0,
+          "shared_map_metrics": {
+            "dtype": "float32",
+            "legacy_audit_global_ssim": 0.9999999999637343,
+            "mae": 6.802989413836613e-07,
+            "max_a": 1.0,
+            "max_abs_diff": 6.377696990966797e-06,
+            "mean_a": 0.10954813659191132,
+            "min_a": 0.0,
+            "nonfinite_pct": 0.0,
+            "pearson": 0.9999999999892026,
+            "rmse": 1.2723669167798068e-06,
+            "sha256": "ec2d223cfe3820f4e7f341871a2557f3ed6e3af13063fe636ba5a3165da3f45a",
+            "shape": [
+              800,
+              1280
+            ],
+            "spearman": 0.9999999999627398,
+            "std_a": 0.17260970175266266,
+            "windowed_ssim": 0.9999999999677381
+          }
+        },
+        "M_LC": {
+          "checks": {
+            "all_pass": false,
+            "cli_le_001": true,
+            "continuous_features_le_002": false,
+            "finite": true,
+            "legacy_audit_global_ssim_ge_099": false,
+            "peak_count_exact": true,
+            "pearson_ge_0999": false,
+            "spearman_ge_099": false,
+            "windowed_ssim_ge_099": false
+          },
+          "cognitive_load_index_abs_diff": 0.0014201998710632324,
+          "continuous_feature_abs_max": 0.033803734517523276,
+          "failed_checks": [
+            "pearson=0.974109483494421",
+            "spearman=0.9783635072785072",
+            "global_ssim=0.973654",
+            "windowed_ssim=0.956249",
+            "feature_abs_max=0.0338"
+          ],
+          "features_cond": {
+            "saliency_center_bias": 0.5711461170771966,
+            "saliency_coverage": 0.0554365234375,
+            "saliency_dispersion": 0.37790259002110504,
+            "saliency_entropy": 0.5838139335598657,
+            "saliency_peak_count": 4.0
+          },
+          "features_ref": {
+            "saliency_center_bias": 0.5373423825596734,
+            "saliency_coverage": 0.05275390625,
+            "saliency_dispersion": 0.37780161655313743,
+            "saliency_entropy": 0.5711189154422278,
+            "saliency_peak_count": 4.0
+          },
+          "hceye_PROVISIONAL_cond": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.3290746808052063,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.6197012662887573
+          },
+          "hceye_PROVISIONAL_ref": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.32765448093414307,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.6253820657730103
+          },
+          "peak_count_cond": 4.0,
+          "peak_count_ref": 4.0,
+          "shared_map_metrics": {
+            "dtype": "float32",
+            "legacy_audit_global_ssim": 0.9736540794694496,
+            "mae": 0.019730078336739097,
+            "max_a": 1.0,
+            "max_abs_diff": 0.3916485607624054,
+            "mean_a": 0.10954813659191132,
+            "min_a": 0.0,
+            "nonfinite_pct": 0.0,
+            "pearson": 0.974109483494421,
+            "rmse": 0.04013291385529975,
+            "sha256": "ec2d223cfe3820f4e7f341871a2557f3ed6e3af13063fe636ba5a3165da3f45a",
+            "shape": [
+              800,
+              1280
+            ],
+            "spearman": 0.9783635072785072,
+            "std_a": 0.17260970175266266,
+            "windowed_ssim": 0.9562487591008885
+          }
+        },
+        "M_LL": {
+          "checks": {
+            "all_pass": true,
+            "cli_le_001": true,
+            "continuous_features_le_002": true,
+            "finite": true,
+            "legacy_audit_global_ssim_ge_099": true,
+            "peak_count_exact": true,
+            "pearson_ge_0999": true,
+            "spearman_ge_099": true,
+            "windowed_ssim_ge_099": true
+          },
+          "cognitive_load_index_abs_diff": 2.9802322387695312e-08,
+          "continuous_feature_abs_max": 1.9291122843601016e-06,
+          "failed_checks": [],
+          "features_cond": {
+            "saliency_center_bias": 0.5373418417575593,
+            "saliency_coverage": 0.05275390625,
+            "saliency_dispersion": 0.37780140697342174,
+            "saliency_entropy": 0.5711208445545122,
+            "saliency_peak_count": 4.0
+          },
+          "features_ref": {
+            "saliency_center_bias": 0.5373423825596734,
+            "saliency_coverage": 0.05275390625,
+            "saliency_dispersion": 0.37780161655313743,
+            "saliency_entropy": 0.5711189154422278,
+            "saliency_peak_count": 4.0
+          },
+          "hceye_PROVISIONAL_cond": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.32765451073646545,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.6253820061683655
+          },
+          "hceye_PROVISIONAL_ref": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.32765448093414307,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.6253820657730103
+          },
+          "peak_count_cond": 4.0,
+          "peak_count_ref": 4.0,
+          "shared_map_metrics": {
+            "dtype": "float32",
+            "legacy_audit_global_ssim": 0.9999999999663318,
+            "mae": 6.722631218902819e-07,
+            "max_a": 1.0,
+            "max_abs_diff": 5.662441253662109e-06,
+            "mean_a": 0.10954813659191132,
+            "min_a": 0.0,
+            "nonfinite_pct": 0.0,
+            "pearson": 0.9999999999880042,
+            "rmse": 1.2394866080747253e-06,
+            "sha256": "ec2d223cfe3820f4e7f341871a2557f3ed6e3af13063fe636ba5a3165da3f45a",
+            "shape": [
+              800,
+              1280
+            ],
+            "spearman": 0.9999999999643021,
+            "std_a": 0.17260970175266266,
+            "windowed_ssim": 0.9999999999676561
+          }
+        }
+      },
+      "dims_hw": [
+        800,
+        1280
+      ]
+    },
+    "ui1": {
+      "conditions": {
+        "M_CC": {
+          "checks": {
+            "all_pass": false,
+            "cli_le_001": true,
+            "continuous_features_le_002": true,
+            "finite": true,
+            "legacy_audit_global_ssim_ge_099": false,
+            "peak_count_exact": true,
+            "pearson_ge_0999": false,
+            "spearman_ge_099": false,
+            "windowed_ssim_ge_099": false
+          },
+          "cognitive_load_index_abs_diff": 0.0005863606929779053,
+          "continuous_feature_abs_max": 0.01268883210463817,
+          "failed_checks": [
+            "pearson=0.9416893661865903",
+            "spearman=0.9812190101644562",
+            "global_ssim=0.943091",
+            "windowed_ssim=0.960896"
+          ],
+          "features_cond": {
+            "saliency_center_bias": 0.3752793077094512,
+            "saliency_coverage": 0.0145107421875,
+            "saliency_dispersion": 0.42541987061020076,
+            "saliency_entropy": 0.3587735099117368,
+            "saliency_peak_count": 2.0
+          },
+          "features_ref": {
+            "saliency_center_bias": 0.36269967828746597,
+            "saliency_coverage": 0.0140146484375,
+            "saliency_dispersion": 0.42626599925541175,
+            "saliency_entropy": 0.3460846778070986,
+            "saliency_peak_count": 2.0
+          },
+          "hceye_PROVISIONAL_cond": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.2877422869205475,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.7850307822227478
+          },
+          "hceye_PROVISIONAL_ref": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.2871559262275696,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.787376344203949
+          },
+          "peak_count_cond": 2.0,
+          "peak_count_ref": 2.0,
+          "shared_map_metrics": {
+            "dtype": "float32",
+            "legacy_audit_global_ssim": 0.9430911413571545,
+            "mae": 0.0130540449338192,
+            "max_a": 1.0,
+            "max_abs_diff": 0.28313326835632324,
+            "mean_a": 0.04378075152635574,
+            "min_a": 0.0,
+            "nonfinite_pct": 0.0,
+            "pearson": 0.9416893661865903,
+            "rmse": 0.03572596566889758,
+            "sha256": "6e782d31a4aebdff01f250b8b992f0c14c95dfc09d7903ac547facfab8605af4",
+            "shape": [
+              800,
+              1280
+            ],
+            "spearman": 0.9812190101644562,
+            "std_a": 0.10357335209846497,
+            "windowed_ssim": 0.9608963694056187
+          }
+        },
+        "M_CL": {
+          "checks": {
+            "all_pass": true,
+            "cli_le_001": true,
+            "continuous_features_le_002": true,
+            "finite": true,
+            "legacy_audit_global_ssim_ge_099": true,
+            "peak_count_exact": true,
+            "pearson_ge_0999": true,
+            "spearman_ge_099": true,
+            "windowed_ssim_ge_099": true
+          },
+          "cognitive_load_index_abs_diff": 8.940696716308594e-08,
+          "continuous_feature_abs_max": 6.849264077013473e-07,
+          "failed_checks": [],
+          "features_cond": {
+            "saliency_center_bias": 0.36269899336105826,
+            "saliency_coverage": 0.0140146484375,
+            "saliency_dispersion": 0.4262662313165007,
+            "saliency_entropy": 0.34608423903538793,
+            "saliency_peak_count": 2.0
+          },
+          "features_ref": {
+            "saliency_center_bias": 0.36269967828746597,
+            "saliency_coverage": 0.0140146484375,
+            "saliency_dispersion": 0.42626599925541175,
+            "saliency_entropy": 0.3460846778070986,
+            "saliency_peak_count": 2.0
+          },
+          "hceye_PROVISIONAL_cond": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.2871558368206024,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.7873765826225281
+          },
+          "hceye_PROVISIONAL_ref": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.2871559262275696,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.787376344203949
+          },
+          "peak_count_cond": 2.0,
+          "peak_count_ref": 2.0,
+          "shared_map_metrics": {
+            "dtype": "float32",
+            "legacy_audit_global_ssim": 0.9999999999882199,
+            "mae": 1.963420496908369e-07,
+            "max_a": 1.0,
+            "max_abs_diff": 3.129243850708008e-06,
+            "mean_a": 0.04378075152635574,
+            "min_a": 0.0,
+            "nonfinite_pct": 0.0,
+            "pearson": 0.999999999992702,
+            "rmse": 4.2809626209457384e-07,
+            "sha256": "6e782d31a4aebdff01f250b8b992f0c14c95dfc09d7903ac547facfab8605af4",
+            "shape": [
+              800,
+              1280
+            ],
+            "spearman": 0.9999999999770002,
+            "std_a": 0.10357335209846497,
+            "windowed_ssim": 0.9999999999756075
+          }
+        },
+        "M_LC": {
+          "checks": {
+            "all_pass": false,
+            "cli_le_001": true,
+            "continuous_features_le_002": true,
+            "finite": true,
+            "legacy_audit_global_ssim_ge_099": false,
+            "peak_count_exact": true,
+            "pearson_ge_0999": false,
+            "spearman_ge_099": false,
+            "windowed_ssim_ge_099": false
+          },
+          "cognitive_load_index_abs_diff": 0.000586390495300293,
+          "continuous_feature_abs_max": 0.012688894214318347,
+          "failed_checks": [
+            "pearson=0.9416893748208911",
+            "spearman=0.9812189946964724",
+            "global_ssim=0.943091",
+            "windowed_ssim=0.960896"
+          ],
+          "features_cond": {
+            "saliency_center_bias": 0.3752794699711505,
+            "saliency_coverage": 0.0145107421875,
+            "saliency_dispersion": 0.42541985304006336,
+            "saliency_entropy": 0.35877357202141696,
+            "saliency_peak_count": 2.0
+          },
+          "features_ref": {
+            "saliency_center_bias": 0.36269967828746597,
+            "saliency_coverage": 0.0140146484375,
+            "saliency_dispersion": 0.42626599925541175,
+            "saliency_entropy": 0.3460846778070986,
+            "saliency_peak_count": 2.0
+          },
+          "hceye_PROVISIONAL_cond": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.2877423167228699,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.7850307822227478
+          },
+          "hceye_PROVISIONAL_ref": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.2871559262275696,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.787376344203949
+          },
+          "peak_count_cond": 2.0,
+          "peak_count_ref": 2.0,
+          "shared_map_metrics": {
+            "dtype": "float32",
+            "legacy_audit_global_ssim": 0.943091126559195,
+            "mae": 0.013054058271156778,
+            "max_a": 1.0,
+            "max_abs_diff": 0.2831331193447113,
+            "mean_a": 0.04378075152635574,
+            "min_a": 0.0,
+            "nonfinite_pct": 0.0,
+            "pearson": 0.9416893748208911,
+            "rmse": 0.035725968923042244,
+            "sha256": "6e782d31a4aebdff01f250b8b992f0c14c95dfc09d7903ac547facfab8605af4",
+            "shape": [
+              800,
+              1280
+            ],
+            "spearman": 0.9812189946964724,
+            "std_a": 0.10357335209846497,
+            "windowed_ssim": 0.9608963207854101
+          }
+        },
+        "M_LL": {
+          "checks": {
+            "all_pass": true,
+            "cli_le_001": true,
+            "continuous_features_le_002": true,
+            "finite": true,
+            "legacy_audit_global_ssim_ge_099": true,
+            "peak_count_exact": true,
+            "pearson_ge_0999": true,
+            "spearman_ge_099": true,
+            "windowed_ssim_ge_099": true
+          },
+          "cognitive_load_index_abs_diff": 5.960464477539063e-08,
+          "continuous_feature_abs_max": 5.37322403126872e-07,
+          "failed_checks": [],
+          "features_cond": {
+            "saliency_center_bias": 0.36269914096506284,
+            "saliency_coverage": 0.0140146484375,
+            "saliency_dispersion": 0.42626621209993687,
+            "saliency_entropy": 0.34608434796158266,
+            "saliency_peak_count": 2.0
+          },
+          "features_ref": {
+            "saliency_center_bias": 0.36269967828746597,
+            "saliency_coverage": 0.0140146484375,
+            "saliency_dispersion": 0.42626599925541175,
+            "saliency_entropy": 0.3460846778070986,
+            "saliency_peak_count": 2.0
+          },
+          "hceye_PROVISIONAL_cond": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.2871558666229248,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.7873765826225281
+          },
+          "hceye_PROVISIONAL_ref": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.2871559262275696,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.787376344203949
+          },
+          "peak_count_cond": 2.0,
+          "peak_count_ref": 2.0,
+          "shared_map_metrics": {
+            "dtype": "float32",
+            "legacy_audit_global_ssim": 0.9999999999919672,
+            "mae": 1.6939454605410797e-07,
+            "max_a": 1.0,
+            "max_abs_diff": 2.562999725341797e-06,
+            "mean_a": 0.04378075152635574,
+            "min_a": 0.0,
+            "nonfinite_pct": 0.0,
+            "pearson": 0.9999999999952577,
+            "rmse": 3.4834360482740476e-07,
+            "sha256": "6e782d31a4aebdff01f250b8b992f0c14c95dfc09d7903ac547facfab8605af4",
+            "shape": [
+              800,
+              1280
+            ],
+            "spearman": 0.9999999999796161,
+            "std_a": 0.10357335209846497,
+            "windowed_ssim": 0.9999999999804692
+          }
+        }
+      },
+      "dims_hw": [
+        800,
+        1280
+      ]
+    },
+    "ui2": {
+      "conditions": {
+        "M_CC": {
+          "checks": {
+            "all_pass": false,
+            "cli_le_001": true,
+            "continuous_features_le_002": true,
+            "finite": true,
+            "legacy_audit_global_ssim_ge_099": false,
+            "peak_count_exact": true,
+            "pearson_ge_0999": false,
+            "spearman_ge_099": false,
+            "windowed_ssim_ge_099": false
+          },
+          "cognitive_load_index_abs_diff": 0.0006293654441833496,
+          "continuous_feature_abs_max": 0.011011539467065734,
+          "failed_checks": [
+            "pearson=0.9557096115539102",
+            "spearman=0.983483390775406",
+            "global_ssim=0.956809",
+            "windowed_ssim=0.968499"
+          ],
+          "features_cond": {
+            "saliency_center_bias": 0.38229155608364296,
+            "saliency_coverage": 0.015284220377604166,
+            "saliency_dispersion": 0.4576266334243884,
+            "saliency_entropy": 0.41939488962499283,
+            "saliency_peak_count": 2.0
+          },
+          "features_ref": {
+            "saliency_center_bias": 0.3720492493231803,
+            "saliency_coverage": 0.0149993896484375,
+            "saliency_dispersion": 0.45912081930600424,
+            "saliency_entropy": 0.4083833501579271,
+            "saliency_peak_count": 2.0
+          },
+          "hceye_PROVISIONAL_cond": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.2791667580604553,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.8193329572677612
+          },
+          "hceye_PROVISIONAL_ref": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.278537392616272,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.8218504786491394
+          },
+          "peak_count_cond": 2.0,
+          "peak_count_ref": 2.0,
+          "shared_map_metrics": {
+            "dtype": "float32",
+            "legacy_audit_global_ssim": 0.9568088241876002,
+            "mae": 0.01214200199467137,
+            "max_a": 1.0,
+            "max_abs_diff": 0.24849963188171387,
+            "mean_a": 0.05163119360804558,
+            "min_a": 0.0,
+            "nonfinite_pct": 0.0,
+            "pearson": 0.9557096115539102,
+            "rmse": 0.03194015669504021,
+            "sha256": "8dc0b4d46872f1abf353b19e568cbd960f9872fbeedb1d7c14d40b274a935007",
+            "shape": [
+              768,
+              1024
+            ],
+            "spearman": 0.983483390775406,
+            "std_a": 0.10653273016214371,
+            "windowed_ssim": 0.9684993246390977
+          }
+        },
+        "M_CL": {
+          "checks": {
+            "all_pass": true,
+            "cli_le_001": true,
+            "continuous_features_le_002": true,
+            "finite": true,
+            "legacy_audit_global_ssim_ge_099": true,
+            "peak_count_exact": true,
+            "pearson_ge_0999": true,
+            "spearman_ge_099": true,
+            "windowed_ssim_ge_099": true
+          },
+          "cognitive_load_index_abs_diff": 1.1920928955078125e-07,
+          "continuous_feature_abs_max": 4.014258622175859e-07,
+          "failed_checks": [],
+          "features_cond": {
+            "saliency_center_bias": 0.3720488713735168,
+            "saliency_coverage": 0.0149993896484375,
+            "saliency_dispersion": 0.45912122073186645,
+            "saliency_entropy": 0.4083830525834203,
+            "saliency_peak_count": 2.0
+          },
+          "features_ref": {
+            "saliency_center_bias": 0.3720492493231803,
+            "saliency_coverage": 0.0149993896484375,
+            "saliency_dispersion": 0.45912081930600424,
+            "saliency_entropy": 0.4083833501579271,
+            "saliency_peak_count": 2.0
+          },
+          "hceye_PROVISIONAL_cond": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.2785372734069824,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.8218508958816528
+          },
+          "hceye_PROVISIONAL_ref": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.278537392616272,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.8218504786491394
+          },
+          "peak_count_cond": 2.0,
+          "peak_count_ref": 2.0,
+          "shared_map_metrics": {
+            "dtype": "float32",
+            "legacy_audit_global_ssim": 0.9999999999956326,
+            "mae": 1.905346928994704e-07,
+            "max_a": 1.0,
+            "max_abs_diff": 1.7061829566955566e-06,
+            "mean_a": 0.05163119360804558,
+            "min_a": 0.0,
+            "nonfinite_pct": 0.0,
+            "pearson": 0.9999999999955799,
+            "rmse": 3.1818055593005955e-07,
+            "sha256": "8dc0b4d46872f1abf353b19e568cbd960f9872fbeedb1d7c14d40b274a935007",
+            "shape": [
+              768,
+              1024
+            ],
+            "spearman": 0.9999999999733127,
+            "std_a": 0.10653273016214371,
+            "windowed_ssim": 0.9999999999748542
+          }
+        },
+        "M_LC": {
+          "checks": {
+            "all_pass": false,
+            "cli_le_001": true,
+            "continuous_features_le_002": true,
+            "finite": true,
+            "legacy_audit_global_ssim_ge_099": false,
+            "peak_count_exact": true,
+            "pearson_ge_0999": false,
+            "spearman_ge_099": false,
+            "windowed_ssim_ge_099": false
+          },
+          "cognitive_load_index_abs_diff": 0.0006293952465057373,
+          "continuous_feature_abs_max": 0.011011551868534197,
+          "failed_checks": [
+            "pearson=0.9557096322094609",
+            "spearman=0.9834833709025946",
+            "global_ssim=0.956809",
+            "windowed_ssim=0.968499"
+          ],
+          "features_cond": {
+            "saliency_center_bias": 0.38229175404805626,
+            "saliency_coverage": 0.015284220377604166,
+            "saliency_dispersion": 0.45762657035480236,
+            "saliency_entropy": 0.4193949020264613,
+            "saliency_peak_count": 2.0
+          },
+          "features_ref": {
+            "saliency_center_bias": 0.3720492493231803,
+            "saliency_coverage": 0.0149993896484375,
+            "saliency_dispersion": 0.45912081930600424,
+            "saliency_entropy": 0.4083833501579271,
+            "saliency_peak_count": 2.0
+          },
+          "hceye_PROVISIONAL_cond": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.2791667878627777,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.8193328976631165
+          },
+          "hceye_PROVISIONAL_ref": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.278537392616272,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.8218504786491394
+          },
+          "peak_count_cond": 2.0,
+          "peak_count_ref": 2.0,
+          "shared_map_metrics": {
+            "dtype": "float32",
+            "legacy_audit_global_ssim": 0.956808848797842,
+            "mae": 0.012142003076230415,
+            "max_a": 1.0,
+            "max_abs_diff": 0.2484997808933258,
+            "mean_a": 0.05163119360804558,
+            "min_a": 0.0,
+            "nonfinite_pct": 0.0,
+            "pearson": 0.9557096322094609,
+            "rmse": 0.03194014488247174,
+            "sha256": "8dc0b4d46872f1abf353b19e568cbd960f9872fbeedb1d7c14d40b274a935007",
+            "shape": [
+              768,
+              1024
+            ],
+            "spearman": 0.9834833709025946,
+            "std_a": 0.10653273016214371,
+            "windowed_ssim": 0.9684993042036943
+          }
+        },
+        "M_LL": {
+          "checks": {
+            "all_pass": true,
+            "cli_le_001": true,
+            "continuous_features_le_002": true,
+            "finite": true,
+            "legacy_audit_global_ssim_ge_099": true,
+            "peak_count_exact": true,
+            "pearson_ge_0999": true,
+            "spearman_ge_099": true,
+            "windowed_ssim_ge_099": true
+          },
+          "cognitive_load_index_abs_diff": 8.940696716308594e-08,
+          "continuous_feature_abs_max": 6.68447113327808e-07,
+          "failed_checks": [],
+          "features_cond": {
+            "saliency_center_bias": 0.37204905776281094,
+            "saliency_coverage": 0.0149993896484375,
+            "saliency_dispersion": 0.45912115092919886,
+            "saliency_entropy": 0.40838268171081377,
+            "saliency_peak_count": 2.0
+          },
+          "features_ref": {
+            "saliency_center_bias": 0.3720492493231803,
+            "saliency_coverage": 0.0149993896484375,
+            "saliency_dispersion": 0.45912081930600424,
+            "saliency_entropy": 0.4083833501579271,
+            "saliency_peak_count": 2.0
+          },
+          "hceye_PROVISIONAL_cond": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.2785373032093048,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.8218508362770081
+          },
+          "hceye_PROVISIONAL_ref": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.278537392616272,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.8218504786491394
+          },
+          "peak_count_cond": 2.0,
+          "peak_count_ref": 2.0,
+          "shared_map_metrics": {
+            "dtype": "float32",
+            "legacy_audit_global_ssim": 0.9999999999966235,
+            "mae": 1.703321634453087e-07,
+            "max_a": 1.0,
+            "max_abs_diff": 1.6093254089355469e-06,
+            "mean_a": 0.05163119360804558,
+            "min_a": 0.0,
+            "nonfinite_pct": 0.0,
+            "pearson": 0.9999999999965554,
+            "rmse": 2.806980402402087e-07,
+            "sha256": "8dc0b4d46872f1abf353b19e568cbd960f9872fbeedb1d7c14d40b274a935007",
+            "shape": [
+              768,
+              1024
+            ],
+            "spearman": 0.9999999999762882,
+            "std_a": 0.10653273016214371,
+            "windowed_ssim": 0.9999999999797172
+          }
+        }
+      },
+      "dims_hw": [
+        768,
+        1024
+      ]
+    },
+    "ui3": {
+      "conditions": {
+        "M_CC": {
+          "checks": {
+            "all_pass": false,
+            "cli_le_001": true,
+            "continuous_features_le_002": true,
+            "finite": true,
+            "legacy_audit_global_ssim_ge_099": false,
+            "peak_count_exact": true,
+            "pearson_ge_0999": false,
+            "spearman_ge_099": false,
+            "windowed_ssim_ge_099": false
+          },
+          "cognitive_load_index_abs_diff": 0.0006764233112335205,
+          "continuous_feature_abs_max": 0.011958757034035483,
+          "failed_checks": [
+            "pearson=0.9543904904731446",
+            "spearman=0.9828445975264627",
+            "global_ssim=0.955479",
+            "windowed_ssim=0.966410"
+          ],
+          "features_cond": {
+            "saliency_center_bias": 0.37183282787380056,
+            "saliency_coverage": 0.014608333333333333,
+            "saliency_dispersion": 0.45758451209632267,
+            "saliency_entropy": 0.4205996840061352,
+            "saliency_peak_count": 2.0
+          },
+          "features_ref": {
+            "saliency_center_bias": 0.3598740708397651,
+            "saliency_coverage": 0.014179166666666666,
+            "saliency_dispersion": 0.4588802943594701,
+            "saliency_entropy": 0.40946648541031855,
+            "saliency_peak_count": 2.0
+          },
+          "hceye_PROVISIONAL_cond": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.2786940932273865,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.8212236166000366
+          },
+          "hceye_PROVISIONAL_ref": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.27801766991615295,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.8239293098449707
+          },
+          "peak_count_cond": 2.0,
+          "peak_count_ref": 2.0,
+          "shared_map_metrics": {
+            "dtype": "float32",
+            "legacy_audit_global_ssim": 0.9554789952590411,
+            "mae": 0.011913385440330224,
+            "max_a": 1.0,
+            "max_abs_diff": 0.24980977177619934,
+            "mean_a": 0.05053002014756203,
+            "min_a": 0.0,
+            "nonfinite_pct": 0.0,
+            "pearson": 0.9543904904731446,
+            "rmse": 0.031202339987017682,
+            "sha256": "4330a539b60056042187044de2867db0cfe150ecb009e90fa3d59409ad3e01d8",
+            "shape": [
+              600,
+              800
+            ],
+            "spearman": 0.9828445975264627,
+            "std_a": 0.10222069174051285,
+            "windowed_ssim": 0.9664103341074146
+          }
+        },
+        "M_CL": {
+          "checks": {
+            "all_pass": true,
+            "cli_le_001": true,
+            "continuous_features_le_002": true,
+            "finite": true,
+            "legacy_audit_global_ssim_ge_099": true,
+            "peak_count_exact": true,
+            "pearson_ge_0999": true,
+            "spearman_ge_099": true,
+            "windowed_ssim_ge_099": true
+          },
+          "cognitive_load_index_abs_diff": 1.4901161193847656e-07,
+          "continuous_feature_abs_max": 5.322073443059239e-07,
+          "failed_checks": [],
+          "features_cond": {
+            "saliency_center_bias": 0.3598738365072225,
+            "saliency_coverage": 0.014179166666666666,
+            "saliency_dispersion": 0.4588808265668144,
+            "saliency_entropy": 0.40946648541031855,
+            "saliency_peak_count": 2.0
+          },
+          "features_ref": {
+            "saliency_center_bias": 0.3598740708397651,
+            "saliency_coverage": 0.014179166666666666,
+            "saliency_dispersion": 0.4588802943594701,
+            "saliency_entropy": 0.40946648541031855,
+            "saliency_peak_count": 2.0
+          },
+          "hceye_PROVISIONAL_cond": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.278017520904541,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.8239299058914185
+          },
+          "hceye_PROVISIONAL_ref": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.27801766991615295,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.8239293098449707
+          },
+          "peak_count_cond": 2.0,
+          "peak_count_ref": 2.0,
+          "shared_map_metrics": {
+            "dtype": "float32",
+            "legacy_audit_global_ssim": 0.9999999999936532,
+            "mae": 2.1041128079926826e-07,
+            "max_a": 1.0,
+            "max_abs_diff": 2.0638108253479004e-06,
+            "mean_a": 0.05053002014756203,
+            "min_a": 0.0,
+            "nonfinite_pct": 0.0,
+            "pearson": 0.9999999999937617,
+            "rmse": 3.6478788651923827e-07,
+            "sha256": "4330a539b60056042187044de2867db0cfe150ecb009e90fa3d59409ad3e01d8",
+            "shape": [
+              600,
+              800
+            ],
+            "spearman": 0.9999999999574233,
+            "std_a": 0.10222069174051285,
+            "windowed_ssim": 0.9999999999656642
+          }
+        },
+        "M_LC": {
+          "checks": {
+            "all_pass": false,
+            "cli_le_001": true,
+            "continuous_features_le_002": true,
+            "finite": true,
+            "legacy_audit_global_ssim_ge_099": false,
+            "peak_count_exact": true,
+            "pearson_ge_0999": false,
+            "spearman_ge_099": false,
+            "windowed_ssim_ge_099": false
+          },
+          "cognitive_load_index_abs_diff": 0.0006764531135559082,
+          "continuous_feature_abs_max": 0.01195897784224359,
+          "failed_checks": [
+            "pearson=0.9543905866300202",
+            "spearman=0.9828446053107835",
+            "global_ssim=0.955479",
+            "windowed_ssim=0.966410"
+          ],
+          "features_cond": {
+            "saliency_center_bias": 0.37183304868200867,
+            "saliency_coverage": 0.014608333333333333,
+            "saliency_dispersion": 0.4575844076990419,
+            "saliency_entropy": 0.4205993474579984,
+            "saliency_peak_count": 2.0
+          },
+          "features_ref": {
+            "saliency_center_bias": 0.3598740708397651,
+            "saliency_coverage": 0.014179166666666666,
+            "saliency_dispersion": 0.4588802943594701,
+            "saliency_entropy": 0.40946648541031855,
+            "saliency_peak_count": 2.0
+          },
+          "hceye_PROVISIONAL_cond": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.27869412302970886,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.8212234973907471
+          },
+          "hceye_PROVISIONAL_ref": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.27801766991615295,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.8239293098449707
+          },
+          "peak_count_cond": 2.0,
+          "peak_count_ref": 2.0,
+          "shared_map_metrics": {
+            "dtype": "float32",
+            "legacy_audit_global_ssim": 0.9554790745695932,
+            "mae": 0.011913383529067772,
+            "max_a": 1.0,
+            "max_abs_diff": 0.24980956315994263,
+            "mean_a": 0.05053002014756203,
+            "min_a": 0.0,
+            "nonfinite_pct": 0.0,
+            "pearson": 0.9543905866300202,
+            "rmse": 0.031202308270057637,
+            "sha256": "4330a539b60056042187044de2867db0cfe150ecb009e90fa3d59409ad3e01d8",
+            "shape": [
+              600,
+              800
+            ],
+            "spearman": 0.9828446053107835,
+            "std_a": 0.10222069174051285,
+            "windowed_ssim": 0.9664103222717948
+          }
+        },
+        "M_LL": {
+          "checks": {
+            "all_pass": true,
+            "cli_le_001": true,
+            "continuous_features_le_002": true,
+            "finite": true,
+            "legacy_audit_global_ssim_ge_099": true,
+            "peak_count_exact": true,
+            "pearson_ge_0999": true,
+            "spearman_ge_099": true,
+            "windowed_ssim_ge_099": true
+          },
+          "cognitive_load_index_abs_diff": 1.1920928955078125e-07,
+          "continuous_feature_abs_max": 4.234292464433409e-07,
+          "failed_checks": [],
+          "features_cond": {
+            "saliency_center_bias": 0.3598740088823323,
+            "saliency_coverage": 0.014179166666666666,
+            "saliency_dispersion": 0.45888071778871653,
+            "saliency_entropy": 0.40946648541031855,
+            "saliency_peak_count": 2.0
+          },
+          "features_ref": {
+            "saliency_center_bias": 0.3598740708397651,
+            "saliency_coverage": 0.014179166666666666,
+            "saliency_dispersion": 0.4588802943594701,
+            "saliency_entropy": 0.40946648541031855,
+            "saliency_peak_count": 2.0
+          },
+          "hceye_PROVISIONAL_cond": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.2780175507068634,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.8239297866821289
+          },
+          "hceye_PROVISIONAL_ref": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.27801766991615295,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.8239293098449707
+          },
+          "peak_count_cond": 2.0,
+          "peak_count_ref": 2.0,
+          "shared_map_metrics": {
+            "dtype": "float32",
+            "legacy_audit_global_ssim": 0.9999999999960465,
+            "mae": 1.688689437735332e-07,
+            "max_a": 1.0,
+            "max_abs_diff": 1.8849968910217285e-06,
+            "mean_a": 0.05053002014756203,
+            "min_a": 0.0,
+            "nonfinite_pct": 0.0,
+            "pearson": 0.9999999999959909,
+            "rmse": 2.915347432577659e-07,
+            "sha256": "4330a539b60056042187044de2867db0cfe150ecb009e90fa3d59409ad3e01d8",
+            "shape": [
+              600,
+              800
+            ],
+            "spearman": 0.9999999999650878,
+            "std_a": 0.10222069174051285,
+            "windowed_ssim": 0.9999999999750832
+          }
+        }
+      },
+      "dims_hw": [
+        600,
+        800
+      ]
+    },
+    "uniform": {
+      "conditions": {
+        "M_CC": {
+          "checks": {
+            "all_pass": false,
+            "cli_le_001": true,
+            "continuous_features_le_002": false,
+            "finite": true,
+            "legacy_audit_global_ssim_ge_099": false,
+            "peak_count_exact": false,
+            "pearson_ge_0999": false,
+            "spearman_ge_099": false,
+            "windowed_ssim_ge_099": false
+          },
+          "cognitive_load_index_abs_diff": 0.0015141963958740234,
+          "continuous_feature_abs_max": 0.036606305894797464,
+          "failed_checks": [
+            "pearson=0.9742290399800739",
+            "spearman=0.9790548266102878",
+            "global_ssim=0.973748",
+            "windowed_ssim=0.953597",
+            "feature_abs_max=0.0366",
+            "peak_count 5.0 vs 4.0"
+          ],
+          "features_cond": {
+            "saliency_center_bias": 0.5347664476741634,
+            "saliency_coverage": 0.089572265625,
+            "saliency_dispersion": 0.3824907235328619,
+            "saliency_entropy": 0.6496190886905918,
+            "saliency_peak_count": 4.0
+          },
+          "features_ref": {
+            "saliency_center_bias": 0.4981601417793659,
+            "saliency_coverage": 0.081890625,
+            "saliency_dispersion": 0.3820740826645945,
+            "saliency_entropy": 0.6357055201439561,
+            "saliency_peak_count": 5.0
+          },
+          "hceye_PROVISIONAL_cond": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.3388802409172058,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.580479085445404
+          },
+          "hceye_PROVISIONAL_ref": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.3373660445213318,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.5865358710289001
+          },
+          "peak_count_cond": 4.0,
+          "peak_count_ref": 5.0,
+          "shared_map_metrics": {
+            "dtype": "float32",
+            "legacy_audit_global_ssim": 0.973747873298217,
+            "mae": 0.025786741567884342,
+            "max_a": 1.0,
+            "max_abs_diff": 0.4405246376991272,
+            "mean_a": 0.14149656891822815,
+            "min_a": 0.0,
+            "nonfinite_pct": 0.0,
+            "pearson": 0.9742290399800739,
+            "rmse": 0.04701460600849048,
+            "sha256": "9055aa336acab35bc0207aa688b3bb4b99fbea5db0ce2454e5054aa7e28301dc",
+            "shape": [
+              800,
+              1280
+            ],
+            "spearman": 0.9790548266102878,
+            "std_a": 0.20286530256271362,
+            "windowed_ssim": 0.9535969347512719
+          }
+        },
+        "M_CL": {
+          "checks": {
+            "all_pass": true,
+            "cli_le_001": true,
+            "continuous_features_le_002": true,
+            "finite": true,
+            "legacy_audit_global_ssim_ge_099": true,
+            "peak_count_exact": true,
+            "pearson_ge_0999": true,
+            "spearman_ge_099": true,
+            "windowed_ssim_ge_099": true
+          },
+          "cognitive_load_index_abs_diff": 6.556510925292969e-07,
+          "continuous_feature_abs_max": 2.929687500000111e-06,
+          "failed_checks": [],
+          "features_cond": {
+            "saliency_center_bias": 0.4981610227451894,
+            "saliency_coverage": 0.0818935546875,
+            "saliency_dispersion": 0.3820737184695661,
+            "saliency_entropy": 0.6357074791354022,
+            "saliency_peak_count": 5.0
+          },
+          "features_ref": {
+            "saliency_center_bias": 0.4981601417793659,
+            "saliency_coverage": 0.081890625,
+            "saliency_dispersion": 0.3820740826645945,
+            "saliency_entropy": 0.6357055201439561,
+            "saliency_peak_count": 5.0
+          },
+          "hceye_PROVISIONAL_cond": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.3373667001724243,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.58653324842453
+          },
+          "hceye_PROVISIONAL_ref": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.3373660445213318,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.5865358710289001
+          },
+          "peak_count_cond": 5.0,
+          "peak_count_ref": 5.0,
+          "shared_map_metrics": {
+            "dtype": "float32",
+            "legacy_audit_global_ssim": 0.9999999998721971,
+            "mae": 1.5990419005644795e-06,
+            "max_a": 1.0,
+            "max_abs_diff": 1.1920928955078125e-05,
+            "mean_a": 0.14149656891822815,
+            "min_a": 0.0,
+            "nonfinite_pct": 0.0,
+            "pearson": 0.9999999999882638,
+            "rmse": 2.8308204895325336e-06,
+            "sha256": "9055aa336acab35bc0207aa688b3bb4b99fbea5db0ce2454e5054aa7e28301dc",
+            "shape": [
+              800,
+              1280
+            ],
+            "spearman": 0.9999999999618453,
+            "std_a": 0.20286530256271362,
+            "windowed_ssim": 0.9999999999346789
+          }
+        },
+        "M_LC": {
+          "checks": {
+            "all_pass": false,
+            "cli_le_001": true,
+            "continuous_features_le_002": false,
+            "finite": true,
+            "legacy_audit_global_ssim_ge_099": false,
+            "peak_count_exact": false,
+            "pearson_ge_0999": false,
+            "spearman_ge_099": false,
+            "windowed_ssim_ge_099": false
+          },
+          "cognitive_load_index_abs_diff": 0.001514136791229248,
+          "continuous_feature_abs_max": 0.036605813632847595,
+          "failed_checks": [
+            "pearson=0.9742290479755656",
+            "spearman=0.9790548310954094",
+            "global_ssim=0.973748",
+            "windowed_ssim=0.953597",
+            "feature_abs_max=0.0366",
+            "peak_count 5.0 vs 4.0"
+          ],
+          "features_cond": {
+            "saliency_center_bias": 0.5347659554122135,
+            "saliency_coverage": 0.089572265625,
+            "saliency_dispersion": 0.38249088781875135,
+            "saliency_entropy": 0.6496190238642917,
+            "saliency_peak_count": 4.0
+          },
+          "features_ref": {
+            "saliency_center_bias": 0.4981601417793659,
+            "saliency_coverage": 0.081890625,
+            "saliency_dispersion": 0.3820740826645945,
+            "saliency_entropy": 0.6357055201439561,
+            "saliency_peak_count": 5.0
+          },
+          "hceye_PROVISIONAL_cond": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.33888018131256104,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.5804792642593384
+          },
+          "hceye_PROVISIONAL_ref": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.3373660445213318,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.5865358710289001
+          },
+          "peak_count_cond": 4.0,
+          "peak_count_ref": 5.0,
+          "shared_map_metrics": {
+            "dtype": "float32",
+            "legacy_audit_global_ssim": 0.9737478589408428,
+            "mae": 0.025786712561293897,
+            "max_a": 1.0,
+            "max_abs_diff": 0.4405236840248108,
+            "mean_a": 0.14149656891822815,
+            "min_a": 0.0,
+            "nonfinite_pct": 0.0,
+            "pearson": 0.9742290479755656,
+            "rmse": 0.047014621134943466,
+            "sha256": "9055aa336acab35bc0207aa688b3bb4b99fbea5db0ce2454e5054aa7e28301dc",
+            "shape": [
+              800,
+              1280
+            ],
+            "spearman": 0.9790548310954094,
+            "std_a": 0.20286530256271362,
+            "windowed_ssim": 0.9535969350982529
+          }
+        },
+        "M_LL": {
+          "checks": {
+            "all_pass": true,
+            "cli_le_001": true,
+            "continuous_features_le_002": true,
+            "finite": true,
+            "legacy_audit_global_ssim_ge_099": true,
+            "peak_count_exact": true,
+            "pearson_ge_0999": true,
+            "spearman_ge_099": true,
+            "windowed_ssim_ge_099": true
+          },
+          "cognitive_load_index_abs_diff": 2.086162567138672e-07,
+          "continuous_feature_abs_max": 1.8668786461173426e-06,
+          "failed_checks": [],
+          "features_cond": {
+            "saliency_center_bias": 0.4981605366261555,
+            "saliency_coverage": 0.0818916015625,
+            "saliency_dispersion": 0.3820738897684014,
+            "saliency_entropy": 0.6357073870226022,
+            "saliency_peak_count": 5.0
+          },
+          "features_ref": {
+            "saliency_center_bias": 0.4981601417793659,
+            "saliency_coverage": 0.081890625,
+            "saliency_dispersion": 0.3820740826645945,
+            "saliency_entropy": 0.6357055201439561,
+            "saliency_peak_count": 5.0
+          },
+          "hceye_PROVISIONAL_cond": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.3373662531375885,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.5865349173545837
+          },
+          "hceye_PROVISIONAL_ref": {
+            "aoi_sensitivity": 0.4000000059604645,
+            "cognitive_load_index": 0.3373660445213318,
+            "duration_increase": 1.13100004196167,
+            "exploration_reduction": 0.9150000214576721,
+            "fixation_reduction": 0.8759999871253967,
+            "highlight_effectiveness": 0.5865358710289001
+          },
+          "peak_count_cond": 5.0,
+          "peak_count_ref": 5.0,
+          "shared_map_metrics": {
+            "dtype": "float32",
+            "legacy_audit_global_ssim": 0.999999999932353,
+            "mae": 1.1962027742997704e-06,
+            "max_a": 1.0,
+            "max_abs_diff": 8.64267349243164e-06,
+            "mean_a": 0.14149656891822815,
+            "min_a": 0.0,
+            "nonfinite_pct": 0.0,
+            "pearson": 0.9999999999935167,
+            "rmse": 2.0536885811867376e-06,
+            "sha256": "9055aa336acab35bc0207aa688b3bb4b99fbea5db0ce2454e5054aa7e28301dc",
+            "shape": [
+              800,
+              1280
+            ],
+            "spearman": 0.9999999999645711,
+            "std_a": 0.20286530256271362,
+            "windowed_ssim": 0.9999999999551157
+          }
+        }
+      },
+      "dims_hw": [
+        800,
+        1280
+      ]
+    }
+  },
+  "phase3_cumulative_ablations": {
+    "lowcontrast": {
+      "abl_all": {
+        "max_abs_diff": 5.662441253662109e-06,
+        "pearson": 0.9999999999880042,
+        "windowed_ssim": 0.9999999999676561
+      },
+      "abl_ups1": {
+        "max_abs_diff": 0.2064175307750702,
+        "pearson": 0.9941251615908929,
+        "windowed_ssim": 0.989372162767265
+      },
+      "abl_ups1_ups2": {
+        "max_abs_diff": 0.093304842710495,
+        "pearson": 0.9989219076562081,
+        "windowed_ssim": 0.9978500543257887
+      }
+    },
+    "ui1": {
+      "abl_all": {
+        "max_abs_diff": 2.562999725341797e-06,
+        "pearson": 0.9999999999952577,
+        "windowed_ssim": 0.9999999999804692
+      },
+      "abl_ups1": {
+        "max_abs_diff": 0.14086568355560303,
+        "pearson": 0.9868382106939484,
+        "windowed_ssim": 0.9905959071644193
+      },
+      "abl_ups1_ups2": {
+        "max_abs_diff": 0.06277734041213989,
+        "pearson": 0.9975633456102767,
+        "windowed_ssim": 0.9981448446383556
+      }
+    },
+    "ui2": {
+      "abl_all": {
+        "max_abs_diff": 1.6093254089355469e-06,
+        "pearson": 0.9999999999965554,
+        "windowed_ssim": 0.9999999999797172
+      },
+      "abl_ups1": {
+        "max_abs_diff": 0.12114939093589783,
+        "pearson": 0.990091409055925,
+        "windowed_ssim": 0.9922574055381292
+      },
+      "abl_ups1_ups2": {
+        "max_abs_diff": 0.05319860577583313,
+        "pearson": 0.9981731843336645,
+        "windowed_ssim": 0.9984129399750091
+      }
+    },
+    "ui3": {
+      "abl_all": {
+        "max_abs_diff": 1.8849968910217285e-06,
+        "pearson": 0.9999999999959909,
+        "windowed_ssim": 0.9999999999750832
+      },
+      "abl_ups1": {
+        "max_abs_diff": 0.12235963344573975,
+        "pearson": 0.9897876423843418,
+        "windowed_ssim": 0.9917108685564452
+      },
+      "abl_ups1_ups2": {
+        "max_abs_diff": 0.05500227212905884,
+        "pearson": 0.9981156017306488,
+        "windowed_ssim": 0.9983251083340831
+      }
+    },
+    "uniform": {
+      "abl_all": {
+        "max_abs_diff": 8.64267349243164e-06,
+        "pearson": 0.9999999999935167,
+        "windowed_ssim": 0.9999999999551157
+      },
+      "abl_ups1": {
+        "max_abs_diff": 0.22851812839508057,
+        "pearson": 0.9941769073237988,
+        "windowed_ssim": 0.9885087443869142
+      },
+      "abl_ups1_ups2": {
+        "max_abs_diff": 0.1043359637260437,
+        "pearson": 0.9989306972062533,
+        "windowed_ssim": 0.9976391488806163
+      }
+    }
+  },
+  "phase3_resize_boundary_activations": {
+    "M_LC_prod": {
+      "dec_c_cout": {
+        "max_abs_diff": 252293.15625,
+        "pearson": 0.9448441919008134
+      },
+      "dec_ups1__in": {
+        "max_abs_diff": 0.00048828125,
+        "pearson": 0.9999999999949168
+      },
+      "dec_ups1__out": {
+        "max_abs_diff": 35.463829040527344,
+        "pearson": 0.9815783757055024
+      },
+      "dec_ups2__in": {
+        "max_abs_diff": 1660.68994140625,
+        "pearson": 0.9843913786126102
+      },
+      "dec_ups2__out": {
+        "max_abs_diff": 2416.6767578125,
+        "pearson": 0.9664524819174257
+      },
+      "dec_ups3__in": {
+        "max_abs_diff": 46979.5078125,
+        "pearson": 0.9674793910594962
+      },
+      "dec_ups3__out": {
+        "max_abs_diff": 57427.59375,
+        "pearson": 0.9502614749725502
+      }
+    },
+    "abl_all": {
+      "dec_c_cout": {
+        "max_abs_diff": 2.140625,
+        "pearson": 0.9999999999954363
+      },
+      "dec_ups1__in": {
+        "max_abs_diff": 0.00048828125,
+        "pearson": 0.9999999999949168
+      },
+      "dec_ups1__out": {
+        "max_abs_diff": 0.00048828125,
+        "pearson": 0.9999999999952933
+      },
+      "dec_ups2__in": {
+        "max_abs_diff": 0.0257568359375,
+        "pearson": 0.9999999999955516
+      },
+      "dec_ups2__out": {
+        "max_abs_diff": 0.0257568359375,
+        "pearson": 0.9999999999956415
+      },
+      "dec_ups3__in": {
+        "max_abs_diff": 0.494140625,
+        "pearson": 0.9999999999956648
+      },
+      "dec_ups3__out": {
+        "max_abs_diff": 0.494140625,
+        "pearson": 0.999999999995731
+      }
+    },
+    "abl_ups1": {
+      "dec_c_cout": {
+        "max_abs_diff": 122924.9375,
+        "pearson": 0.9874652202791862
+      },
+      "dec_ups1__in": {
+        "max_abs_diff": 0.00048828125,
+        "pearson": 0.9999999999949168
+      },
+      "dec_ups1__out": {
+        "max_abs_diff": 0.00048828125,
+        "pearson": 0.9999999999952933
+      },
+      "dec_ups2__in": {
+        "max_abs_diff": 0.0257568359375,
+        "pearson": 0.9999999999955516
+      },
+      "dec_ups2__out": {
+        "max_abs_diff": 864.31591796875,
+        "pearson": 0.9960650047667383
+      },
+      "dec_ups3__in": {
+        "max_abs_diff": 16082.9765625,
+        "pearson": 0.9962446652254422
+      },
+      "dec_ups3__out": {
+        "max_abs_diff": 27851.265625,
+        "pearson": 0.9886822885646854
+      }
+    },
+    "abl_ups1_ups2": {
+      "dec_c_cout": {
+        "max_abs_diff": 53947.28125,
+        "pearson": 0.9976650594287593
+      },
+      "dec_ups1__in": {
+        "max_abs_diff": 0.00048828125,
+        "pearson": 0.9999999999949168
+      },
+      "dec_ups1__out": {
+        "max_abs_diff": 0.00048828125,
+        "pearson": 0.9999999999952933
+      },
+      "dec_ups2__in": {
+        "max_abs_diff": 0.0257568359375,
+        "pearson": 0.9999999999955516
+      },
+      "dec_ups2__out": {
+        "max_abs_diff": 0.0257568359375,
+        "pearson": 0.9999999999956415
+      },
+      "dec_ups3__in": {
+        "max_abs_diff": 0.494140625,
+        "pearson": 0.9999999999956648
+      },
+      "dec_ups3__out": {
+        "max_abs_diff": 12178.546875,
+        "pearson": 0.9978915716599601
+      }
+    }
+  },
+  "thresholds": {
+    "cli_abs_max": 0.01,
+    "feature_abs_max": 0.02,
+    "peak_count_exact": true,
+    "pearson_min": 0.999,
+    "preproc_abs_max": 0.0,
+    "repeatability_abs_max": 0.0,
+    "spearman_min": 0.99,
+    "ssim_min": 0.99
+  },
+  "verdict": "UMSI RESIZE CAUSE CONFIRMED \u2014 CONTROLLED PARITY RESTORED",
+  "windowed_ssim_params": {
+    "K1": 0.01,
+    "K2": 0.03,
+    "boundary": "reflect",
+    "data_range": 1.0,
+    "filter": "scipy.ndimage.uniform_filter",
+    "implementation": "wang2004_uniform_window",
+    "win_size": 7
+  }
+}

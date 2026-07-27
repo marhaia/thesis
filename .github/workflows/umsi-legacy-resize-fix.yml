@@ -1,0 +1,453 @@
+name: UMSI++ legacy-resize production fix — Golden validation
+
+# Validates the narrow production fix that replaces the three modern half-pixel
+# bilinear UpSampling2D decoder resizes in saliency/umsi_model.py with the
+# verified legacy operator (tf.raw_ops.ResizeBilinear, align_corners=False,
+# half_pixel_centers=False), by running the SAME frozen TF1/Keras2 vs current
+# Golden protocol on the five pinned fixtures — now with the FIXED model on the
+# modern side — plus an operator oracle, structural call-site check, focused
+# unit tests, checkpoint/parameter compatibility, repeatability and downstream
+# consistency checks.
+#
+# Runs only on the fix branch (push) or manual dispatch. Commits/pushes are
+# allowed only on this branch; no PR is opened, no norms are rebuilt.
+
+on:
+  push:
+    branches:
+      - fix/umsi-legacy-resize-production
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  LEGACY_IMAGE: "python:3.7.9-buster"
+  LEGACY_IMAGE_DIGEST: "sha256:83ab4e9e275cb279e5639097aa0780ef82c4fd78622ae36ab35810ab7b57f491"
+  MODERN_IMAGE: "python:3.9.6-bullseye"
+  MODERN_IMAGE_DIGEST: "sha256:fb7ca75a4d29e32e2f6a0c8a60ba96608673afc7ed5bc9192f15c0f50135a371"
+  CKPT_REL: "saliency/weights/model_weights/saliency_models/UMSI++/umsi++.hdf5"
+  EXPECTED_CKPT_SHA: "f4290c3f11f18befbb47de50d81e4555ec8e7a63066c71c343a32fe32799e9fe"
+  EXPECTED_CKPT_SIZE: "120093896"
+  UPSTREAM_COMMIT: "7bc064175310284c74e64e0c3c2ef264bfbe66e2"
+  PRODUCTION_BASE: "6a17288bbac848bb023fccc98aee606c034ea54b"
+
+jobs:
+  # --------------------------------------------------------------------------
+  # PHASE 0 — freeze the fix validation protocol + capture the production diff.
+  # --------------------------------------------------------------------------
+  protocol:
+    name: Phase 0 - freeze fix protocol + production diff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install numpy for the protocol writer
+        run: python -m pip install --no-cache-dir numpy==1.26.4
+      - name: Write frozen fix protocol
+        run: |
+          cd golden
+          python fix_manifest.py --out "$GITHUB_WORKSPACE/umsi_legacy_resize_fix_protocol.json"
+          echo "----- frozen fix protocol -----"
+          cat "$GITHUB_WORKSPACE/umsi_legacy_resize_fix_protocol.json"
+      - name: Capture the exact production patch + scope
+        run: |
+          git diff "${PRODUCTION_BASE}" -- saliency/umsi_model.py > production_fix.diff
+          echo "----- production patch (saliency/umsi_model.py) -----"
+          cat production_fix.diff
+          echo "----- full changed-file scope vs base -----"
+          git diff --name-only "${PRODUCTION_BASE}"..HEAD | tee changed_files.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: protocol
+          path: |
+            umsi_legacy_resize_fix_protocol.json
+            production_fix.diff
+            changed_files.txt
+          retention-days: 30
+
+  # --------------------------------------------------------------------------
+  # PHASE 2 — operator oracle, structural call-site check, focused unit tests.
+  # --------------------------------------------------------------------------
+  local_checks:
+    name: Operator oracle + call-site + unit tests
+    runs-on: ubuntu-latest
+    needs: protocol
+    container:
+      image: python@sha256:fb7ca75a4d29e32e2f6a0c8a60ba96608673afc7ed5bc9192f15c0f50135a371
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run oracle, call-site check and focused tests (full log)
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p out
+          {
+            echo "########## LOCAL CHECKS (modern TF2.16/Keras3) ##########"
+            uname -a; python --version
+            apt-get update
+            apt-get install -y --no-install-recommends libglib2.0-0
+            python -m pip install --upgrade pip
+            python -m pip install --no-cache-dir -r requirements.txt
+            python -m pip install --no-cache-dir pytest
+
+            export UMSI_REPO="$GITHUB_WORKSPACE"
+
+            echo "########## operator oracle ##########"
+            python golden/operator_oracle.py \
+              --out-json "$GITHUB_WORKSPACE/out/operator_oracle.json" \
+              --stored-oracle "$GITHUB_WORKSPACE/golden/reference/umsi_resize_causality_6a17288.json"
+
+            echo "########## structural call-site check ##########"
+            python golden/callsite_check.py \
+              --out-json "$GITHUB_WORKSPACE/out/callsite.json"
+
+            echo "########## focused unit tests ##########"
+            python -m pytest tests/test_legacy_resize_helper.py -v
+          } 2>&1 | tee out/local_checks.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: local-checks
+          path: |
+            out/operator_oracle.json
+            out/callsite.json
+            out/local_checks.log
+          retention-days: 30
+
+  # --------------------------------------------------------------------------
+  # PHASE 1a — legacy runtime (TF 1.14 / Keras 2.3.1), digest-pinned container.
+  # Reference side is UNCHANGED from the frozen golden protocol.
+  # --------------------------------------------------------------------------
+  legacy:
+    name: Legacy TF1.14/Keras2.3.1 reference run
+    runs-on: ubuntu-latest
+    needs: protocol
+    container:
+      image: python@sha256:83ab4e9e275cb279e5639097aa0780ef82c4fd78622ae36ab35810ab7b57f491
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run legacy golden prediction (full log)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION: python
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p out
+          {
+            echo "########## LEGACY RUNTIME (TF1.14 / Keras2.3.1) ##########"
+            echo "date: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "image: ${LEGACY_IMAGE}  digest: ${LEGACY_IMAGE_DIGEST}"
+            uname -a
+            cat /etc/os-release | head -2
+            python --version
+
+            echo "########## apt: EOL buster -> archive.debian.org; libglib for opencv ##########"
+            sed -i 's|deb.debian.org|archive.debian.org|g; s|security.debian.org|archive.debian.org|g' /etc/apt/sources.list
+            sed -i '/buster-updates/d' /etc/apt/sources.list
+            apt-get -o Acquire::Check-Valid-Until=false update
+            apt-get install -y --no-install-recommends libglib2.0-0
+
+            echo "########## pip: install pinned legacy stack ##########"
+            python -m pip install --upgrade "pip==23.3.2" "setuptools<60" wheel
+            python -m pip install --no-cache-dir -r golden/requirements-legacy.txt
+            echo "----- pip freeze --all -----"
+            python -m pip freeze --all | tee "$GITHUB_WORKSPACE/out/legacy_pipfreeze.txt"
+
+            echo "########## clone upstream at pinned commit ##########"
+            git clone --quiet https://github.com/YueJiang-nj/UEyes-CHI2023.git /tmp/upstream
+            git -C /tmp/upstream checkout --quiet "${UPSTREAM_COMMIT}"
+            echo "upstream HEAD: $(git -C /tmp/upstream rev-parse HEAD)"
+            test "$(git -C /tmp/upstream rev-parse HEAD)" = "${UPSTREAM_COMMIT}"
+
+            echo "########## download + verify authoritative checkpoint ##########"
+            python scripts/download_weights.py
+            ACTUAL_SIZE=$(stat -c%s "${CKPT_REL}")
+            ACTUAL_SHA=$(sha256sum "${CKPT_REL}" | cut -d' ' -f1)
+            echo "checkpoint size: ${ACTUAL_SIZE} (expected ${EXPECTED_CKPT_SIZE})"
+            echo "checkpoint sha : ${ACTUAL_SHA}"
+            test "${ACTUAL_SIZE}" = "${EXPECTED_CKPT_SIZE}"
+            test "${ACTUAL_SHA}" = "${EXPECTED_CKPT_SHA}"
+
+            echo "########## verify fixtures by SHA-256 ##########"
+            sha256sum golden/fixtures/*.png
+
+            echo "########## run legacy_runner.py ##########"
+            export UMSI_LEGACY_SRC="/tmp/upstream/saliency_models/UMSI++/src"
+            export UMSI_FIXTURES_DIR="$GITHUB_WORKSPACE/golden/fixtures"
+            export UMSI_CKPT="$GITHUB_WORKSPACE/${CKPT_REL}"
+            cd golden
+            python legacy_runner.py --out-dir "$GITHUB_WORKSPACE/out"
+            echo "########## intermediate-activation capture (ui1) ##########"
+            python legacy_runner.py --layers ui1 --layers-out "$GITHUB_WORKSPACE/out/legacy_layers_ui1.npz"
+          } 2>&1 | tee out/legacy_run.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: legacy
+          path: |
+            out/legacy_meta.json
+            out/legacy_arrays.npz
+            out/legacy_layers_ui1.npz
+            out/legacy_pipfreeze.txt
+            out/legacy_run.log
+          retention-days: 30
+
+  # --------------------------------------------------------------------------
+  # PHASE 1b — modern runtime (TF 2.16.2 / Keras 3.10.0) with the FIXED model.
+  # --------------------------------------------------------------------------
+  modern:
+    name: Modern TF2.16/Keras3 FIXED run
+    runs-on: ubuntu-latest
+    needs: protocol
+    container:
+      image: python@sha256:fb7ca75a4d29e32e2f6a0c8a60ba96608673afc7ed5bc9192f15c0f50135a371
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run modern golden prediction with fixed model (full log)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p out
+          {
+            echo "########## MODERN RUNTIME (TF2.16.2 / Keras3.10.0) — FIXED MODEL ##########"
+            echo "date: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "image: ${MODERN_IMAGE}  digest: ${MODERN_IMAGE_DIGEST}"
+            uname -a
+            cat /etc/os-release | head -2
+            python --version
+
+            echo "########## apt: minimal shared libs ##########"
+            apt-get update
+            apt-get install -y --no-install-recommends libglib2.0-0 git
+
+            echo "########## pip: install modern runtime ##########"
+            python -m pip install --upgrade pip
+            python -m pip install --no-cache-dir -r requirements.txt
+            echo "----- pip freeze --all -----"
+            python -m pip freeze --all | tee "$GITHUB_WORKSPACE/out/modern_pipfreeze.txt"
+
+            echo "########## download + verify authoritative checkpoint ##########"
+            python scripts/download_weights.py
+            ACTUAL_SIZE=$(stat -c%s "${CKPT_REL}")
+            ACTUAL_SHA=$(sha256sum "${CKPT_REL}" | cut -d' ' -f1)
+            echo "checkpoint size: ${ACTUAL_SIZE} (expected ${EXPECTED_CKPT_SIZE})"
+            echo "checkpoint sha : ${ACTUAL_SHA}"
+            test "${ACTUAL_SIZE}" = "${EXPECTED_CKPT_SIZE}"
+            test "${ACTUAL_SHA}" = "${EXPECTED_CKPT_SHA}"
+
+            echo "########## verify fixtures by SHA-256 ##########"
+            sha256sum golden/fixtures/*.png
+
+            echo "########## run modern_runner.py (fixed model) ##########"
+            export UMSI_REPO="$GITHUB_WORKSPACE"
+            export UMSI_FIXTURES_DIR="$GITHUB_WORKSPACE/golden/fixtures"
+            export UMSI_CKPT="$GITHUB_WORKSPACE/${CKPT_REL}"
+            cd golden
+            python modern_runner.py --out-dir "$GITHUB_WORKSPACE/out"
+            echo "########## intermediate-activation capture (ui1) ##########"
+            python modern_runner.py --layers ui1 --layers-out "$GITHUB_WORKSPACE/out/modern_layers_ui1.npz"
+          } 2>&1 | tee out/modern_run.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: modern
+          path: |
+            out/modern_meta.json
+            out/modern_arrays.npz
+            out/modern_layers_ui1.npz
+            out/modern_pipfreeze.txt
+            out/modern_run.log
+          retention-days: 30
+
+  # --------------------------------------------------------------------------
+  # PHASE 3-8 — compare, assemble fix evidence, verify, verdict, deliverables.
+  # --------------------------------------------------------------------------
+  compare:
+    name: Compare + fix evidence + verdict
+    runs-on: ubuntu-latest
+    needs: [protocol, local_checks, legacy, modern]
+    container:
+      image: python@sha256:fb7ca75a4d29e32e2f6a0c8a60ba96608673afc7ed5bc9192f15c0f50135a371
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download protocol
+        uses: actions/download-artifact@v4
+        with:
+          name: protocol
+          path: dl/protocol
+      - name: Download local checks
+        uses: actions/download-artifact@v4
+        with:
+          name: local-checks
+          path: dl/local
+      - name: Download legacy artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: legacy
+          path: dl/legacy
+      - name: Download modern artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: modern
+          path: dl/modern
+
+      - name: Compare, assemble fix evidence, verify (full log)
+        shell: bash
+        run: |
+          set -o pipefail
+          apt-get update
+          apt-get install -y --no-install-recommends libglib2.0-0
+          python -m pip install --upgrade pip
+          python -m pip install --no-cache-dir -r requirements.txt
+
+          export UMSI_REPO="$GITHUB_WORKSPACE"
+          mkdir -p deliver
+          cp dl/protocol/umsi_legacy_resize_fix_protocol.json deliver/
+          cp dl/protocol/production_fix.diff deliver/umsi_legacy_resize_production_fix_6a17288.diff
+
+          echo "----- compare pip freeze --all -----"
+          python -m pip freeze --all | tee "$GITHUB_WORKSPACE/deliver/compare_pipfreeze.txt"
+
+          echo "########## download + verify authoritative checkpoint (needed to rebuild fixed model) ##########"
+          python scripts/download_weights.py
+          ACTUAL_SIZE=$(stat -c%s "${CKPT_REL}")
+          ACTUAL_SHA=$(sha256sum "${CKPT_REL}" | cut -d' ' -f1)
+          echo "checkpoint size: ${ACTUAL_SIZE} (expected ${EXPECTED_CKPT_SIZE})"
+          echo "checkpoint sha : ${ACTUAL_SHA}"
+          test "${ACTUAL_SIZE}" = "${EXPECTED_CKPT_SIZE}"
+          test "${ACTUAL_SHA}" = "${EXPECTED_CKPT_SHA}"
+
+          echo "########## frozen golden comparison (legacy vs FIXED modern) ##########"
+          cd golden
+          python compare.py \
+            --legacy-dir "$GITHUB_WORKSPACE/dl/legacy" \
+            --modern-dir "$GITHUB_WORKSPACE/dl/modern" \
+            --manifest "$GITHUB_WORKSPACE/dl/protocol/umsi_legacy_resize_fix_protocol.json" \
+            --out-json "$GITHUB_WORKSPACE/deliver/_golden.json" \
+            --out-npz  "$GITHUB_WORKSPACE/deliver/_golden_arrays.npz" \
+            2>&1 | tee "$GITHUB_WORKSPACE/deliver/compare_run.log"
+          cd "$GITHUB_WORKSPACE"
+
+          echo "########## decoder-boundary activation sweep ##########"
+          python golden/layer_compare.py \
+            --legacy-npz "$GITHUB_WORKSPACE/dl/legacy/legacy_layers_ui1.npz" \
+            --modern-npz "$GITHUB_WORKSPACE/dl/modern/modern_layers_ui1.npz" \
+            --out-json "$GITHUB_WORKSPACE/deliver/_golden_layers.json" \
+            2>&1 | tee -a "$GITHUB_WORKSPACE/deliver/compare_run.log"
+
+          echo "########## assemble production-fix evidence bundle ##########"
+          python golden/build_fix_evidence.py \
+            --golden-json "$GITHUB_WORKSPACE/deliver/_golden.json" \
+            --golden-npz  "$GITHUB_WORKSPACE/deliver/_golden_arrays.npz" \
+            --oracle-json "$GITHUB_WORKSPACE/dl/local/operator_oracle.json" \
+            --callsite-json "$GITHUB_WORKSPACE/dl/local/callsite.json" \
+            --layer-json "$GITHUB_WORKSPACE/deliver/_golden_layers.json" \
+            --protocol-json "$GITHUB_WORKSPACE/dl/protocol/umsi_legacy_resize_fix_protocol.json" \
+            --legacy-dir "$GITHUB_WORKSPACE/dl/legacy" \
+            --modern-dir "$GITHUB_WORKSPACE/dl/modern" \
+            --legacy-pipfreeze "$GITHUB_WORKSPACE/dl/legacy/legacy_pipfreeze.txt" \
+            --modern-pipfreeze "$GITHUB_WORKSPACE/dl/modern/modern_pipfreeze.txt" \
+            --compare-pipfreeze "$GITHUB_WORKSPACE/deliver/compare_pipfreeze.txt" \
+            --diff-file "$GITHUB_WORKSPACE/dl/protocol/production_fix.diff" \
+            --ckpt "$GITHUB_WORKSPACE/${CKPT_REL}" \
+            --out-json "$GITHUB_WORKSPACE/deliver/umsi_legacy_resize_production_fix_6a17288.json" \
+            --out-npz  "$GITHUB_WORKSPACE/deliver/umsi_legacy_resize_production_fix_arrays_6a17288.npz" \
+            2>&1 | tee -a "$GITHUB_WORKSPACE/deliver/compare_run.log"
+
+      - name: Assemble comprehensive log + SHA256SUMS
+        shell: bash
+        run: |
+          set -o pipefail
+          export UMSI_REPO="$GITHUB_WORKSPACE"
+          LOG=deliver/umsi_legacy_resize_production_fix_6a17288.log
+          {
+            echo "===== umsi_legacy_resize_production_fix_6a17288.log ====="
+            echo "assembled: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "fix_commit: ${GITHUB_SHA}"
+            echo "production_base: ${PRODUCTION_BASE}"
+            echo "run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo
+            echo "########## FROZEN FIX PROTOCOL (Phase 0) ##########"
+            cat dl/protocol/umsi_legacy_resize_fix_protocol.json
+            echo
+            echo "########## PRODUCTION PATCH (saliency/umsi_model.py) ##########"
+            cat dl/protocol/production_fix.diff
+            echo
+            echo "########## CHANGED-FILE SCOPE vs BASE ##########"
+            cat dl/protocol/changed_files.txt
+            echo
+            echo "########## LOCAL CHECKS LOG (oracle + call-site + tests) ##########"
+            cat dl/local/local_checks.log
+            echo
+            echo "########## LEGACY JOB LOG ##########"
+            cat dl/legacy/legacy_run.log
+            echo
+            echo "########## MODERN (FIXED) JOB LOG ##########"
+            cat dl/modern/modern_run.log
+            echo
+            echo "########## COMPARISON + EVIDENCE LOG ##########"
+            cat deliver/compare_run.log
+            echo
+            echo "########## FINAL VALIDATION ##########"
+            python golden/verify_fix.py \
+              --json deliver/umsi_legacy_resize_production_fix_6a17288.json \
+              --npz  deliver/umsi_legacy_resize_production_fix_arrays_6a17288.npz
+            echo
+            echo "########## DELIVERABLE HASHES ##########"
+            cd deliver
+            sha256sum \
+              umsi_legacy_resize_production_fix_6a17288.json \
+              umsi_legacy_resize_production_fix_arrays_6a17288.npz \
+              umsi_legacy_resize_production_fix_6a17288.diff \
+              umsi_legacy_resize_fix_protocol.json
+            for f in umsi_legacy_resize_production_fix_6a17288.json \
+                     umsi_legacy_resize_production_fix_arrays_6a17288.npz \
+                     umsi_legacy_resize_production_fix_6a17288.diff \
+                     umsi_legacy_resize_fix_protocol.json; do
+              echo "bytes $(stat -c%s "$f")  $f"
+            done
+            cd "$GITHUB_WORKSPACE"
+            echo "===== END OF LOG ====="
+          } | tee "$LOG"
+
+          echo "########## SHA256SUMS over all deliverables ##########"
+          cd deliver
+          sha256sum \
+            umsi_legacy_resize_production_fix_6a17288.json \
+            umsi_legacy_resize_production_fix_6a17288.log \
+            umsi_legacy_resize_production_fix_arrays_6a17288.npz \
+            umsi_legacy_resize_production_fix_6a17288.diff \
+            umsi_legacy_resize_fix_protocol.json \
+            > SHA256SUMS
+          echo "----- SHA256SUMS -----"
+          cat SHA256SUMS
+          echo "----- SHA256SUMS own hash + size -----"
+          sha256sum SHA256SUMS
+          echo "bytes $(stat -c%s SHA256SUMS)  SHA256SUMS"
+
+      - name: Upload production-fix evidence bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: umsi-legacy-resize-production-fix-${{ github.sha }}
+          path: |
+            deliver/umsi_legacy_resize_production_fix_6a17288.json
+            deliver/umsi_legacy_resize_production_fix_6a17288.log
+            deliver/umsi_legacy_resize_production_fix_arrays_6a17288.npz
+            deliver/umsi_legacy_resize_production_fix_6a17288.diff
+            deliver/umsi_legacy_resize_fix_protocol.json
+            deliver/SHA256SUMS
+          retention-days: 30
+
+      - name: Gate — fail unless the fix is VALIDATED
+        shell: bash
+        run: |
+          export UMSI_REPO="$GITHUB_WORKSPACE"
+          python golden/verify_fix.py \
+            --json deliver/umsi_legacy_resize_production_fix_6a17288.json \
+            --npz  deliver/umsi_legacy_resize_production_fix_arrays_6a17288.npz
