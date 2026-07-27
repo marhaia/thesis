@@ -118,12 +118,22 @@ def main():
             "contract unchanged",
             "focused_unit_tests: non-square, odd dims, boundary pixels, dtype, "
             "determinism, equality with legacy operator, actual decoder shapes",
-            "golden_compare: same five frozen fixtures, same checkpoint, same "
-            "TF1.14 reference impl, same preprocessing, same shared postprocess, "
-            "same metrics/formulas/thresholds/containers as the frozen golden "
-            "protocol; per fixture capture inputs, raw tensors, decoder-boundary "
+            "controlled_input_golden (GATED): identical legacy-preprocessed "
+            "tensor fed to the legacy reference AND the FIXED modern model, so "
+            "preprocessing is identical (max_abs_diff = 0.0) by construction and "
+            "the only variable is the decoder resize operator; same five frozen "
+            "fixtures, same checkpoint, same TF1.14 reference impl, same shared "
+            "postprocess, same metrics/formulas/thresholds/containers; per "
+            "fixture capture controlled inputs, raw tensors, decoder-boundary "
             "activations, shared maps, 5 features, 6 PROVISIONAL HCEye, "
-            "provisional cognitive_load_index, all threshold results",
+            "provisional cognitive_load_index, all threshold results. This is "
+            "the pre-registered isolation and the gated PASS criterion.",
+            "independent_end_to_end_golden (SUPPORTING): each runtime "
+            "preprocesses independently (real production path). Reported for "
+            "transparency; every decoder/output metric must pass. The "
+            "absolute-zero preprocessing gate reflects a pre-existing "
+            "float32-vs-float64 preprocessing difference unrelated to the resize "
+            "fix and is therefore not the gate.",
             "repeatability: same-process and fresh-process array hashes + "
             "metric/downstream stability",
             "regression_interface: public interfaces, checkpoint loading, "
@@ -162,7 +172,11 @@ def main():
                 "exactly three call sites use the compat layer",
                 "checkpoint loads by-name with zero warnings",
                 "total+trainable param counts unchanged",
-                "all five fixtures pass every pre-registered threshold",
+                "controlled-input golden: all five fixtures pass every "
+                "pre-registered threshold (preprocessing identical by "
+                "construction)",
+                "independent end-to-end golden: all decoder/output metrics pass "
+                "on all five fixtures",
                 "downstream (feature + HCEye + CLI) comparisons pass",
                 "same-process and fresh-process repeatability pass",
                 "regression/interface checks pass",

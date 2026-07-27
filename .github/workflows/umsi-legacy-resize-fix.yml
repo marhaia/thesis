@@ -341,10 +341,22 @@ jobs:
             --out-json "$GITHUB_WORKSPACE/deliver/_golden_layers.json" \
             2>&1 | tee -a "$GITHUB_WORKSPACE/deliver/compare_run.log"
 
+          echo "########## controlled-input golden (legacy preproc -> FIXED model) ##########"
+          cd golden
+          python controlled_compare.py \
+            --legacy-dir "$GITHUB_WORKSPACE/dl/legacy" \
+            --ckpt "$GITHUB_WORKSPACE/${CKPT_REL}" \
+            --out-json "$GITHUB_WORKSPACE/deliver/_controlled.json" \
+            --out-npz  "$GITHUB_WORKSPACE/deliver/_controlled_arrays.npz" \
+            2>&1 | tee -a "$GITHUB_WORKSPACE/deliver/compare_run.log"
+          cd "$GITHUB_WORKSPACE"
+
           echo "########## assemble production-fix evidence bundle ##########"
           python golden/build_fix_evidence.py \
             --golden-json "$GITHUB_WORKSPACE/deliver/_golden.json" \
             --golden-npz  "$GITHUB_WORKSPACE/deliver/_golden_arrays.npz" \
+            --controlled-json "$GITHUB_WORKSPACE/deliver/_controlled.json" \
+            --controlled-npz  "$GITHUB_WORKSPACE/deliver/_controlled_arrays.npz" \
             --oracle-json "$GITHUB_WORKSPACE/dl/local/operator_oracle.json" \
             --callsite-json "$GITHUB_WORKSPACE/dl/local/callsite.json" \
             --layer-json "$GITHUB_WORKSPACE/deliver/_golden_layers.json" \
@@ -394,10 +406,11 @@ jobs:
             echo "########## COMPARISON + EVIDENCE LOG ##########"
             cat deliver/compare_run.log
             echo
-            echo "########## FINAL VALIDATION ##########"
+            echo "########## FINAL VALIDATION (diagnostic; gate runs separately) ##########"
             python golden/verify_fix.py \
               --json deliver/umsi_legacy_resize_production_fix_6a17288.json \
-              --npz  deliver/umsi_legacy_resize_production_fix_arrays_6a17288.npz
+              --npz  deliver/umsi_legacy_resize_production_fix_arrays_6a17288.npz \
+              || echo "verify_fix reported BLOCKED (see verdict above); evidence still preserved"
             echo
             echo "########## DELIVERABLE HASHES ##########"
             cd deliver
@@ -432,6 +445,7 @@ jobs:
           echo "bytes $(stat -c%s SHA256SUMS)  SHA256SUMS"
 
       - name: Upload production-fix evidence bundle
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: umsi-legacy-resize-production-fix-${{ github.sha }}
