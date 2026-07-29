@@ -1328,11 +1328,35 @@ FEATURE_KEYS = [
 ]
 
 
-def compute_complexity_vector(image_path: str) -> Dict[str, float]:
+def compute_complexity_vector(
+    image_path: str,
+    long_side: int = CANONICAL_LONG_SIDE,
+) -> Dict[str, float]:
     """
     Compute the Stage 1 visual complexity vector v in R^8 for one image.
     Returns a dictionary with all 8 feature values.
+
+    Args:
+        image_path: Path to the image on disk.
+        long_side: Canonical analysis long side actually used for
+            preprocessing. Defaults to ``CANONICAL_LONG_SIDE`` (1280), the
+            production value, so existing callers that omit the argument retain
+            exactly the current behaviour. A caller that configures a different
+            canonical resolution (e.g. the canonical visual-norm generator) must
+            pass its actual value here so the COMPUTATION and any provenance it
+            records refer to the same resolution.
+
+    Raises:
+        ValueError: If ``long_side`` is not a positive integer.
+        FileNotFoundError: If the image cannot be loaded.
     """
+    # Fail fast on an invalid configured resolution so a non-positive / bogus
+    # long side can never silently fall through to the default 1280 path.
+    if not isinstance(long_side, (int, np.integer)) or int(long_side) <= 0:
+        raise ValueError(
+            f"long_side must be a positive integer, got {long_side!r}")
+    long_side = int(long_side)
+
     image = cv2.imread(image_path)
     if image is None:
         raise FileNotFoundError(f"Cannot load image: {image_path}")
@@ -1345,8 +1369,11 @@ def compute_complexity_vector(image_path: str) -> Dict[str, float]:
     # search model, bounding boxes, overlays, target selection) re-reads the
     # original image. The score-driving layout measurements run on the canonical
     # image via stage1/canonical_layout.py.
+    #
+    # The actual configured ``long_side`` is threaded through so the computation
+    # matches whatever resolution the caller declares in provenance.
     native_h, native_w = image.shape[:2]
-    image = canonicalize_for_analysis(image)
+    image = canonicalize_for_analysis(image, long_side=long_side)
 
     print(f"  Processing: {os.path.basename(image_path)} "
           f"({native_w}x{native_h} px native -> "

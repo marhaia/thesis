@@ -223,7 +223,10 @@ def main():
             print(f"REFUSING to write {_label} to protected file '{_p}'. "
                   f"Pass --allow-protected-overwrite to override intentionally.",
                   file=sys.stderr)
-            return
+            # A refused protected write is a hard failure: exit NONZERO so a
+            # calling script / CI never mistakes the refusal for a successful
+            # generation.
+            sys.exit(2)
 
     use_saliency = not args.no_saliency
 
