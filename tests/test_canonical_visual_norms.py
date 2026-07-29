@@ -500,3 +500,224 @@ def _tamper_csv(csvp, transform):
 def _rename_first(rows, new_name):
     rows[0]["filename"] = new_name
     return rows
+
+
+# ===========================================================================
+# SCOPED FINAL PATCH — recoverability, processed-subset provenance, deps.
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# Fix 1. Crash-safe interruption recovery.
+# ---------------------------------------------------------------------------
+def test_interrupted_fresh_run_leaves_usable_checkpoint_and_resumes(
+        tmp_path, monkeypatch):
+    """A fresh run interrupted after its first successful row leaves a CSV row
+    plus a usable running checkpoint, resumes cleanly, and produces the correct
+    unique final rows and aggregates."""
+    tc, imgd = make_corpus(tmp_path, per_cat=2)      # 6 authorized images
+    out = str(tmp_path / "norms.json")
+    csvp = str(tmp_path / "rows.csv")
+    sidecar = csvp + ".provenance.json"
+
+    # Interrupt (BaseException, not caught by the per-image except) on the 2nd
+    # image, after the 1st row has been durably written.
+    calls = {"n": 0}
+
+    def interrupt_after_first(path, long_side=vc.CANONICAL_LONG_SIDE):
+        calls["n"] += 1
+        if calls["n"] == 2:
+            raise KeyboardInterrupt("simulated crash")
+        return {k: 0.1 * (i + 1) for i, k in enumerate(FEATURE_KEYS)}
+
+    monkeypatch.setattr(gen, "compute_complexity_vector", interrupt_after_first)
+    with pytest.raises(KeyboardInterrupt):
+        gen.main(["--images-dir", imgd, "--types-csv", tc, "--out", out,
+                  "--csv", csvp, "--limit", "6"])
+
+    # CSV + running checkpoint exist; exactly one data row; aggregate not yet.
+    assert os.path.exists(csvp)
+    assert os.path.exists(sidecar)
+    assert not os.path.exists(out)
+    with open(csvp) as f:
+        rows_after_crash = list(csv.DictReader(f))
+    assert len(rows_after_crash) == 1
+    side = json.load(open(sidecar))
+    assert side["status"] == gen.STATUS_RUNNING
+    assert side["segments"] and side["segments"][-1]["incomplete"] is True
+
+    # Resume with the normal finite stub -> completes.
+    monkeypatch.setattr(gen, "compute_complexity_vector", _stub_compute())
+    rc = gen.main(["--images-dir", imgd, "--types-csv", tc, "--out", out,
+                   "--csv", csvp, "--limit", "6", "--resume"])
+    assert rc == 0
+
+    with open(csvp) as f:
+        final_rows = list(csv.DictReader(f))
+    names = [r["filename"] for r in final_rows]
+    assert len(names) == 6
+    assert len(set(names)) == 6                       # unique, no duplicates
+    d = json.load(open(out))
+    assert d["processed_count"] == 6
+    for stats in d["features"].values():
+        assert stats["n"] == 6
+    # Honest runtime: the interrupted segment was never measured -> lower bound.
+    assert d["recovered_from_interruption"] is True
+    assert d["runtime_cumulative_is_lower_bound"] is True
+    fside = json.load(open(sidecar))
+    assert fside["status"] == gen.STATUS_COMPLETED
+
+
+def test_running_checkpoint_written_before_processing(tmp_path, monkeypatch):
+    """The fingerprint-bearing sidecar exists as soon as processing starts."""
+    tc, imgd = make_corpus(tmp_path, per_cat=2)
+    out = str(tmp_path / "norms.json")
+    csvp = str(tmp_path / "rows.csv")
+    sidecar = csvp + ".provenance.json"
+    seen = {}
+
+    def check_sidecar_first(path, long_side=vc.CANONICAL_LONG_SIDE):
+        # On the very first image the running checkpoint must already exist.
+        seen.setdefault("sidecar_at_first_image", os.path.exists(sidecar))
+        return {k: 0.1 * (i + 1) for i, k in enumerate(FEATURE_KEYS)}
+
+    monkeypatch.setattr(gen, "compute_complexity_vector", check_sidecar_first)
+    gen.main(["--images-dir", imgd, "--types-csv", tc, "--out", out,
+              "--csv", csvp, "--limit", "3"])
+    assert seen["sidecar_at_first_image"] is True
+
+
+# ---------------------------------------------------------------------------
+# Fix 2. Processed-subset provenance from actual stored rows.
+# ---------------------------------------------------------------------------
+def test_six_row_checkpoint_resumed_with_limit3_reports_six(tmp_path,
+                                                            monkeypatch):
+    """A six-row checkpoint resumed with --limit 3 must report six processed
+    rows and a six-image processed hash, never a three-image hash."""
+    tc, imgd = make_corpus(tmp_path, per_cat=2)      # 6 images
+    out = str(tmp_path / "norms.json")
+    csvp = str(tmp_path / "rows.csv")
+    monkeypatch.setattr(gen, "compute_complexity_vector", _stub_compute())
+    gen.main(["--images-dir", imgd, "--types-csv", tc, "--out", out,
+              "--csv", csvp, "--limit", "6"])           # full 6-row checkpoint
+    d6 = json.load(open(out))
+    assert d6["processed_count"] == 6
+    six_hash = d6["processed_subset_sha256"]
+
+    # Resume asking for only 3 -> all already done; processed stays 6.
+    monkeypatch.setattr(gen, "compute_complexity_vector", _stub_compute())
+    gen.main(["--images-dir", imgd, "--types-csv", tc, "--out", out,
+              "--csv", csvp, "--limit", "3", "--resume"])
+    d = json.load(open(out))
+    assert d["processed_count"] == 6
+    assert d["processed_subset_sha256"] == six_hash
+    assert d["requested_limit"] == 3
+    assert d["requested_selection_count"] == 3
+    # The requested-3 hash must NOT be presented as the processed hash.
+    assert d["requested_selection_sha256"] != d["processed_subset_sha256"]
+
+
+def test_failed_image_excluded_from_processed_hash(tmp_path, monkeypatch):
+    """A selected image that fails is absent from the processed hash, and the
+    processed hash equals the hash of exactly the stored CSV rows."""
+    tc, imgd = make_corpus(tmp_path, per_cat=2)
+    out = str(tmp_path / "norms.json")
+    csvp = str(tmp_path / "rows.csv")
+
+    def fail_one(path, long_side=vc.CANONICAL_LONG_SIDE):
+        if os.path.basename(path) == "desktop0.png":
+            raise RuntimeError("boom")
+        return {k: 0.1 * (i + 1) for i, k in enumerate(FEATURE_KEYS)}
+
+    monkeypatch.setattr(gen, "compute_complexity_vector", fail_one)
+    gen.main(["--images-dir", imgd, "--types-csv", tc, "--out", out,
+              "--csv", csvp, "--limit", "6"])
+    d = json.load(open(out))
+    with open(csvp) as f:
+        stored = list(csv.DictReader(f))
+    stored_names = [r["filename"] for r in stored]
+    assert "desktop0.png" not in stored_names
+    assert d["processed_count"] == len(stored)
+    assert d["n_failed_images"] >= 1
+    # Recompute the processed hash from the actual stored rows and compare.
+    pairs = [(r["filename"], r["category"]) for r in stored]
+    assert d["processed_subset_sha256"] == gen.authorized_aggregate_hash(
+        pairs, imgd)
+
+
+def test_processed_metadata_agrees_with_csv(tmp_path, monkeypatch):
+    tc, imgd = make_corpus(tmp_path, per_cat=2)
+    out = str(tmp_path / "norms.json")
+    csvp = str(tmp_path / "rows.csv")
+    monkeypatch.setattr(gen, "compute_complexity_vector", _stub_compute())
+    gen.main(["--images-dir", imgd, "--types-csv", tc, "--out", out,
+              "--csv", csvp, "--limit", "6"])
+    d = json.load(open(out))
+    with open(csvp) as f:
+        stored = list(csv.DictReader(f))
+    pairs = [(r["filename"], r["category"]) for r in stored]
+    counts = {}
+    for _n, c in pairs:
+        counts[c] = counts.get(c, 0) + 1
+    assert d["processed_count"] == len(stored)
+    assert d["processed_category_counts"] == counts
+    assert d["processed_subset_sha256"] == gen.authorized_aggregate_hash(
+        pairs, imgd)
+
+
+@pytest.mark.parametrize("bad_limit", ["0", "-1", "-3"])
+def test_zero_or_negative_limit_fails(tmp_path, monkeypatch, bad_limit):
+    tc, imgd = make_corpus(tmp_path, per_cat=2)
+    out = str(tmp_path / "norms.json")
+    csvp = str(tmp_path / "rows.csv")
+    monkeypatch.setattr(gen, "compute_complexity_vector", _stub_compute())
+    with pytest.raises(gen.GeneratorError):
+        gen.main(["--images-dir", imgd, "--types-csv", tc, "--out", out,
+                  "--csv", csvp, "--limit", bad_limit])
+
+
+# ---------------------------------------------------------------------------
+# Fix 3. Complete calculation-environment provenance.
+# ---------------------------------------------------------------------------
+def test_environment_info_records_all_calculation_libraries():
+    env = gen.environment_info()
+    for key in ("python_version", "numpy_version", "opencv_version",
+                "scipy_version", "scikit_image_version", "pyrtools_version",
+                "pillow_version"):
+        assert key in env, key
+        assert env[key] and env[key] != "unknown", (key, env.get(key))
+
+
+def test_each_dependency_version_changes_run_fingerprint():
+    counts = {"desktop": 495, "mobile": 495, "web": 495}
+    base_env = gen.environment_info()
+    _, base_sha = gen.build_run_fingerprint(
+        1280, counts, "TYPES", "CORPUS", "EXTRACT", "GENER", base_env)
+    dep_keys = ("python_version", "numpy_version", "opencv_version",
+                "scipy_version", "scikit_image_version", "pyrtools_version",
+                "pillow_version")
+    seen = {base_sha}
+    for key in dep_keys:
+        mutated = dict(base_env)
+        mutated[key] = base_env[key] + ".changed"
+        _, sha = gen.build_run_fingerprint(
+            1280, counts, "TYPES", "CORPUS", "EXTRACT", "GENER", mutated)
+        assert sha != base_sha, f"changing {key} did not change fingerprint"
+        seen.add(sha)
+    assert len(seen) == len(dep_keys) + 1     # every change is distinct
+
+
+def test_run_fingerprint_embeds_full_environment(tmp_path, monkeypatch):
+    """The emitted run fingerprint and every segment carry the full env dict."""
+    tc, imgd = make_corpus(tmp_path, per_cat=2)
+    out = str(tmp_path / "norms.json")
+    csvp = str(tmp_path / "rows.csv")
+    monkeypatch.setattr(gen, "compute_complexity_vector", _stub_compute())
+    gen.main(["--images-dir", imgd, "--types-csv", tc, "--out", out,
+              "--csv", csvp, "--limit", "3"])
+    d = json.load(open(out))
+    for key in ("scipy_version", "scikit_image_version", "pyrtools_version",
+                "pillow_version"):
+        assert key in d["run_fingerprint"]["environment"]
+        assert key in d["environment"]
+        assert key in d["segments"][-1]["environment"]
+

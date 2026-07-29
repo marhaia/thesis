@@ -38,12 +38,14 @@ import collections
 import csv
 import datetime
 import hashlib
+import importlib
 import json
 import os
 import platform
 import sys
 import tempfile
 import time
+from importlib import metadata as importlib_metadata
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -137,6 +139,28 @@ def _sha256_file(path: str) -> str:
         for chunk in iter(lambda: f.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def _pkg_version(module_name: str, dist_name: Optional[str] = None) -> str:
+    """Return the installed version of a calculation-relevant library.
+
+    Prefers ``module.__version__``; falls back to installed-distribution
+    metadata for packages whose import name differs from the distribution name
+    (e.g. ``cv2`` -> ``opencv-python``, ``skimage`` -> ``scikit-image``,
+    ``PIL`` -> ``Pillow``) or that expose no ``__version__``. Returns
+    ``"unknown"`` only if neither source resolves.
+    """
+    try:
+        mod = importlib.import_module(module_name)
+        version = getattr(mod, "__version__", None)
+        if version:
+            return str(version)
+    except Exception:
+        pass
+    try:
+        return str(importlib_metadata.version(dist_name or module_name))
+    except Exception:
+        return "unknown"
 
 
 def _refuse_protected(path: str, label: str) -> None:
@@ -314,11 +338,22 @@ def authorized_aggregate_hash(images: List[Tuple[str, str]],
 
 
 def environment_info() -> Dict[str, str]:
-    import cv2
+    """Installed versions of every calculation-relevant library.
+
+    The eight visual features are computed with cv2, NumPy, SciPy,
+    scikit-image, pyrtools and Pillow (see stage1/visual_complexity.py), so all
+    of their versions belong in the run fingerprint: a change to any of them can
+    change the computed values. Versions are read from ``module.__version__``
+    where available and fall back to installed-distribution metadata otherwise.
+    """
     return {
         "python_version": platform.python_version(),
-        "numpy_version": np.__version__,
-        "opencv_version": cv2.__version__,
+        "numpy_version": _pkg_version("numpy"),
+        "opencv_version": _pkg_version("cv2", "opencv-python"),
+        "scipy_version": _pkg_version("scipy"),
+        "scikit_image_version": _pkg_version("skimage", "scikit-image"),
+        "pyrtools_version": _pkg_version("pyrtools"),
+        "pillow_version": _pkg_version("PIL", "Pillow"),
         "platform": platform.platform(),
         "machine": platform.machine(),
     }
@@ -421,6 +456,88 @@ def _atomic_write_json(path: str, obj) -> None:
 
 def sidecar_path_for(csv_path: str) -> str:
     return csv_path + ".provenance.json"
+
+
+# Checkpoint lifecycle states.
+STATUS_RUNNING = "running"
+STATUS_COMPLETED = "completed"
+
+
+def _now_iso() -> str:
+    return datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+
+def _new_segment(invocation_index: int, env: Dict[str, str]) -> dict:
+    """A fresh, still-running segment for the current invocation.
+
+    ``incomplete`` stays True until the invocation finishes cleanly; if the
+    process is interrupted the segment is left incomplete so its wall-clock
+    interval is never presented as an exactly measured runtime.
+    """
+    return {
+        "invocation_index": invocation_index,
+        "started_at": _now_iso(),
+        "ended_at": None,
+        "elapsed_seconds": None,
+        "n_new_rows": 0,
+        "n_failed": 0,
+        "environment": env,
+        "incomplete": True,
+        "status": STATUS_RUNNING,
+    }
+
+
+def _finalize_segment(seg: dict, elapsed: float, n_new: int,
+                      n_failed: int) -> dict:
+    seg["ended_at"] = _now_iso()
+    seg["elapsed_seconds"] = round(float(elapsed), 3)
+    seg["n_new_rows"] = int(n_new)
+    seg["n_failed"] = int(n_failed)
+    seg["incomplete"] = False
+    seg["status"] = STATUS_COMPLETED
+    return seg
+
+
+def _cumulative_runtime(segments: List[dict]) -> Tuple[float, bool]:
+    """Sum only exactly-measured segment runtimes.
+
+    Returns ``(cumulative_seconds, is_lower_bound)``. If any segment is
+    incomplete (an interrupted invocation whose interval was never measured),
+    the cumulative total is a LOWER BOUND and the flag is True.
+    """
+    measurable = [float(s["elapsed_seconds"]) for s in segments
+                  if s.get("elapsed_seconds") is not None
+                  and not s.get("incomplete")]
+    total = round(sum(measurable), 3)
+    lower_bound = any(s.get("incomplete") for s in segments)
+    return total, lower_bound
+
+
+def write_checkpoint_sidecar(sidecar_path: str, run_fingerprint: dict,
+                             fingerprint_sha: str, csv_basename: str,
+                             segments: List[dict], status: str,
+                             recovered: bool) -> None:
+    """Atomically write the fingerprint-bearing checkpoint sidecar.
+
+    Written BEFORE feature processing begins (status ``running``) so an
+    interrupted fresh run still leaves a usable, resumable checkpoint, then
+    rewritten on clean completion (status ``completed``).
+    """
+    cumulative, lower_bound = _cumulative_runtime(segments)
+    payload = {
+        "schema_version": SCHEMA_VERSION,
+        "status": status,
+        "recovered_from_interruption": bool(recovered),
+        "run_fingerprint": run_fingerprint,
+        "run_fingerprint_sha256": fingerprint_sha,
+        "csv_basename": csv_basename,
+        "segments": segments,
+        "invocation_count": len(segments),
+        "runtime_cumulative_seconds": cumulative,
+        "runtime_cumulative_is_lower_bound": lower_bound,
+    }
+    _refuse_protected(sidecar_path, "provenance sidecar")
+    _atomic_write_json(sidecar_path, payload)
 
 
 def load_checkpoint_for_resume(csv_path: str, sidecar_path: str,
@@ -590,6 +707,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     exp = expected_provenance(long_side)
     is_subsample = args.limit is not None
 
+    # (Fix 2) A subsample limit must be a positive integer.
+    if is_subsample and int(args.limit) <= 0:
+        raise GeneratorError(
+            f"--limit must be a positive integer when provided, got "
+            f"{args.limit!r}.")
+
     # (D) Load and validate the COMPLETE authorized population BEFORE --limit.
     # Authorized counts and both corpus hashes always describe the full 1,485
     # population, never the processed subset.
@@ -681,7 +804,22 @@ def main(argv: Optional[List[str]] = None) -> int:
                     f"overwrite implicitly. Pass --resume for a matching "
                     f"checkpoint or choose fresh output paths.")
 
-    started_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    # (Fix 1) Crash-safe checkpoint lifecycle. A run recovers from an
+    # interruption when any previously stored segment was left incomplete.
+    recovered = any(s.get("incomplete") for s in prior_segments)
+    current_segment = _new_segment(len(prior_segments), env)
+    all_segments = prior_segments + [current_segment]
+    csv_basename = os.path.basename(args.csv)
+
+    os.makedirs(os.path.dirname(args.csv) or ".", exist_ok=True)
+
+    # Create the fingerprint-bearing checkpoint BEFORE any feature processing,
+    # so a fresh run interrupted after its first successful row still leaves a
+    # usable, resumable checkpoint (CSV rows + running sidecar).
+    write_checkpoint_sidecar(sidecar, run_fingerprint, fingerprint_sha,
+                             csv_basename, all_segments, STATUS_RUNNING,
+                             recovered)
+
     t_start = time.perf_counter()
     n_new = 0
     n_failed = 0
@@ -690,6 +828,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         if not csv_exists:
             writer.writeheader()
             csv_file.flush()
+            os.fsync(csv_file.fileno())
         for idx, (name, category) in enumerate(images, start=1):
             if name in done_names:
                 continue
@@ -722,14 +861,35 @@ def main(argv: Optional[List[str]] = None) -> int:
                 values_by_feature[k].append(staged[k])
             per_image_rows.append(row)
             writer.writerow(row)
+            # Durably flush the successful row before advancing.
             csv_file.flush()
+            os.fsync(csv_file.fileno())
             n_new += 1
+            done_names.add(name)
+            # Safely update checkpoint progress (still running / incomplete).
+            current_segment["n_new_rows"] = n_new
+            current_segment["n_failed"] = n_failed
+            write_checkpoint_sidecar(sidecar, run_fingerprint, fingerprint_sha,
+                                     csv_basename, all_segments, STATUS_RUNNING,
+                                     recovered)
             print(f"[{idx}/{len(images)}] {name} ({category})")
     elapsed = time.perf_counter() - t_start
-    ended_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    _finalize_segment(current_segment, elapsed, n_new, n_failed)
 
-    processed_counts = collections.Counter(r["category"] for r in per_image_rows)
+    # (Fix 2) Processed-subset provenance is derived from the UNIQUE, actually
+    # stored rows (per_image_rows), never from the requested selection. Failed
+    # images are absent from per_image_rows, so they cannot enter these fields.
+    processed_pairs = [(r["filename"], r["category"]) for r in per_image_rows]
+    processed_counts = collections.Counter(c for _, c in processed_pairs)
     total_usable = len(per_image_rows)
+    processed_subset_sha256 = authorized_aggregate_hash(processed_pairs,
+                                                        args.images_dir)
+
+    # The requested selection for THIS invocation is reported separately, so a
+    # resume that widens/narrows --limit can never mislabel the assembled rows.
+    requested_selection = list(images)
+    requested_selection_sha256 = authorized_aggregate_hash(requested_selection,
+                                                           args.images_dir)
 
     # (E/12) Full-run integrity, enforced on the assembled result.
     if not is_subsample:
@@ -765,19 +925,10 @@ def main(argv: Optional[List[str]] = None) -> int:
                 f"Aggregate integrity error: feature {k!r} distribution has "
                 f"n={n_dist} but {total_usable} rows are counted as usable.")
 
-    # (F) Runtime accumulation across checkpoint segments.
-    this_segment = {
-        "invocation_index": len(prior_segments),
-        "started_at": started_at,
-        "ended_at": ended_at,
-        "elapsed_seconds": round(elapsed, 3),
-        "n_new_rows": n_new,
-        "n_failed": n_failed,
-        "environment": env,
-    }
-    all_segments = prior_segments + [this_segment]
-    cumulative = round(sum(float(s.get("elapsed_seconds", 0.0))
-                           for s in all_segments), 3)
+    # (F / Fix 1) Honest runtime accumulation across checkpoint segments. If any
+    # prior segment was left incomplete by an interruption, the cumulative total
+    # is an explicit LOWER BOUND rather than an exact measurement.
+    cumulative, cumulative_is_lower_bound = _cumulative_runtime(all_segments)
 
     payload = {
         "schema_version": SCHEMA_VERSION,
@@ -800,12 +951,16 @@ def main(argv: Optional[List[str]] = None) -> int:
         "image_types_csv_sha256": types_hash,
         "image_types_csv_basename": os.path.basename(args.types_csv),
         "authorized_corpus_aggregate_sha256": corpus_hash,
-        # Processed-subset identity (distinct from the full population).
+        # Processed-subset identity, derived from the actual stored rows.
         "is_subsample": is_subsample,
         "processed_count": total_usable,
         "processed_category_counts": dict(processed_counts),
-        "processed_subset_sha256": subset_manifest_hash(images, args.images_dir),
+        "processed_subset_sha256": processed_subset_sha256,
         "n_failed_images": n_failed,
+        # Requested selection for this invocation (distinct from processed).
+        "requested_limit": args.limit,
+        "requested_selection_count": len(requested_selection),
+        "requested_selection_sha256": requested_selection_sha256,
         "production_extractor_sha256": extractor_hash,
         "generator_sha256": generator_hash,
         "run_fingerprint": run_fingerprint,
@@ -814,29 +969,25 @@ def main(argv: Optional[List[str]] = None) -> int:
         # Runtime is an environment-specific observed measurement.
         "runtime_current_invocation_seconds": round(elapsed, 3),
         "runtime_cumulative_seconds": cumulative,
+        "runtime_cumulative_is_lower_bound": cumulative_is_lower_bound,
+        "recovered_from_interruption": bool(recovered),
         "invocation_count": len(all_segments),
         "segments": all_segments,
         "runtime_note": ("Observed on the environment above; not a universal "
-                         "benchmark. Cumulative time sums all checkpoint "
-                         "segments; the current invocation is reported "
-                         "separately."),
+                         "benchmark. Cumulative time sums only exactly-measured "
+                         "checkpoint segments; if any interrupted segment could "
+                         "not be measured, runtime_cumulative_is_lower_bound is "
+                         "true. The current invocation is reported separately."),
         "includes_saliency": False,
         "num_images": total_usable,
         "features": norms,
     }
 
-    # (F) Write the provenance sidecar and the aggregate JSON atomically.
-    sidecar_payload = {
-        "schema_version": SCHEMA_VERSION,
-        "run_fingerprint": run_fingerprint,
-        "run_fingerprint_sha256": fingerprint_sha,
-        "csv_basename": os.path.basename(args.csv),
-        "segments": all_segments,
-        "invocation_count": len(all_segments),
-        "runtime_cumulative_seconds": cumulative,
-    }
-    _refuse_protected(sidecar, "provenance sidecar")
-    _atomic_write_json(sidecar, sidecar_payload)
+    # (Fix 1) Finalize the checkpoint: rewrite the sidecar as COMPLETED, then
+    # write the aggregate JSON. Both writes are atomic.
+    write_checkpoint_sidecar(sidecar, run_fingerprint, fingerprint_sha,
+                             csv_basename, all_segments, STATUS_COMPLETED,
+                             recovered)
 
     _refuse_protected(args.out, "aggregate JSON")
     _atomic_write_json(args.out, payload)
@@ -849,8 +1000,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     print(f"  run_fingerprint_sha256={fingerprint_sha}")
     print(f"  processed_category_counts={dict(processed_counts)} "
           f"failed={n_failed}")
-    print(f"  runtime current={round(elapsed, 3)}s cumulative={cumulative}s "
-          f"invocations={len(all_segments)}")
+    print(f"  runtime current={round(elapsed, 3)}s cumulative={cumulative}s"
+          f"{' (lower bound)' if cumulative_is_lower_bound else ''} "
+          f"invocations={len(all_segments)} recovered={recovered}")
     return 0
 
 
