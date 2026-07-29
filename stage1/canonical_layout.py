@@ -45,8 +45,19 @@ from visual_complexity import (  # noqa: E402
 from cognitive.element_detector import detect_elements  # noqa: E402
 
 # Identifier for the analysis path, embedded in the provenance so consumers can
-# assert that a measurement came from the canonical layout path.
-ANALYSIS_PATH = f"canonical-analysis:long{CANONICAL_LONG_SIDE}"
+# assert that a measurement came from the canonical layout path. The resolution
+# component is derived from the actual long side a run uses (see
+# ``analysis_path_for``); the module-level constant is the production default.
+def analysis_path_for(long_side: int = CANONICAL_LONG_SIDE) -> str:
+    """Build the analysis-path provenance identifier for a given long side.
+
+    Derives the ``long<N>`` component from the actual configured ``long_side``
+    so a non-default run (e.g. 1024) can never report ``long1280``.
+    """
+    return f"canonical-analysis:long{int(long_side)}"
+
+
+ANALYSIS_PATH = analysis_path_for(CANONICAL_LONG_SIDE)
 
 
 def scale_box_to_native(
@@ -234,4 +245,5 @@ def measure_canonical_layout(
         text_density=text_density,
         text_density_source=text_density_source,
         readability_report=readability_report,
+        analysis_path=analysis_path_for(long_side),
     )

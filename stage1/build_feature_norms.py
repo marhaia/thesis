@@ -200,7 +200,30 @@ def main():
                         help="Output path for feature_norms.json.")
     parser.add_argument("--csv", type=str, default=str(_PER_IMAGE_CSV),
                         help="Output path for the per-image raw feature CSV.")
+    parser.add_argument("--allow-protected-overwrite", action="store_true",
+                        help="Explicit opt-in required to write a protected file "
+                             "(feature_norms.json / sensitivity_lookup.json). "
+                             "Without this flag the run aborts rather than "
+                             "accidentally overwriting a protected reference.")
     args = parser.parse_args()
+
+    # Safety guard: never ACCIDENTALLY overwrite a protected reference file. The
+    # canonical visual-norm workflow uses stage1/tools/canonical_visual_norms.py
+    # (which targets a dedicated artifact); this legacy builder must not clobber
+    # feature_norms.json / sensitivity_lookup.json unless explicitly authorized.
+    _protected = {
+        (_RESULTS_DIR / "feature_norms.json").resolve(),
+        (_PROJECT_ROOT / "hceye" / "sensitivity_lookup.json").resolve(),
+    }
+    _protected_names = {"feature_norms.json", "sensitivity_lookup.json"}
+    for _label, _p in (("output", args.output), ("csv", args.csv)):
+        _rp = Path(_p).resolve()
+        if (_rp in _protected or _rp.name in _protected_names) \
+                and not args.allow_protected_overwrite:
+            print(f"REFUSING to write {_label} to protected file '{_p}'. "
+                  f"Pass --allow-protected-overwrite to override intentionally.",
+                  file=sys.stderr)
+            return
 
     use_saliency = not args.no_saliency
 

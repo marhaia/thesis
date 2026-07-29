@@ -15,15 +15,23 @@ and behind the corrective scale re-audit:
      ``cognitive_load_index``;
   3. a held-out real-UI scale evaluation on a seeded UEyes sample that EXCLUDES
      the images used to select 1280 (variants are raster-enlarged, not natively
-     re-rendered, and are reported descriptively).
+     re-rendered, and are reported descriptively). Percentile-normalised inputs
+     and any derived index are WITHHELD here as a domain mismatch until the
+     separately authorized canonical-domain norms exist.
 
 Design notes for auditability:
   * No absolute paths are hard-coded. Inputs default to repo-relative locations
     and can be overridden with ``--images-dir`` / ``--types-csv`` / ``--out-dir``.
+  * Only the interactive GUI categories (desktop / mobile / web) are used; the
+    non-interactive ``poster`` category is permanently excluded at every corpus
+    boundary (see ``AUTHORIZED_CATEGORIES``).
   * The UEyes images themselves are never written to git; only numeric results
     and the sample manifest (IDs + category + seed) are emitted.
   * Feature perturbation is reported as a measured *feature change*, not as an
-    information-theoretic loss claim.
+    information-theoretic loss claim. The perturbation tie-breaker performs one
+    direct native-to-candidate resampling; it does not build artificial 2x/3x
+    screenshot variants. Canonicalisation still upscales originals below the
+    candidate long side, so this is not a "no upscaling" measurement.
 """
 
 from __future__ import annotations
@@ -59,6 +67,34 @@ from visual_complexity import (  # noqa: E402
     CANONICAL_LONG_SIDE,
 )
 from hceye.hceye_features import HCEyeFeatureExtractor, HCEYE_FEATURE_MAP  # noqa: E402
+
+# The single authoritative definition of the interactive GUI population used for
+# every corpus-facing operation in this tool. ``poster`` is a non-interactive
+# graphic category and is PERMANENTLY excluded from category enumeration,
+# decision-image selection, held-out sampling, corpus statistics and every
+# emitted manifest. Every boundary function filters against this set itself; no
+# boundary relies on a caller having pre-filtered the category dictionary.
+AUTHORIZED_CATEGORIES = ("desktop", "mobile", "web")
+_AUTHORIZED_SET = frozenset(AUTHORIZED_CATEGORIES)
+EXCLUDED_CATEGORIES = ("poster",)
+
+# Explicit, machine-readable marker for any normalized / derived-index field
+# that cannot be presented as valid because the only available reference norms
+# (feature_norms.json) were built at NATIVE resolution while these features are
+# measured in the CANONICAL domain. It is emitted INSTEAD of a value — never a
+# neutral constant or fallback — so a consumer cannot mistake a withheld score
+# for a real one.
+_NORMALIZED_UNAVAILABLE = {
+    "status": "unavailable",
+    "reason": "domain_mismatch_native_norms_vs_canonical_features",
+    "detail": (
+        "Percentile normalization and any derived HCEye/layout index require "
+        "canonical-domain reference norms. The only available "
+        "feature_norms.json was built at NATIVE resolution, so normalizing "
+        "canonical-domain features against it would be a domain mismatch. "
+        "These fields are withheld until the separately authorized canonical "
+        "visual-feature norms are generated."),
+}
 
 # The three inherently pixel-scale-dependent features the diagnosis proved to
 # drive the native-resolution headline defect. They are a SUBSET of the five
@@ -329,10 +365,14 @@ def ueyes_perturbation(sel_images: List[Tuple[str, str, str]],
     """Tie-breaker: how much does forcing each candidate perturb REAL images.
 
     For every UEyes selection image, compares the eight features at the image's
-    NATIVE size against the features after a single canonicalisation to the
-    candidate long side (no artificial upscaling). Reports the mean and worst
-    relative feature change across the sample. Smaller = the candidate leaves
-    real screenshots closer to their native measurement.
+    NATIVE size against the features after a SINGLE direct canonicalisation to
+    the candidate long side. This performs one native-to-candidate resampling
+    and does NOT first build artificial 2x/3x screenshot variants. Note that
+    canonicalisation DOES upscale originals whose native long side is below the
+    candidate (a real resampling that perturbs features); this is not a
+    "no upscaling" measurement. Reports the mean and worst relative feature
+    change across the sample. Smaller = the candidate leaves real screenshots
+    closer to their native measurement.
     """
     rows = []
     for cand in candidates:
@@ -432,71 +472,37 @@ def _match_boxes(ref_boxes: List[tuple], cand_boxes: List[tuple],
     }
 
 
-def _index_decomposition(vis_by_scale: Dict[int, Dict[str, float]],
-                         ws_by_scale: Dict[int, Optional[float]],
-                         ex: HCEyeFeatureExtractor,
-                         scales: Tuple[int, ...]) -> Dict[str, object]:
-    """Decompose the scale gap of the HCEye rule index into contributions.
-
-    Reports (in displayed points, i.e. index*100):
-      * combined: both visual features and whitespace vary with scale;
-      * whitespace-only: visual inputs fixed to their 1x values, whitespace
-        varies (isolates the whitespace path);
-      * visual-input-only: whitespace fixed to its 1x value, visual inputs vary
-        (isolates the five normalized visual inputs).
-    """
-    base = scales[0]
-    actual = {s: hceye_rule_index_no_saliency_no_ocr(
-        vis_by_scale[s], ws_by_scale[s], ex) for s in scales}
-    ws_fixed = {s: hceye_rule_index_no_saliency_no_ocr(
-        vis_by_scale[s], ws_by_scale[base], ex) for s in scales}
-    vis_fixed = {s: hceye_rule_index_no_saliency_no_ocr(
-        vis_by_scale[base], ws_by_scale[s], ex) for s in scales}
-
-    def pt_gap(d: Dict[int, float]) -> float:
-        return (max(d.values()) - min(d.values())) * 100.0
-
-    return {
-        "index_actual_by_scale": {str(s): actual[s] for s in scales},
-        "index_whitespace_fixed_1x_by_scale": {str(s): ws_fixed[s] for s in scales},
-        "index_visual_fixed_1x_by_scale": {str(s): vis_fixed[s] for s in scales},
-        "combined_point_gap": pt_gap(actual),
-        "whitespace_only_point_gap": pt_gap(vis_fixed),
-        "visual_input_only_point_gap": pt_gap(ws_fixed),
-    }
-
-
 def heldout_ueyes(sample: List[Tuple[str, str, str]],
                   scales=(1, 2, 3)) -> List[dict]:
     """Descriptive scale evaluation for held-out real UEyes screenshots.
 
+    Emits RAW visual features, canonical layout measurements (whitespace,
+    element geometry, normalised bounding boxes) and provenance ONLY.
+
+    Percentile-normalised HCEye inputs and any derived HCEye/layout index are
+    DELIBERATELY WITHHELD here: the only available ``feature_norms.json`` was
+    built at NATIVE resolution, so percentile-normalising these CANONICAL-domain
+    features against it would be a domain mismatch. Those fields are emitted as
+    an explicit machine-readable ``unavailable`` marker (never a neutral
+    constant or fallback value), pending the separately authorized canonical
+    visual-feature norm generation.
+
     IMPORTANT: real screenshots exist at a single native capture only, so the
-    2x/3x variants here are produced by RASTER ENLARGEMENT (cv2.resize), which
-    is NOT equivalent to a native re-render at a higher resolution. Results are
-    therefore reported descriptively; the >=1x synthetic 1.0-point acceptance
-    guard is NOT applied to them, and remaining differences are not assumed to
-    vanish under a true native re-render.
-
-    For every image and scale two decompositions are reported:
-      * canonical_path — the CURRENT production behaviour (whitespace measured on
-        the canonical analysis image via the production helper);
-      * native_path_baseline — the pre-fix behaviour (whitespace on the native
-        image), retained only to reproduce/explain the baseline decomposition.
-
-    Canonical normalised bounding boxes are saved per scale, and their 1x->2x /
-    1x->3x matching coverage and mean IoU are summarised.
+    2x/3x variants here are produced by RASTER ENLARGEMENT (cv2.resize) — one
+    direct resampling, not a native re-render at a higher resolution, and NOT an
+    artificial 2x/3x screenshot pipeline. Results are reported descriptively;
+    the >=1x synthetic 1.0-point acceptance guard is NOT applied to them.
     """
-    ex = _extractor()
     results = []
     for img_id, cat, path in sample:
         base = cv2.imread(path)
         if base is None:
             continue
-        vis_by_scale: Dict[int, Dict[str, float]] = {}
         ws_canon: Dict[int, Optional[float]] = {}
         ws_native: Dict[int, Optional[float]] = {}
         norm_boxes_by_scale: Dict[int, List[tuple]] = {}
         per_scale = {}
+        analysis_long_side = None
         for s in scales:
             if s == 1:
                 v = base
@@ -506,26 +512,21 @@ def heldout_ueyes(sample: List[Tuple[str, str, str]],
             vis = canonical_features(v)
             can = canonical_layout_stats(v)
             nat = native_whitespace_stats(v)
-            vis_by_scale[s] = vis
             ws_canon[s] = can["whitespace_ratio"]
             ws_native[s] = nat["whitespace_ratio"]
             norm_boxes_by_scale[s] = [tuple(b) for b in can["norm_boxes"]]
+            analysis_long_side = can["analysis_long_side"]
             per_scale[s] = {
                 "raw_features": vis,
-                "normalized_hceye_inputs": normalized_hceye_inputs(vis, ex),
+                "normalized_hceye_inputs": _NORMALIZED_UNAVAILABLE,
                 "canonical_whitespace_ratio": can["whitespace_ratio"],
                 "canonical_element_count": can["element_count"],
                 "canonical_norm_boxes": [list(b) for b in can["norm_boxes"]],
                 "native_whitespace_ratio": nat["whitespace_ratio"],
                 "native_element_count": nat["element_count"],
-                "hceye_rule_index_no_saliency_no_ocr_canonical":
-                    hceye_rule_index_no_saliency_no_ocr(vis, can["whitespace_ratio"], ex),
-                "hceye_rule_index_no_saliency_no_ocr_native":
-                    hceye_rule_index_no_saliency_no_ocr(vis, nat["whitespace_ratio"], ex),
+                "hceye_rule_index_no_saliency_no_ocr_canonical": _NORMALIZED_UNAVAILABLE,
+                "hceye_rule_index_no_saliency_no_ocr_native": _NORMALIZED_UNAVAILABLE,
             }
-
-        decomp_canon = _index_decomposition(vis_by_scale, ws_canon, ex, scales)
-        decomp_native = _index_decomposition(vis_by_scale, ws_native, ex, scales)
 
         match_12 = _match_boxes(norm_boxes_by_scale[scales[0]],
                                 norm_boxes_by_scale.get(2, []))
@@ -539,9 +540,15 @@ def heldout_ueyes(sample: List[Tuple[str, str, str]],
             "image_id": img_id,
             "category": cat,
             "scale_variant_method": "raster_enlargement_cv2_resize",
+            "analysis_provenance": {
+                "analysis_path": f"canonical-analysis:long{CANONICAL_LONG_SIDE}",
+                "analysis_long_side": int(analysis_long_side)
+                if analysis_long_side else CANONICAL_LONG_SIDE,
+            },
+            "normalized_scores_status": _NORMALIZED_UNAVAILABLE,
             "per_scale": {str(s): per_scale[s] for s in scales},
-            "decomposition_canonical_path": decomp_canon,
-            "decomposition_native_path_baseline": decomp_native,
+            "decomposition_canonical_path": _NORMALIZED_UNAVAILABLE,
+            "decomposition_native_path_baseline": _NORMALIZED_UNAVAILABLE,
             "canonical_whitespace_abs_gap":
                 max(ws_canon_vals) - min(ws_canon_vals),
             "native_whitespace_abs_gap":
@@ -565,14 +572,26 @@ def heldout_ueyes(sample: List[Tuple[str, str, str]],
 # UEyes sampling
 # ---------------------------------------------------------------------------
 def _load_types(types_csv: str) -> Dict[str, str]:
+    """Load ``image name -> category`` for AUTHORIZED categories only.
+
+    ``poster`` (and any other non-authorized category) is dropped here, at the
+    single corpus entry point, so no downstream selection / sampling / statistic
+    can ever observe it. Boundary functions additionally re-filter defensively.
+    """
     cat_by_id: Dict[str, str] = {}
     with open(types_csv, newline="") as f:
         for row in csv.DictReader(f, delimiter=";"):
             name = (row.get("Image Name") or "").strip()
-            cat = (row.get("Category") or "").strip()
-            if name and cat:
+            cat = (row.get("Category") or "").strip().lower()
+            if name and cat in _AUTHORIZED_SET:
                 cat_by_id[name] = cat
     return cat_by_id
+
+
+def _authorized_only(cat_by_id: Dict[str, str]) -> Dict[str, str]:
+    """Return only the entries whose category is authorized (defensive filter)."""
+    return {n: c for n, c in cat_by_id.items()
+            if (c or "").strip().lower() in _AUTHORIZED_SET}
 
 
 def _resolve(images_dir: str, name: str) -> Optional[str]:
@@ -589,9 +608,14 @@ def _resolve(images_dir: str, name: str) -> Optional[str]:
 
 def selection_images(images_dir: str, cat_by_id: Dict[str, str]
                      ) -> List[Tuple[str, str, str]]:
-    """The deterministic images used to SELECT 1280: first + middle per category."""
+    """The deterministic images used to SELECT 1280: first + middle per category.
+
+    Filters to AUTHORIZED categories itself, so a caller passing an unfiltered
+    dictionary (containing ``poster``) can never leak a poster into the
+    selection.
+    """
     by_cat: Dict[str, List[str]] = {}
-    for name, cat in cat_by_id.items():
+    for name, cat in _authorized_only(cat_by_id).items():
         by_cat.setdefault(cat, []).append(name)
     chosen = []
     for cat in sorted(by_cat):
@@ -607,10 +631,15 @@ def selection_images(images_dir: str, cat_by_id: Dict[str, str]
 def heldout_sample(images_dir: str, cat_by_id: Dict[str, str],
                    exclude_ids: set, seed: int, per_cat: int
                    ) -> List[Tuple[str, str, str]]:
-    """Seeded random sample per category, EXCLUDING the selection images."""
+    """Seeded random sample per category, EXCLUDING the selection images.
+
+    Filters to AUTHORIZED categories itself before the per-category RNG draw, so
+    ``poster`` can never enter the held-out sample even if an unfiltered
+    dictionary is passed.
+    """
     rng = np.random.default_rng(seed)
     by_cat: Dict[str, List[str]] = {}
-    for name, cat in cat_by_id.items():
+    for name, cat in _authorized_only(cat_by_id).items():
         if os.path.splitext(name)[0] in exclude_ids:
             continue
         by_cat.setdefault(cat, []).append(name)
@@ -624,6 +653,129 @@ def heldout_sample(images_dir: str, cat_by_id: Dict[str, str],
             if path:
                 sample.append((os.path.splitext(names[i])[0], cat, path))
     return sample
+
+
+# ---------------------------------------------------------------------------
+# Reproducible corpus statistics + environment (Findings 3 / D)
+# ---------------------------------------------------------------------------
+def _image_long_side(path: str) -> Optional[int]:
+    """Return the native long side of an image, reading only the header.
+
+    Uses PIL's lazy header read (no full decode) when available, falling back to
+    a full OpenCV decode. Returns ``None`` if the file cannot be read.
+    """
+    try:
+        from PIL import Image  # lazy; header read only, no pixel decode
+        with Image.open(path) as im:
+            w, h = im.size
+            return int(max(w, h))
+    except Exception:
+        img = cv2.imread(path)
+        if img is None:
+            return None
+        return int(max(img.shape[:2]))
+
+
+def _percentiles(vals: List[int]) -> Dict[str, float]:
+    arr = np.asarray(vals, dtype=np.float64)
+    return {
+        "n": int(arr.size),
+        "min": float(np.min(arr)),
+        "p25": float(np.percentile(arr, 25)),
+        "median": float(np.percentile(arr, 50)),
+        "p75": float(np.percentile(arr, 75)),
+        "max": float(np.max(arr)),
+    }
+
+
+def corpus_stats(images_dir: str, types_csv: str,
+                 candidates=(1024, 1280, 1440)) -> Dict[str, object]:
+    """Compute reproducible authorized-corpus statistics from the actual files.
+
+    Every number the resolution note cites (authorized counts, total,
+    poster-excluded count, native long-side percentiles, and the per-candidate
+    upscale/downscale fractions) is derived here from the corpus on disk, so no
+    corpus claim exists that this executable output cannot reproduce.
+    """
+    import collections
+    authorized_counts: Dict[str, int] = collections.Counter()
+    excluded_counts: Dict[str, int] = collections.Counter()
+    with open(types_csv, newline="") as f:
+        for row in csv.DictReader(f, delimiter=";"):
+            name = (row.get("Image Name") or "").strip()
+            cat = (row.get("Category") or "").strip().lower()
+            if not name or not cat:
+                continue
+            if cat in _AUTHORIZED_SET:
+                authorized_counts[cat] += 1
+            else:
+                excluded_counts[cat] += 1
+
+    long_sides: List[int] = []
+    long_sides_by_cat: Dict[str, List[int]] = {c: [] for c in AUTHORIZED_CATEGORIES}
+    cat_by_id = _load_types(types_csv)  # authorized-only
+    for name, cat in sorted(cat_by_id.items()):
+        path = _resolve(images_dir, name)
+        if path is None:
+            continue
+        ls = _image_long_side(path)
+        if ls is None:
+            continue
+        long_sides.append(ls)
+        long_sides_by_cat[cat].append(ls)
+
+    total_authorized = sum(authorized_counts.values())
+    total_excluded = sum(excluded_counts.values())
+    n_measured = len(long_sides)
+
+    scale_fractions = []
+    for cand in candidates:
+        up = sum(1 for ls in long_sides if ls <= cand)
+        down = n_measured - up
+        scale_fractions.append({
+            "candidate": cand,
+            "upscaled_fraction": (up / n_measured) if n_measured else None,
+            "downscaled_fraction": (down / n_measured) if n_measured else None,
+            "note": ("fraction whose native long side <= candidate is upscaled "
+                     "(resampled larger); the remainder is downscaled. Both "
+                     "operations perturb feature values relative to native."),
+        })
+
+    return {
+        "authorized_categories": list(AUTHORIZED_CATEGORIES),
+        "excluded_categories": list(EXCLUDED_CATEGORIES),
+        "authorized_counts_by_category": dict(authorized_counts),
+        "total_authorized": total_authorized,
+        "excluded_counts_by_category": dict(excluded_counts),
+        "total_excluded": total_excluded,
+        "native_long_side_measured_images": n_measured,
+        "native_long_side_summary_px": _percentiles(long_sides) if long_sides else None,
+        "native_long_side_summary_by_category_px": {
+            c: (_percentiles(v) if v else None)
+            for c, v in long_sides_by_cat.items()},
+        "candidate_scale_fractions": scale_fractions,
+    }
+
+
+def environment_info() -> Dict[str, str]:
+    """Environment-specific context for interpreting observed runtimes.
+
+    Runtimes emitted by this tool are OBSERVED measurements on this machine, not
+    universal benchmarks; this block records what is needed to contextualise
+    them.
+    """
+    import platform
+    return {
+        "python_version": platform.python_version(),
+        "numpy_version": np.__version__,
+        "opencv_version": cv2.__version__,
+        "platform": platform.platform(),
+        "machine": platform.machine(),
+        "processor": platform.processor() or platform.machine(),
+        "runtime_note": ("Elapsed times are environment-specific observed "
+                         "measurements on the platform above, not a universal "
+                         "benchmark."),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -645,51 +797,98 @@ def main() -> int:
     os.makedirs(args.out_dir, exist_ok=True)
     have_ueyes = os.path.exists(args.images_dir) and os.path.exists(args.types_csv)
 
-    print("== Fixture scale report (synthetic, deterministic) ==")
+    import time
+    phase_times: Dict[str, float] = {}
+    env = environment_info()
+    print("== Environment (context for observed runtimes; not a benchmark) ==")
+    print(f"    python={env['python_version']} numpy={env['numpy_version']} "
+          f"opencv={env['opencv_version']}")
+    print(f"    platform={env['platform']}")
+
+    _t = time.perf_counter()
+    print("\n== Fixture scale report (synthetic, deterministic) ==")
     fx_rep = fixture_scale_report()
     _print_fixture_report(fx_rep)
     with open(os.path.join(args.out_dir, "fixture_scale_report.json"), "w") as f:
         json.dump(fx_rep, f, indent=2)
+    phase_times["fixture_scale_report_s"] = time.perf_counter() - _t
+
+    stats: Optional[Dict[str, object]] = None
+    if have_ueyes:
+        _t = time.perf_counter()
+        print("\n== Authorized-corpus statistics (poster excluded) ==")
+        stats = corpus_stats(args.images_dir, args.types_csv)
+        phase_times["corpus_stats_s"] = time.perf_counter() - _t
+        print(f"    authorized categories: {stats['authorized_categories']} "
+              f"excluded: {stats['excluded_categories']}")
+        print(f"    authorized counts: {stats['authorized_counts_by_category']} "
+              f"total={stats['total_authorized']}")
+        print(f"    excluded counts:   {stats['excluded_counts_by_category']} "
+              f"total={stats['total_excluded']}")
+        ls = stats["native_long_side_summary_px"]
+        if ls:
+            print(f"    native long side (n={ls['n']}): min={ls['min']:.0f} "
+                  f"p25={ls['p25']:.0f} median={ls['median']:.0f} "
+                  f"p75={ls['p75']:.0f} max={ls['max']:.0f}")
+        for sf in stats["candidate_scale_fractions"]:
+            print(f"    long={sf['candidate']:5d}  "
+                  f"upscaled={sf['upscaled_fraction']:.4f}  "
+                  f"downscaled={sf['downscaled_fraction']:.4f}")
+        with open(os.path.join(args.out_dir, "corpus_stats.json"), "w") as f:
+            json.dump({"environment": env, "corpus": stats}, f, indent=2)
 
     sel: List[Tuple[str, str, str]] = []
     heldout: List[Tuple[str, str, str]] = []
     if have_ueyes:
-        cats = _load_types(args.types_csv)
+        cats = _load_types(args.types_csv)  # authorized-only (poster dropped)
         sel = selection_images(args.images_dir, cats)
         sel_ids = {i for i, _, _ in sel}
         heldout = heldout_sample(args.images_dir, cats, sel_ids, args.seed,
                                  args.per_cat)
-        print("\n== UEyes selection images (used to choose 1280) ==")
+        assert all(c in _AUTHORIZED_SET for _, c, _ in sel), "poster in selection"
+        assert all(c in _AUTHORIZED_SET for _, c, _ in heldout), "poster in held-out"
+        print("\n== UEyes selection images (used to choose 1280; authorized only) ==")
         for i, c, _ in sel:
             print(f"    {i}  {c}")
-        print(f"== UEyes held-out sample (seed={args.seed}, excludes selection) ==")
+        print(f"== UEyes held-out sample (seed={args.seed}, excludes selection, "
+              f"authorized only) ==")
         for i, c, _ in heldout:
             print(f"    {i}  {c}")
     else:
         print("\n[warn] UEyes dataset not found at --images-dir/--types-csv; "
               "skipping UEyes candidate + held-out sections.")
 
+    _t = time.perf_counter()
     print("\n== Candidate-resolution comparison (synthetic re-render, "
           "pixel-scale drivers) ==")
     cand_rows = candidate_comparison()
     for r in cand_rows:
         print(f"    long_side={r['candidate']:5d}  "
               f"mean_rel={r['mean_rel_gap']:.4%}  worst_rel={r['worst_rel_gap']:.4%}")
+    phase_times["candidate_scale_gap_s"] = time.perf_counter() - _t
 
     pert_rows = []
     if sel:
-        print("\n== Candidate tie-breaker: native->candidate feature "
-              "perturbation on UEyes selection images ==")
+        _t = time.perf_counter()
+        print("\n== Candidate tie-breaker: single native->candidate resampling "
+              "feature perturbation on UEyes selection images ==")
         pert_rows = ueyes_perturbation(sel)
         for r in pert_rows:
             print(f"    long_side={r['candidate']:5d}  "
                   f"mean_pert={r['mean_rel_perturbation']:.4%}  "
                   f"worst_pert={r['worst_rel_perturbation']:.4%}")
+        phase_times["ueyes_perturbation_s"] = time.perf_counter() - _t
 
     with open(os.path.join(args.out_dir, "candidate_comparison.json"), "w") as f:
         json.dump({"seed": args.seed,
+                   "environment": env,
                    "selection_ids": [i for i, _, _ in sel],
                    "scale_objective_source": "synthetic re-rendered fixtures",
+                   "perturbation_method": (
+                       "one direct native-to-candidate resampling per image; no "
+                       "artificial 2x/3x screenshot variants are created. Note "
+                       "that canonicalisation DOES upscale originals whose long "
+                       "side is below the candidate."),
                    "scale_gap": cand_rows,
                    "ueyes_native_to_candidate_perturbation": pert_rows}, f, indent=2)
     with open(os.path.join(args.out_dir, "candidate_comparison.csv"), "w",
@@ -707,22 +906,19 @@ def main() -> int:
                         f"{p.get('worst_rel_perturbation', float('nan')):.6f}"])
 
     if heldout:
+        _t = time.perf_counter()
         print("\n== Held-out UEyes scale evaluation "
-              "(raster enlargement, descriptive) ==")
+              "(raster enlargement, descriptive; normalized scores gated) ==")
         ho = heldout_ueyes(heldout)
         for r in ho:
-            dc = r["decomposition_canonical_path"]
-            dn = r["decomposition_native_path_baseline"]
             bb = r["bbox_stability"]
-            print(f"    {r['image_id']} ({r['category']}):")
-            print(f"        canonical  combined={dc['combined_point_gap']:.4f}pt "
-                  f"ws_only={dc['whitespace_only_point_gap']:.4f}pt "
-                  f"vis_only={dc['visual_input_only_point_gap']:.4f}pt "
-                  f"ws_abs_gap={r['canonical_whitespace_abs_gap']:.4f}")
-            print(f"        native(base) combined={dn['combined_point_gap']:.4f}pt "
-                  f"ws_only={dn['whitespace_only_point_gap']:.4f}pt "
-                  f"vis_only={dn['visual_input_only_point_gap']:.4f}pt "
-                  f"ws_abs_gap={r['native_whitespace_abs_gap']:.4f}")
+            print(f"    {r['image_id']} ({r['category']}):  "
+                  f"canonical_ws_abs_gap={r['canonical_whitespace_abs_gap']:.4f}  "
+                  f"native_ws_abs_gap={r['native_whitespace_abs_gap']:.4f}  "
+                  f"elem_range={r['canonical_element_count_range']}")
+            print(f"        normalized/index scores: "
+                  f"{r['normalized_scores_status']['status']} "
+                  f"({r['normalized_scores_status']['reason']})")
 
             def _fmt_match(m: dict) -> str:
                 if not m["applicable"]:
@@ -736,15 +932,24 @@ def main() -> int:
                         f"cand={m['n_candidate_boxes']})")
 
             print(f"        bbox 1x->2x {_fmt_match(bb['match_1x_to_2x'])}")
-            print(f"        bbox 1x->3x {_fmt_match(bb['match_1x_to_3x'])}  "
-                  f"elem_range={r['canonical_element_count_range']}")
+            print(f"        bbox 1x->3x {_fmt_match(bb['match_1x_to_3x'])}")
+        phase_times["heldout_ueyes_s"] = time.perf_counter() - _t
         with open(os.path.join(args.out_dir, "heldout_ueyes_results.json"),
                   "w") as f:
             json.dump({"seed": args.seed,
+                       "environment": env,
                        "scale_variant_method": "raster_enlargement_cv2_resize",
-                       "note": "Real screenshots are raster-enlarged, not "
-                               "natively re-rendered; the synthetic 1.0-point "
-                               "guard is not applied here.",
+                       "note": ("Real screenshots are raster-enlarged (one "
+                                "direct cv2.resize), not natively re-rendered; "
+                                "the synthetic 1.0-point guard is not applied "
+                                "here. Percentile-normalized HCEye inputs and "
+                                "any derived index are WITHHELD (see "
+                                "normalized_scores_status): the only available "
+                                "feature_norms.json is native-domain, so "
+                                "canonical-domain normalization is a domain "
+                                "mismatch and remains pending the separately "
+                                "authorized canonical-norm generation."),
+                       "normalized_scores_status": _NORMALIZED_UNAVAILABLE,
                        "results": ho}, f, indent=2)
         with open(os.path.join(args.out_dir, "heldout_ueyes_manifest.csv"), "w",
                   newline="") as f:
@@ -752,6 +957,15 @@ def main() -> int:
             w.writerow(["image_id", "category", "seed"])
             for i, c, _ in heldout:
                 w.writerow([i, c, args.seed])
+
+    print("\n== Phase timings (observed, environment-specific) ==")
+    for k, v in phase_times.items():
+        print(f"    {k}: {v:.2f}s")
+    with open(os.path.join(args.out_dir, "run_environment.json"), "w") as f:
+        json.dump({"environment": env, "phase_times_s": phase_times,
+                   "seed": args.seed,
+                   "authorized_categories": list(AUTHORIZED_CATEGORIES),
+                   "excluded_categories": list(EXCLUDED_CATEGORIES)}, f, indent=2)
 
     print(f"\nArtifacts written to {os.path.relpath(args.out_dir, _REPO_ROOT)}/")
     return 0

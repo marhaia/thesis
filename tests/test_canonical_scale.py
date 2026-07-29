@@ -692,3 +692,261 @@ def test_cognitive_load_index_scale_invariant_through_endpoint(client, monkeypat
         assert gap <= SYNTHETIC_ENDPOINT_GUARD, (
             f"{name}: cognitive_load_index gap {gap:.5f} exceeds "
             f"{SYNTHETIC_ENDPOINT_GUARD} (= 1.0 displayed point). idx={idx}")
+
+
+# ---------------------------------------------------------------------------
+# 7. Provenance is derived from the ACTUAL analysis resolution (Finding 4 / E).
+#
+# There must be exactly ONE provenance-building path keyed on the real long
+# side: the production default reports long1280, a non-default 1024 analysis
+# reports long1024, and the production canonical long side stays 1280.
+# ---------------------------------------------------------------------------
+from visual_complexity import (  # noqa: E402
+    canonical_analysis_version,
+    CANONICAL_ANALYSIS_VERSION,
+)
+from canonical_layout import analysis_path_for  # noqa: E402
+
+
+def test_production_canonical_long_side_is_1280():
+    assert CANONICAL_LONG_SIDE == 1280
+
+
+def test_canonical_analysis_version_reflects_actual_long_side():
+    v1280 = canonical_analysis_version(1280)
+    v1024 = canonical_analysis_version(1024)
+    assert ":long1280:" in v1280
+    assert ":long1024:" in v1024
+    assert v1280 != v1024
+    # The default (no argument) and the module constant are the production value.
+    assert canonical_analysis_version() == v1280
+    assert CANONICAL_ANALYSIS_VERSION == v1280
+
+
+def test_analysis_path_for_reflects_actual_long_side():
+    assert analysis_path_for(1280) == "canonical-analysis:long1280"
+    assert analysis_path_for(1024) == "canonical-analysis:long1024"
+    assert analysis_path_for() == "canonical-analysis:long1280"
+    assert ANALYSIS_PATH == analysis_path_for(1280)
+
+
+def test_measure_canonical_layout_reports_nondefault_resolution():
+    """A non-default 1024 analysis reports long1024; the default stays 1280."""
+    m = measure_canonical_layout(FIXTURES["gradient"](1), run_ocr=False,
+                                 canonical_long_side=1024)
+    assert m.analysis_path == "canonical-analysis:long1024"
+    assert m.analysis_long_side == 1024
+    d = m.as_dict()
+    assert d["analysis_path"] == "canonical-analysis:long1024"
+    assert d["analysis_long_side"] == 1024
+
+    m2 = measure_canonical_layout(FIXTURES["gradient"](1), run_ocr=False)
+    assert m2.analysis_path == "canonical-analysis:long1280"
+    assert m2.analysis_long_side == CANONICAL_LONG_SIDE
+
+
+# ---------------------------------------------------------------------------
+# 8. Authorized-category enforcement (Finding 2 / A).
+#
+# The authorized set is EXACTLY {desktop, mobile, web}. `poster` must never
+# enter any boundary: corpus loading, defensive filtering, decision-image
+# selection, or held-out sampling. Boundary functions filter themselves, so a
+# caller passing an unfiltered dictionary containing `poster` cannot leak one.
+# ---------------------------------------------------------------------------
+import canonical_scale_eval as cse  # noqa: E402
+
+
+def _poster_contaminated_dict():
+    d = {}
+    for cat in ("desktop", "mobile", "web"):
+        for i in range(6):
+            d[f"{cat}{i:02d}.png"] = cat
+    for i in range(6):
+        d[f"poster{i:02d}.png"] = "poster"
+    return d
+
+
+def test_authorized_category_definition_is_exactly_three():
+    assert cse.AUTHORIZED_CATEGORIES == ("desktop", "mobile", "web")
+    assert "poster" in cse.EXCLUDED_CATEGORIES
+    assert "poster" not in cse._AUTHORIZED_SET
+
+
+def test_authorized_only_drops_poster():
+    filtered = cse._authorized_only(_poster_contaminated_dict())
+    assert filtered, "expected authorized entries to remain"
+    assert all(c in cse._AUTHORIZED_SET for c in filtered.values())
+    assert not any(n.startswith("poster") for n in filtered)
+
+
+def test_load_types_drops_poster(tmp_path):
+    csv_path = tmp_path / "image_types.csv"
+    csv_path.write_text(
+        "Image Name;Category;Block;Train/Test\n"
+        "a.png;desktop;0;Train\n"
+        "b.png;mobile;0;Train\n"
+        "c.png;web;0;Train\n"
+        "p.png;poster;0;Train\n")
+    cat_by_id = cse._load_types(str(csv_path))
+    assert set(cat_by_id) == {"a.png", "b.png", "c.png"}
+    assert "poster" not in cat_by_id.values()
+
+
+def test_selection_and_heldout_cannot_admit_poster(monkeypatch):
+    """Even fed an unfiltered poster-containing dict, neither boundary admits a
+    poster. `_resolve` is stubbed so the check runs without the image corpus."""
+    monkeypatch.setattr(cse, "_resolve", lambda images_dir, name: f"/fake/{name}")
+    contaminated = _poster_contaminated_dict()
+
+    sel = cse.selection_images("/fake", contaminated)
+    assert sel, "expected a non-empty selection"
+    assert all(cat in cse._AUTHORIZED_SET for _id, cat, _p in sel)
+    assert not any(_id.startswith("poster") for _id, _cat, _p in sel)
+
+    heldout = cse.heldout_sample("/fake", contaminated, exclude_ids=set(),
+                                 seed=20240607, per_cat=2)
+    assert heldout, "expected a non-empty held-out sample"
+    assert all(cat in cse._AUTHORIZED_SET for _id, cat, _p in heldout)
+    assert not any(_id.startswith("poster") for _id, _cat, _p in heldout)
+
+
+@pytest.mark.skipif(
+    not os.environ.get("UEYES_TYPES_CSV") or not os.environ.get("UEYES_IMAGES_DIR"),
+    reason="full UEyes corpus not available (set UEYES_TYPES_CSV and "
+           "UEYES_IMAGES_DIR to run the exact deterministic-ID check)")
+def test_exact_selection_and_heldout_ids_are_poster_free():
+    """The documented deterministic decision and held-out image IDs, when the
+    corpus is available. Both sets are exactly six images with zero posters."""
+    images_dir = os.environ["UEYES_IMAGES_DIR"]
+    types_csv = os.environ["UEYES_TYPES_CSV"]
+    cat_by_id = cse._load_types(types_csv)
+    sel = cse.selection_images(images_dir, cat_by_id)
+    sel_ids = {i for i, _c, _p in sel}
+    assert sel_ids == {"003eb9", "7f066d", "006450", "78666b", "009085", "81627a"}
+    exclude = {i for i, _c, _p in sel}
+    heldout = cse.heldout_sample(images_dir, cat_by_id, exclude_ids=exclude,
+                                 seed=20240607, per_cat=2)
+    ho_ids = {i for i, _c, _p in heldout}
+    assert ho_ids == {"1f3437", "9dd93b", "62f428", "e129e6", "1408dc", "d9baa1"}
+    assert not any(c == "poster" for _i, c, _p in sel + heldout)
+
+
+# ---------------------------------------------------------------------------
+# 9. Canonical visual-norms generator safety contract (Section F).
+#
+# The dedicated generator produces ONLY the eight visual features, refuses to
+# overwrite the protected reference files, rejects posters at discovery, and
+# refuses to resume a native / mixed-domain / differently-versioned CSV.
+# ---------------------------------------------------------------------------
+import csv as _csv  # noqa: E402
+import canonical_visual_norms as gen  # noqa: E402
+
+
+def test_generator_schema_is_eight_visual_features_no_saliency():
+    assert len(gen.VISUAL_FEATURE_KEYS) == 8
+    assert tuple(gen.VISUAL_FEATURE_KEYS) == tuple(FEATURE_KEYS)
+    assert not any("saliency" in k for k in gen.VISUAL_FEATURE_KEYS)
+    assert gen.AUTHORIZED_CATEGORIES == ("desktop", "mobile", "web")
+
+
+def test_generator_provenance_tracks_actual_long_side():
+    p1280 = gen.expected_provenance(1280)
+    p1024 = gen.expected_provenance(1024)
+    assert p1280["canonical_long_side"] == "1280"
+    assert p1024["canonical_long_side"] == "1024"
+    assert ":long1280:" in p1280["canonical_analysis_version"]
+    assert ":long1024:" in p1024["canonical_analysis_version"]
+    assert p1280["analysis_domain"] == "canonical"
+
+
+def test_generator_refuses_protected_output_paths():
+    for prot in ("stage1/data/results/feature_norms.json",
+                 "hceye/sensitivity_lookup.json",
+                 "feature_norms.json", "sensitivity_lookup.json"):
+        with pytest.raises(gen.GeneratorError):
+            gen._refuse_protected(prot, "test")
+
+
+def _gen_types_csv(tmp_path):
+    imgd = tmp_path / "images"
+    imgd.mkdir()
+    for n in ("a.png", "b.png", "c.png", "p.png"):
+        (imgd / n).write_bytes(b"x")
+    csv_path = tmp_path / "image_types.csv"
+    csv_path.write_text(
+        "Image Name;Category;Block;Train/Test\n"
+        "a.png;desktop;0;Train\n"
+        "b.png;mobile;0;Train\n"
+        "c.png;web;0;Train\n"
+        "p.png;poster;0;Train\n")
+    return str(csv_path), str(imgd)
+
+
+def test_generator_load_authorized_drops_poster(tmp_path):
+    csv_path, imgd = _gen_types_csv(tmp_path)
+    imgs = gen.load_authorized_images(csv_path, imgd)
+    assert {n for n, _c in imgs} == {"a.png", "b.png", "c.png"}
+    assert not any(c == "poster" for _n, c in imgs)
+
+
+def test_generator_rejects_duplicate_rows(tmp_path):
+    csv_path, imgd = _gen_types_csv(tmp_path)
+    with open(csv_path, "a") as f:
+        f.write("a.png;desktop;0;Train\n")
+    with pytest.raises(gen.GeneratorError):
+        gen.load_authorized_images(csv_path, imgd)
+
+
+def _write_gen_rows(path, long_side, domain=None, version=None):
+    cols = ["filename", "category", "analysis_domain", "canonical_long_side",
+            "canonical_analysis_version"] + list(gen.VISUAL_FEATURE_KEYS)
+    prov = gen.expected_provenance(long_side)
+    with open(path, "w", newline="") as f:
+        w = _csv.DictWriter(f, fieldnames=cols)
+        w.writeheader()
+        row = {
+            "filename": "a.png", "category": "desktop",
+            "analysis_domain": domain or prov["analysis_domain"],
+            "canonical_long_side": str(long_side),
+            "canonical_analysis_version":
+                version or prov["canonical_analysis_version"],
+        }
+        for k in gen.VISUAL_FEATURE_KEYS:
+            row[k] = "0.5"
+        w.writerow(row)
+
+
+def test_generator_resume_accepts_matching_provenance(tmp_path):
+    csv_path = str(tmp_path / "rows.csv")
+    _write_gen_rows(csv_path, 1280)
+    rows, done = gen.load_existing_csv_for_resume(csv_path, 1280)
+    assert "a.png" in done
+    assert len(rows) == 1
+
+
+def test_generator_resume_rejects_mismatched_resolution(tmp_path):
+    csv_path = str(tmp_path / "rows.csv")
+    _write_gen_rows(csv_path, 1280)
+    with pytest.raises(gen.GeneratorError):
+        gen.load_existing_csv_for_resume(csv_path, 1024)
+
+
+def test_generator_resume_rejects_native_domain(tmp_path):
+    csv_path = str(tmp_path / "rows.csv")
+    _write_gen_rows(csv_path, 1280, domain="native", version="native-vX")
+    with pytest.raises(gen.GeneratorError):
+        gen.load_existing_csv_for_resume(csv_path, 1280)
+
+
+def test_generator_resume_rejects_legacy_csv_without_provenance(tmp_path):
+    csv_path = str(tmp_path / "legacy.csv")
+    cols = ["filename", "category"] + list(gen.VISUAL_FEATURE_KEYS)
+    with open(csv_path, "w", newline="") as f:
+        w = _csv.DictWriter(f, fieldnames=cols)
+        w.writeheader()
+        row = {"filename": "a.png", "category": "desktop"}
+        for k in gen.VISUAL_FEATURE_KEYS:
+            row[k] = "0.5"
+        w.writerow(row)
+    with pytest.raises(gen.GeneratorError):
+        gen.load_existing_csv_for_resume(csv_path, 1280)

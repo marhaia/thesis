@@ -71,24 +71,27 @@ from skimage import transform
 #   * Corpus-wide native-resolution statistics were computed over the full
 #     1,485-image UEyes GUI corpus (median native long side = 1188 px). These
 #     describe the corpus only; they are NOT the candidate feature comparison.
+#     The interactive GUI population is desktop + mobile + web (495 each); the
+#     non-interactive `poster` category is permanently excluded.
 #   * The candidate feature comparison used the three synthetic layouts (for the
-#     scale-gap objective) and the eight declared UEyes SELECTION images (for
-#     the native->candidate perturbation tie-breaker). It did NOT run over all
-#     1,485 images.
+#     scale-gap objective) and the six declared authorized UEyes SELECTION
+#     images (for the native->candidate perturbation tie-breaker). It did NOT
+#     run over all 1,485 images.
 # Reproducible results (stage1/canonical_eval/candidate_comparison.json):
 #   * Scale gap (primary objective, synthetic re-render, score-driving features
 #     feature_congestion / edge_density / interactive_element_density): worst-
 #     case relative 1x/2x/3x gap 1024 = 4.43 %, 1280 = 4.38 % (tied), 1440 =
 #     6.66 % (clearly worse).
-#   * Native->candidate perturbation on the eight selection images (tie-breaker):
-#     mean / worst relative feature change 1024 = 12.98 % / 111.42 %,
-#     1280 = 10.72 % / 87.25 %, 1440 = 13.74 % / 111.46 %. 1280 perturbs real
-#     screenshots least.
+#   * Native->candidate perturbation on the six authorized selection images
+#     (tie-breaker, poster excluded): mean / worst relative feature change
+#     1024 = 9.57 % / 111.42 %, 1280 = 6.41 % / 76.92 %, 1440 = 10.33 % /
+#     73.62 %. 1280 has the lowest MEAN perturbation; 1440 has the lowest worst.
 # Rule: pick the smallest candidate that (a) is tied for the best score-driving-
-# feature scale gap and (b) perturbs real screenshots least. 1024 loses on (b);
-# 1440 loses on (a); 1280 satisfies both. Hence 1280. This is an exploratory,
-# evidence-based engineering choice, not a pre-registered or provably optimal
-# value.
+# feature scale gap and (b) perturbs real screenshots least on the mean. 1024
+# loses on (b); 1440 loses on (a) (its lower worst-case perturbation does not
+# rescue the primary objective); 1280 satisfies both. Hence 1280. This is an
+# exploratory, evidence-based engineering choice, not a pre-registered or
+# provably optimal value.
 CANONICAL_LONG_SIDE = 1280
 
 # Inputs whose long side is below this are considered too small to analyse
@@ -105,11 +108,37 @@ MIN_CANONICAL_INPUT_SHORT_SIDE = 16
 # Version tag for the canonicalisation contract. It is embedded in the runtime
 # feature-cache key (see app.py) so results produced by an earlier extractor /
 # a different canonical resolution can never be silently reused after this
-# preprocessing change. Bump this whenever the canonicalisation behaviour, the
-# canonical resolution, or the input-validation contract changes.
-CANONICAL_ANALYSIS_VERSION = (
-    "canonical-analysis-v1.1:long1280:both-dims-min16:area-down/linear-up"
-)
+# preprocessing change. Bump the schema prefix whenever the canonicalisation
+# behaviour or the input-validation contract changes.
+#
+# The resolution segment (``long<N>``) is NOT hard-coded: it is derived from the
+# actual long side a run uses, so a non-default resolution can never masquerade
+# as ``long1280`` in provenance / cache keys (see ``canonical_analysis_version``).
+CANONICAL_ANALYSIS_SCHEMA = "canonical-analysis-v1.1"
+CANONICAL_ANALYSIS_CONTRACT = "both-dims-min16:area-down/linear-up"
+
+
+def canonical_analysis_version(long_side: int = CANONICAL_LONG_SIDE) -> str:
+    """Build the canonical-analysis version tag for a given long side.
+
+    The resolution component is derived from ``long_side`` (the value a run
+    actually uses), so provenance and cache keys always reflect the real
+    analysis resolution instead of a hard-coded ``long1280``.
+
+    Args:
+        long_side: the canonical long side the run is configured with.
+
+    Returns:
+        e.g. ``"canonical-analysis-v1.1:long1280:both-dims-min16:area-down/linear-up"``
+        for the production default, or ``"...:long1024:..."`` for a 1024 run.
+    """
+    return (f"{CANONICAL_ANALYSIS_SCHEMA}:long{int(long_side)}:"
+            f"{CANONICAL_ANALYSIS_CONTRACT}")
+
+
+# Production default tag (long side == CANONICAL_LONG_SIDE). Consumed by the
+# runtime feature-cache key in app.py.
+CANONICAL_ANALYSIS_VERSION = canonical_analysis_version(CANONICAL_LONG_SIDE)
 
 
 class ImageTooSmallError(ValueError):
