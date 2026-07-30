@@ -285,8 +285,17 @@ class HCEyeFeatureExtractor:
         # total whitespace) -> presence ~0 -> low load; a content-rich screen
         # -> presence ~1 -> index effectively unchanged. This anchors the
         # headline at the bottom of its range instead of a fixed floor.
+        #
+        # Content presence uses DIRECT structural evidence only — detected
+        # edges, detected interactive elements, and the inverse of measured
+        # whitespace. feature_congestion (layout_complexity) is deliberately
+        # excluded here: it is a Rosenholtz clutter/complexity texture measure,
+        # so a busy-textured but element-sparse region could otherwise
+        # masquerade as "content present". feature_congestion still drives the
+        # index through the retained `complexity` term (fixation reduction and
+        # highlight effectiveness); it is only removed from this presence gate.
         content_presence = float(np.clip(
-            max(edge, element_count, layout_complexity, 1.0 - whitespace),
+            max(edge, element_count, 1.0 - whitespace),
             0.0, 1.0,
         ))
         cognitive_load_index *= content_presence

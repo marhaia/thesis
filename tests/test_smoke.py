@@ -702,3 +702,63 @@ def test_standard_ui_hides_unverified_umsi_class_mapping():
     assert "within the model's intended ui domain" not in lower or "if (false)" in html
     # The explanatory comment must state why it is disabled.
     assert "index-to-label mapping" in lower
+
+
+# ---------------------------------------------------------------------------
+# Regression: content-presence gate uses DIRECT structural evidence only.
+#
+# feature_congestion (a Rosenholtz clutter/texture proxy) was removed from the
+# empty-canvas content-presence gate so that a busy-textured but element-sparse
+# region cannot masquerade as "content present" and re-inflate the headline
+# index. feature_congestion is retained in the `complexity` pathway (fixation
+# reduction + highlight effectiveness). These tests pin that contract without
+# touching any existing threshold.
+# ---------------------------------------------------------------------------
+
+def test_congestion_alone_cannot_create_content_presence():
+    # No edges, no elements, full whitespace, but MAXIMAL feature_congestion:
+    # the content-presence gate must stay ~0, so the final index must stay ~0.
+    # feature_congestion must not be able to conjure content presence on a
+    # screen that presents no direct structural evidence.
+    from hceye.hceye_features import HCEyeFeatureExtractor
+
+    ext = HCEyeFeatureExtractor()
+    congested_but_empty = {
+        "edge_density": 0.0,
+        "feature_congestion": 1e9,   # far above the empirical max -> norm -> 1.0
+        "interactive_element_density": 0.0,
+        "layout_symmetry": 1.0,
+        "visual_hierarchy": 0.0,
+    }
+    h = ext.extract_features(congested_but_empty, whitespace_ratio=1.0,
+                             text_density=0.0)
+    # Full whitespace + no edges/elements => content presence gate == 0 =>
+    # final index (h[5]) must be exactly 0 regardless of congestion.
+    assert h[5] == 0.0, (
+        f"congestion alone produced non-zero content presence/index: h[5]={h[5]}")
+
+
+def test_congestion_still_moves_index_via_complexity_pathway():
+    # With content presence held at 1.0 by DIRECT evidence (full elements /
+    # zero whitespace), feature_congestion must still change the HCEye output
+    # through the retained `complexity` term, proving it was only removed from
+    # the presence gate, not from the model.
+    from hceye.hceye_features import HCEyeFeatureExtractor
+
+    ext = HCEyeFeatureExtractor()
+    base = {
+        "edge_density": 0.0,
+        "feature_congestion": 0.0,
+        "interactive_element_density": 1.0,   # direct evidence -> presence 1.0
+        "layout_symmetry": 0.5,
+        "visual_hierarchy": 0.5,
+    }
+    low = ext.extract_features({**base, "feature_congestion": 0.0},
+                               whitespace_ratio=0.0, text_density=0.5)
+    high = ext.extract_features({**base, "feature_congestion": 1e9},
+                                whitespace_ratio=0.0, text_density=0.5)
+    # content presence is 1.0 in both (max includes 1-whitespace == 1.0), so any
+    # index difference is purely the retained complexity pathway.
+    assert low[5] != high[5], (
+        "feature_congestion no longer affects the index via complexity; "
+        f"low={low[5]} high={high[5]}")
