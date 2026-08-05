@@ -1,0 +1,183 @@
+{
+  "contract_name": "umsi_raw_output_gate_contract",
+  "phase": "STAGE_1_STEP_2A_P2",
+  "created_before_current_production_output_observation": true,
+  "contract_scope": "Prospective gate contract for upcoming current-production raw-output validation only.",
+  "historical_preregistration_status": {
+    "numeric_thresholds_preexisted": true,
+    "current_pair_bindings_preexisted": false,
+    "constant_map_policy_preexisted": false,
+    "note": "Numeric thresholds are reused from frozen historical evidence. Pair bindings and constant-map policy are newly established prospectively in this contract and are not historical preregistrations."
+  },
+  "pinned_identities": {
+    "expected_repository_head": "7110a18c1ac915667bddd0cf7dae61af491caddb",
+    "production_source_path": "saliency/umsi_model.py",
+    "production_source_sha256_before_inference": "38b7503626a0ec3c176d05aaed0ad6c9461085a7f771f96d3f9a62a0884ab554",
+    "proven_model_boundary_tensor_sha256": "6486898bc81a5666f407f0a277138ffe19358b82be942dfe0bf8c99546e3d393",
+    "evidence_npz_path": "/Users/Q682780/Thesis_G/golden_evidence/umsi_resize_causality_arrays_6a17288_consolidated.npz",
+    "evidence_npz_sha256": "9e933c1071924f180c32cc6327363ca5760b5968d497414a9f7939919b630079",
+    "fixture_sha256_lowcontrast": "4a467bdd72d41b9fd490573468db171a254e7cbf4aa8727ac8fb86bef05a3562",
+    "weights_sha256": "f4290c3f11f18befbb47de50d81e4555ec8e7a63066c71c343a32fe32799e9fe"
+  },
+  "reference_members": {
+    "legacy_raw_saliency": "legacy_raw/lowcontrast_raw",
+    "legacy_classification": "legacy_raw/lowcontrast_classif",
+    "controlled_modern_raw_saliency": "modern_raw/M_LC_lowcontrast_raw",
+    "controlled_modern_classification": "modern_raw/M_LC_lowcontrast_classif"
+  },
+  "historical_reused_authority": {
+    "shared_postprocess_order": "squeeze -> identical resize -> identical min-max[0,1]",
+    "resize_operator_legacy_native": "tf.raw_ops.ResizeBilinear(align_corners=False, half_pixel_centers=False)",
+    "resize_operator_modern": "keras UpSampling2D(interpolation='bilinear')",
+    "windowed_ssim_params": {
+      "K1": 0.01,
+      "K2": 0.03,
+      "boundary": "reflect",
+      "data_range": 1.0,
+      "filter": "scipy.ndimage.uniform_filter",
+      "win_size": 7
+    },
+    "frozen_thresholds": {
+      "pearson_min": 0.999,
+      "spearman_min": 0.99,
+      "ssim_min": 0.99,
+      "cli_abs_max": 0.01,
+      "repeatability_abs_max": 0.0,
+      "feature_abs_max": 0.02,
+      "peak_count_exact": true,
+      "preproc_abs_max": 0.0
+    }
+  },
+  "prospective_new_rule_before_output_observation": {
+    "authority": "PROSPECTIVE_NEW_RULE_BEFORE_OUTPUT_OBSERVATION",
+    "name": "constant_map_policy_for_gate_b",
+    "policy": {
+      "stage": "After authoritative identical resize and before min-max normalization",
+      "steps": [
+        "Convert resized numeric map to float64.",
+        "Require all values finite.",
+        "Compute exact minimum, maximum, and span = maximum - minimum.",
+        "Do not use epsilon or observed-data-dependent tolerance.",
+        "If span > 0.0: normalize as (map - minimum) / span.",
+        "If span == 0.0: return all-zero float64 normalized map of identical shape; set constant_map_detected=true; fail Gate B with reason UNDEFINED_CORRELATION_CONSTANT_MAP; store Pearson, Spearman, SSIM as null."
+      ],
+      "applies_if": "Either or both compared maps are constant."
+    }
+  },
+  "gates": {
+    "gate_a": {
+      "name": "production_raw_saliency_vs_controlled_modern_m_lc_raw_saliency",
+      "binding_scope": "Prospective pair binding established by this contract.",
+      "requirements": {
+        "same_shape": true,
+        "same_dtype": true,
+        "finite_values": true,
+        "array_equal": true,
+        "max_abs_diff_float64": {
+          "operator": "==",
+          "value": 0.0,
+          "bound_to_threshold": "repeatability_abs_max"
+        }
+      },
+      "diagnostics_only": [
+        "native_byte_hash_left_sha256",
+        "native_byte_hash_right_sha256"
+      ]
+    },
+    "gate_b": {
+      "name": "production_raw_saliency_vs_legacy_raw_saliency",
+      "binding_scope": "Prospective pair binding established by this contract.",
+      "compatibility_not_raw_amplitude_identity": true,
+      "authoritative_shared_postprocess": {
+        "order": [
+          "squeeze",
+          "identical_resize",
+          "identical_min_max_to_0_1"
+        ],
+        "resize_details": {
+          "legacy_native_operator": "tf.raw_ops.ResizeBilinear(align_corners=False, half_pixel_centers=False)",
+          "modern_operator": "keras UpSampling2D(interpolation='bilinear')",
+          "interpolation": "bilinear"
+        },
+        "normalization_target_range": [
+          0.0,
+          1.0
+        ],
+        "constant_map_policy_ref": "prospective_new_rule_before_output_observation"
+      },
+      "requirements": {
+        "pearson": {
+          "operator": ">=",
+          "value": 0.999
+        },
+        "spearman": {
+          "operator": ">=",
+          "value": 0.99
+        },
+        "windowed_ssim": {
+          "operator": ">=",
+          "value": 0.99,
+          "params": {
+            "K1": 0.01,
+            "K2": 0.03,
+            "boundary": "reflect",
+            "data_range": 1.0,
+            "filter": "scipy.ndimage.uniform_filter",
+            "win_size": 7
+          }
+        }
+      },
+      "diagnostics_only": [
+        "raw_max_abs_diff_float64",
+        "raw_mean_abs_diff_float64",
+        "native_byte_hash_left_sha256",
+        "native_byte_hash_right_sha256"
+      ]
+    },
+    "gate_c": {
+      "name": "production_classification_vs_controlled_modern_m_lc_classification",
+      "binding_scope": "Prospective pair binding established by this contract.",
+      "requirements": {
+        "same_shape": true,
+        "same_dtype": true,
+        "finite_values": true,
+        "array_equal": true,
+        "max_abs_diff_float64": {
+          "operator": "==",
+          "value": 0.0,
+          "bound_to_threshold": "repeatability_abs_max"
+        }
+      }
+    },
+    "gate_d": {
+      "name": "production_classification_vs_legacy_classification",
+      "binding_scope": "Prospective pair binding established by this contract.",
+      "requirements": {
+        "same_shape": true,
+        "finite_values": true,
+        "max_abs_diff_float64": {
+          "operator": "<=",
+          "value": 0.01,
+          "bound_to_threshold": "cli_abs_max"
+        }
+      }
+    }
+  },
+  "threshold_exclusions_for_step_2b": {
+    "preproc_abs_max": "Step 1 preprocessing boundary gate only.",
+    "feature_abs_max": "Reserved for downstream shared-map feature validation.",
+    "peak_count_exact": "Reserved for downstream peak/feature validation."
+  },
+  "historical_sources": [
+    "/Users/Q682780/Thesis_G/golden_evidence/golden_protocol_manifest.json",
+    "/Users/Q682780/Thesis_G/golden_evidence/resize_causality_manifest.json",
+    "/Users/Q682780/Thesis_G/golden_evidence/umsi_resize_causality_6a17288.json",
+    "/Users/Q682780/Thesis_G/golden_evidence/umsi_resize_causality_6a17288_consolidated.json",
+    "/Users/Q682780/Thesis_G/golden_evidence/umsi_tf1_tf2_golden_6a17288.json"
+  ],
+  "mutation_policy": {
+    "no_inference": true,
+    "no_npz_load": true,
+    "frozen_before_output_observation": true
+  }
+}

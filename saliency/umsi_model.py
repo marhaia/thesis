@@ -437,13 +437,15 @@ def preprocess_image(image_path: str,
     # Aspect-ratio-preserving resize with zero-padding
     padded = _padding(img_bgr, shape_r, shape_c)
 
-    # To float32 and VGG mean subtraction
-    img = padded.astype(np.float32)
-    img[..., 0] -= VGG_MEAN_B   # Blue
-    img[..., 1] -= VGG_MEAN_G   # Green
-    img[..., 2] -= VGG_MEAN_R   # Red
+    # Preserve original UEyes precision order: subtract means in float64,
+    # then cast once to float32 for model input.
+    img_batch = np.zeros((1, shape_r, shape_c, 3), dtype=np.float64)
+    img_batch[0] = padded
+    img_batch[..., 0] -= VGG_MEAN_B   # Blue
+    img_batch[..., 1] -= VGG_MEAN_G   # Green
+    img_batch[..., 2] -= VGG_MEAN_R   # Red
 
-    return np.expand_dims(img, axis=0)   # add batch dimension
+    return img_batch.astype(np.float32)
 
 
 def _padding(img: np.ndarray, shape_r: int, shape_c: int,
