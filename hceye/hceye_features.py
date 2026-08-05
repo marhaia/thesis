@@ -22,10 +22,64 @@ Reference:
   User Attention and Saliency Prediction. Proc. ACM ETRA.
 """
 
+import math
 import numpy as np
 import os
 import json
 from typing import Dict, Tuple, Optional
+
+
+class FeatureNormsError(Exception):
+    """Raised when the production feature-norms reference distribution is
+    missing, unreadable, syntactically invalid, or missing/invalid data for a
+    score-relevant saliency norm block.
+
+    A full score-bearing analysis must never silently substitute empty or
+    neutral (0.5) defaults for this data; callers that require a complete
+    result must let this exception propagate into a visible, structured
+    failure instead of catching it and continuing.
+    """
+
+
+# The five saliency norm blocks promoted by stage1/tools/canonical_saliency_norms.py
+# (see stage1/data/results/feature_norms.json). All five must be present and
+# numerically valid; only "saliency_dispersion" and "saliency_coverage" are
+# currently used by the highlight-effectiveness formula below, but the
+# production contract requires the full promoted set to be intact.
+_REQUIRED_SALIENCY_NORM_KEYS = (
+    "saliency_dispersion",
+    "saliency_peak_count",
+    "saliency_center_bias",
+    "saliency_entropy",
+    "saliency_coverage",
+)
+# Anchor keys actually consumed by the percentile-normalisation formula.
+_REQUIRED_NORM_ANCHOR_KEYS = ("min", "p5", "p25", "p50", "p75", "p95", "max")
+
+
+def _is_finite_number(value) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) \
+        and math.isfinite(value)
+
+
+def _validate_saliency_norm_blocks(features: dict) -> None:
+    """Fail closed if any of the 5 score-relevant saliency norm blocks is
+    missing, or contains a missing/non-finite anchor value needed by the
+    percentile-normalisation formula."""
+    for key in _REQUIRED_SALIENCY_NORM_KEYS:
+        block = features.get(key)
+        if not isinstance(block, dict):
+            raise FeatureNormsError(
+                f"Required saliency norm block '{key}' is missing from the "
+                f"production feature norms file."
+            )
+        for anchor in _REQUIRED_NORM_ANCHOR_KEYS:
+            if not _is_finite_number(block.get(anchor)):
+                raise FeatureNormsError(
+                    f"Saliency norm block '{key}' has a missing or "
+                    f"non-finite '{anchor}' value in the production feature "
+                    f"norms file."
+                )
 
 # Empirical coefficients derived from HCEye dataset (N=27 participants, 150 webpages).
 # All means and standard deviations are computed from fixation_AOI_metrics_final.csv.
@@ -121,10 +175,21 @@ class HCEyeFeatureExtractor:
                 os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                 "stage1", "data", "results", "feature_norms.json",
             )
-        self.feature_norms = {}
-        if os.path.exists(feature_norms_path):
+        # Fail-closed: the production reference distribution is mandatory for
+        # a complete score-bearing analysis. A missing, unreadable, or
+        # syntactically invalid file — or a missing/invalid score-relevant
+        # saliency norm block — must raise, not silently degrade to an empty
+        # structure or neutral defaults.
+        try:
             with open(feature_norms_path, 'r') as f:
-                self.feature_norms = json.load(f).get("features", {})
+                loaded_norms = json.load(f)
+        except (OSError, ValueError) as e:
+            raise FeatureNormsError(
+                f"Production feature norms file unavailable or invalid: "
+                f"{feature_norms_path}"
+            ) from e
+        self.feature_norms = loaded_norms.get("features", {})
+        _validate_saliency_norm_blocks(self.feature_norms)
 
     
     def extract_features(self,
@@ -256,10 +321,16 @@ class HCEyeFeatureExtractor:
 
         # 5. Highlight Effectiveness — high saliency spread + low coverage → helps.
         if saliency_features:
+            # required=True: saliency_features was explicitly supplied by the
+            # caller, so a missing raw value here indicates malformed input,
+            # not the legitimate "no saliency available" mode below. Must
+            # fail closed rather than silently substitute a neutral 0.5.
             sal_spread = self._percentile_normalize(
-                saliency_features.get("saliency_dispersion"), "saliency_dispersion")
+                saliency_features.get("saliency_dispersion"), "saliency_dispersion",
+                required=True)
             coverage = self._percentile_normalize(
-                saliency_features.get("saliency_coverage"), "saliency_coverage")
+                saliency_features.get("saliency_coverage"), "saliency_coverage",
+                required=True)
             highlight_need = (sal_spread + (1.0 - coverage)) / 2.0
         else:
             highlight_need = complexity  # fallback to complexity
@@ -309,10 +380,20 @@ class HCEyeFeatureExtractor:
             cognitive_load_index,
         ], dtype=np.float32)
 
-    def _percentile_normalize(self, value: Optional[float], feature_key: str) -> float:
+    def _percentile_normalize(self, value: Optional[float], feature_key: str,
+                              *, required: bool = False) -> float:
         """
         Map a raw feature value to [0, 1] by its position in the empirical
         reference distribution (feature_norms.json).
+
+        Args:
+            required: when True, this call is for a score-relevant saliency
+                feature whose caller explicitly supplied saliency data. A
+                missing raw value, a missing norm block, or a non-finite raw
+                value then raises FeatureNormsError instead of silently
+                returning the neutral 0.5 default. Non-required callers
+                (visual-feature concepts, or saliency omitted entirely) are
+                unaffected and keep the original neutral-default behaviour.
 
         Piecewise-linear interpolation across the reference anchors
         min < p5 < p25 < p50 < p75 < p95 < max, mapped to
@@ -325,12 +406,29 @@ class HCEyeFeatureExtractor:
         keeps those tail values ordered (a slightly cleaner screen still scores
         lower) instead of hard-clamping every tail value to the same 0.05 floor.
         Values below min / above max clamp to 0.0 / 1.0. If the feature has no
-        reference entry, or the value is missing, returns a neutral 0.5.
+        reference entry, or the value is missing, returns a neutral 0.5 —
+        unless ``required=True``, in which case those conditions raise
+        FeatureNormsError instead (see Args above).
         """
         if value is None:
+            if required:
+                raise FeatureNormsError(
+                    f"Missing required raw value for score-relevant saliency "
+                    f"feature '{feature_key}'."
+                )
             return 0.5
+        if required and not _is_finite_number(value):
+            raise FeatureNormsError(
+                f"Non-finite raw value for score-relevant saliency feature "
+                f"'{feature_key}'."
+            )
         norms = self.feature_norms.get(feature_key)
         if not norms:
+            if required:
+                raise FeatureNormsError(
+                    f"Missing production norm block for score-relevant "
+                    f"saliency feature '{feature_key}'."
+                )
             return 0.5
         anchors = [
             (norms.get("min"), 0.0),
@@ -352,6 +450,11 @@ class HCEyeFeatureExtractor:
                 xs.append(float(x))
                 ys.append(y)
         if not xs:
+            if required:
+                raise FeatureNormsError(
+                    f"Production norm block for score-relevant saliency "
+                    f"feature '{feature_key}' has no usable anchors."
+                )
             return 0.5
         return float(np.interp(float(value), xs, ys))
 

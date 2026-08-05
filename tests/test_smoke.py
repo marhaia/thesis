@@ -8,9 +8,19 @@ core endpoints, (b) input validation rejects malformed requests cleanly, and
 (c) the specific bugs fixed after the July-2026 security/robustness audit stay
 fixed (regression guards).
 
-These tests do NOT require the UMSI++ weights or TensorFlow: the saliency stage
-degrades gracefully to image-only features, so the endpoints still return 200.
-Anything needing the heavy ML stack is intentionally out of scope here.
+These tests do NOT require the UMSI++ weights or TensorFlow. Saliency is a
+MANDATORY part of a complete /api/cognitive-load analysis (fail-closed
+contract: a broken/unavailable saliency stage now returns a structured,
+non-200 error rather than a partial 200 result — see
+tests/test_saliency_production_contract.py). Since the real (weights-gated)
+UMSI++ model is unavailable in this environment, an autouse fixture below
+replaces only the model-inference step (``app._predict_saliency_cached``)
+with a deterministic, plausible synthetic heatmap, so these tests still
+exercise the real saliency-feature-extraction / normalization / mandatory-
+gate production code. This is test scaffolding for the missing weights, not
+a claim of real weighted-model parity (that remains separately verified/
+NOT PROVEN elsewhere). Anything needing the heavy ML stack itself is
+intentionally out of scope here.
 
 Run: python -m pytest tests/test_smoke.py -q
 """
@@ -46,6 +56,50 @@ from stage2.screen_consistency import _normalized_occupancy_grid  # noqa: E402
 def client():
     app.config.update(TESTING=True)
     return app.test_client()
+
+
+def _synthetic_heatmap() -> np.ndarray:
+    """Deterministic, plausible (two Gaussian blobs) synthetic saliency map.
+
+    Used ONLY as test scaffolding to stand in for the real (weights-gated,
+    unavailable-in-this-environment) UMSI++ model output, so that tests can
+    still exercise the real saliency-feature-extraction, normalization, and
+    mandatory-saliency-gate production code paths. Not a claim that this
+    matches real model output.
+    """
+    size = 128
+    yy, xx = np.mgrid[0:size, 0:size].astype(np.float64)
+    heat = np.zeros((size, size), dtype=np.float64)
+    for cy, cx, sigma in ((40.0, 40.0, 18.0), (90.0, 70.0, 12.0)):
+        heat += np.exp(-(((yy - cy) ** 2 + (xx - cx) ** 2) / (2 * sigma ** 2)))
+    heat = heat / heat.max()
+    return heat.astype(np.float32)
+
+
+@pytest.fixture(autouse=True)
+def _fake_saliency_model(monkeypatch):
+    """Autouse: patch ``app._predict_saliency_cached`` to return a synthetic,
+    but valid, heatmap instead of running the real (unavailable) UMSI++
+    model. Saliency is now mandatory for a complete analysis, so without
+    this, every existing test that hits /api/cognitive-load in this
+    weights-less environment would receive the new fail-closed error
+    response instead of a full result.
+
+    A test that specifically wants to exercise the fail-closed
+    missing/broken-saliency path (see
+    test_cognitive_load_scale_invariance_sanity_saliency_disabled below) can
+    simply call ``monkeypatch.setattr`` again inside its own body to override
+    this default, which takes effect for the remainder of that test only.
+    """
+    import app as app_module
+
+    heatmap = _synthetic_heatmap()
+    classif = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0], dtype=np.float32)
+
+    def _fake_predict(image_hash, image_path):
+        return heatmap, classif, False
+
+    monkeypatch.setattr(app_module, "_predict_saliency_cached", _fake_predict)
 
 
 def _png_bytes(cx: int = 40) -> io.BytesIO:
@@ -499,19 +553,16 @@ def test_cognitive_load_scale_invariance_sanity(client, monkeypatch):
     # canonical analysis image (a standardised analysis scale), so its measured
     # scale sensitivity is reduced. This is a scale-stability regression guard.
     #
-    # Explicitly disabled here so the check is deterministic and isolates the
-    # layout-scale path (both also degrade gracefully in CI-light):
-    #   * UMSI++ saliency (app._predict_saliency_cached) -> forced unavailable;
-    #   * OCR (cognitive.text_reader.compute_readability) -> returns None.
+    # Saliency is provided by the module-level autouse fake (the SAME
+    # synthetic heatmap regardless of input image), so it is already isolated
+    # from scale effects without needing to disable it. OCR is explicitly
+    # disabled here (returns None) to isolate the layout-scale path from OCR
+    # resolution sensitivity:
+    #   * cognitive.text_reader.compute_readability -> returns None.
     # The task/profile modifiers are identical across both requests, so the
     # headline difference reflects only the scale behaviour of the score.
-    import app as app_module
     import cognitive.text_reader as tr
 
-    def _no_saliency(*a, **k):
-        raise RuntimeError("saliency explicitly disabled in test")
-
-    monkeypatch.setattr(app_module, "_predict_saliency_cached", _no_saliency)
     monkeypatch.setattr(tr, "compute_readability", lambda *a, **k: None)
 
     s1 = _headline(_cognitive_load(client, _scaled_multibox_png(1)))

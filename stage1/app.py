@@ -40,6 +40,24 @@ from visual_complexity import (
     ImageTooSmallError,
 )
 from stage2.coherence_check import run_coherence_check
+from hceye.hceye_features import FeatureNormsError
+
+
+class SaliencyUnavailableError(Exception):
+    """Raised when the mandatory saliency stage (model init, weights load,
+    inference, postprocessing, or saliency-feature extraction) could not be
+    completed for a request that requires a full score-bearing analysis.
+
+    Carries a stable, machine-readable ``code`` and a client-safe ``message``.
+    A route that requires a complete analysis must let this propagate into a
+    structured, non-200 failure response instead of degrading to a partial
+    result.
+    """
+
+    def __init__(self, code: str, message: str):
+        super().__init__(message)
+        self.code = code
+        self.message = message
 
 # Lazy-load saliency model (heavy TF import — only when needed)
 _saliency_model = None
@@ -64,15 +82,22 @@ _feature_norms = None
 
 
 def _load_feature_norms():
-    """Load the GUI reference distribution from disk (cached). Returns a dict
-    with ``meta`` and ``features`` keys; an empty structure if unavailable."""
+    """Load the production GUI reference distribution from disk (cached).
+
+    Fail-closed: raises FeatureNormsError if the file is missing, unreadable,
+    or not valid JSON. A full score-bearing analysis must never silently
+    substitute an empty reference structure for the production norms file.
+    """
     global _feature_norms
     if _feature_norms is None:
         try:
             with open(_FEATURE_NORMS_PATH) as f:
                 _feature_norms = json.load(f)
-        except (OSError, ValueError):
-            _feature_norms = {"meta": {}, "features": {}}
+        except (OSError, ValueError) as e:
+            raise FeatureNormsError(
+                f"Production feature norms file unavailable or invalid: "
+                f"{_FEATURE_NORMS_PATH}"
+            ) from e
     return _feature_norms
 
 
@@ -444,6 +469,22 @@ def _too_small_error(exc):
     message is safe to surface to the client and the status code is 400.
     """
     return jsonify({"error": str(exc)}), 400
+
+
+def _fail_closed_error(code: str, message: str, status: int = 503):
+    """Structured, visible failure for a request that could not produce a
+    complete, score-bearing analysis (e.g. saliency model/weights/inference
+    unavailable, or the production feature-norms reference invalid).
+
+    The response never carries a ``cognitive_load_score`` or other field that
+    could be mistaken for a successfully computed result — ``analysis_complete``
+    is explicitly false and the failure is identified by a stable machine
+    -readable ``error.code`` rather than only free-text.
+    """
+    return jsonify({
+        "analysis_complete": False,
+        "error": {"code": code, "message": message},
+    }), status
 
 
 @app.route("/")
@@ -1186,14 +1227,17 @@ def cognitive_load():
                 # analysis because of it.
                 print(f"[Saliency] Design classification unavailable: {ce!r}")
         except Exception as e:
-            # Do NOT fail silently: the cognitive-load model degrades to image-only
-            # features (s=None) when saliency is missing. Log loudly so a broken
-            # saliency stage is visible during the study instead of silently
-            # producing a partial result that still looks "green".
-            cache_hit = False
-            s = None
-            saliency_dict = {}
+            # Saliency is MANDATORY for a complete, score-bearing analysis.
+            # Do not degrade to image-only features (s=None): that would let
+            # the request still return HTTP 200 with a full-looking score
+            # whose scientific meaning silently changed. Log the real cause
+            # server-side, then surface a structured, visible failure instead.
             print(f"[Saliency] Saliency features unavailable: {e!r}")
+            raise SaliencyUnavailableError(
+                "saliency_unavailable",
+                "Saliency computation failed; a complete analysis could not "
+                "be produced.",
+            ) from e
 
         # Build colored overlay: original image blended with JET-colormap heatmap.
         # This is purely cosmetic (visualization only) and is kept in a SEPARATE
@@ -1522,6 +1566,22 @@ def cognitive_load():
         })
     except ImageTooSmallError as e:
         return _too_small_error(e)
+    except SaliencyUnavailableError as e:
+        return _fail_closed_error(e.code, e.message)
+    except FeatureNormsError as e:
+        # Client-safe boundary: the underlying exception message may contain
+        # a local absolute file path (e.g. the feature-norms file location)
+        # and must never be forwarded to the API response. Always use a
+        # fixed, generic message here regardless of str(e) -- this also
+        # protects against any future, more detailed FeatureNormsError text.
+        # The full cause is preserved server-side via exception chaining and
+        # the log below (never sent to the client).
+        app.logger.exception("Feature norms validation failed (fail-closed)")
+        return _fail_closed_error(
+            "saliency_norms_invalid",
+            "Production feature norms reference is unavailable or invalid; "
+            "a complete analysis could not be produced.",
+        )
     except Exception as e:
         return _server_error(e)
     finally:

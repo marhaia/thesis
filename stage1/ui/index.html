@@ -2804,7 +2804,15 @@
 
                 if (data.error) {
                     clearInterval(stageInterval);
-                    analyzeStatus.textContent = "Error: " + data.error;
+                    // The fail-closed saliency contract returns a structured
+                    // error object ({code, message}); older error responses
+                    // used a plain string. Handle both, but never proceed to
+                    // render results/history for either — a failed analysis
+                    // must never be shown as (or replaced by) a prior score.
+                    const errMsg = (data.error && typeof data.error === "object")
+                        ? (data.error.message || data.error.code || "Analysis failed")
+                        : data.error;
+                    analyzeStatus.textContent = "Error: " + errMsg;
                     analyzeStatus.className = "analyze-status error";
                     return;
                 }
