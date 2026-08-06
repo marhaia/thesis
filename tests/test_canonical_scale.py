@@ -341,9 +341,13 @@ def test_analyze_normal_image_is_not_400(client):
 #   (E) the returned detected_elements are the NATIVE-coordinate elements, and
 #   (F) the mapped readability boxes stay inside the native image bounds.
 #
-# Saliency is disabled (spied to raise) so no ML weights are needed; OCR and
+# Saliency is replaced with a deterministic, valid synthetic success result
+# (see _synthetic_saliency_success below) so no ML weights are needed; OCR and
 # Jokinen are stubbed to keep the test fast and deterministic while still
-# capturing exactly what the endpoint passed them.
+# capturing exactly what the endpoint passed them. A raised/unavailable
+# saliency stage is no longer an option here: the fail-closed contract (see
+# tests/test_saliency_production_contract.py) turns that into a 503, which
+# would defeat this test's 200-success-path intent.
 # ---------------------------------------------------------------------------
 import app as app_module  # noqa: E402
 import canonical_layout as canonical_layout_mod  # noqa: E402
@@ -361,6 +365,33 @@ def _synthetic_ui(h, w):
     cv2.rectangle(img, (100, 400), (500, 520), (200, 60, 60), -1)
     cv2.rectangle(img, (900, 600), (1200, 780), (40, 160, 40), -1)
     return img
+
+
+def _synthetic_saliency_success(image_hash, image_path):
+    """Deterministic, valid ``(heatmap, classif, cache_hit)`` success triple
+    matching the current ``app._predict_saliency_cached`` return contract
+    (see stage1/app.py:_predict_saliency_cached).
+
+    Used as a stand-in for the real (weights-gated, unavailable-in-this-
+    environment) UMSI++ model so these success-path tests keep reaching the
+    200 response instead of the fail-closed 503 that a raised/broken
+    saliency stage now produces (see
+    tests/test_saliency_production_contract.py). The same fixed heatmap is
+    returned regardless of the input image, which is intentional: it removes
+    saliency as a source of variance so it does not contaminate what these
+    tests actually measure (endpoint wiring / scale invariance of the other
+    seven visual features). Mirrors the pattern already established in
+    tests/test_smoke.py:_fake_saliency_model.
+    """
+    size = 128
+    yy, xx = np.mgrid[0:size, 0:size].astype(np.float64)
+    heat = np.zeros((size, size), dtype=np.float64)
+    for cy, cx, sigma in ((40.0, 40.0, 18.0), (90.0, 70.0, 12.0)):
+        heat += np.exp(-(((yy - cy) ** 2 + (xx - cx) ** 2) / (2 * sigma ** 2)))
+    heat = heat / heat.max()
+    heatmap = heat.astype(np.float32)
+    classif = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0], dtype=np.float32)
+    return heatmap, classif, False
 
 
 def test_cognitive_load_endpoint_wires_two_paths(client, monkeypatch):
@@ -415,10 +446,8 @@ def test_cognitive_load_endpoint_wires_two_paths(client, monkeypatch):
         captured["jokinen_image_shape"] = tuple(image_shape)
         return {"mean_search_time_s": 1.0, "per_element": []}
 
-    # Disable saliency so no ML weights are needed (endpoint degrades to s=None).
-    def raise_saliency(*a, **k):
-        raise RuntimeError("saliency disabled for wiring test")
-
+    # Saliency stays on its mandatory success path (no ML weights needed)
+    # via a deterministic synthetic heatmap; see _synthetic_saliency_success.
     monkeypatch.setattr(canonical_layout_mod, "detect_elements",
                         spy_canonical_detect)
     monkeypatch.setattr(element_detector_mod, "detect_elements",
@@ -426,7 +455,8 @@ def test_cognitive_load_endpoint_wires_two_paths(client, monkeypatch):
     monkeypatch.setattr(text_reader_mod, "compute_readability", stub_ocr)
     monkeypatch.setattr(jokinen_mod.JokinenSearchModel, "predict_search_times",
                         spy_jokinen)
-    monkeypatch.setattr(app_module, "_predict_saliency_cached", raise_saliency)
+    monkeypatch.setattr(app_module, "_predict_saliency_cached",
+                        _synthetic_saliency_success)
 
     data = {"image": (io.BytesIO(buf.tobytes()), "wiring.png")}
     resp = client.post("/api/cognitive-load", data=data,
@@ -649,10 +679,14 @@ def test_cognitive_load_index_scale_invariant_through_endpoint(client, monkeypat
     /api/cognitive-load and require the cognitive_load_index gap <= 0.01.
 
     Explicitly mocked (and ONLY these):
-      * UMSI++ saliency: app._predict_saliency_cached is forced to raise, so the
-        saliency vector s is deterministically None (image-only path). Saliency
-        is a nondeterministic external ML component and is not what this scale
-        test measures.
+      * UMSI++ saliency: app._predict_saliency_cached is replaced with
+        _synthetic_saliency_success, a deterministic, valid, fixed heatmap
+        (identical regardless of scale). Saliency is a nondeterministic
+        external ML component and is not what this scale test measures; a
+        raised/unavailable saliency stage would now hit the fail-closed 503
+        contract (see tests/test_saliency_production_contract.py) instead of
+        reaching this test's 200 success path, so a fixed valid result is
+        used instead to remove saliency as a source of variance.
       * OCR: cognitive.text_reader.compute_readability returns None, so
         text_density is the neutral fallback deterministically.
     Nothing else is stubbed: the eight visual features, the canonical element
@@ -662,10 +696,8 @@ def test_cognitive_load_index_scale_invariant_through_endpoint(client, monkeypat
     import app as app_module
     import cognitive.text_reader as tr
 
-    def _no_saliency(*a, **k):
-        raise RuntimeError("saliency explicitly disabled in test")
-
-    monkeypatch.setattr(app_module, "_predict_saliency_cached", _no_saliency)
+    monkeypatch.setattr(app_module, "_predict_saliency_cached",
+                        _synthetic_saliency_success)
     monkeypatch.setattr(tr, "compute_readability", lambda *a, **k: None)
 
     per_fx = {}
