@@ -55,6 +55,8 @@ import cv2
 import numpy as np
 from scipy import ndimage
 
+from saliency.postprocessing import normalize_saliency_map
+
 
 def extract_saliency_features(saliency_map: np.ndarray) -> Dict[str, float]:
     """Extract all saliency-derived features from a heatmap.
@@ -70,15 +72,10 @@ def extract_saliency_features(saliency_map: np.ndarray) -> Dict[str, float]:
           - saliency_entropy
           - saliency_coverage
     """
-    # Ensure 2D
-    if saliency_map.ndim == 3:
-        saliency_map = saliency_map[:, :, 0]
-
-    # Normalize to [0, 1]
-    smap = saliency_map.astype(np.float64)
-    vmax = smap.max()
-    if vmax > 0:
-        smap = smap / vmax
+    # Use the same explicit policy as the UMSI production postprocessor. This
+    # is intentionally idempotent for its already-normalized model output and
+    # prevents feature extraction from introducing a divergent normalization.
+    smap = normalize_saliency_map(saliency_map).astype(np.float64, copy=False)
 
     return {
         "saliency_dispersion": _compute_dispersion(smap),

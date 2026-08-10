@@ -52,6 +52,8 @@ from typing import Optional, Tuple, Union
 import cv2
 import numpy as np
 
+from saliency.postprocessing import postprocess_saliency
+
 # ── TF / Keras 3 imports ──────────────────────────────────────────────────
 import tensorflow as tf
 import keras
@@ -475,49 +477,6 @@ def _padding(img: np.ndarray, shape_r: int, shape_c: int,
         img_padded[offset:offset + new_rows, :] = img
 
     return img_padded
-
-
-def postprocess_saliency(pred: np.ndarray,
-                         original_h: int,
-                         original_w: int) -> np.ndarray:
-    """Resize the 512×512 prediction back to the original image dimensions.
-
-    Reverses the padding that was applied during preprocessing, then resizes
-    the unpadded prediction to the original image size.
-
-    Args:
-        pred: Raw model output, shape (512, 512) or (512, 512, 1).
-        original_h: Original image height in pixels.
-        original_w: Original image width in pixels.
-
-    Returns:
-        Saliency heatmap of shape (original_h, original_w), float32,
-        normalized to [0, 1].
-    """
-    if pred.ndim == 3:
-        pred = pred[:, :, 0]
-
-    pred_shape = pred.shape
-    rows_rate = original_h / pred_shape[0]
-    cols_rate = original_w / pred_shape[1]
-
-    if rows_rate > cols_rate:
-        new_cols = (pred_shape[1] * original_h) // pred_shape[0]
-        pred = cv2.resize(pred, (new_cols, original_h))
-        offset = (pred.shape[1] - original_w) // 2
-        img = pred[:, offset:offset + original_w]
-    else:
-        new_rows = (pred_shape[0] * original_w) // pred_shape[1]
-        pred = cv2.resize(pred, (original_w, new_rows))
-        offset = (pred.shape[0] - original_h) // 2
-        img = pred[offset:offset + original_h, :]
-
-    # Normalize to [0, 1]
-    vmax = img.max()
-    if vmax > 0:
-        img = img / vmax
-
-    return img.astype(np.float32)
 
 
 # ============================================================================
