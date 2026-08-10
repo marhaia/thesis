@@ -132,6 +132,18 @@ def _compute_dispersion(smap: np.ndarray) -> float:
     return float(min(sigma / 0.707, 1.0))
 
 
+def _detect_peak_mask(smap: np.ndarray, sigma: float = 5.0,
+                      threshold_ratio: float = 0.3) -> np.ndarray:
+    """Return the exact significant-peak mask used by peak counting."""
+    smoothed = ndimage.gaussian_filter(smap, sigma=sigma)
+    vmax = smoothed.max()
+    if vmax == 0:
+        return np.zeros(smap.shape, dtype=bool)
+
+    local_max = ndimage.maximum_filter(smoothed, size=int(sigma * 4 + 1))
+    return (smoothed == local_max) & (smoothed >= threshold_ratio * vmax)
+
+
 def _compute_peak_count(smap: np.ndarray, sigma: float = 5.0,
                          threshold_ratio: float = 0.3) -> int:
     """Count distinct attention peaks in the saliency map.
@@ -153,18 +165,10 @@ def _compute_peak_count(smap: np.ndarray, sigma: float = 5.0,
 
     Returns integer count of significant peaks.
     """
-    # Smooth
-    smoothed = ndimage.gaussian_filter(smap, sigma=sigma)
-    vmax = smoothed.max()
-    if vmax == 0:
-        return 0
-
-    # Local maximum detection (dilation-based)
-    local_max = ndimage.maximum_filter(smoothed, size=int(sigma * 4 + 1))
-    peaks = (smoothed == local_max) & (smoothed >= threshold_ratio * vmax)
+    peaks = _detect_peak_mask(smap, sigma=sigma, threshold_ratio=threshold_ratio)
 
     # Label connected components
-    labeled, num_features = ndimage.label(peaks)
+    _, num_features = ndimage.label(peaks)
     return int(num_features)
 
 

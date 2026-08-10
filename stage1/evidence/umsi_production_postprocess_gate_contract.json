@@ -1,0 +1,75 @@
+{
+  "contract_name": "umsi_production_postprocess_gate_contract",
+  "contract_version": "p2_ag05_v1",
+  "scope": "P2_AG_05_ONLY",
+  "created_before_real_weight_p2_execution": true,
+  "historical_artifacts_immutable": true,
+  "expected_parent_commit": "a13365318e7b49fe3dc3991acbdcd988408e47f5",
+  "purpose": "Close AG-05 without rewriting P8/P9/P10: exercise the production postprocessor itself, reject affine scale or offset masking, bind output range and values, compare all five derived saliency features, and require exact peak positions.",
+  "historical_reference_contract": {
+    "filename": "umsi_five_fixture_gate_contract.json",
+    "sha256": "da9c968b5ee0fdc95b0f8d2d7dfbf4462e8513836e8b658ed0b1838c8619e1fc",
+    "role": "Immutable P10 source for the five fixture identities, frozen legacy arrays, checkpoint identity, and historical correlation evidence. Its previous verdict is not promoted to P2 acceptance."
+  },
+  "pinned_sources": {
+    "production_postprocessing": {
+      "path": "saliency/postprocessing.py",
+      "sha256": "f6690bbff3bf2a74e8cdbe7a4e3d12041151394d19fbe5650b040356527698e4"
+    },
+    "production_saliency_features": {
+      "path": "saliency/saliency_features.py",
+      "sha256": "383b316e0f8c8164ac9dc53f29a98d5cfe68d84bcb7c92df86e849cd3e5dfce6"
+    },
+    "p2_gate_harness": {
+      "path": "stage1/tools/umsi_production_postprocess_gate.py",
+      "sha256": "5f9b0565cde46a6b1bec0164540fd7c85804e50cb92c3a98cd54c90871f2ef43"
+    },
+    "p2_gate_tests": {
+      "path": "tests/test_umsi_production_postprocess_gate.py",
+      "sha256": "f96caf328e56b43e33caa0bc8f4a69502de409e05a402ffed5b4bba031f36eea"
+    }
+  },
+  "thresholds": {
+    "endpoint_self_abs_max": 0.0,
+    "e2e_abs_max": 0.02,
+    "feature_abs_max": 0.02,
+    "peak_count_exact": true,
+    "peak_positions_exact": true
+  },
+  "threshold_authority": {
+    "endpoint_self_abs_max": "Exact identity is required because predict_saliency and the gate recomputation invoke the same pinned production postprocessor on the same captured raw array.",
+    "e2e_abs_max": "Prospective P2 absolute output-value threshold frozen before the first real-weight P2 execution. It prevents correlation-only or affine-normalized evidence from passing a materially different production map.",
+    "feature_abs_max": "Reused unchanged from historical_reused_authority.frozen_thresholds.feature_abs_max in the immutable P8 contract.",
+    "peak_count_exact": "Reused unchanged from historical_reused_authority.frozen_thresholds.peak_count_exact in the immutable P8 contract.",
+    "peak_positions_exact": "Prospective P2 strengthening required by the cross-audit acceptance objective; frozen before the first real-weight P2 execution."
+  },
+  "comparison_policy": {
+    "production_e2e": "The actual captured predict_saliency return value is checked directly and MUST NOT be normalized, rescaled, clipped, or offset by the gate.",
+    "production_self_check": "Apply pinned saliency.postprocessing.postprocess_saliency to the captured production raw output and require exact equality with the captured production E2E output.",
+    "legacy_reference": "Apply the same pinned production postprocessor once to the frozen legacy raw saliency array at the fixture's original dimensions.",
+    "output_contract": "Production E2E must be float32, finite, correctly shaped, and either span exactly [0,1] or be the defined constant all-zero map.",
+    "feature_check": "Run the pinned production extract_saliency_features on the untouched production E2E map and on the one-time postprocessed legacy reference; every named feature must deviate by no more than feature_abs_max.",
+    "peak_check": "Use the exact peak mask shared with production peak counting and require both exact peak count and exact peak-mask positions."
+  },
+  "required_feature_order": [
+    "saliency_dispersion",
+    "saliency_peak_count",
+    "saliency_center_bias",
+    "saliency_entropy",
+    "saliency_coverage"
+  ],
+  "required_mutation_evidence": {
+    "scaled_map": "Must fail even when Pearson correlation is 1.",
+    "positive_offset_map": "Must fail even when Pearson correlation is 1.",
+    "max_only_postprocessor_regression": "Must fail production endpoint self-consistency.",
+    "same_peak_count_different_position": "Must fail exact peak-position comparison."
+  },
+  "out_of_scope": [
+    "P3 Stage-1 x19 boundary and task/profile invariance",
+    "P4 layout/OCR fail-closed behavior",
+    "P5 scientific semantics",
+    "P6 cache/export/corpus reproducibility",
+    "P7 claim reconciliation",
+    "Any rewrite of historical P8/P9/P10 contracts, reports, thresholds, or verdicts"
+  ]
+}

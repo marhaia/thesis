@@ -34,7 +34,7 @@ jobs:
         # cognitive/test_jokinen.py, tests/test_pipeline.py and
         # saliency/test_full_pipeline.py exist too but need the heavy ML stack
         # and are not run in this lightweight job.
-        run: python -m pytest tests/test_smoke.py tests/test_canonical_scale.py tests/test_canonical_visual_norms.py tests/test_saliency_postprocessing.py -q
+        run: python -m pytest tests/test_smoke.py tests/test_canonical_scale.py tests/test_canonical_visual_norms.py tests/test_saliency_postprocessing.py tests/test_umsi_production_postprocess_gate.py -q
 
   deps-check:
     name: Full requirements resolve (dry run)
