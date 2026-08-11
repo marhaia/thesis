@@ -128,6 +128,8 @@ def test_saliency_inference_failure_yields_structured_non_200(client, monkeypatc
     for forbidden_key in (
         "cognitive_load_index", "adjusted_prediction", "base_prediction",
         "layout", "cognitive_load_features", "full_feature_vector",
+        "stage1_feature_vector", "stage1_feature_names",
+        "stage1_vector_dtype", "vector_dimensions",
     ):
         assert forbidden_key not in data, (
             f"fail-closed response must not contain '{forbidden_key}'"
@@ -202,6 +204,8 @@ def test_saliency_failure_response_never_leaks_artificial_path(client, monkeypat
     for forbidden_key in (
         "cognitive_load_index", "adjusted_prediction", "base_prediction",
         "layout", "cognitive_load_features", "full_feature_vector",
+        "stage1_feature_vector", "stage1_feature_names",
+        "stage1_vector_dtype", "vector_dimensions",
     ):
         assert forbidden_key not in data
 
@@ -299,6 +303,8 @@ def test_missing_norms_file_response_never_leaks_sentinel_path(client, monkeypat
     for forbidden_key in (
         "cognitive_load_index", "adjusted_prediction", "base_prediction",
         "layout", "cognitive_load_features", "full_feature_vector",
+        "stage1_feature_vector", "stage1_feature_names",
+        "stage1_vector_dtype", "vector_dimensions",
     ):
         assert forbidden_key not in data
 

@@ -427,8 +427,8 @@ def test_layout_block_present_and_named(client):
     layout = data.get("layout")
     assert layout is not None
     assert "experimental_complexity_index" in layout
-    assert "task_modifier" in layout
-    assert "profile_modifier" in layout
+    assert "task_modifier" not in layout
+    assert "profile_modifier" not in layout
 
 
 def test_target_selection_does_not_change_layout(client):

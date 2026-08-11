@@ -37,6 +37,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from visual_complexity import (
     compute_complexity_vector,
     CANONICAL_ANALYSIS_VERSION,
+    FEATURE_KEYS,
     ImageTooSmallError,
 )
 from stage2.coherence_check import run_coherence_check
@@ -79,6 +80,20 @@ _visual_cache_max = 64            # max distinct images kept for visual features
 # Loaded lazily once and cached for the process lifetime.
 _FEATURE_NORMS_PATH = Path(__file__).parent / "data" / "results" / "feature_norms.json"
 _feature_norms = None
+
+# Stable public Stage-1 boundary contract.  The saliency order deliberately
+# follows the production API assembly order audited for x19; it is not inferred
+# from dictionary iteration or from the different prose order in the saliency
+# module documentation.
+STAGE1_SALIENCY_FEATURE_NAMES = (
+    "saliency_dispersion",
+    "saliency_entropy",
+    "saliency_coverage",
+    "saliency_peak_count",
+    "saliency_center_bias",
+)
+STAGE1_VECTOR_DIMENSIONS = 19
+STAGE1_VECTOR_DTYPE = "float32"
 
 
 def _load_feature_norms():
@@ -176,6 +191,34 @@ def _as_bool(value, default=False):
     if isinstance(value, bool):
         return value
     return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _assemble_stage1_vector(v, s, h, hceye_feature_names):
+    """Return the authoritative ``[v8 | s5 | h6]`` Stage-1 boundary."""
+    import numpy as np
+
+    dtype = np.dtype(STAGE1_VECTOR_DTYPE)
+    visual = np.asarray(v, dtype=dtype).reshape(-1)
+    saliency = np.asarray(s, dtype=dtype).reshape(-1)
+    hceye = np.asarray(h, dtype=dtype).reshape(-1)
+    names = (
+        list(FEATURE_KEYS)
+        + list(STAGE1_SALIENCY_FEATURE_NAMES)
+        + list(hceye_feature_names)
+    )
+
+    if visual.shape != (8,) or saliency.shape != (5,) or hceye.shape != (6,):
+        raise ValueError(
+            "Stage-1 vector blocks must have exact dimensions v8, s5, and h6"
+        )
+    if len(names) != STAGE1_VECTOR_DIMENSIONS:
+        raise ValueError("Stage-1 feature-name contract must contain 19 names")
+
+    vector = np.concatenate([visual, saliency, hceye]).astype(dtype, copy=False)
+    if vector.shape != (STAGE1_VECTOR_DIMENSIONS,):
+        raise ValueError("Stage-1 feature vector must contain exactly 19 values")
+    return vector, names
+
 
 def _get_saliency_model():
     """Lazy-load the UMSI++ saliency model (avoids TF startup penalty on every request)."""
@@ -1112,8 +1155,8 @@ def cognitive_load():
     """
     Compute cognitive load features using HCEye-derived sensitivity model.
 
-    Combines visual complexity (v∈ℝ⁸) + saliency (s∈ℝ⁵) + HCEye cognitive
-    load sensitivity (h∈ℝ⁶) into a full feature vector for Stage 2.
+    Combines visual complexity (v∈ℝ⁸) + saliency (s∈ℝ⁵) + HCEye-derived
+    features (h∈ℝ⁶) into the task/profile-independent Stage-1 x19 boundary.
 
     Response JSON:
         {
@@ -1121,8 +1164,11 @@ def cognitive_load():
             "visual_features": {...},         # v∈ℝ⁸
             "saliency_features": {...},       # s∈ℝ⁵  
             "cognitive_load_features": {...},  # h∈ℝ⁶
-            "cognitive_load_index": float,    # Combined CLI (0-1)
-            "full_feature_vector": [...]      # ℝ¹⁹ for Stage 2
+            "cognitive_load_index": float,
+            "stage1_feature_vector": [...],   # [v8 | s5 | h6]
+            "stage1_feature_names": [...],
+            "stage1_vector_dtype": "float32",
+            "vector_dimensions": 19
         }
     """
     if "image" not in request.files:
@@ -1170,16 +1216,9 @@ def cognitive_load():
         # Step 1: Visual complexity (v∈ℝ⁸)
         vis_results, visual_cache_hit = _compute_visual_cached(image_hash, filepath)
         vis_results = dict(vis_results)
-        v = np.array([
-            vis_results["shannon_entropy"],
-            vis_results["edge_density"],
-            vis_results["feature_congestion"],
-            vis_results["subband_entropy"],
-            vis_results["layout_symmetry"],
-            vis_results["chromatic_coherence"],
-            vis_results["visual_hierarchy"],
-            vis_results["interactive_element_density"],
-        ], dtype=np.float32)
+        v = np.array(
+            [vis_results[name] for name in FEATURE_KEYS], dtype=np.float32
+        )
 
         # Step 2: Saliency features (s∈ℝ⁵) — optional
         s = None
@@ -1191,13 +1230,10 @@ def cognitive_load():
             from saliency.saliency_features import extract_saliency_features
             heatmap, classif, cache_hit = _predict_saliency_cached(image_hash, filepath)
             saliency_dict = extract_saliency_features(heatmap)
-            s = np.array([
-                saliency_dict["saliency_dispersion"],
-                saliency_dict["saliency_entropy"],
-                saliency_dict["saliency_coverage"],
-                saliency_dict["saliency_peak_count"],
-                saliency_dict["saliency_center_bias"],
-            ], dtype=np.float32)
+            s = np.array(
+                [saliency_dict[name] for name in STAGE1_SALIENCY_FEATURE_NAMES],
+                dtype=np.float32,
+            )
             # UMSI++ 6-class design-type head (Jiang et al., CHI 2023). The model
             # was trained on UEyes; if it classifies the screenshot as something
             # other than a desktop/automotive-style UI (e.g. "mobile_ui" or
@@ -1327,26 +1363,25 @@ def cognitive_load():
         cog_names = extractor.get_feature_names()
         cog_dict = dict(zip(cog_names, h.tolist()))
 
-        # Step 4: Optional task/profile vectors
-        t = task_descriptor.to_vector()
+        # Step 4: Optional Stage-2 task/profile context.  These values must not
+        # enter the public Stage-1 vector or its screenshot-only layout value.
         t_dict = task_descriptor.as_dict()
-        p = np.array(profile["vector"], dtype=np.float32)
 
-        # Build full feature vector for Stage 2 base model (v⁸ + s⁵ + h⁶ = ℝ¹⁹)
+        # Build the sole public Stage-1 boundary (v⁸ + s⁵ + h⁶ = ℝ¹⁹).
         parts = [v]
         if s is not None:
             parts.append(s)
         else:
             parts.append(np.zeros(5, dtype=np.float32))
         parts.append(h)
-        base_vector = np.concatenate(parts)
-
-        # Extended vector for downstream experiments (base + descriptor + profile)
-        extended_vector = np.concatenate([base_vector, t, p]).tolist()
+        base_vector, stage1_feature_names = _assemble_stage1_vector(
+            parts[0], parts[1], parts[2], cog_names
+        )
 
         model_path = Path(__file__).parent.parent / "stage2" / "models" / "stage2_model.pkl"
+        stage1_score = float(h[5] * 100.0)
         predictions = {
-            "cognitive_load_score": float(h[5] * 100.0),
+            "cognitive_load_score": stage1_score,
             "search_efficiency": float(np.clip(1.0 - h[3], 0.0, 1.0)),
             "attention_demand": float(np.clip(h[5] + 0.15, 0.0, 1.0)),
         }
@@ -1538,16 +1573,16 @@ def cognitive_load():
             # per-target search-difficulty result (see /api/scanpath-to-target ->
             # selected_target) and to signal it is an exploratory heuristic.
             "layout": {
-                "experimental_complexity_index": adjusted_score,
-                "task_modifier": descriptor_modifier,
-                "profile_modifier": profile_modifier,
+                "experimental_complexity_index": stage1_score,
             },
             "prediction_source": prediction_source,
             "trained_model_requested": use_trained_model,
             "trained_model_available": model_path.exists(),
             "cognitive_load_index": float(h[5]),
-            "full_feature_vector": extended_vector,
-            "vector_dimensions": f"v({len(v)}) + s(5) + h({len(h)}) + t({len(t)}) + p({len(p)}) = {len(extended_vector)}",
+            "stage1_feature_vector": base_vector.tolist(),
+            "stage1_feature_names": stage1_feature_names,
+            "stage1_vector_dtype": STAGE1_VECTOR_DTYPE,
+            "vector_dimensions": int(base_vector.size),
             "coherence": coherence,
             "reference": reference,
             "reference_meta": reference_meta,
