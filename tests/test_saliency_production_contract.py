@@ -498,6 +498,7 @@ def test_working_saliency_stage_still_returns_full_result(client, monkeypatch):
     assert resp.status_code == 200
     data = resp.get_json()
     assert "error" not in data or not data.get("error")
-    assert "cognitive_load_index" in data
+    assert "experimental_complexity_index" in data["layout"]
+    assert "hceye_proxy_features" in data
     assert "layout" in data
     assert set(REQUIRED_SALIENCY_KEYS) <= set(data["saliency_features"].keys())

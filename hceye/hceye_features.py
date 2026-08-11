@@ -1,20 +1,23 @@
 """
-HCEye Cognitive Load Features
-==============================
-Extracts cognitive-load-adjusted features from GUI screenshots using
-empirical findings from the HCEye dataset (Das et al., ETRA 2024).
+Project-specific HCEye-derived layout proxies
+==============================================
+Maps GUI screenshot features through a purpose-built rule set informed by
+aggregate observations reported for the HCEye study (Das et al., ETRA 2024).
 
-Key Insight: Under cognitive load, users make fewer fixations with longer
-durations and reduced exploration. The magnitude of this effect depends on
-the visual properties of the interface.
+The screenshot-to-HCEye mapping, weights and combined index have not been
+empirically calibrated as a cognitive-load measurement.  The external source
+CSV is not supplied in this repository; its accepted bytes, aggregation rules
+and derived coefficient matrix are pinned in
+``hceye/hceye_coefficient_provenance.json`` and can be checked with
+``scripts/hceye_coefficient_provenance.py``.  Accordingly, all six outputs are
+explicitly exploratory project-specific proxies:
 
-Features extracted (h ∈ ℝ⁶):
-  1. cog_fixation_reduction    - Expected reduction in fixation count under load
-  2. cog_duration_increase     - Expected increase in fixation duration under load  
-  3. cog_exploration_reduction - Expected reduction in spatial exploration
-  4. cog_aoi_sensitivity       - How much AOI attention drops under load
-  5. highlight_effectiveness   - Expected benefit of dynamic highlighting
-  6. cognitive_load_index      - Combined cognitive load vulnerability score (0-1)
+  1. hceye_fixation_ratio_proxy
+  2. hceye_duration_ratio_proxy
+  3. hceye_exploration_ratio_proxy
+  4. hceye_aoi_sensitivity_proxy
+  5. hceye_highlight_effectiveness_proxy
+  6. experimental_layout_complexity_index
 
 Reference:
   Das, A., Wu, Z., Skrjanec, I., & Feit, A.M. (2024). Shifting Focus with
@@ -81,27 +84,30 @@ def _validate_saliency_norm_blocks(features: dict) -> None:
                     f"norms file."
                 )
 
-# Empirical coefficients derived from HCEye dataset (N=27 participants, 150 webpages).
-# All means and standard deviations are computed from fixation_AOI_metrics_final.csv.
-# Primary source: Das et al. (2024), ETRA, https://doi.org/10.1145/3655610
-# Column mapping: CognitiveLoad ∈ {Absent, High, Low}, Highlight ∈ {Absent, Static, Dynamic}
+# Project-local coefficient set derived from aggregate HCEye observations
+# (N=27 participants, 150 webpages).  The external
+# fixation_AOI_metrics_final.csv is not committed, but its exact SHA-256,
+# aggregation policies, source values and rounding are repository-pinned in
+# hceye/hceye_coefficient_provenance.json.  These values may inform an
+# exploratory heuristic, but do not validate a screenshot-level measurement.
+# Publication context: Das et al. (2024), ETRA, https://doi.org/10.1145/3655610
 HCEYE_COEFFICIENTS = {
     # Fixation count ratio: High Load / Absent Load
-    # Das et al. (2024): participants made ~12.4% fewer fixations under high cognitive load.
-    # Computed as mean(fixation_count | CogLoad=High) / mean(fixation_count | CogLoad=Absent)
+    # Mean and sample SD of 150 per-image ratios after averaging over highlight
+    # conditions within each CognitiveLoad condition.
     'fixation_reduction_mean': 0.876,  # ratio; ~12.4% fewer fixations (Das et al., 2024)
-    'fixation_reduction_std': 0.107,   # inter-participant SD of that ratio
+    'fixation_reduction_std': 0.107,   # inter-image sample SD of that ratio
 
     # Fixation duration ratio: High Load / Absent Load
-    # Longer fixations under load reflect deeper processing (Rayner, 1998, Psych. Bull.).
-    # Computed as mean(fixation_duration_ms | CogLoad=High) / mean(...| CogLoad=Absent)
+    # Same per-image aggregation policy as fixation_reduction above.
     'duration_increase_mean': 1.081,   # ratio; ~8.1% longer fixations (Das et al., 2024)
-    'duration_increase_std': 0.252,
+    'duration_increase_std': 0.252,    # inter-image sample SD of that ratio
 
     # Fixation frequency ratio: High Load / Absent Load
-    # Das et al. (2024): fixation rate (fix/s) drops slightly under load.
+    # Ratio of the unweighted row-level condition means across all highlights.
+    # No dispersion value is retained: the previous unused 0.120 value could
+    # not be reproduced from the pinned CSV under the documented aggregations.
     'frequency_reduction_mean': 0.935,  # ratio; ~6.5% lower frequency (Das et al., 2024)
-    'frequency_reduction_std': 0.120,
 
     # AOI hit rate under different conditions
     # Das et al. (2024), Table 2: proportion of fixations landing inside the target AOI.
@@ -139,11 +145,11 @@ HCEYE_FEATURE_MAP = {
 
 class HCEyeFeatureExtractor:
     """
-    Extracts cognitive-load sensitivity features for GUI screenshots.
-    
-    Uses a regression model trained on the relationship between visual
-    complexity features and cognitive load sensitivity observed in HCEye.
-    For new images (not in HCEye), estimates sensitivity from visual features.
+    Extract exploratory project-specific HCEye-derived proxies for screenshots.
+
+    This is a deterministic rule adaptation, not a trained or validated
+    cognitive-load estimator.  For novel images it maps visual features onto
+    source-study ratios using uncalibrated project-specific rules.
     """
     
     def __init__(self, lookup_path: Optional[str] = None,
@@ -152,8 +158,8 @@ class HCEyeFeatureExtractor:
         Initialize the HCEye feature extractor.
         
         Args:
-            lookup_path: Path to pre-computed per-image sensitivity data.
-                        If None, uses visual-feature-based estimation.
+            lookup_path: Path to pre-computed per-image source-study ratios.
+                        If None, uses the visual-feature-to-proxy mapping.
             feature_norms_path: Path to feature_norms.json (the empirical
                         reference distribution over 1,485 GUI screenshots).
                         Used to percentile-normalise each Stage-1 feature so
@@ -199,7 +205,7 @@ class HCEyeFeatureExtractor:
                          text_density: Optional[float] = None,
                          image_name: Optional[str] = None) -> np.ndarray:
         """
-        Extract cognitive-load sensitivity features (h ∈ ℝ⁶) for a GUI.
+        Extract exploratory HCEye-derived proxy features (h ∈ ℝ⁶) for a GUI.
 
         Named-field interface (not array positions): the caller passes the
         Stage-1 feature dicts directly, which makes the feature→concept mapping
@@ -224,30 +230,36 @@ class HCEyeFeatureExtractor:
                 branch is used exclusively by offline analysis scripts on those
                 images. The live Flask app never passes image_name (a user's
                 novel screenshot can never be in the lookup), so it always takes
-                the feature-estimate path below. This is intended behaviour, not
+                the feature-to-proxy mapping below. This is intended behaviour, not
                 a missing wiring.
 
         Returns:
-            h ∈ ℝ⁶ cognitive load feature vector.
+            h ∈ ℝ⁶ exploratory project-specific proxy vector.
         """
         # Lookup path: only reachable for HCEye study images via offline scripts.
         if image_name and image_name in self.sensitivity_lookup:
             return self._from_lookup(image_name)
-        # Estimate path: always taken by the live app (novel screenshots).
+        # Proxy-mapping path: always taken by the live app (novel screenshots).
         return self._estimate_from_features(
             visual_features, saliency_features, whitespace_ratio, text_density,
         )
     
     def _from_lookup(self, image_name: str) -> np.ndarray:
-        """Use pre-computed sensitivity from HCEye empirical data."""
+        """Use pre-computed source-study ratios for an HCEye study image."""
         data = self.sensitivity_lookup[image_name]
+        # Existing frozen lookup files use the legacy final-key spelling.  It
+        # remains an offline input compatibility detail and is never exposed by
+        # the production API.
+        final_proxy = data.get(
+            'experimental_layout_complexity_index', data.get('cognitive_load_index')
+        )
         return np.array([
             data['fixation_reduction'],
             data['duration_increase'],
             data['exploration_reduction'],
             data['aoi_sensitivity'],
             data['highlight_effectiveness'],
-            data['cognitive_load_index'],
+            final_proxy,
         ], dtype=np.float32)
     
     def _estimate_from_features(self,
@@ -256,7 +268,7 @@ class HCEyeFeatureExtractor:
                                 whitespace_ratio: Optional[float] = None,
                                 text_density: Optional[float] = None) -> np.ndarray:
         """
-        Estimate cognitive-load sensitivity from Stage-1 features.
+        Estimate exploratory HCEye-derived proxies from Stage-1 features.
 
         Each Stage-1 feature is percentile-normalised against the empirical
         reference distribution (feature_norms.json), so its value becomes
@@ -265,9 +277,9 @@ class HCEyeFeatureExtractor:
 
         The HCEye effect coefficients (Das et al., 2024) are unchanged; only
         the mapping of features onto them is a purpose-built, literature-guided
-        heuristic (direction motivated by Rosenholtz 2007 / Rayner 1998; the
-        exact weighting is not empirically calibrated and is examined by the
-        user study).
+        heuristic (direction motivated by Rosenholtz 2007 / Rayner 1998).  The
+        exact mapping and weighting are not empirically calibrated and cannot
+        support a cognitive-load interpretation.
         """
         vf = visual_features or {}
 
@@ -312,7 +324,7 @@ class HCEyeFeatureExtractor:
             0.04 * (1.0 - layout_quality)
         exploration_reduction = float(np.clip(exploration_reduction, 0.7, 1.0))
 
-        # 4. AOI Sensitivity — more visual clutter → greater AOI attention loss.
+        # 4. AOI-sensitivity proxy — project-specific clutter mapping.
         clutter = 1.0 - whitespace
         aoi_baseline = self.coefficients['aoi_hit_absent_no_hl']
         aoi_loaded = self.coefficients['aoi_hit_high_no_hl']
@@ -336,24 +348,28 @@ class HCEyeFeatureExtractor:
             highlight_need = complexity  # fallback to complexity
         hl_effectiveness = float(np.clip(0.5 + 0.4 * highlight_need, 0.0, 1.0))
 
-        # 6. Combined Cognitive Load Index (0–1) — weighted combination.
-        cognitive_load_index = (
+        # 6. Experimental layout-complexity proxy (0–1).  This purpose-built
+        # weighted combination is uncalibrated and carries no validated
+        # cognitive-load interpretation.
+        experimental_layout_complexity_index = (
             0.30 * (1.0 - fixation_reduction) +       # More reduction = higher index
             0.20 * (duration_increase - 1.0) +         # More increase = higher index
             0.20 * (1.0 - exploration_reduction) +     # More reduction = higher index
             0.15 * aoi_sensitivity +                    # Higher sensitivity = higher index
             0.15 * (1.0 - hl_effectiveness)            # Lower effectiveness = higher index
         )
-        cognitive_load_index = float(np.clip(cognitive_load_index / 0.3, 0.0, 1.0))
+        experimental_layout_complexity_index = float(np.clip(
+            experimental_layout_complexity_index / 0.3, 0.0, 1.0
+        ))
 
         # --- Empty-canvas anchoring (supervisor sanity test) ----------------
         # The five terms above carry non-zero floors: highlight effectiveness
-        # has a fixed 0.5 base and AOI sensitivity a constant ~0.28 offset, so
-        # even a blank canvas would score ~0.4 ("medium load"). Interaction
-        # load is only meaningful to the degree the screen actually presents
-        # content to process, so we scale the index by a measured content-
+        # has a fixed 0.5 base and the AOI proxy a constant ~0.28 offset, so
+        # even a blank canvas would otherwise sit near 0.4. The project-specific
+        # layout proxy is only meaningful to the degree the screen presents
+        # structural content, so we scale the index by a measured content-
         # presence factor. A near-empty screen (no edges, no elements, near-
-        # total whitespace) -> presence ~0 -> low load; a content-rich screen
+        # total whitespace) -> presence ~0 -> low proxy value; a content-rich screen
         # -> presence ~1 -> index effectively unchanged. This anchors the
         # headline at the bottom of its range instead of a fixed floor.
         #
@@ -369,7 +385,7 @@ class HCEyeFeatureExtractor:
             max(edge, element_count, 1.0 - whitespace),
             0.0, 1.0,
         ))
-        cognitive_load_index *= content_presence
+        experimental_layout_complexity_index *= content_presence
 
         return np.array([
             fixation_reduction,
@@ -377,7 +393,7 @@ class HCEyeFeatureExtractor:
             exploration_reduction,
             aoi_sensitivity,
             hl_effectiveness,
-            cognitive_load_index,
+            experimental_layout_complexity_index,
         ], dtype=np.float32)
 
     def _percentile_normalize(self, value: Optional[float], feature_key: str,
@@ -459,23 +475,23 @@ class HCEyeFeatureExtractor:
         return float(np.interp(float(value), xs, ys))
 
     def get_feature_names(self) -> list:
-        """Return names of the 6 cognitive load features."""
+        """Return the bounded public names of the six proxy features."""
         return [
-            'cog_fixation_reduction',
-            'cog_duration_increase', 
-            'cog_exploration_reduction',
-            'cog_aoi_sensitivity',
-            'highlight_effectiveness',
-            'cognitive_load_index',
+            'hceye_fixation_ratio_proxy',
+            'hceye_duration_ratio_proxy',
+            'hceye_exploration_ratio_proxy',
+            'hceye_aoi_sensitivity_proxy',
+            'hceye_highlight_effectiveness_proxy',
+            'experimental_layout_complexity_index',
         ]
 
 
 def build_sensitivity_lookup(csv_path: str, output_path: str) -> Dict:
     """
-    Build per-image sensitivity lookup table from HCEye CSV data.
-    
-    This creates empirical ground-truth values for the 150 webpages
-    used in the HCEye study.
+    Build per-image source-study ratios when the external HCEye CSV is supplied.
+
+    The result is a reproduction aid for those study images, not empirical
+    ground truth for the project-specific screenshot proxy.
     """
     import pandas as pd
     
@@ -531,15 +547,17 @@ def build_sensitivity_lookup(csv_path: str, output_path: str) -> Dict:
         else:
             hl_effectiveness = 0.7
         
-        # Combined index
-        cognitive_load_index = (
+        # Project-specific combined proxy (not a validated measurement).
+        experimental_layout_complexity_index = (
             0.30 * (1.0 - fix_reduction) +
             0.20 * max(0, dur_increase - 1.0) +
             0.20 * (1.0 - freq_reduction) +
             0.15 * aoi_sensitivity +
             0.15 * (1.0 - hl_effectiveness)
         )
-        cognitive_load_index = np.clip(cognitive_load_index / 0.3, 0.0, 1.0)
+        experimental_layout_complexity_index = np.clip(
+            experimental_layout_complexity_index / 0.3, 0.0, 1.0
+        )
         
         lookup[img] = {
             'fixation_reduction': float(fix_reduction),
@@ -547,7 +565,9 @@ def build_sensitivity_lookup(csv_path: str, output_path: str) -> Dict:
             'exploration_reduction': float(freq_reduction),
             'aoi_sensitivity': float(aoi_sensitivity),
             'highlight_effectiveness': float(hl_effectiveness),
-            'cognitive_load_index': float(cognitive_load_index),
+            'experimental_layout_complexity_index': float(
+                experimental_layout_complexity_index
+            ),
         }
     
     # Save lookup
@@ -555,7 +575,7 @@ def build_sensitivity_lookup(csv_path: str, output_path: str) -> Dict:
     with open(output_path, 'w') as f:
         json.dump(lookup, f, indent=2)
     
-    print(f"Built sensitivity lookup for {len(lookup)} images -> {output_path}")
+    print(f"Built source-study ratio lookup for {len(lookup)} images -> {output_path}")
     return lookup
 
 
@@ -566,9 +586,11 @@ def build_sensitivity_lookup(csv_path: str, output_path: str) -> Dict:
 if __name__ == '__main__':
     import argparse
     
-    parser = argparse.ArgumentParser(description='HCEye Cognitive Load Features')
+    parser = argparse.ArgumentParser(
+        description='Project-specific HCEye-derived layout proxies'
+    )
     parser.add_argument('--build-lookup', action='store_true',
-                       help='Build sensitivity lookup from CSV')
+                       help='Build source-study ratio lookup from CSV')
     parser.add_argument('--csv', type=str, 
                        default='hceye/gaze/fixation_AOI_metrics_final.csv',
                        help='Path to HCEye CSV')
@@ -587,10 +609,13 @@ if __name__ == '__main__':
         sample_imgs = list(lookup.keys())[:5]
         print("\nSample entries:")
         for img in sample_imgs:
-            print(f"  {img}: CLI={lookup[img]['cognitive_load_index']:.3f}")
+            print(
+                f"  {img}: experimental_layout_complexity_index="
+                f"{lookup[img]['experimental_layout_complexity_index']:.3f}"
+            )
     
     if args.test:
-        print("\n=== Test: Estimate from visual features ===")
+        print("\n=== Test: Map visual features to exploratory proxies ===")
         extractor = HCEyeFeatureExtractor()
 
         # Simulate a complex GUI (named Stage-1 features).

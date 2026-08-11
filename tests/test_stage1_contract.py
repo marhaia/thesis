@@ -42,12 +42,12 @@ EXPECTED_STAGE1_NAMES = [
     "saliency_coverage",
     "saliency_peak_count",
     "saliency_center_bias",
-    "cog_fixation_reduction",
-    "cog_duration_increase",
-    "cog_exploration_reduction",
-    "cog_aoi_sensitivity",
-    "highlight_effectiveness",
-    "cognitive_load_index",
+    "hceye_fixation_ratio_proxy",
+    "hceye_duration_ratio_proxy",
+    "hceye_exploration_ratio_proxy",
+    "hceye_aoi_sensitivity_proxy",
+    "hceye_highlight_effectiveness_proxy",
+    "experimental_layout_complexity_index",
 ]
 
 
@@ -173,7 +173,7 @@ def test_public_stage1_boundary_is_exact_named_float32_x19(client):
     expected_values = (
         [response["visual_features"][name] for name in EXPECTED_STAGE1_NAMES[:8]]
         + [response["saliency_features"][name] for name in EXPECTED_STAGE1_NAMES[8:13]]
-        + [response["cognitive_load_features"][name] for name in EXPECTED_STAGE1_NAMES[13:]]
+        + [response["hceye_proxy_features"][name] for name in EXPECTED_STAGE1_NAMES[13:]]
     )
     expected_bytes = np.asarray(expected_values, dtype=np.float32).tobytes()
     assert _vector_bytes(response) == expected_bytes
@@ -213,6 +213,9 @@ def test_stage2_modifiers_remain_separate_from_stage1_layout(client):
 
     assert neutral["layout"] == maximal["layout"]
     assert set(neutral["layout"]) == {"experimental_complexity_index"}
-    assert neutral["adjusted_prediction"] != maximal["adjusted_prediction"]
+    assert (
+        neutral["context_adjusted_experimental_outputs"]
+        != maximal["context_adjusted_experimental_outputs"]
+    )
     assert neutral["task_descriptor"]["modifier"] != maximal["task_descriptor"]["modifier"]
     assert neutral["big_five_profile"]["modifier"] != maximal["big_five_profile"]["modifier"]

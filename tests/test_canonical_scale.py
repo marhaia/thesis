@@ -674,9 +674,10 @@ def test_fixtures_are_independently_rendered_not_raster_enlarged():
 SYNTHETIC_ENDPOINT_GUARD = 0.01   # == 1.0 displayed point on the 0-100 scale
 
 
-def test_cognitive_load_index_scale_invariant_through_endpoint(client, monkeypatch):
+def test_experimental_layout_index_scale_invariant_through_endpoint(client, monkeypatch):
     """(6,7,9) POST independently re-rendered 1x/2x/3x fixtures to
-    /api/cognitive-load and require the cognitive_load_index gap <= 0.01.
+    /api/cognitive-load and require the bounded experimental layout-index gap
+    <= 0.01.
 
     Explicitly mocked (and ONLY these):
       * UMSI++ saliency: app._predict_saliency_cached is replaced with
@@ -719,18 +720,22 @@ def test_cognitive_load_index_scale_invariant_through_endpoint(client, monkeypat
                                content_type="multipart/form-data")
             assert resp.status_code == 200, resp.get_data(as_text=True)
             body = resp.get_json()
-            idx[s] = float(body["cognitive_load_index"])
+            idx[s] = float(
+                body["hceye_proxy_features"][
+                    "experimental_layout_complexity_index"
+                ]
+            )
         gap = max(idx.values()) - min(idx.values())
         per_fx[name] = (idx, gap)
 
-    print("\n[endpoint /api/cognitive-load cognitive_load_index 1x/2x/3x]")
+    print("\n[endpoint /api/cognitive-load experimental layout index 1x/2x/3x]")
     for name, (idx, gap) in per_fx.items():
         print(f"  {name}: 1x={idx[1]:.5f} 2x={idx[2]:.5f} 3x={idx[3]:.5f} "
               f"gap={gap:.5f} ({gap * 100:.3f} displayed pt)")
 
     for name, (idx, gap) in per_fx.items():
         assert gap <= SYNTHETIC_ENDPOINT_GUARD, (
-            f"{name}: cognitive_load_index gap {gap:.5f} exceeds "
+            f"{name}: experimental layout-index gap {gap:.5f} exceeds "
             f"{SYNTHETIC_ENDPOINT_GUARD} (= 1.0 displayed point). idx={idx}")
 
 

@@ -1827,12 +1827,7 @@
                 <!-- 2. Score summary -->
                 <div class="summary-grid" id="summaryGrid"></div>
 
-                <!-- 2a. UMSI++ design-type classification (6-class head). Shows a
-                     caution banner when the screenshot is classified outside the
-                     general GUI domain the saliency model targets. -->
-                <div id="designClassBanner" style="display:none;"></div>
-
-                <!-- 2b. Context summary: shows exactly which task context the
+                <!-- 2a. Context summary: shows exactly which task context the
                      score was computed with, so the declared mode stays visible
                      after analysis (not hidden in the Step 2 dropdowns). -->
                 <div id="contextSummary" class="context-summary"></div>
@@ -2833,11 +2828,11 @@
                 // Add to history
                 history.push({
                     filename: data.filename,
-                    score: data.adjusted_prediction.cognitive_load_score,
+                    experimental_layout_complexity: data.context_adjusted_experimental_outputs.layout_complexity_score,
                     included: true,
-                    base_score: data.base_prediction.cognitive_load_score,
-                    search_efficiency: data.adjusted_prediction.search_efficiency,
-                    attention_demand: data.adjusted_prediction.attention_demand,
+                    base_layout_complexity: data.base_experimental_outputs.layout_complexity_score,
+                    search_efficiency_proxy: data.context_adjusted_experimental_outputs.search_efficiency_proxy,
+                    attention_demand_proxy: data.context_adjusted_experimental_outputs.attention_demand_proxy,
                     task_type: data.task_descriptor.task_type,
                     search_mode: data.task_descriptor.search_mode,
                     specificity: data.task_descriptor.target_specificity,
@@ -2845,8 +2840,8 @@
                     profile: data.big_five_profile.label,
                     visual_features: data.visual_features,
                     saliency_features: data.saliency_features,
-                    hceye_features: data.cognitive_load_features,
-                    hceye_cli: data.cognitive_load_features && data.cognitive_load_features.cognitive_load_index,
+                    hceye_proxy_features: data.hceye_proxy_features,
+                    hceye_proxy_index: data.hceye_proxy_features && data.hceye_proxy_features.experimental_layout_complexity_index,
                     task_modifier: data.task_descriptor.modifier,
                     profile_modifier: data.big_five_profile.modifier,
                     coherence_data: data.coherence,
@@ -3941,77 +3936,26 @@
             results.classList.add("visible");
             emptyState.style.display = "none";
 
-            const base = data.base_prediction || {};
-            const adjusted = data.adjusted_prediction || {};
+            const base = data.base_experimental_outputs || {};
+            const adjusted = data.context_adjusted_experimental_outputs || {};
             const layout = data.layout || {};
             // Remember the stable layout complexity value so the search-path
             // panel can show a SEPARATE target search-difficulty card. This
             // value never changes when a target is selected.
             _layoutLoadScore = (typeof layout.experimental_complexity_index === 'number')
                 ? layout.experimental_complexity_index
-                : adjusted.cognitive_load_score;
+                : adjusted.layout_complexity_score;
             summaryGrid.innerHTML = `
                 <div class="summary-card">
                     <div class="summary-label">Experimental Layout Complexity <span class="feature-i" tabindex="0" aria-label="What is Experimental Layout Complexity?" data-tip="<div class='tip-title'>Experimental Layout Complexity</div><div class='tip-body'>An exploratory, image-based complexity value for the whole screen, on a 0&ndash;100 scale. Higher means a busier, more demanding layout. It combines the visual complexity features with the selected task and profile context. It is a layout characteristic, not a validated cognitive-load measurement, and it does not change when you select a target.</div>">i</span></div>
-                    <div class="summary-value">${adjusted.cognitive_load_score.toFixed(1)}</div>
-                    <div class="summary-meta"><strong>Exploratory, unvalidated heuristic &mdash; not a cognitive-load measurement.</strong> Base ${base.cognitive_load_score.toFixed(1)} · adjusted by task/profile · ${data.prediction_source === "stage2_trained_model" ? "experimental regressor" : "HCEye rule-based"}. Select a target below for its search difficulty.</div>
+                    <div class="summary-value">${adjusted.layout_complexity_score.toFixed(1)}</div>
+                    <div class="summary-meta"><strong>Exploratory, project-specific heuristic &mdash; not a validated cognitive-load measurement.</strong> Base ${base.layout_complexity_score.toFixed(1)} · adjusted by task/profile · ${data.prediction_source === "experimental_stage2_regressor" ? "experimental regressor" : "project-specific HCEye heuristic"}. Select a target below for its search difficulty.</div>
                 </div>
             `;
             // Search Efficiency and Attention Demand are intentionally NOT shown
             // as headline cards: they are exploratory, unvalidated rule-based
             // proxies. They remain only in the technical details / PDF export,
             // explicitly labelled as exploratory proxies.
-
-            // ── UMSI++ design-type classification banner — INTENTIONALLY DISABLED ──
-            // The six-class softmax index-to-label mapping of the saliency model's
-            // design-type head is NOT verified. Until the label mapping is
-            // confirmed against the official code, the standard UI must not:
-            //   (a) render a semantic design-type label from that mapping,
-            //   (b) classify a screenshot as in-domain / out-of-domain, or
-            //   (c) warn that downstream outputs are more or less reliable
-            //       based on it.
-            // Rendering an unverified label would be an unfounded claim, so the
-            // banner is kept hidden. The backend field data.design_classification
-            // is left unchanged for API compatibility but is deliberately not used
-            // here. Re-enable only after the mapping is independently verified.
-            const dcBanner = document.getElementById('designClassBanner');
-            if (dcBanner) {
-                dcBanner.style.display = 'none';
-                dcBanner.innerHTML = '';
-            }
-            if (false) {
-                const dc = data.design_classification;
-                if (dc && dc.predicted_class) {
-                    const label = dc.predicted_class.replace(/_/g, ' ');
-                    const conf = Math.round((dc.confidence || 0) * 100);
-                    if (dc.out_of_domain) {
-                        dcBanner.style.cssText =
-                            'display:block; margin-bottom:16px; padding:10px 14px; border-radius:8px; ' +
-                            'border:1px solid var(--warning, #d97706); background:rgba(217,119,6,0.12); ' +
-                            'font-size:12px; color:var(--text);';
-                        dcBanner.innerHTML =
-                            `<strong>Caution:</strong> the saliency model classifies this screenshot as ` +
-                            `<strong>${label}</strong> (${conf}% confidence), which is outside the ` +
-                            `general GUI domain it was trained for. Saliency and other learned ` +
-                            `models are known to lose accuracy on inputs that differ from their ` +
-                            `training distribution ` +
-                            `(<a class="cite-link" href="https://doi.org/10.1109/CVPR.2011.5995347" target="_blank" rel="noopener">Torralba &amp; Efros, 2011</a>; ` +
-                            `<a class="cite-link" href="https://doi.org/10.1145/3544548.3581096" target="_blank" rel="noopener">Jiang et al., 2023</a>), ` +
-                            `so the saliency map and the cognitive-load score may be less reliable ` +
-                            `for this image.`;
-                    } else {
-                        dcBanner.style.cssText =
-                            'display:block; margin-bottom:16px; padding:8px 14px; border-radius:8px; ' +
-                            'border:1px solid var(--border); background:var(--surface2); ' +
-                            'font-size:11px; color:var(--text-dim);';
-                        dcBanner.innerHTML =
-                            `Detected design type: <strong>${label}</strong> (${conf}% confidence) — ` +
-                            `within the model's intended UI domain.`;
-                    }
-                } else {
-                    dcBanner.style.display = 'none';
-                }
-            }
 
             renderContextSummary();
 
@@ -4076,7 +4020,7 @@
 
             // Design diagnosis (3 bullets above feature table)
             const diagnosisEl = document.getElementById('featureDiagnosis');
-            if (diagnosisEl) diagnosisEl.innerHTML = buildDesignDiagnosis(data.visual_features, data.reference, data.adjusted_prediction && data.adjusted_prediction.cognitive_load_score);
+            if (diagnosisEl) diagnosisEl.innerHTML = buildDesignDiagnosis(data.visual_features, data.reference, data.context_adjusted_experimental_outputs && data.context_adjusted_experimental_outputs.layout_complexity_score);
 
             // Provenance note for the empirical reference comparison.
             const provEl = document.getElementById('featureRefProvenance');
@@ -4178,10 +4122,10 @@
             }
 
             // ─── Score Breakdown Panel ───
-            const baseScore = data.base_prediction.cognitive_load_score;
+            const baseScore = data.base_experimental_outputs.layout_complexity_score;
             const tMod   = data.task_descriptor.modifier;
             const pMod   = data.big_five_profile.modifier;
-            const final  = data.adjusted_prediction.cognitive_load_score;
+            const final  = data.context_adjusted_experimental_outputs.layout_complexity_score;
             const td     = data.task_descriptor;
 
             // Store base score globally so live-update can recalculate
@@ -4350,7 +4294,7 @@
                             <span class="pill">Task: ${data.task_descriptor.task_type}</span>
                             <span class="pill">Mode: ${data.task_descriptor.search_mode}</span>
                             <span class="pill">Profile: ${data.big_five_profile.label}</span>
-                            <span class="pill">Source: ${data.prediction_source === "stage2_trained_model" ? "Experimental Stage 2" : "HCEye rule-based"}</span>
+                            <span class="pill">Source: ${data.prediction_source === "experimental_stage2_regressor" ? "Experimental Stage 2" : "Project-specific HCEye heuristic"}</span>
                         </div>
                         <div style="font-size:11px; color:var(--text-dim); margin-top:8px; line-height:1.5;">
                             Baseline = the original result from this exact run (image + selected task/profile at analysis time). It is read-only and kept as your reference point.
@@ -4536,14 +4480,14 @@
         // ─── Interpretation ───
         function renderInterpretation(data) {
             renderCoherence(data.coherence);
-            const score = data.adjusted_prediction.cognitive_load_score;
-            const baseScore = (data.base_prediction && data.base_prediction.cognitive_load_score) || 0;
-            const searchEff = data.adjusted_prediction.search_efficiency;
-            const attnDem  = data.adjusted_prediction.attention_demand;
-            const hcEyeIdx = (data.cognitive_load_features && data.cognitive_load_features.cognitive_load_index) || 0;
-            const fixRed   = (data.cognitive_load_features && data.cognitive_load_features.cog_fixation_reduction) || 1;
-            const durInc   = (data.cognitive_load_features && data.cognitive_load_features.cog_duration_increase) || 1;
-            const hlEff    = (data.cognitive_load_features && data.cognitive_load_features.highlight_effectiveness) || 0;
+            const score = data.context_adjusted_experimental_outputs.layout_complexity_score;
+            const baseScore = (data.base_experimental_outputs && data.base_experimental_outputs.layout_complexity_score) || 0;
+            const searchEff = data.context_adjusted_experimental_outputs.search_efficiency_proxy;
+            const attnDem  = data.context_adjusted_experimental_outputs.attention_demand_proxy;
+            const hcEyeIdx = (data.hceye_proxy_features && data.hceye_proxy_features.experimental_layout_complexity_index) || 0;
+            const fixRed   = (data.hceye_proxy_features && data.hceye_proxy_features.hceye_fixation_ratio_proxy) || 1;
+            const durInc   = (data.hceye_proxy_features && data.hceye_proxy_features.hceye_duration_ratio_proxy) || 1;
+            const hlEff    = (data.hceye_proxy_features && data.hceye_proxy_features.hceye_highlight_effectiveness_proxy) || 0;
 
             let level, badge, badgeClass, levelClass, title, body;
 
@@ -4894,9 +4838,9 @@
                     <td><input type="checkbox" class="history-select" data-idx="${i}" ${checked}></td>
                     <td style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
                         title="${fileName}">${fileName}</td>
-                    <td>${row.score.toFixed(1)}</td>
-                    <td>${row.search_efficiency.toFixed(3)}</td>
-                    <td>${row.attention_demand.toFixed(3)}</td>
+                    <td>${row.experimental_layout_complexity.toFixed(1)}</td>
+                    <td>${row.search_efficiency_proxy.toFixed(3)}</td>
+                    <td>${row.attention_demand_proxy.toFixed(3)}</td>
                     <td>${taskType}</td>
                     <td title="${profile}">${profile}</td>
                 </tr>`;
@@ -4962,14 +4906,14 @@
                 el.innerHTML = `<span class="comparison-summary-empty">No analyses selected for the overall comparison. Tick a box to include one.</span>`;
                 return;
             }
-            const scores = sel.map(r => r.score);
+            const scores = sel.map(r => r.experimental_layout_complexity);
             const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
             const min = Math.min(...scores);
             const max = Math.max(...scores);
             el.innerHTML =
                 `<strong>Overall comparison</strong> — ${sel.length} of ${history.length} analyses selected` +
                 `<div class="comparison-summary-metrics">` +
-                `<span>Average score <b>${avg.toFixed(1)}</b></span>` +
+                `<span>Average experimental index <b>${avg.toFixed(1)}</b></span>` +
                 `<span>Lowest <b>${min.toFixed(1)}</b></span>` +
                 `<span>Highest <b>${max.toFixed(1)}</b></span>` +
                 `</div>`;
@@ -5066,7 +5010,7 @@
             divider();
 
             // ── Overall Score Banner ─────────────────────────────────────
-            const score   = d.score || 0;
+            const score   = d.experimental_layout_complexity || 0;
             const level   = score < 25 ? "LOW" : score < 50 ? "MODERATE" : score < 75 ? "HIGH" : "VERY HIGH";
             const lvlColor = score < 25 ? ok : score < 50 ? warn : score < 75 ? [234, 88, 12] : danger;
             doc.setFillColor(...panel);
@@ -5096,7 +5040,7 @@
             row("Target Specificity", d.specificity || "-");
             row("Time Pressure",  d.time_pressure || "-");
             row("User Profile",   d.profile || "Neutral");
-            row("Score Source",   d.prediction_source === "stage2_trained_model" ? "Experimental Stage 2" : "HCEye rule-based");
+            row("Score Source",   d.prediction_source === "experimental_stage2_regressor" ? "Experimental Stage 2" : "Project-specific HCEye heuristic");
             row("Vector Dims",    d.vector_dimensions || "-");
             divider();
 
@@ -5122,10 +5066,10 @@
             // ── Scores ───────────────────────────────────────────────────
             sectionTitle("Experimental Outputs");
             row("Experimental Layout-Complexity Index (adjusted)",   score.toFixed(2), lvlColor);
-            row("Experimental Layout-Complexity Index (base)",        (d.base_score || 0).toFixed(2));
-            row("Search Efficiency (exploratory proxy)",   (d.search_efficiency || 0).toFixed(3));
-            row("Attention Demand (exploratory proxy)",    (d.attention_demand || 0).toFixed(3));
-            row("HCEye-derived Rule Index (exploratory)",       (d.hceye_cli || 0).toFixed(3));
+            row("Experimental Layout-Complexity Index (base)",        (d.base_layout_complexity || 0).toFixed(2));
+            row("Search Efficiency (exploratory proxy)",   (d.search_efficiency_proxy || 0).toFixed(3));
+            row("Attention Demand (exploratory proxy)",    (d.attention_demand_proxy || 0).toFixed(3));
+            row("HCEye-derived Rule Index (exploratory)",       (d.hceye_proxy_index || 0).toFixed(3));
             row("Task Modifier",                      (d.task_modifier || 0).toFixed(2));
             row("Profile Modifier",                   (d.profile_modifier || 0).toFixed(2));
             divider();
@@ -5149,9 +5093,9 @@
             divider();
 
             // ── HCEye Features ───────────────────────────────────────────
-            sectionTitle("HCEye Features (h, 6 dims)");
-            if (d.hceye_features) {
-                Object.entries(d.hceye_features).forEach(([k, v]) =>
+            sectionTitle("HCEye-derived Proxy Features (h, 6 dims)");
+            if (d.hceye_proxy_features) {
+                Object.entries(d.hceye_proxy_features).forEach(([k, v]) =>
                     row(k.replace(/_/g, " "), typeof v === "number" ? v.toFixed(4) : v)
                 );
             }
@@ -5229,7 +5173,7 @@
         });
 
         function exportCSV(data, filename) {
-            const headers = ["filename", "score", "search_efficiency", "attention_demand", "task_type", "profile", "task_modifier", "profile_modifier"];
+            const headers = ["filename", "experimental_layout_complexity", "search_efficiency_proxy", "attention_demand_proxy", "task_type", "profile", "task_modifier", "profile_modifier"];
             const rows = data.map(d =>
                 headers.map(h => d[h] !== undefined ? d[h] : "").join(",")
             );
@@ -5259,11 +5203,11 @@
 
         function notifyAnalysisComplete(data, elapsedSec) {
             if (!notificationsEnabled()) return;
-            const score = data && data.adjusted_prediction
-                ? data.adjusted_prediction.cognitive_load_score
+            const score = data && data.context_adjusted_experimental_outputs
+                ? data.context_adjusted_experimental_outputs.layout_complexity_score
                 : null;
             const scoreText = score !== null ? score.toFixed(1) : "n/a";
-            const body = `Score: ${scoreText}`;
+            const body = `Experimental layout complexity: ${scoreText}`;
 
             // If user is already on the tab, avoid noisy notifications.
             const background = document.hidden || !document.hasFocus();

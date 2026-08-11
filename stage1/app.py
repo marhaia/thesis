@@ -114,6 +114,19 @@ LAYOUT_OCR_ERROR_MESSAGE = (
     "Required layout/OCR analysis is unavailable; no score was produced. "
     "Check the server's layout/OCR setup and retry."
 )
+# P5 / AG-07..09 production semantics policy.  This metadata is returned with
+# every successful score-bearing response so API consumers cannot mistake the
+# project-specific HCEye adaptation for a validated cognitive-load measure or
+# infer semantic labels from the unverified UMSI classification-head order.
+SCIENTIFIC_SEMANTICS = {
+    "construct": "exploratory_project_specific_layout_proxy",
+    "validated_cognitive_load_measurement": False,
+    "hceye_derivation_reproducible_from_repository": False,
+    "hceye_coefficient_provenance": (
+        "hash_pinned_external_csv_with_repository_verifier"
+    ),
+    "umsi_class_label_mapping_verified": False,
+}
 
 
 def _load_feature_norms():
@@ -698,7 +711,12 @@ def features_info():
 
 @app.route("/api/saliency", methods=["POST"])
 def saliency():
-    """Predict saliency heatmap and extract saliency features for an uploaded image."""
+    """Predict a saliency heatmap and numeric features for an uploaded image.
+
+    The model's six-value auxiliary head remains an internal numeric output:
+    its index-to-label order is not verified, so this public route must not
+    attach class names, a predicted design type, or domain judgments to it.
+    """
     if "image" not in request.files:
         return jsonify({"error": "No image uploaded"}), 400
 
@@ -721,8 +739,7 @@ def saliency():
         import numpy as np
         from saliency.saliency_features import extract_saliency_features
 
-        heatmap, classif, cache_hit = _predict_saliency_cached(image_hash, filepath)
-        model = _get_saliency_model()
+        heatmap, _classif, cache_hit = _predict_saliency_cached(image_hash, filepath)
 
         # Extract saliency features
         features = extract_saliency_features(heatmap)
@@ -734,17 +751,9 @@ def saliency():
         _, buf = cv2.imencode(".png", heatmap_colored)
         heatmap_b64 = base64.b64encode(buf).decode("utf-8")
 
-        # Classification results
-        classif_dict = {
-            cls: float(prob)
-            for cls, prob in zip(model.DESIGN_CLASSES, classif)
-        }
-
         return jsonify({
             "filename": file.filename,
             "features": features,
-            "classification": classif_dict,
-            "predicted_class": model.DESIGN_CLASSES[int(np.argmax(classif))],
             "heatmap_png_base64": heatmap_b64,
             "saliency_cache_hit": cache_hit,
         })
@@ -1207,18 +1216,24 @@ def _resolve_display_preset(req):
 @app.route("/api/cognitive-load", methods=["POST"])
 def cognitive_load():
     """
-    Compute cognitive load features using HCEye-derived sensitivity model.
+    Compute the exploratory project-specific layout proxy.
+
+    ``/api/cognitive-load`` is retained as the legacy route name.  The returned
+    construct is not a validated cognitive-load measurement.  HCEye-derived
+    values are exposed only as explicitly named proxies, and the unverified
+    UMSI classification-head label mapping is never exposed.
 
     Combines visual complexity (v∈ℝ⁸) + saliency (s∈ℝ⁵) + HCEye-derived
-    features (h∈ℝ⁶) into the task/profile-independent Stage-1 x19 boundary.
+    proxy features (h∈ℝ⁶) into the task/profile-independent Stage-1 x19
+    boundary.
 
     Response JSON:
         {
             "filename": str,
             "visual_features": {...},         # v∈ℝ⁸
             "saliency_features": {...},       # s∈ℝ⁵  
-            "cognitive_load_features": {...},  # h∈ℝ⁶
-            "cognitive_load_index": float,
+            "hceye_proxy_features": {...},     # h∈ℝ⁶
+            "scientific_semantics": {...},
             "stage1_feature_vector": [...],   # [v8 | s5 | h6]
             "stage1_feature_names": [...],
             "stage1_vector_dtype": "float32",
@@ -1278,44 +1293,15 @@ def cognitive_load():
         s = None
         saliency_dict = {}
         saliency_overlay_b64 = None
-        design_classification = None
         try:
             import base64, cv2
             from saliency.saliency_features import extract_saliency_features
-            heatmap, classif, cache_hit = _predict_saliency_cached(image_hash, filepath)
+            heatmap, _classif, cache_hit = _predict_saliency_cached(image_hash, filepath)
             saliency_dict = extract_saliency_features(heatmap)
             s = np.array(
                 [saliency_dict[name] for name in STAGE1_SALIENCY_FEATURE_NAMES],
                 dtype=np.float32,
             )
-            # UMSI++ 6-class design-type head (Jiang et al., CHI 2023). The model
-            # was trained on UEyes; if it classifies the screenshot as something
-            # other than a desktop/automotive-style UI (e.g. "mobile_ui" or
-            # "web_page"), the saliency prediction is out of its training domain
-            # and the downstream load estimate should be read with caution.
-            try:
-                sal_model = _get_saliency_model()
-                classif_probs = [float(p) for p in classif]
-                top_idx = int(np.argmax(classif_probs))
-                predicted_class = sal_model.DESIGN_CLASSES[top_idx]
-                # Classes that indicate the screenshot is outside the
-                # automotive/desktop-style domain this thesis targets.
-                OUT_OF_DOMAIN = {"mobile_ui", "web_page", "poster",
-                                 "infographic", "natural_image"}
-                design_classification = {
-                    "predicted_class": predicted_class,
-                    "confidence": round(classif_probs[top_idx], 4),
-                    "probabilities": {
-                        cls: round(prob, 4)
-                        for cls, prob in zip(sal_model.DESIGN_CLASSES,
-                                             classif_probs)
-                    },
-                    "out_of_domain": predicted_class in OUT_OF_DOMAIN,
-                }
-            except Exception as ce:
-                # Classification is a non-critical add-on; never fail the
-                # analysis because of it.
-                print(f"[Saliency] Design classification unavailable: {ce!r}")
         except Exception as e:
             # Saliency is MANDATORY for a complete, score-bearing analysis.
             # Do not degrade to image-only features (s=None): that would let
@@ -1403,7 +1389,9 @@ def cognitive_load():
             except Exception as e:
                 print(f"[HCEye] Native element detection unavailable: {e!r}")
 
-        # Step 3: HCEye cognitive load features (h∈ℝ⁶)
+        # Step 3: project-specific HCEye-derived proxy features (h∈ℝ⁶).
+        # Their interpretation is deliberately bounded by SCIENTIFIC_SEMANTICS;
+        # these values are not validated screenshot-level cognitive load.
         lookup_path = Path(__file__).parent.parent / "hceye" / "sensitivity_lookup.json"
         extractor = HCEyeFeatureExtractor(str(lookup_path))
         h = extractor.extract_features(
@@ -1412,8 +1400,8 @@ def cognitive_load():
             whitespace_ratio=whitespace_ratio,
             text_density=text_density,
         )
-        cog_names = extractor.get_feature_names()
-        cog_dict = dict(zip(cog_names, h.tolist()))
+        proxy_names = extractor.get_feature_names()
+        hceye_proxy_dict = dict(zip(proxy_names, h.tolist()))
 
         # Step 4: Optional Stage-2 task/profile context.  These values must not
         # enter the public Stage-1 vector or its screenshot-only layout value.
@@ -1427,33 +1415,48 @@ def cognitive_load():
             parts.append(np.zeros(5, dtype=np.float32))
         parts.append(h)
         base_vector, stage1_feature_names = _assemble_stage1_vector(
-            parts[0], parts[1], parts[2], cog_names
+            parts[0], parts[1], parts[2], proxy_names
         )
 
         model_path = Path(__file__).parent.parent / "stage2" / "models" / "stage2_model.pkl"
         stage1_score = float(h[5] * 100.0)
-        predictions = {
-            "cognitive_load_score": stage1_score,
-            "search_efficiency": float(np.clip(1.0 - h[3], 0.0, 1.0)),
-            "attention_demand": float(np.clip(h[5] + 0.15, 0.0, 1.0)),
+        base_experimental_outputs = {
+            "layout_complexity_score": stage1_score,
+            "search_efficiency_proxy": float(np.clip(1.0 - h[3], 0.0, 1.0)),
+            "attention_demand_proxy": float(np.clip(h[5] + 0.15, 0.0, 1.0)),
         }
-        prediction_source = "hceye_rule_based"
+        prediction_source = "project_specific_hceye_heuristic"
         if use_trained_model and model_path.exists():
             stage2_model = Stage2Model(model_path=str(model_path))
-            predictions = stage2_model.predict(base_vector)
-            prediction_source = "stage2_trained_model"
+            stage2_prediction = stage2_model.predict(base_vector)
+            # Preserve Stage 2's numerical behavior while bounding the public
+            # semantics at this Stage-1 API boundary.
+            base_experimental_outputs = {
+                "layout_complexity_score": float(
+                    stage2_prediction["cognitive_load_score"]
+                ),
+                "search_efficiency_proxy": float(
+                    stage2_prediction["search_efficiency"]
+                ),
+                "attention_demand_proxy": float(
+                    stage2_prediction["attention_demand"]
+                ),
+            }
+            prediction_source = "experimental_stage2_regressor"
 
-        base_score = float(predictions["cognitive_load_score"])
+        base_score = float(base_experimental_outputs["layout_complexity_score"])
         descriptor_modifier = float(t_dict["modifier"])
         profile_modifier = float(profile["modifier"])
         adjusted_score = float(np.clip(base_score + descriptor_modifier + profile_modifier, 0.0, 100.0))
         search_efficiency = float(np.clip(
-            predictions["search_efficiency"] - 0.0025 * descriptor_modifier - 0.0030 * profile_modifier,
+            base_experimental_outputs["search_efficiency_proxy"]
+            - 0.0025 * descriptor_modifier - 0.0030 * profile_modifier,
             0.0,
             1.0,
         ))
         attention_demand = float(np.clip(
-            predictions["attention_demand"] + 0.0040 * descriptor_modifier + 0.0040 * profile_modifier,
+            base_experimental_outputs["attention_demand_proxy"]
+            + 0.0040 * descriptor_modifier + 0.0040 * profile_modifier,
             0.0,
             1.0,
         ))
@@ -1596,8 +1599,7 @@ def cognitive_load():
             "saliency_features": saliency_dict,
             "saliency_overlay_b64": saliency_overlay_b64,
             "saliency_cache_hit": cache_hit,
-            "design_classification": design_classification,
-            "cognitive_load_features": cog_dict,
+            "hceye_proxy_features": hceye_proxy_dict,
             "hceye_inputs": {
                 # Real element-derived measurements fed into the HCEye rules.
                 # These come from the CANONICAL analysis path (long side 1280),
@@ -1614,11 +1616,11 @@ def cognitive_load():
             },
             "task_descriptor": t_dict,
             "big_five_profile": profile,
-            "base_prediction": predictions,
-            "adjusted_prediction": {
-                "cognitive_load_score": adjusted_score,
-                "search_efficiency": search_efficiency,
-                "attention_demand": attention_demand,
+            "base_experimental_outputs": base_experimental_outputs,
+            "context_adjusted_experimental_outputs": {
+                "layout_complexity_score": adjusted_score,
+                "search_efficiency_proxy": search_efficiency,
+                "attention_demand_proxy": attention_demand,
             },
             # Methodologically-separate LAYOUT construct. This is the stable,
             # image-based value that must NOT change when a target is selected.
@@ -1631,7 +1633,7 @@ def cognitive_load():
             "prediction_source": prediction_source,
             "trained_model_requested": use_trained_model,
             "trained_model_available": model_path.exists(),
-            "cognitive_load_index": float(h[5]),
+            "scientific_semantics": dict(SCIENTIFIC_SEMANTICS),
             "stage1_feature_vector": base_vector.tolist(),
             "stage1_feature_names": stage1_feature_names,
             "stage1_vector_dtype": STAGE1_VECTOR_DTYPE,

@@ -648,9 +648,9 @@ def test_standard_ui_has_no_overload_or_safety_verdicts():
 
 def test_standard_ui_keeps_exploratory_caveats():
     html = _standard_ui_html().lower()
-    # Layout score must be flagged as an exploratory, unvalidated heuristic.
-    assert "exploratory, unvalidated heuristic" in html
-    assert "not a cognitive-load measurement" in html
+    # Layout score must be flagged as project-specific and unvalidated.
+    assert "exploratory, project-specific heuristic" in html
+    assert "not a validated cognitive-load measurement" in html
     # Contrast section must be WCAG-informed, not a conformance verdict.
     assert "wcag-informed contrast" in html
     assert "not a wcag conformance audit" in html
@@ -742,24 +742,44 @@ def test_standard_ui_final_framing_acceptance():
     assert "internal checks and source-study correspondence" in html
     assert "not independent validation" in html
     assert "hceye-derived rule index (exploratory)" in html
-    # The design-type banner must be intentionally disabled.
-    assert "intentionally disabled" in html
 
 
-def test_standard_ui_hides_unverified_umsi_class_mapping():
-    # The unverified six-class softmax mapping must not drive any rendered
-    # semantic label or in/out-of-domain reliability decision. The banner is
-    # forced hidden and the render branch is dead-coded (if (false)).
+def test_standard_ui_removes_unverified_umsi_class_mapping():
+    # The unverified six-class softmax mapping must not exist as a dormant UI
+    # branch or drive any semantic label / domain-reliability decision.
     html = _standard_ui_html()
-    assert "if (false) {" in html, "design-type banner render branch must be dead-coded"
-    # The forced-hidden assignment must precede the dead branch.
-    disabled_idx = html.find("dcBanner.style.display = 'none';\n                dcBanner.innerHTML = '';")
-    assert disabled_idx != -1, "design-type banner must be forced hidden"
     lower = html.lower()
-    # No rendered in/out-of-domain verdict from the mapping.
-    assert "within the model's intended ui domain" not in lower or "if (false)" in html
-    # The explanatory comment must state why it is disabled.
-    assert "index-to-label mapping" in lower
+    for forbidden in (
+        "designclassbanner",
+        "data.design_classification",
+        "data.predicted_class",
+        "out_of_domain",
+        "within the model's intended ui domain",
+    ):
+        assert forbidden not in lower
+
+
+def test_standard_ui_consumes_only_bounded_p5_proxy_schema():
+    html = _standard_ui_html()
+    for required in (
+        "data.base_experimental_outputs",
+        "data.context_adjusted_experimental_outputs",
+        "data.hceye_proxy_features",
+        "experimental_layout_complexity",
+        "search_efficiency_proxy",
+        "attention_demand_proxy",
+    ):
+        assert required in html
+    for forbidden in (
+        "data.base_prediction",
+        "data.adjusted_prediction",
+        "data.cognitive_load_features",
+        ".cognitive_load_score",
+        ".cognitive_load_index",
+        "row.score",
+        "d.hceye_features",
+    ):
+        assert forbidden not in html
 
 
 # ---------------------------------------------------------------------------
