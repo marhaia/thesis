@@ -14,9 +14,10 @@ import json
 import math
 import sys
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import TYPE_CHECKING, Dict, Tuple
 
-import pandas as pd
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -195,6 +196,14 @@ def verify_csv(csv_path: Path, manifest_path: Path = DEFAULT_MANIFEST) -> dict:
             f"HCEye CSV SHA-256 mismatch: expected {source['sha256']}, "
             f"found {actual_sha}."
         )
+
+    try:
+        import pandas as pd
+    except ModuleNotFoundError as exc:
+        raise HCEyeProvenanceError(
+            "pandas is required only for the full external HCEye CSV "
+            "derivation check."
+        ) from exc
 
     derived, identity, diagnostics = derive_source_coefficients(
         pd.read_csv(csv_path)
