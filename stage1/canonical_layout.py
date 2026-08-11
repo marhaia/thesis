@@ -44,6 +44,11 @@ from visual_complexity import (  # noqa: E402
 )
 from cognitive.element_detector import detect_elements  # noqa: E402
 
+
+class CanonicalLayoutError(RuntimeError):
+    """Raised when mandatory canonical layout/OCR measurement cannot finish."""
+
+
 # Identifier for the analysis path, embedded in the provenance so consumers can
 # assert that a measurement came from the canonical layout path. The resolution
 # component is derived from the actual long side a run uses (see
@@ -112,8 +117,8 @@ class CanonicalLayoutMeasurement:
     scale_y: float                     # native_h / analysis_h (canonical->native)
     analysis_elements: List[Dict]      # canonical-coordinate element dicts
     whitespace_ratio: float            # from canonical boxes on canonical canvas
-    text_density: Optional[float]      # OCR-derived, canonical; None if no OCR
-    text_density_source: str           # "ocr" | "fallback_neutral"
+    text_density: Optional[float]      # OCR-derived; None only when disabled
+    text_density_source: str           # "ocr" | "no_elements" | "disabled"
     readability_report: Optional[Dict] = None   # canonical-coordinate report
     analysis_path: str = ANALYSIS_PATH
 
@@ -217,19 +222,33 @@ def measure_canonical_layout(
     whitespace_ratio = _whitespace_from_boxes(analysis_elements, ah, aw)
 
     text_density: Optional[float] = None
-    text_density_source = "fallback_neutral"
+    text_density_source = "disabled" if not run_ocr else "no_elements"
     readability_report: Optional[Dict] = None
-    if run_ocr and analysis_elements:
+    if run_ocr and not analysis_elements:
+        # A genuinely empty canonical element set is a defined measurement,
+        # not an OCR outage and not a neutral substitute.
+        text_density = 0.0
+    elif run_ocr:
         try:
             from cognitive.text_reader import compute_readability
             readability_report = compute_readability(analysis_img, analysis_elements)
-            if readability_report and readability_report.get("n_elements"):
-                text_density = float(readability_report["n_text_elements"]) / float(
-                    max(readability_report["n_elements"], 1)
-                )
-                text_density_source = "ocr"
-        except Exception as exc:  # OCR is optional; degrade gracefully.
-            print(f"[canonical_layout] OCR unavailable (neutral fallback): {exc!r}")
+        except Exception as exc:
+            raise CanonicalLayoutError("Canonical OCR execution failed") from exc
+        if readability_report is None:
+            raise CanonicalLayoutError("Canonical OCR is unavailable")
+        try:
+            report_elements = int(readability_report["n_elements"])
+            text_elements = int(readability_report["n_text_elements"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise CanonicalLayoutError("Canonical OCR report is invalid") from exc
+        if (
+            report_elements != len(analysis_elements)
+            or report_elements <= 0
+            or not 0 <= text_elements <= report_elements
+        ):
+            raise CanonicalLayoutError("Canonical OCR report is inconsistent")
+        text_density = float(text_elements) / float(report_elements)
+        text_density_source = "ocr"
 
     # Scale factors map canonical coordinates back to native (display only).
     scale_x = nw / float(aw)

@@ -87,6 +87,22 @@ def _reset_norms_cache(monkeypatch):
     app_module._feature_norms = None
 
 
+@pytest.fixture(autouse=True)
+def _valid_score_driving_ocr(monkeypatch):
+    """Keep these saliency/norm tests on a valid P4 layout/OCR success path."""
+    import cognitive.text_reader as text_reader
+
+    monkeypatch.setattr(
+        text_reader,
+        "compute_readability",
+        lambda _image, elements: {
+            "n_elements": len(elements),
+            "n_text_elements": 0,
+            "text_elements": [],
+        },
+    )
+
+
 def _small_png_bytes() -> bytes:
     im = np.full((300, 400, 3), 240, np.uint8)
     cv2.rectangle(im, (40, 40), (160, 90), (30, 30, 200), -1)

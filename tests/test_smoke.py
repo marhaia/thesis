@@ -101,6 +101,20 @@ def _fake_saliency_model(monkeypatch):
 
     monkeypatch.setattr(app_module, "_predict_saliency_cached", _fake_predict)
 
+    # CI intentionally excludes EasyOCR.  Supply a valid, deterministic
+    # no-text OCR report so ordinary success-path smoke tests do not exercise
+    # P4's unavailable-OCR failure branch by accident.
+    import cognitive.text_reader as text_reader
+
+    def _fake_readability(_image, elements):
+        return {
+            "n_elements": len(elements),
+            "n_text_elements": 0,
+            "text_elements": [],
+        }
+
+    monkeypatch.setattr(text_reader, "compute_readability", _fake_readability)
+
 
 def _png_bytes(cx: int = 40) -> io.BytesIO:
     """A small synthetic screenshot with a couple of coloured boxes."""
@@ -553,18 +567,11 @@ def test_cognitive_load_scale_invariance_sanity(client, monkeypatch):
     # canonical analysis image (a standardised analysis scale), so its measured
     # scale sensitivity is reduced. This is a scale-stability regression guard.
     #
-    # Saliency is provided by the module-level autouse fake (the SAME
-    # synthetic heatmap regardless of input image), so it is already isolated
-    # from scale effects without needing to disable it. OCR is explicitly
-    # disabled here (returns None) to isolate the layout-scale path from OCR
-    # resolution sensitivity:
-    #   * cognitive.text_reader.compute_readability -> returns None.
+    # Saliency and OCR are provided by the module-level autouse fakes: the SAME
+    # synthetic heatmap and a valid no-text OCR report are used regardless of
+    # input scale, so neither contaminates this layout-scale check.
     # The task/profile modifiers are identical across both requests, so the
     # headline difference reflects only the scale behaviour of the score.
-    import cognitive.text_reader as tr
-
-    monkeypatch.setattr(tr, "compute_readability", lambda *a, **k: None)
-
     s1 = _headline(_cognitive_load(client, _scaled_multibox_png(1)))
     s2 = _headline(_cognitive_load(client, _scaled_multibox_png(2)))
     assert abs(s1 - s2) <= 1.0, f"scale changed headline too much: {s1} vs {s2}"

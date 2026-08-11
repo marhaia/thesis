@@ -60,6 +60,21 @@ class SaliencyUnavailableError(Exception):
         self.code = code
         self.message = message
 
+
+class ScoreInputUnavailableError(Exception):
+    """Raised when mandatory score-driving layout/OCR inputs are unavailable.
+
+    The underlying exception is retained only in the server-side exception
+    chain.  ``message`` is fixed and client-safe so local paths, dependency
+    details, and stack traces can never cross the API boundary.
+    """
+
+    def __init__(self, code: str, message: str):
+        super().__init__(message)
+        self.code = code
+        self.message = message
+
+
 # Lazy-load saliency model (heavy TF import — only when needed)
 _saliency_model = None
 
@@ -94,6 +109,11 @@ STAGE1_SALIENCY_FEATURE_NAMES = (
 )
 STAGE1_VECTOR_DIMENSIONS = 19
 STAGE1_VECTOR_DTYPE = "float32"
+LAYOUT_OCR_ERROR_CODE = "layout_ocr_unavailable"
+LAYOUT_OCR_ERROR_MESSAGE = (
+    "Required layout/OCR analysis is unavailable; no score was produced. "
+    "Check the server's layout/OCR setup and retry."
+)
 
 
 def _load_feature_norms():
@@ -218,6 +238,40 @@ def _assemble_stage1_vector(v, s, h, hceye_feature_names):
     if vector.shape != (STAGE1_VECTOR_DIMENSIONS,):
         raise ValueError("Stage-1 feature vector must contain exactly 19 values")
     return vector, names
+
+
+def _validated_layout_score_inputs(measurement):
+    """Return finite measured layout inputs or fail before score assembly."""
+    import math
+
+    if measurement is None:
+        raise _layout_ocr_unavailable()
+
+    source = getattr(measurement, "text_density_source", None)
+    if source in (None, "", "fallback_neutral", "disabled"):
+        raise _layout_ocr_unavailable()
+
+    values = (
+        ("whitespace_ratio", getattr(measurement, "whitespace_ratio", None)),
+        ("text_density", getattr(measurement, "text_density", None)),
+    )
+    validated = []
+    for _name, value in values:
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError) as exc:
+            raise _layout_ocr_unavailable() from exc
+        if not math.isfinite(numeric) or not 0.0 <= numeric <= 1.0:
+            raise _layout_ocr_unavailable()
+        validated.append(numeric)
+    return validated[0], validated[1], source
+
+
+def _layout_ocr_unavailable():
+    """Build the one client-safe P4 failure used by every layout/OCR guard."""
+    return ScoreInputUnavailableError(
+        LAYOUT_OCR_ERROR_CODE, LAYOUT_OCR_ERROR_MESSAGE
+    )
 
 
 def _get_saliency_model():
@@ -1323,24 +1377,22 @@ def cognitive_load():
         native_img = cv2.imread(str(filepath))
 
         # --- Analysis path (canonical) -----------------------------------
-        analysis_measurement = None
-        whitespace_ratio = None
-        text_density = None
-        text_density_source = "fallback_neutral"
-        readability_report = None
-        if native_img is not None:
-            try:
-                from canonical_layout import measure_canonical_layout
-                analysis_measurement = measure_canonical_layout(native_img)
-                whitespace_ratio = analysis_measurement.whitespace_ratio
-                text_density = analysis_measurement.text_density
-                text_density_source = analysis_measurement.text_density_source
-                # Readability boxes are on the canonical image; map ONLY their
-                # display coordinates back to native for the UI. This mapped
-                # report is display-only and never feeds the layout score.
-                readability_report = analysis_measurement.readability_report_native()
-            except Exception as e:
-                print(f"[HCEye] Canonical layout measurement unavailable: {e!r}")
+        if native_img is None:
+            raise _layout_ocr_unavailable()
+        try:
+            from canonical_layout import measure_canonical_layout
+            analysis_measurement = measure_canonical_layout(native_img)
+            whitespace_ratio, text_density, text_density_source = (
+                _validated_layout_score_inputs(analysis_measurement)
+            )
+            # Readability boxes are on the canonical image; map ONLY their
+            # display coordinates back to native for the UI. This mapped
+            # report is display-only and never feeds the layout score.
+            readability_report = analysis_measurement.readability_report_native()
+        except ScoreInputUnavailableError:
+            raise
+        except Exception as exc:
+            raise _layout_ocr_unavailable() from exc
 
         # --- Native path (Jokinen / interaction) -------------------------
         native_elements = None
@@ -1550,8 +1602,9 @@ def cognitive_load():
                 # Real element-derived measurements fed into the HCEye rules.
                 # These come from the CANONICAL analysis path (long side 1280),
                 # so they share the analysis scale of the eight visual features.
-                # text_density_source flags whether OCR ran or a neutral fallback
-                # was used (mirrors the saliency "missing weights" transparency).
+                # text_density_source distinguishes a real OCR measurement from
+                # the defined no-elements zero case. Neutral fallbacks are not
+                # allowed on this score-bearing route.
                 "whitespace_ratio": whitespace_ratio,
                 "text_density": text_density,
                 "text_density_source": text_density_source,
@@ -1602,6 +1655,9 @@ def cognitive_load():
     except ImageTooSmallError as e:
         return _too_small_error(e)
     except SaliencyUnavailableError as e:
+        return _fail_closed_error(e.code, e.message)
+    except ScoreInputUnavailableError as e:
+        app.logger.exception("Score-driving layout/OCR analysis failed")
         return _fail_closed_error(e.code, e.message)
     except FeatureNormsError as e:
         # Client-safe boundary: the underlying exception message may contain

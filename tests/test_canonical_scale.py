@@ -687,8 +687,8 @@ def test_cognitive_load_index_scale_invariant_through_endpoint(client, monkeypat
         contract (see tests/test_saliency_production_contract.py) instead of
         reaching this test's 200 success path, so a fixed valid result is
         used instead to remove saliency as a source of variance.
-      * OCR: cognitive.text_reader.compute_readability returns None, so
-        text_density is the neutral fallback deterministically.
+      * OCR: cognitive.text_reader.compute_readability returns a valid no-text
+        report deterministically.
     Nothing else is stubbed: the eight visual features, the canonical element
     detector, whitespace_ratio and the HCEye rule all run for real.
     """
@@ -698,7 +698,15 @@ def test_cognitive_load_index_scale_invariant_through_endpoint(client, monkeypat
 
     monkeypatch.setattr(app_module, "_predict_saliency_cached",
                         _synthetic_saliency_success)
-    monkeypatch.setattr(tr, "compute_readability", lambda *a, **k: None)
+    monkeypatch.setattr(
+        tr,
+        "compute_readability",
+        lambda _image, elements: {
+            "n_elements": len(elements),
+            "n_text_elements": 0,
+            "text_elements": [],
+        },
+    )
 
     per_fx = {}
     for name, fx in FIXTURES.items():
