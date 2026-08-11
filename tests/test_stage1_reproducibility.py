@@ -151,6 +151,7 @@ def test_strict_runtime_verification_checks_all_locked_distributions(monkeypatch
     monkeypatch.setenv("STAGE1_RUNTIME_VERIFICATION", "strict")
     monkeypatch.setattr(repro.platform, "mac_ver", lambda: ("26.3", (), ""))
     monkeypatch.setattr(repro.platform, "machine", lambda: "arm64")
+    monkeypatch.setattr(repro.sys, "version_info", (3, 9, 6))
     monkeypatch.setattr(
         repro.importlib.metadata,
         "version",
