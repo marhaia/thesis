@@ -9,8 +9,9 @@ Performance notes:
     The two most expensive pipeline steps are the visual complexity feature
     extraction (``compute_complexity_vector``) and the UMSI++ saliency model
     inference. To keep repeated analyses of the *same* image fast, both results
-    are cached in-memory keyed by the SHA256 hash of the uploaded image bytes
-    (see ``_visual_cache`` / ``_saliency_cache``). The caches are pure runtime
+    are cached in-memory using the uploaded-image SHA256 plus the applicable P6
+    model/postprocessing/norm/runtime identity (see ``_visual_cache`` /
+    ``_saliency_cache``). The caches are pure runtime
     optimizations — they never change the computed values, only avoid redundant
     recomputation. The UMSI++ model is additionally warmed up once at startup
     (``_warmup_saliency_model``) so the first real request does not pay the
@@ -42,6 +43,12 @@ from visual_complexity import (
 )
 from stage2.coherence_check import run_coherence_check
 from hceye.hceye_features import FeatureNormsError
+from saliency.checkpoint_identity import verify_umsi_checkpoint
+from reproducibility import (
+    saliency_cache_identity,
+    study_reproducibility_metadata,
+    visual_cache_identity,
+)
 
 
 class SaliencyUnavailableError(Exception):
@@ -78,14 +85,16 @@ class ScoreInputUnavailableError(Exception):
 # Lazy-load saliency model (heavy TF import — only when needed)
 _saliency_model = None
 
-# In-memory caches keyed by the SHA256 hash of the uploaded image bytes.
+# In-memory caches keyed by the upload SHA256 plus the complete P6 analysis
+# identity. A checkpoint, postprocessor, extractor, runtime, or norm change
+# therefore cannot reuse a result produced under the previous identity.
 # OrderedDict is used as a simple LRU: on a cache hit the entry is moved to the
 # end, and once the cache exceeds its max size the oldest (front) entry is
 # evicted. These caches only avoid recomputation; identical inputs always yield
 # identical results.
-_saliency_cache = OrderedDict()   # image_hash -> {"heatmap", "classif"}
+_saliency_cache = OrderedDict()   # versioned key -> {"heatmap", "classif"}
 _saliency_cache_max = 32          # max distinct images kept for saliency
-_visual_cache = OrderedDict()     # image_hash -> visual complexity results dict
+_visual_cache = OrderedDict()     # versioned key -> visual results dict
 _visual_cache_max = 64            # max distinct images kept for visual features
 
 # Empirical GUI reference distribution (mean / std / percentiles per feature),
@@ -291,8 +300,12 @@ def _get_saliency_model():
     """Lazy-load the UMSI++ saliency model (avoids TF startup penalty on every request)."""
     global _saliency_model
     if _saliency_model is None:
-        from saliency.umsi_model import UMSIPlus
         weights = Path(__file__).parent.parent / "saliency" / "weights" / "model_weights" / "saliency_models" / "UMSI++" / "umsi++.hdf5"
+        # P6 fail-closed checkpoint gate: production must never load arbitrary
+        # same-shaped HDF5 bytes from the expected path. TensorFlow/Keras is
+        # imported only after exact filename, byte-size and SHA-256 identity.
+        verify_umsi_checkpoint(weights)
+        from saliency.umsi_model import UMSIPlus
         _saliency_model = UMSIPlus(str(weights))
     return _saliency_model
 
@@ -444,14 +457,15 @@ def _predict_saliency_cached(image_hash, image_path):
     the result was served from cache. Caching avoids repeated (expensive)
     TensorFlow inference for identical images.
     """
-    cached = _saliency_cache.get(image_hash)
+    cache_key = f"{image_hash}:{saliency_cache_identity()}"
+    cached = _saliency_cache.get(cache_key)
     if cached is not None:
-        _saliency_cache.move_to_end(image_hash)  # mark as most-recently-used
+        _saliency_cache.move_to_end(cache_key)  # mark as most-recently-used
         return cached["heatmap"], cached["classif"], True
 
     model = _get_saliency_model()
     heatmap, classif = model.predict_saliency(str(image_path), return_classif=True)
-    _saliency_cache[image_hash] = {"heatmap": heatmap, "classif": classif}
+    _saliency_cache[cache_key] = {"heatmap": heatmap, "classif": classif}
     # Evict the oldest entries once the cache grows beyond its size limit.
     while len(_saliency_cache) > _saliency_cache_max:
         _saliency_cache.popitem(last=False)
@@ -465,11 +479,12 @@ def _compute_visual_cached(image_hash, image_path):
     single most expensive step in the pipeline, so caching it by image hash
     gives the largest speedup for repeated analyses of the same screenshot.
     """
-    # The cache key includes the canonicalisation-contract version so that a
-    # result computed by an earlier extractor (a different canonical resolution
-    # or preprocessing) can never be silently served after the preprocessing
-    # change. Bumping CANONICAL_ANALYSIS_VERSION invalidates every prior entry.
-    cache_key = f"{image_hash}:{CANONICAL_ANALYSIS_VERSION}"
+    # The identity digest includes the extractor bytes, canonical contract,
+    # runtime freeze and reference-pack/norm identity. A changed analysis
+    # implementation can therefore never reuse an earlier cached result.
+    cache_key = (
+        f"{image_hash}:{CANONICAL_ANALYSIS_VERSION}:{visual_cache_identity()}"
+    )
     cached = _visual_cache.get(cache_key)
     if cached is not None:
         _visual_cache.move_to_end(cache_key)  # mark as most-recently-used
@@ -1634,6 +1649,10 @@ def cognitive_load():
             "trained_model_requested": use_trained_model,
             "trained_model_available": model_path.exists(),
             "scientific_semantics": dict(SCIENTIFIC_SEMANTICS),
+            # P6 study-export identity: this binds every exported score to the
+            # source commit/tree state, exact checkpoint, reference norms,
+            # schema contracts, runtime freeze and versioned cache identities.
+            "reproducibility": study_reproducibility_metadata(),
             "stage1_feature_vector": base_vector.tolist(),
             "stage1_feature_names": stage1_feature_names,
             "stage1_vector_dtype": STAGE1_VECTOR_DTYPE,

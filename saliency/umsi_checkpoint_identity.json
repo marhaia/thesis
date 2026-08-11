@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "artifact": "umsi++.hdf5",
+  "repository_relative_path": "saliency/weights/model_weights/saliency_models/UMSI++/umsi++.hdf5",
+  "bytes": 120093896,
+  "sha256": "f4290c3f11f18befbb47de50d81e4555ec8e7a63066c71c343a32fe32799e9fe",
+  "acquisition_url": "https://github.com/marhaia/thesis/releases/download/weights-v1/umsi.hdf5",
+  "evidence_contract": "stage1/evidence/umsi_five_fixture_gate_contract.json",
+  "claim_boundary": "This identity pins the exact project-approved UMSI++ checkpoint bytes. It does not by itself establish official-upstream provenance, architecture parity, or scientific validity."
+}

@@ -1,0 +1,97 @@
+{
+  "schema_version": "stage1-reference-pack-v1",
+  "reference_pack": {
+    "feature_norms": {
+      "path": "stage1/data/results/feature_norms.json",
+      "sha256": "d17b3698c2e4b0016a091955e374203f3d6f2eb258c5de6a47a3dc0b6ba9736f",
+      "num_images": 1485,
+      "categories_included": [
+        "desktop",
+        "mobile",
+        "web"
+      ],
+      "categories_excluded": [
+        "poster"
+      ]
+    },
+    "canonical_visual_norms": {
+      "path": "stage1/data/results/canonical_visual_feature_norms.json",
+      "sha256": "196081cc5890351d409386f8698ef7c108893f1dad35f05a84fffd3e48271cb6",
+      "schema_version": "canonical-visual-feature-norms-v1",
+      "analysis_version": "canonical-analysis-v1.1:long1280:both-dims-min16:area-down/linear-up"
+    },
+    "hceye_coefficient_provenance": {
+      "path": "hceye/hceye_coefficient_provenance.json",
+      "sha256": "473fa1b58849c0e39111b052b7094e69776e9a4987db46e2e0860bfdcc9121f7",
+      "external_source_sha256": "e6251a354afd97cabce1253e5c345ae8d90c25acc8ee5062b4ffa11249003fee"
+    },
+    "umsi_checkpoint_identity": {
+      "path": "saliency/umsi_checkpoint_identity.json",
+      "sha256": "cd5acb981e6851de937583658a2d48f8f618d0df3a33737516e02fb06d92cd4b",
+      "checkpoint_sha256": "f4290c3f11f18befbb47de50d81e4555ec8e7a63066c71c343a32fe32799e9fe",
+      "checkpoint_bytes": 120093896
+    }
+  },
+  "ueyes_corpus_provenance": {
+    "dataset": "UEyes",
+    "paper_doi": "https://doi.org/10.1145/3544548.3581113",
+    "dataset_record": "https://zenodo.org/records/8010312",
+    "image_types_csv_sha256": "fc22d679849862c0f0476b1d9c270a50383c62304c7635b87cb18a2559a25c68",
+    "authorized_corpus_aggregate_sha256": "785c4e37e95ecd36903c05a280f4db3733d378328a8deec8fa4258c3bb67e200",
+    "authorized_counts": {
+      "desktop": 495,
+      "mobile": 495,
+      "web": 495
+    },
+    "excluded_categories": [
+      "poster"
+    ],
+    "is_subsample": false
+  },
+  "saliency_norms_provenance": {
+    "schema_version": "canonical-saliency-feature-norms-v1",
+    "analysis_domain": "native_input",
+    "source_artifact_sha256": "12a8f8ce59c9d9bb9bd44853cacf5136819a63fc2a933e34f334bc57b7ad3925",
+    "source_csv_sha256": "1f576987fa080bbc7c34062ce1dde86c41c16eaa1fd17be9e00adac4e6a01638",
+    "source_run_identifier": "canonical_saliency_native_p9_a71b68f",
+    "exact_stat_matches": "50/50"
+  },
+  "statistical_conventions": {
+    "standard_deviation": {
+      "convention": "sample standard deviation",
+      "ddof": 1
+    },
+    "stored_quantiles": {
+      "implementation": "numpy.percentile",
+      "numpy_version": "1.26.4",
+      "method": "linear",
+      "probabilities_percent": [
+        5,
+        25,
+        50,
+        75,
+        95
+      ]
+    },
+    "runtime_percentile_estimate": {
+      "method": "piecewise_linear_interpolation",
+      "anchors_percent": [
+        0,
+        5,
+        25,
+        50,
+        75,
+        95,
+        100
+      ],
+      "clipping": "values at or below min map to 0; values at or above max map to 100"
+    }
+  },
+  "stage1_schema_identifiers": {
+    "study_export": "stage1-study-export-v1",
+    "feature_vector": "stage1-x19-float32-v1",
+    "canonical_visual": "canonical-visual-feature-norms-v1",
+    "canonical_saliency": "canonical-saliency-feature-norms-v1"
+  },
+  "claim_boundary": "The reference distributions are corpus-relative UEyes project references, not official or universal UMSI norms. Poster images are excluded and no semantic classification-head labels are asserted."
+}

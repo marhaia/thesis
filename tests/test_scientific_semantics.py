@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import os
+import re
 import sys
 from typing import Any
 
@@ -189,6 +190,17 @@ def test_score_route_exposes_only_bounded_proxy_semantics(client):
     _assert_no_unverified_class_semantics(response)
     body = response.get_json()
     assert body["scientific_semantics"] == EXPECTED_SCIENTIFIC_SEMANTICS
+    reproducibility = body["reproducibility"]
+    assert reproducibility["schema_id"] == "stage1-study-export-v1"
+    assert re.fullmatch(r"[0-9a-f]{40}", reproducibility["source"]["commit"])
+    assert reproducibility["source"]["tree_state"] in {"clean", "dirty"}
+    for key in (
+        "umsi_checkpoint_sha256",
+        "feature_norms_sha256",
+        "reference_pack_manifest_sha256",
+        "runtime_environment_manifest_sha256",
+    ):
+        assert re.fullmatch(r"[0-9a-f]{64}", reproducibility[key])
     assert set(body["hceye_proxy_features"]) == set(EXPECTED_PROXY_NAMES)
     assert body["stage1_feature_names"][-6:] == EXPECTED_PROXY_NAMES
     assert set(body["base_experimental_outputs"]) == {

@@ -2847,6 +2847,7 @@
                     coherence_data: data.coherence,
                     prediction_source: data.prediction_source,
                     vector_dimensions: data.vector_dimensions,
+                    reproducibility: data.reproducibility,
                 });
                 renderResults(data);
                 renderHistory();
@@ -5044,6 +5045,20 @@
             row("Vector Dims",    d.vector_dimensions || "-");
             divider();
 
+            // ── P6 reproducibility identity ─────────────────────────────
+            sectionTitle("Reproducibility Identity");
+            const repro = d.reproducibility || {};
+            const source = repro.source || {};
+            row("Source Commit", source.commit || "-");
+            row("Source Tree", source.tree_state || "-");
+            row("UMSI Checkpoint SHA-256", repro.umsi_checkpoint_sha256 || "-");
+            row("Feature Norms SHA-256", repro.feature_norms_sha256 || "-");
+            row("Reference Pack SHA-256", repro.reference_pack_manifest_sha256 || "-");
+            row("Runtime Manifest SHA-256", repro.runtime_environment_manifest_sha256 || "-");
+            row("Study Export Schema", repro.schema_id || "-");
+            row("Stage-1 Vector Schema", repro.stage1_vector_schema || "-");
+            divider();
+
             // ── Visual Maps (saliency overlay + radar profile) ───────────
             const salImg = document.getElementById('saliencyImg');
             const radarCanvas = document.getElementById('radarChart');
@@ -5173,9 +5188,34 @@
         });
 
         function exportCSV(data, filename) {
-            const headers = ["filename", "experimental_layout_complexity", "search_efficiency_proxy", "attention_demand_proxy", "task_type", "profile", "task_modifier", "profile_modifier"];
+            const columns = [
+                ["filename", d => d.filename],
+                ["experimental_layout_complexity", d => d.experimental_layout_complexity],
+                ["search_efficiency_proxy", d => d.search_efficiency_proxy],
+                ["attention_demand_proxy", d => d.attention_demand_proxy],
+                ["task_type", d => d.task_type],
+                ["profile", d => d.profile],
+                ["task_modifier", d => d.task_modifier],
+                ["profile_modifier", d => d.profile_modifier],
+                ["source_commit", d => d.reproducibility && d.reproducibility.source && d.reproducibility.source.commit],
+                ["source_tree_state", d => d.reproducibility && d.reproducibility.source && d.reproducibility.source.tree_state],
+                ["umsi_checkpoint_sha256", d => d.reproducibility && d.reproducibility.umsi_checkpoint_sha256],
+                ["feature_norms_sha256", d => d.reproducibility && d.reproducibility.feature_norms_sha256],
+                ["reference_pack_manifest_sha256", d => d.reproducibility && d.reproducibility.reference_pack_manifest_sha256],
+                ["runtime_environment_manifest_sha256", d => d.reproducibility && d.reproducibility.runtime_environment_manifest_sha256],
+                ["study_export_schema", d => d.reproducibility && d.reproducibility.schema_id],
+                ["stage1_vector_schema", d => d.reproducibility && d.reproducibility.stage1_vector_schema],
+                ["visual_norms_schema", d => d.reproducibility && d.reproducibility.visual_norms_schema],
+                ["saliency_norms_schema", d => d.reproducibility && d.reproducibility.saliency_norms_schema],
+            ];
+            const headers = columns.map(([header]) => header);
+            const escapeCSV = value => {
+                if (value === undefined || value === null) return "";
+                const text = String(value);
+                return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+            };
             const rows = data.map(d =>
-                headers.map(h => d[h] !== undefined ? d[h] : "").join(",")
+                columns.map(([, value]) => escapeCSV(value(d))).join(",")
             );
             const csv = [headers.join(","), ...rows].join("\n");
             const blob = new Blob([csv], { type: "text/csv" });

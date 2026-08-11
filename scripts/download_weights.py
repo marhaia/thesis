@@ -2,7 +2,7 @@
 """
 Download the UMSI++ saliency model weights.
 
-The weights file (`umsi++.hdf5`, ~433 MB) is too large to store in the git
+The weights file (`umsi++.hdf5`, ~120 MB) is too large to store in the git
 repository. This script downloads it to the expected location.
 
 Usage:
@@ -24,6 +24,14 @@ import sys
 import urllib.request
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from saliency.checkpoint_identity import (  # noqa: E402
+    CheckpointIntegrityError,
+    verify_umsi_checkpoint,
+)
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
@@ -41,8 +49,7 @@ ASSET_API_URL = (
     "https://api.github.com/repos/marhaia/thesis/releases/assets/450177038"
 )
 
-# Target location (must match what saliency/umsi_model.py expects).
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+# Target location (must match what stage1/app.py expects).
 TARGET_PATH = (
     PROJECT_ROOT
     / "saliency"
@@ -52,11 +59,6 @@ TARGET_PATH = (
     / "UMSI++"
     / "umsi++.hdf5"
 )
-
-# Roughly the expected file size (used as a sanity check). The file is ~115 MB;
-# we require at least 100 MB so a small error page is never mistaken for it.
-MIN_EXPECTED_BYTES = 100 * 1024 * 1024
-
 
 def _human(num_bytes: float) -> str:
     for unit in ("B", "KB", "MB", "GB"):
@@ -108,10 +110,17 @@ def _build_request() -> "urllib.request.Request":
 
 def main() -> int:
     # 1. Already present?
-    if TARGET_PATH.exists() and TARGET_PATH.stat().st_size >= MIN_EXPECTED_BYTES:
-        print(f"✅ Weights already present: {TARGET_PATH}")
-        print(f"   Size: {_human(TARGET_PATH.stat().st_size)}")
-        return 0
+    if TARGET_PATH.exists():
+        try:
+            identity = verify_umsi_checkpoint(TARGET_PATH)
+        except CheckpointIntegrityError as exc:
+            print(f"⚠️ Existing weights failed integrity verification: {exc}")
+            print("   Downloading the exact project-approved checkpoint again.")
+        else:
+            print(f"✅ Verified weights already present: {TARGET_PATH}")
+            print(f"   Size: {_human(identity['bytes'])}")
+            print(f"   SHA-256: {identity['sha256']}")
+            return 0
 
     # 2. Build the request (authenticated if a token is available).
     req = _build_request()
@@ -152,16 +161,20 @@ def main() -> int:
             print(f"   file manually at:\n     {TARGET_PATH}")
         return 1
 
-    # 4. Sanity check + finalize.
-    if tmp_path.stat().st_size < MIN_EXPECTED_BYTES:
-        size = _human(tmp_path.stat().st_size)
-        tmp_path.unlink()
-        print(f"❌ Downloaded file is too small ({size}). The URL may be wrong")
-        print("   or the repository is private and no token was provided.")
+    # 4. Exact identity gate + finalize. Never replace the target with bytes
+    # that merely look large enough; size and SHA-256 must both match.
+    try:
+        identity = verify_umsi_checkpoint(tmp_path, require_filename=False)
+    except CheckpointIntegrityError as exc:
+        if tmp_path.exists():
+            tmp_path.unlink()
+        print(f"❌ Downloaded checkpoint failed integrity verification: {exc}")
         return 1
 
     tmp_path.replace(TARGET_PATH)
-    print(f"✅ Done. Saved {_human(TARGET_PATH.stat().st_size)} to {TARGET_PATH}")
+    verify_umsi_checkpoint(TARGET_PATH)
+    print(f"✅ Done. Saved {_human(identity['bytes'])} to {TARGET_PATH}")
+    print(f"   SHA-256: {identity['sha256']}")
     return 0
 
 
