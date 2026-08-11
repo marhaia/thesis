@@ -56,8 +56,11 @@ logs/
 # PDFs (large)
 Literature/pdfs/
 
-# Expose draft (binary PDF, kept locally only)
+# Expose drafts (binary/local artefacts stay ignored; the status guide is tracked)
 expose/
+!Literature/notes/expose/
+Literature/notes/expose/*
+!Literature/notes/expose/README.md
 
 # Build artefacts
 aim/frontend/build/

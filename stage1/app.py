@@ -782,20 +782,21 @@ def saliency():
 @app.route("/api/search-time", methods=["POST"])
 def search_time():
     """
-    Predict visual search time per UI element using the Jokinen 2020 model.
+    Simulate visual search time per UI element using the Jokinen 2020 model.
 
-    This is the CENTRAL cognitive metric of the thesis:
+    This is a model-based diagnostic, not observed fixation or timing data:
       - Detects UI elements from the uploaded screenshot
       - Computes UMSI++ saliency per element (deep bottom-up signal)
       - Runs Monte Carlo simulation of novice visual search (EMMA + feature guidance)
-      - Returns predicted search time per element + aggregate statistics
+      - Returns model-estimated search time and fixation count per element
 
     Reference:
         Jokinen, J.P.P. et al. (2020). Adaptive feature guidance: Modelling
         visual search with graphical layouts. IJHCS, 136, 102376.
 
     Request:
-        POST multipart/form-data with field "image" (PNG/JPG screenshot)
+        POST multipart/form-data with field "image"
+        (PNG/JPG/JPEG/BMP/TIFF screenshot)
         Optional query params:
             n_simulations (int): Monte Carlo trials per element (default: 100)
             use_saliency (bool): Use UMSI++ saliency (default: true)
@@ -896,7 +897,7 @@ def search_time():
 @app.route("/api/scanpath-to-target", methods=["POST"])
 def scanpath_to_target():
     """
-    Predict the visual-search scanpath toward a user-selected target element.
+    Simulate a visual-search path toward a user-selected target element.
 
     The user selects the area they are searching for on the screenshot. The
     primary (VAS-style) mode is a DRAWN REGION box: the drawn rectangle becomes
@@ -906,17 +907,18 @@ def scanpath_to_target():
     distractors. A single click position or an explicit element id are also
     accepted (they select an existing detected element).
 
-    This endpoint returns the fixation sequence the Jokinen 2020 Adaptive Feature
-    Guidance model traverses while a novice searches for that target, starting
-    from the screen center. This is a TASK-DRIVEN scanpath (goal-directed search),
-    not a free-viewing scanpath.
+    This endpoint returns the model-generated sequence produced by the Jokinen
+    2020 Adaptive Feature Guidance implementation, starting from the screen
+    center. It is a task-driven simulation, not an observed eye-tracking
+    sequence, a free-viewing scanpath, or validated user-performance evidence.
 
     Reference:
         Jokinen, J.P.P. et al. (2020). Adaptive feature guidance: Modelling
         visual search with graphical layouts. IJHCS, 136, 102376.
 
     Request:
-        POST multipart/form-data with field "image" (PNG/JPG screenshot).
+        POST multipart/form-data with field "image"
+        (PNG/JPG/JPEG/BMP/TIFF screenshot).
         Target selection (one of):
             - target_x, target_y, target_w, target_h (float, query params):
               VAS-style drawn region in ORIGINAL-image pixels (top-left x/y and

@@ -1,10 +1,12 @@
 # User Study Proposal — Empirical Validation of the Combined Pipeline
 
-**Status:** proposal / discussion draft
+**Status:** **HISTORICAL DISCUSSION DRAFT — SUPERSEDED AFTER THE STAGE-1 AUDIT**
 **Audience:** thesis student (implementation), supervisor (sign-off)
-**Depends on:** the two core bugs listed in `AUDIT_REPORT.md` (§6, "Top 3 priority
-issues") must be fixed *before* this study is run — otherwise the study would
-validate noise, not the intended construct.
+**Current boundary:** The prerequisites and construct names below reflect a
+pre-audit plan. The cited Stage-1 defects have since been addressed, but the
+final domain, study design, available data, post-study ML path, and permissible
+validation claims remain open. This file must not be used as an approved study
+protocol or as evidence that the pipeline measures cognitive load.
 
 ---
 

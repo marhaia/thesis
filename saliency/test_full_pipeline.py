@@ -32,10 +32,10 @@ heatmap, classif = model.predict_saliency(test_img, return_classif=True)
 
 print(f"    Heatmap shape: {heatmap.shape}")
 print(f"    Heatmap range: [{heatmap.min():.4f}, {heatmap.max():.4f}]")
-print(f"    Classification:")
-for cls, prob in zip(UMSIPlus.DESIGN_CLASSES, classif):
+print("    Auxiliary head (semantic index order unverified):")
+for i, prob in enumerate(classif):
     marker = " <--" if prob == classif.max() else ""
-    print(f"      {cls:20s}: {prob:.4f}{marker}")
+    print(f"      index_{i}: {prob:.4f}{marker}")
 
 # Extract saliency features
 print(f"\n[3] Extracting saliency-derived features...")

@@ -19,11 +19,12 @@ Input(256×256×3, BGR, VGG-mean-subtracted)
   → Custom Xception backbone (stride-modified blocks 4, 13, exit)
     Output: 32×32×2048
   → ASPP branch (dilation 6, 12, 18) + 1×1 conv  →  concat  → 32×32×1024
-  → Classification branch (Conv→GAP→Dense→Softmax 6-class)
+  → Numeric auxiliary branch (Conv→GAP→Dense→six-value softmax;
+    checkpoint layer names retain ``out_classif``)
     + tiled dense embedding fused via concatenation      → 32×32×1280
   → Decoder (Conv-Dropout-UpSample chain)
     → 512×512×1 heatmap
-Outputs: [heatmap_512×512, classification_6]
+Outputs: [heatmap_512×512, numeric_auxiliary_6]
 
 Weights
 -------
@@ -257,10 +258,10 @@ def _build_custom_xception(img_input: tf.Tensor) -> tf.Tensor:
 
 def build_umsi_model(input_shape: Tuple[int, int, int] = (SHAPE_R, SHAPE_C, 3),
                      verbose: bool = False) -> Model:
-    """Build the UMSI++ architecture (saliency + classification).
+    """Build the UMSI++ architecture (saliency + numeric auxiliary head).
 
     Architecture (Jiang et al., CHI 2023, Figure 2):
-      Xception(custom) →  ASPP(d=6,12,18) + Classification(6-class)
+      Xception(custom) → ASPP(d=6,12,18) + six-value auxiliary softmax
         → Concatenate → Decoder → 512×512 heatmap
 
     Key architectural references:
@@ -270,7 +271,7 @@ def build_umsi_model(input_shape: Tuple[int, int, int] = (SHAPE_R, SHAPE_C, 3),
         Kokkinos, I., Murphy, K., & Yuille, A.L. (2017). DeepLab: Semantic
         image segmentation with deep convolutional nets, atrous convolution,
         and fully connected CRFs. IEEE TPAMI, 40(4), 834–848.
-      UMSI++ training + design-class head: Jiang, Y. et al. (2023). UEyes:
+      UMSI++ training + paper-described auxiliary head: Jiang, Y. et al. (2023). UEyes:
         Understanding visual saliency across user interface types. CHI 2023.
         https://doi.org/10.1145/3544548.3581096
 
@@ -333,7 +334,7 @@ def build_umsi_model(input_shape: Tuple[int, int, int] = (SHAPE_R, SHAPE_C, 3),
     concat_aspp = layers.Concatenate(name='concatenate_1')([c0, c6, c12, c18])
     # → shape: (batch, 32, 32, 1024)
 
-    # ── Classification branch ─────────────────────────────────────────
+    # ── Numeric auxiliary branch (original checkpoint names retained) ─
     cl = layers.Conv2D(256, (3, 3), strides=(3, 3), padding='same',
                         use_bias=False, name='global_conv')(backbone_feat)
     cl = layers.BatchNormalization(name='global_BN')(cl)
@@ -491,27 +492,12 @@ class UMSIPlus:
         heatmap = model.predict_saliency("screenshot.png")
     """
 
-    # Design-type labels (6-class head from Jiang et al., CHI 2023, §3.2).
-    # The model was trained on UEyes (1,980 screenshots, 62 participants)
-    # across six UI/image categories.
-    #
-    # NOTE ON ORDERING: the exact index-to-label mapping of the softmax head
-    # is NOT recoverable from the published checkpoint alone (it depends on the
-    # training-time label encoder, which is not shipped with umsi++.hdf5). This
-    # list is therefore a best-effort guess and is used ONLY for the optional,
-    # informational class printout in predict_saliency(return_classif=True).
-    # It has NO effect on the saliency heatmap or on any downstream scoring in
-    # this project, which consume the heatmap exclusively. Do not rely on the
-    # specific label at a given index without cross-checking the UEyes training
-    # label map.
-    DESIGN_CLASSES = [
-        "poster",
-        "infographic",
-        "mobile_ui",
-        "desktop_ui",
-        "web_page",
-        "natural_image",
-    ]
+    # The checkpoint contains a six-value auxiliary softmax head. Its semantic
+    # index-to-label order is not verified from a shipped training-time label
+    # encoder, so production and CLI surfaces expose only numeric head values.
+    # The head remains part of the architecture and parity evidence but has no
+    # semantic role in the public API or downstream score.
+    AUXILIARY_HEAD_DIM = 6
 
     def __init__(self, weights_path: Union[str, Path],
                  verbose: bool = False):
@@ -555,12 +541,14 @@ class UMSIPlus:
 
         Args:
             image_path: Path to input image (PNG, JPG, etc.).
-            return_classif: If True, also return the 6-class classification.
+            return_classif: Legacy parameter name. If True, also return the
+                numeric six-value auxiliary-head vector; no class labels are
+                attached because their index order is unverified.
 
         Returns:
             heatmap: Saliency map of shape (H, W), float32 in [0, 1],
                      at the original image resolution.
-            classif: (optional) 6-class probability vector, shape (6,).
+            classif: (optional) numeric auxiliary-head vector, shape (6,).
         """
         image_path = str(image_path)
 
@@ -624,9 +612,11 @@ if __name__ == "__main__":
     model = UMSIPlus(args.weights, verbose=args.verbose)
     heatmap, classif = model.predict_saliency(args.image, return_classif=True)
 
-    # Print classification
-    for i, (cls, prob) in enumerate(zip(UMSIPlus.DESIGN_CLASSES, classif)):
-        print(f"  {cls}: {prob:.4f}")
+    # Print numeric auxiliary-head values only. Semantic class order is not
+    # verified and must not be inferred from these indices.
+    print("Auxiliary head (semantic index order unverified):")
+    for i, prob in enumerate(classif):
+        print(f"  index_{i}: {prob:.4f}")
 
     print(f"\nHeatmap shape: {heatmap.shape}")
     print(f"Heatmap range: [{heatmap.min():.4f}, {heatmap.max():.4f}]")

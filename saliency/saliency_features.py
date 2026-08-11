@@ -4,8 +4,8 @@
 saliency_features.py — Saliency-Derived Feature Extraction
 ============================================================
 Extracts quantitative features from a predicted saliency heatmap.
-These features serve as the Stage 1 → Stage 2 bridge, adding
-perceptually-grounded metrics to the v∈ℝ⁸ feature vector.
+These features form the s∈ℝ⁵ block of the authoritative, task-independent
+Stage-1 vector x = [v8 | s5 | h6] ∈ ℝ¹⁹.
 
 Features extracted (s∈ℝ⁵):
   1. saliency_dispersion    — spatial spread of attention (σ of hotspots)
@@ -14,9 +14,8 @@ Features extracted (s∈ℝ⁵):
   4. saliency_entropy        — Shannon entropy of the saliency distribution
   5. saliency_coverage       — fraction of image area receiving >50% max attention
 
-Together with the 8 visual complexity features from Stage 1, this yields
-the extended feature vector v∈ℝ¹³ that Stage 2 can use for predicting
-cognitive load and interactional complexity.
+The five values are numeric screenshot descriptors. They do not by themselves
+measure cognitive load or observed human attention.
 
 Mathematical Definitions
 ------------------------
@@ -148,9 +147,9 @@ def _compute_peak_count(smap: np.ndarray, sigma: float = 5.0,
                          threshold_ratio: float = 0.3) -> int:
     """Count distinct attention peaks in the saliency map.
 
-    Multiple peaks indicate competing salient regions, which increases
-    attentional switching cost and cognitive load
-    (Itti & Koch, 2001; Lavie, 2005).
+    Multiple peaks record competing regions in the model-estimated saliency
+    map. The count is an exploratory image descriptor and is not a direct
+    measurement of attentional switching or cognitive load.
 
     Steps:
       1. Gaussian blur (sigma=5 px) to suppress sub-pixel noise
@@ -179,8 +178,9 @@ def _compute_center_bias(smap: np.ndarray,
     Human gaze has a well-documented center bias: fixations are
     disproportionately concentrated in the central region of a display,
     independent of image content (Tatler, 2007; Tseng et al., 2009).
-    Low center-bias in a predicted saliency map may indicate strongly
-    peripheral salient content, which is harder to process.
+    Low center-bias in a model-estimated saliency map indicates that more of
+    the predicted saliency mass lies outside the central region. No direct
+    human-performance conclusion is inferred from this feature alone.
 
     Center region: inner sqrt(center_fraction) strip per axis,
     i.e., the central 50×50% area for center_fraction=0.25.

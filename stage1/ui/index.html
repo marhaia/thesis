@@ -1657,7 +1657,7 @@
 
         <header style="text-align:left; margin-bottom:24px;">
             <h1 style="font-size:26px; font-weight:600; line-height:1.25;">Interactional Complexity Analyzer</h1>
-            <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin-top:8px;">Computes an experimental layout-complexity index for a GUI screenshot from visual structure, predicted saliency, and eye-tracking-derived signals. Exploratory heuristic, not a validated cognitive-load measurement.</p>
+            <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin-top:8px;">Computes an experimental layout-complexity index for a GUI screenshot from visual structure, predicted saliency, and an unvalidated HCEye-derived proxy block. Exploratory heuristic, not a validated cognitive-load measurement or observed eye-tracking result.</p>
         </header>
 
         <!-- Steps 1 + 2 side by side -->
@@ -1674,14 +1674,14 @@
                 <p class="field-hint" style="margin-bottom:12px;">Upload a GUI screenshot (PNG, JPG, BMP, TIFF). The file is processed locally on your machine — nothing is stored permanently.</p>
                 <div class="drop-zone" id="dropZone">
                     <input type="file" id="fileInput"
-                           accept="image/png,image/jpeg,image/jpg,image/bmp,image/tiff,image/webp">
+                           accept="image/png,image/jpeg,image/jpg,image/bmp,image/tiff">
                     <label for="fileInput" aria-label="Click to select a screenshot or drop one here"></label>
                     <div class="drop-zone-icon" aria-hidden="true"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-dim);"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
                     <div class="drop-zone-text">
                         Drag &amp; drop your screenshot here<br>
                         or <strong style="color:var(--accent);">browse files</strong>
                         <br><br>
-                        <small>PNG · JPG · BMP · TIFF · WebP</small>
+                        <small>PNG · JPG · JPEG · BMP · TIFF</small>
                     </div>
                     <div class="drop-zone-preview" id="dropZonePreview">
                         <img id="previewImg" alt="preview">
@@ -1745,7 +1745,7 @@
                     </div>
                 </div>
                 <div class="field" style="margin-top: 12px;">
-                    <label for="profilePreset">User Profile <span class="feature-i" tabindex="0" aria-label="Explanation of User Profile options" data-tip="<div class='tip-title'>User Profile</div><div class='tip-body'>A Big Five personality preset that nudges the score.<br><strong>Neutral</strong> &mdash; no adjustment (default)<br><strong>Focused / Conscientious</strong> &mdash; careful, goal-driven<br><strong>Exploratory / Open</strong> &mdash; curious, likes to browse<br><strong>Social / Extraverted</strong> &mdash; outgoing, engagement-driven<br><strong>Stress-Sensitive</strong> &mdash; receives the largest upward profile modifier (unvalidated)<br>All profile modifiers are unvalidated modelling choices, not measured personality effects.</div>">i</span> <span class="tag-optional" style="vertical-align:middle;margin-left:6px;">Optional</span></label>
+                    <label for="profilePreset">User Profile <span class="feature-i" tabindex="0" aria-label="Explanation of User Profile options" data-tip="<div class='tip-title'>User Profile</div><div class='tip-body'>A Big Five personality preset that adjusts only the separate context simulation; it never changes Stage-1 x19 or the layout index.<br><strong>Neutral</strong> &mdash; no adjustment (default)<br><strong>Focused / Conscientious</strong> &mdash; careful, goal-driven<br><strong>Exploratory / Open</strong> &mdash; curious, likes to browse<br><strong>Social / Extraverted</strong> &mdash; outgoing, engagement-driven<br><strong>Stress-Sensitive</strong> &mdash; receives the largest upward profile modifier (unvalidated)<br>All profile modifiers are unvalidated modelling choices, not measured personality effects.</div>">i</span> <span class="tag-optional" style="vertical-align:middle;margin-left:6px;">Optional</span></label>
                     <select id="profilePreset">
                         <option value="neutral" selected>Neutral — neutral default (no adjustment)</option>
                         <option value="focused">Focused / Conscientious</option>
@@ -2014,7 +2014,7 @@
             <h2 style="font-size:26px; font-weight:600; line-height:1.25; margin-bottom:8px;">How the Pipeline Works</h2>
             <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin-bottom:28px;">Two-Stage Multi-Output architecture for computational estimation of interactional complexity from GUI screenshots.</p>
 
-            <div class="pipeline-section-title">Stage 1 — Feature Extraction (Image → Vectors)</div>
+            <div class="pipeline-section-title">Stage 1 — Task-Independent Screenshot Analysis</div>
             <div class="pipeline-row">
                 <div class="pipeline-node">
                     <div class="pipeline-node-label">Stage 1a</div>
@@ -2027,41 +2027,34 @@
                     <div class="pipeline-node-label">Stage 1b</div>
                     <div class="pipeline-node-title">Saliency Features</div>
                     <div class="pipeline-node-dim">s ∈ ℝ⁵</div>
-                    <div class="pipeline-node-desc">UMSI++ deep-learning saliency model predicts where users look. Five summary statistics: dispersion, entropy, coverage, peak count, center bias.</div>
+                    <div class="pipeline-node-desc">UMSI++ produces a model-estimated saliency map. Five numeric summary statistics are retained: dispersion, entropy, coverage, peak count, and center bias. No semantic label is inferred from its auxiliary six-value head.</div>
                     <div class="pipeline-node-ref"><a href="https://doi.org/10.1145/3544548.3581096" target="_blank" rel="noopener">Jiang et al. CHI 2023</a> · <a href="https://doi.org/10.1038/35058500" target="_blank" rel="noopener">Itti &amp; Koch (2001)</a> · <a href="https://doi.org/10.1167/7.14.4" target="_blank" rel="noopener">Tatler (2007)</a></div>
                 </div>
                 <div class="pipeline-node">
                     <div class="pipeline-node-label">Stage 1c</div>
-                    <div class="pipeline-node-title">Search Time Model</div>
-                    <div class="pipeline-node-dim">Jokinen 2020</div>
-                    <div class="pipeline-node-desc">Search time estimated via Jokinen’s adaptive feature guidance model, integrating EMMA eye-movement parameters and ACT-R memory decay.</div>
-                    <div class="pipeline-node-ref"><a href="https://doi.org/10.1016/j.ijhcs.2019.102376" target="_blank" rel="noopener">Jokinen et al. (2020)</a> · <a href="https://doi.org/10.1016/S1389-0417(00)00015-2" target="_blank" rel="noopener">Salvucci (2001)</a> · <a href="https://doi.org/10.1037/0033-295X.111.4.1036" target="_blank" rel="noopener">Anderson et al. (2004)</a></div>
+                    <div class="pipeline-node-title">HCEye-Derived Proxies</div>
+                    <div class="pipeline-node-dim">h ∈ ℝ⁶</div>
+                    <div class="pipeline-node-desc">Six project-specific, rule-based screenshot proxies informed by aggregate HCEye observations. They are not empirically calibrated as a cognitive-load measurement.</div>
+                    <div class="pipeline-node-ref"><a href="https://doi.org/10.1145/3655610" target="_blank" rel="noopener">Das et al. ETRA 2024</a></div>
                 </div>
             </div>
 
             <div class="pipeline-arrow">↓</div>
 
-            <div class="pipeline-section-title">Stage 2 — Experimental Layout-Complexity Heuristic (Vectors → Score)</div>
+            <div class="pipeline-section-title">Context Simulation — Separate from the Stage-1 Boundary</div>
             <div class="pipeline-row">
-                <div class="pipeline-node">
-                    <div class="pipeline-node-label">HCEye Sensitivity</div>
-                    <div class="pipeline-node-title">Eye-Tracking Features</div>
-                    <div class="pipeline-node-dim">h ∈ ℝ⁶</div>
-                    <div class="pipeline-node-desc">Rule-based sensitivity model derived from HCEye dataset (27 participants, 150 web pages, 3 cognitive load conditions via dual-task paradigm).</div>
-                    <div class="pipeline-node-ref"><a href="https://doi.org/10.1145/3655610" target="_blank" rel="noopener">Das et al. ETRA 2024</a></div>
-                </div>
                 <div class="pipeline-node">
                     <div class="pipeline-node-label">Task Descriptor</div>
                     <div class="pipeline-node-title">Task Context</div>
                     <div class="pipeline-node-dim">t ∈ ℝ⁶</div>
-                    <div class="pipeline-node-desc">Task type, search mode, target specificity, time pressure, and search mode are encoded as a weighted vector that modifies the base score.</div>
+                    <div class="pipeline-node-desc">Task type, target specificity, time pressure, and search mode produce an unvalidated ordinal modifier for a separate context-adjusted experimental output. They never enter or alter x19.</div>
                     <div class="pipeline-node-ref">Kahneman (1973) · <a href="https://doi.org/10.1518/001872008X288394" target="_blank" rel="noopener">Wickens (2008)</a> · <a href="https://doi.org/10.1016/0010-0285(80)90005-5" target="_blank" rel="noopener">Treisman &amp; Gelade (1980)</a></div>
                 </div>
                 <div class="pipeline-node">
                     <div class="pipeline-node-label">User Profile</div>
                     <div class="pipeline-node-title">Big Five Personality</div>
                     <div class="pipeline-node-dim">p ∈ ℝ⁵</div>
-                    <div class="pipeline-node-desc">Optional Big Five personality preset (Costa &amp; McCrae, 1992) applies a small modifier based on neuroticism, conscientiousness, and openness.</div>
+                    <div class="pipeline-node-desc">An optional, exploratory Big Five preset produces a separate ordinal modifier. It never enters or alters x19 and is not a validated user-performance model.</div>
                     <div class="pipeline-node-ref"><a href="https://doi.org/10.48550/arXiv.2307.00184" target="_blank" rel="noopener">Serapio-García et al. (2023)</a> · <a href="https://doi.org/10.1016/S0001-4575(03)00010-1" target="_blank" rel="noopener">Taubman-Ben-Ari et al. (2004)</a></div>
                 </div>
             </div>
@@ -2070,11 +2063,11 @@
 
             <div class="pipeline-row" style="grid-template-columns: 1fr;">
                 <div class="pipeline-node" style="border-color: var(--accent);">
-                    <div class="pipeline-node-label">Full Feature Vector</div>
-                    <div class="pipeline-node-title">Multi-Output Prediction</div>
-                    <div class="pipeline-node-dim">x = [v, s, h, t, p] ∈ ℝ³⁰</div>
-                    <div class="pipeline-node-desc">The concatenated vector is scored by the rule-based experimental heuristic (the standard path). Primary output: Experimental Layout-Complexity Index (0–100), plus two exploratory, unvalidated rule-based proxies — Search Efficiency (0–1) and Attention Demand (0–1). The trained Random-Forest scaffold is disabled/quarantined: its current training construction is circular and cannot provide validation evidence. A mutual coherence check flags implausible combinations.</div>
-                    <div class="pipeline-node-ref"><a href="https://doi.org/10.1023/A:1010933404324" target="_blank" rel="noopener">Breiman (2001)</a> Random Forest · <a href="https://doi.org/10.1002/widm.1157" target="_blank" rel="noopener">Borchani et al. (2015)</a> Multi-Output Regression · <a href="https://doi.org/10.1167/7.2.17" target="_blank" rel="noopener">Rosenholtz et al. (2007)</a> Coherence</div>
+                    <div class="pipeline-node-label">Authoritative Public Stage-1 Boundary</div>
+                    <div class="pipeline-node-title">Task-Independent x19</div>
+                    <div class="pipeline-node-dim">x = [v, s, h] ∈ ℝ¹⁹</div>
+                    <div class="pipeline-node-desc">The public Stage-1 vector and its Experimental Layout-Complexity Index are computed from the screenshot only. Task and profile remain separate and may change only explicitly labelled context-adjusted experimental outputs. The standard path is a project-specific heuristic, not a validated cognitive-load measurement.</div>
+                    <div class="pipeline-node-ref">Schema: [v8 | s5 | h6], float32 · Canonical analysis: 1280 px long side</div>
                 </div>
             </div>
 
@@ -2685,9 +2678,9 @@
 
         function handleFile(file) {
             clearUploadError();
-            const allowed = ["image/png","image/jpeg","image/jpg","image/bmp","image/tiff","image/webp"];
-            if (!allowed.includes(file.type) && !file.name.match(/\.(png|jpg|jpeg|bmp|tiff?|webp)$/i)) {
-                showUploadError("Unsupported file type. Please upload a PNG, JPG, BMP, TIFF or WebP image.");
+            const allowed = ["image/png","image/jpeg","image/jpg","image/bmp","image/tiff"];
+            if (!allowed.includes(file.type) && !file.name.match(/\.(png|jpg|jpeg|bmp|tiff?)$/i)) {
+                showUploadError("Unsupported file type. Please upload a PNG, JPG, JPEG, BMP or TIFF image.");
                 return;
             }
             if (file.size > 50 * 1024 * 1024) {
@@ -2828,9 +2821,10 @@
                 // Add to history
                 history.push({
                     filename: data.filename,
-                    experimental_layout_complexity: data.context_adjusted_experimental_outputs.layout_complexity_score,
+                    experimental_layout_complexity: data.layout.experimental_complexity_index,
+                    context_adjusted_experimental_output: data.context_adjusted_experimental_outputs.layout_complexity_score,
                     included: true,
-                    base_layout_complexity: data.base_experimental_outputs.layout_complexity_score,
+                    base_experimental_output: data.base_experimental_outputs.layout_complexity_score,
                     search_efficiency_proxy: data.context_adjusted_experimental_outputs.search_efficiency_proxy,
                     attention_demand_proxy: data.context_adjusted_experimental_outputs.attention_demand_proxy,
                     task_type: data.task_descriptor.task_type,
@@ -3948,9 +3942,9 @@
                 : adjusted.layout_complexity_score;
             summaryGrid.innerHTML = `
                 <div class="summary-card">
-                    <div class="summary-label">Experimental Layout Complexity <span class="feature-i" tabindex="0" aria-label="What is Experimental Layout Complexity?" data-tip="<div class='tip-title'>Experimental Layout Complexity</div><div class='tip-body'>An exploratory, image-based complexity value for the whole screen, on a 0&ndash;100 scale. Higher means a busier, more demanding layout. It combines the visual complexity features with the selected task and profile context. It is a layout characteristic, not a validated cognitive-load measurement, and it does not change when you select a target.</div>">i</span></div>
-                    <div class="summary-value">${adjusted.layout_complexity_score.toFixed(1)}</div>
-                    <div class="summary-meta"><strong>Exploratory, project-specific heuristic &mdash; not a validated cognitive-load measurement.</strong> Base ${base.layout_complexity_score.toFixed(1)} · adjusted by task/profile · ${data.prediction_source === "experimental_stage2_regressor" ? "experimental regressor" : "project-specific HCEye heuristic"}. Select a target below for its search difficulty.</div>
+                    <div class="summary-label">Experimental Layout Complexity <span class="feature-i" tabindex="0" aria-label="What is Experimental Layout Complexity?" data-tip="<div class='tip-title'>Experimental Layout Complexity</div><div class='tip-body'>An exploratory, screenshot-only complexity value for the whole screen, on a 0&ndash;100 scale. It is computed from the task-independent Stage-1 vector [v8 | s5 | h6]. Task and profile selections do not change this value. It is not a validated cognitive-load measurement.</div>">i</span></div>
+                    <div class="summary-value">${layout.experimental_complexity_index.toFixed(1)}</div>
+                    <div class="summary-meta"><strong>Exploratory, project-specific heuristic &mdash; not a validated cognitive-load measurement.</strong> Task-independent Stage 1 · x = [v8 | s5 | h6] · float32. Task/profile effects are shown separately in the context simulation below. Select a target for a separate model-estimated search-difficulty result.</div>
                 </div>
             `;
             // Search Efficiency and Attention Demand are intentionally NOT shown
@@ -4021,7 +4015,7 @@
 
             // Design diagnosis (3 bullets above feature table)
             const diagnosisEl = document.getElementById('featureDiagnosis');
-            if (diagnosisEl) diagnosisEl.innerHTML = buildDesignDiagnosis(data.visual_features, data.reference, data.context_adjusted_experimental_outputs && data.context_adjusted_experimental_outputs.layout_complexity_score);
+            if (diagnosisEl) diagnosisEl.innerHTML = buildDesignDiagnosis(data.visual_features, data.reference, layout.experimental_complexity_index);
 
             // Provenance note for the empirical reference comparison.
             const provEl = document.getElementById('featureRefProvenance');
@@ -4161,10 +4155,10 @@
             function deltaClass(d) { return d > 0.05 ? 'pos' : d < -0.05 ? 'neg' : 'zero'; }
             function deltaStr(d)   { return (d >= 0 ? '+' : '') + d.toFixed(1); }
             function scoreBand(score) {
-                if (score < 25) return { label: 'Low experimental layout complexity', note: 'Few layout proxies are elevated.', cls: 'badge-low' };
-                if (score < 50) return { label: 'Moderate experimental layout complexity', note: 'Some layout proxies are moderately elevated.', cls: 'badge-moderate' };
-                if (score < 75) return { label: 'High experimental layout complexity', note: 'Several layout proxies are elevated.', cls: 'badge-high' };
-                return { label: 'Very high experimental layout complexity', note: 'Many layout proxies are strongly elevated.', cls: 'badge-very-high' };
+                if (score < 25) return { label: 'Low context-adjusted output', note: 'The exploratory context-adjusted output is in the low band.', cls: 'badge-low' };
+                if (score < 50) return { label: 'Moderate context-adjusted output', note: 'The exploratory context-adjusted output is in the moderate band.', cls: 'badge-moderate' };
+                if (score < 75) return { label: 'High context-adjusted output', note: 'The exploratory context-adjusted output is in the high band.', cls: 'badge-high' };
+                return { label: 'Very high context-adjusted output', note: 'The exploratory context-adjusted output is in the very-high band.', cls: 'badge-very-high' };
             }
             function recommendationFor(score, delta) {
                 if (score >= 75 || delta >= 10) return 'Review cue: inspect the contributing feature patterns.';
@@ -4481,7 +4475,7 @@
         // ─── Interpretation ───
         function renderInterpretation(data) {
             renderCoherence(data.coherence);
-            const score = data.context_adjusted_experimental_outputs.layout_complexity_score;
+            const score = data.layout.experimental_complexity_index;
             const baseScore = (data.base_experimental_outputs && data.base_experimental_outputs.layout_complexity_score) || 0;
             const searchEff = data.context_adjusted_experimental_outputs.search_efficiency_proxy;
             const attnDem  = data.context_adjusted_experimental_outputs.attention_demand_proxy;
@@ -4821,7 +4815,7 @@
             let html = `<div style="overflow-x: auto;"><table class="history-table"><tr>
                 <th title="Include this analysis in the overall comparison"><input type="checkbox" id="historySelectAll"></th>
                 <th>File</th>
-                <th title="Experimental Layout Complexity (0-100, layout characteristic)">Layout</th>
+                <th title="Task-independent Stage-1 Experimental Layout Complexity (0-100, screenshot characteristic)">Layout</th>
                 ${shortKeys.slice(1).map(k => {
                     const tt = k === 'Search' ? 'Search Efficiency (exploratory, unvalidated proxy)'
                              : k === 'Attention' ? 'Attention Demand (exploratory, unvalidated proxy)'
@@ -5006,7 +5000,7 @@
             doc.setTextColor(...dim);
             doc.text(`File: ${d.filename || "-"}  ·  Generated: ${new Date().toLocaleString()}`, margin, y);
             y += 4;
-            doc.text("Pipeline: Two-Stage Multi-Output · HCEye rule-based scoring (Das et al., ETRA 2024)", margin, y);
+            doc.text("Pipeline: Stage-1 x19 · project-specific HCEye-derived heuristic", margin, y);
             y += 10;
             divider();
 
@@ -5080,8 +5074,9 @@
 
             // ── Scores ───────────────────────────────────────────────────
             sectionTitle("Experimental Outputs");
-            row("Experimental Layout-Complexity Index (adjusted)",   score.toFixed(2), lvlColor);
-            row("Experimental Layout-Complexity Index (base)",        (d.base_layout_complexity || 0).toFixed(2));
+            row("Stage-1 Experimental Layout-Complexity Index", score.toFixed(2), lvlColor);
+            row("Context-Adjusted Experimental Output", (d.context_adjusted_experimental_output || 0).toFixed(2));
+            row("Base Experimental Output", (d.base_experimental_output || 0).toFixed(2));
             row("Search Efficiency (exploratory proxy)",   (d.search_efficiency_proxy || 0).toFixed(3));
             row("Attention Demand (exploratory proxy)",    (d.attention_demand_proxy || 0).toFixed(3));
             row("HCEye-derived Rule Index (exploratory)",       (d.hceye_proxy_index || 0).toFixed(3));
@@ -5149,7 +5144,7 @@
             doc.setTextColor(...dim);
             doc.text("Pipeline: Two-Stage Multi-Output Pipeline · Das et al. (ETRA 2024) · Jokinen et al. (IJHCS 2020) · Rosenholtz et al. (JoV 2007)", margin, y);
             y += 5;
-            doc.text("Output is a computational index of interactional complexity - not a direct measure of cognitive load.", margin, y);
+            doc.text("Output is an experimental layout-complexity index - not a direct measure of cognitive load.", margin, y);
 
             // ── Page numbers ─────────────────────────────────────────────
             const pageCount = doc.getNumberOfPages();
@@ -5190,7 +5185,8 @@
         function exportCSV(data, filename) {
             const columns = [
                 ["filename", d => d.filename],
-                ["experimental_layout_complexity", d => d.experimental_layout_complexity],
+                ["stage1_experimental_layout_complexity_index", d => d.experimental_layout_complexity],
+                ["context_adjusted_experimental_output", d => d.context_adjusted_experimental_output],
                 ["search_efficiency_proxy", d => d.search_efficiency_proxy],
                 ["attention_demand_proxy", d => d.attention_demand_proxy],
                 ["task_type", d => d.task_type],
@@ -5243,8 +5239,8 @@
 
         function notifyAnalysisComplete(data, elapsedSec) {
             if (!notificationsEnabled()) return;
-            const score = data && data.context_adjusted_experimental_outputs
-                ? data.context_adjusted_experimental_outputs.layout_complexity_score
+            const score = data && data.layout
+                ? data.layout.experimental_complexity_index
                 : null;
             const scoreText = score !== null ? score.toFixed(1) : "n/a";
             const body = `Experimental layout complexity: ${scoreText}`;

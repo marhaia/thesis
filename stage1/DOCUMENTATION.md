@@ -5,7 +5,19 @@
 **Thesis:** *Two-Stage Multi-Output Pipeline: Computational Estimation of Interactional Complexity from GUI Screenshots*  
 **Author:** Hannah Mueller (Q682780)  
 **Module:** `stage1/visual_complexity.py` + `saliency/umsi_model.py`  
-**Version:** 2.7 (16.07.2026)
+**Version:** 3.0 (11.08.2026)
+
+> **Current P7 claim policy (authoritative):** A complete score-bearing
+> Stage-1 analysis exposes the task-independent float32 vector
+> `x = [v8 | s5 | h6] ∈ ℝ¹⁹` and the screenshot-only
+> `layout.experimental_complexity_index`. HCEye supplies project-specific,
+> unvalidated proxy rules; it does not calibrate a cognitive-load measurement.
+> Task/profile modifiers remain outside x19 and affect only separately labelled
+> context-adjusted experimental outputs. UMSI++ provides a numeric saliency map
+> and an internal six-value auxiliary head whose semantic label order is not
+> verified. Search times, fixation counts, and paths are model simulations, not
+> observed user data. Historical development notes below are subordinate to
+> this policy wherever wording conflicts.
 
 ---
 
@@ -34,6 +46,7 @@
 | 16.07.2026 | 2.7 | Navigation: Burger-Menü durch **Einstellungs-Zahnrad-Icon** ersetzt (nur „Alerts"); Contact in den **Footer** verschoben; Footer-Platzhalter für **GitHub / OSF / DOI** ergänzt |
 | 16.07.2026 | 2.7 | Display-Preset-Wording vereinfacht (Phone / Laptop 14″ / Desktop 17″, „at desk distance" entfernt); alle Emoji-Feature-Icons aus `/api/features` entfernt (waren ungenutzt) |
 | 16.07.2026 | 2.7 | **Quellen-Audit:** Feature-DOIs mit dem angezeigten Referenztext abgeglichen — Edge Density → **Canny (1986)**, Visual Hierarchy → **Tuch et al. (2009)**; Out-of-Domain-Warnung mit wissenschaftlichem Beleg zur Dataset-Shift-Problematik versehen (**Torralba & Efros 2011**, **Jiang et al. 2023**) |
+| 11.08.2026 | 3.0 | **P7 Claim reconciliation:** x19-Vertrag, Task-Unabhängigkeit, Canonical 1280, HCEye-/UMSI-Grenzen, simulierte Fixations-/Zeitwerte, Formate und Validierungsstatus vereinheitlicht |
 
 ---
 
@@ -64,20 +77,24 @@
 
 ## 1. Overview
 
-Stage 1 extracts a **visual complexity vector v ∈ ℝ⁸** from a single GUI screenshot, plus an optional **saliency feature vector s ∈ ℝ⁵** predicted by UMSI++. Together they form the **extended feature vector v̂ ∈ ℝ¹³** that feeds into the cognitive-load layer.
+Stage 1 extracts `v ∈ ℝ⁸`, mandatory score-bearing saliency features
+`s ∈ ℝ⁵`, and project-specific HCEye-derived proxy features `h ∈ ℝ⁶`.
+Together they form the sole public, task-independent boundary
+`x = [v8 | s5 | h6] ∈ ℝ¹⁹` (`float32`).
 
-Additionally, the **Jokinen 2020 Cognitive Search Model** provides per-element **predicted visual search time** — the central cognitive metric that bridges the gap between AIM's existing visual metrics and actual user performance.
+The screenshot-only **Experimental Layout-Complexity Index** is an exploratory
+project-specific heuristic, not a validated cognitive-load measurement. Task
+context and an optional coarse Big-Five preset are explicitly separate inputs:
+they never enter x19 or alter `layout.experimental_complexity_index`; they only
+produce separately labelled context-adjusted experimental outputs.
 
-The pipeline is **task-independent** at the image-analysis level — it analyzes only the raw visual properties of the screenshot. Task context is then added by a **rule-based task descriptor** and an **optional coarse Big-Five preset**. A trained Stage-2 regressor may still be used experimentally, but it is not required for the default pipeline.
-
-**Current default (26.05.2026):**
-- Base score from HCEye-derived cognitive-load coefficients
-- Additive adjustment from Task Descriptor
-- Additive adjustment from optional Big-Five preset
-- No retraining required for the default path
+The Jokinen 2020 implementation supplies model-estimated per-element search
+times, fixation counts, and target-driven paths as separate diagnostics. These
+values are simulations, not observed eye tracking or validated human
+performance.
 
 ```
-Input:  GUI screenshot (PNG/JPG)
+Input:  GUI screenshot (PNG/JPG/JPEG/BMP/TIFF)
         ↓
    ┌──────────────────────────────────────────────────────────┐
    │  Stage 1a: visual_complexity.py          [04.05.2026]    │
@@ -103,7 +120,8 @@ Input:  GUI screenshot (PNG/JPG)
    │                                                          │
    │  Outputs:                                                │
    │    • Saliency heatmap (512×512 → original resolution)   │
-   │    • Design classification (6-class softmax)             │
+   │    • Internal numeric auxiliary head (6 values; no       │
+   │      verified semantic label order)                      │
    │                                                          │
    │  Derived features (saliency/saliency_features.py):       │
    │    s₁  Saliency Dispersion                               │
@@ -116,7 +134,7 @@ Input:  GUI screenshot (PNG/JPG)
    └──────────────────────────────────────────────────────────┘
         ↓
    ┌──────────────────────────────────────────────────────────┐
-   │  Stage 1c: cognitive/jokinen_model.py    [06.05.2026]    │
+   │  Separate diagnostic: cognitive/jokinen_model.py         │
    │                                                          │
    │  Jokinen 2020 Adaptive Feature Guidance                  │
    │  (IJHCS, 136, 102376)                                   │
@@ -124,14 +142,14 @@ Input:  GUI screenshot (PNG/JPG)
    │  Input: detected UI elements + UMSI++ saliency map       │
    │  Process: Monte Carlo search simulation (EMMA + VSTM)    │
    │  Output:                                                 │
-   │    • Per-element predicted search time (seconds)         │
-   │    • Per-element fixation count                          │
-   │    • Layout difficulty rating                            │
+   │    • Model-estimated search time (seconds)               │
+   │    • Model-estimated fixation count                      │
+   │    • Experimental search-difficulty rating               │
    │                                                          │
    │  → c = [mean_time, max_time, std_time, difficulty]       │
    └──────────────────────────────────────────────────────────┘
         ↓
-Output: v̂ = [f₁, …, f₈, s₁, …, s₅] ∈ ℝ¹³ + cognitive metrics
+Output: x = [v8 | s5 | h6] ∈ ℝ¹⁹ + separate model diagnostics
 ```
 
 ---
@@ -180,7 +198,9 @@ Thesis_G/
 
 **Stage 1a (Visual Complexity):**
 1. Image is loaded via OpenCV (`cv2.imread`) in BGR format.
-2. Each feature function receives the full-resolution BGR image.
+2. The image is resized once, aspect-ratio preserving, to the project-specific
+   canonical analysis resolution (1280 px long side). The eight visual features
+   and score-driving layout/OCR measurements use this canonical analysis path.
 3. Features are computed sequentially (F1→F8).
 4. Results are returned as a Python dict: `{"shannon_entropy": 6.64, ...}`
 5. The Flask API serializes this to JSON for the web UI.
@@ -188,7 +208,8 @@ Thesis_G/
 **Stage 1b (Saliency; added 06.05.2026):**
 1. Image is loaded as BGR, resized with aspect-ratio padding to 256×256.
 2. VGG mean subtraction applied (B: 103.939, G: 116.779, R: 123.68).
-3. Forward pass through UMSI++ model → 512×512 heatmap + 6-class softmax.
+3. Forward pass through UMSI++ model → 512×512 heatmap + numeric six-value
+   auxiliary softmax head. No semantic class-label order is asserted.
 4. Heatmap is unpadded and resized to original image resolution.
 5. Five scalar features are extracted from the normalized heatmap.
 6. Results returned via `/api/saliency` endpoint.
@@ -609,13 +630,14 @@ Input(256×256×3, BGR, VGG-mean-subtracted)
   │   • DepthwiseConv rate=18 → Pointwise (256)
   │   → Concat: (batch, 32, 32, 1024)
   │
-  ├── Classification Branch
+  ├── Numeric Auxiliary Head
   │   • Conv 3×3 stride 3 → BN → ReLU → Dropout
   │   • GlobalAveragePooling → Dense(256) → Dropout
-  │   • Dense(6, softmax) → out_classif (6-Klassen)
+  │   • Dense(6, softmax) → out_classif (six numeric values;
+  │     semantic class order is not verified)
   │   • Dense(256) → Tile zu (32, 32, 256) via Lambda
   │
-  ├── Concatenate [ASPP, Classification Tile]
+  ├── Concatenate [ASPP, Auxiliary Tile]
   │   → (batch, 32, 32, 1280)
   │
   └── Decoder
@@ -639,11 +661,13 @@ Input(256×256×3, BGR, VGG-mean-subtracted)
 | Weight Format | HDF5 mit `layer_names` attr | Direkt kompatibel — alle 107 Layer matchen |
 | GPU | CUDA 9.0 + TF-GPU 1.14 | Apple Silicon CPU (tf-macos 2.16.2) |
 
-**Validierung der Portierung:**
+**Engineering checks for the port (not construct validation):**
 - 107 gewichtete Layer im Modell ↔ 107 Layer in der HDF5-Datei
-- Layer-Namen und Tensor-Shapes stimmen 1:1 überein
-- Klassifikations-Output summiert zu 1.0 (Softmax korrekt)
-- Vorhersagt "web_page" für BMW Navigation Screenshot (plausibel)
+- positionales Laden schlägt bei Architektur-/Shape-Mismatch fehl
+- Saliency- und numerischer Auxiliary-Head-Output werden gegen die
+  repository-pinned parity evidence geprüft
+- diese Checks belegen Reproduzierbarkeit/Kompatibilität, nicht unabhängige
+  Saliency-Benchmarkvalidierung oder semantische Klassenlabels
 
 ### 6.4 Saliency-Features (s ∈ ℝ⁵)
 
@@ -657,20 +681,15 @@ Aus der normalisierten Saliency-Map $S(x,y) \in [0,1]$ werden folgende Features 
 | s₄ | **Entropy** | $H = -\sum_b p_b \log_2 p_b$ (32 Bins, normiert) | [0, 1] | Gleichmäßigkeit der Salienz-Verteilung |
 | s₅ | **Coverage** | $\frac{|\{(x,y): S > 0.5 \cdot \max(S)\}|}{W \cdot H}$ | [0, 1] | Flächenanteil mit signifikanter Salienz |
 
-### 6.5 Design-Klassifikation (6 Klassen)
+### 6.5 Numeric Auxiliary Head (6 values)
 
-UMSI++ klassifiziert den Designtyp des Input-Bildes:
-
-| Klasse | Beschreibung |
-|--------|--------------|
-| poster | Plakate, Werbung |
-| infographic | Infografiken, Daten-Visualisierungen |
-| mobile_ui | Mobile App Interfaces |
-| desktop_ui | Desktop-Anwendungen |
-| web_page | Webseiten |
-| natural_image | Natürliche Fotos/Szenen |
-
-**Nutzen für Stage 2:** Die Klassifikation liefert einen Prior für das Saliency-Modell und kann als bedingender Faktor in der Cognitive Load Estimation verwendet werden.
+The checkpoint contains a six-value auxiliary softmax head used inside the
+UMSI++ architecture. The exact index-to-label mapping is not verified from a
+shipped training-time label encoder. Production API, UI, CSV, and CLI surfaces
+therefore attach no design-class names, confidence labels, or domain verdicts
+to these values. The auxiliary head remains relevant only as a numeric internal
+model output and for architecture/parity evidence; downstream scoring consumes
+the saliency heatmap, not semantic class labels.
 
 ### 6.6 API-Endpoints
 
@@ -678,7 +697,7 @@ UMSI++ klassifiziert den Designtyp des Input-Bildes:
 |----------|---------|-------|--------|------|
 | `/api/analyze` | POST | Image (multipart) | v∈ℝ⁸ + Metadaten | 04.05.2026 |
 | `/api/features` | GET | — | Feature-Metadaten (8 Features) | 04.05.2026 |
-| `/api/saliency` | POST | Image (multipart) | s∈ℝ⁵ + Klassifikation + Heatmap (Base64) | 06.05.2026 |
+| `/api/saliency` | POST | Image (multipart) | s∈ℝ⁵ + Heatmap (Base64); no semantic class labels | 06.05.2026 |
 
 ### 6.7 Bezug zu UEyes-Datensatz
 
@@ -687,9 +706,13 @@ Das UMSI++ Modell wurde **auf dem UEyes-Datensatz trainiert**. D.h.:
 - Ground-Truth Saliency Maps sind verfügbar in `ueyes/saliency_models/UMSI++/saliency_gt/`
 - Validierungsmetriken (KL-Divergenz, CC, NSS) können gegen diese Ground Truth berechnet werden
 
-**Noch ausstehend:**
-- Formale Validierung: UMSI++ Predictions vs. UEyes Ground Truth Saliency Maps
-- Cross-Validation mit HCEye-Datensatz (Das et al., ETRA 2024) — zeigt Saliency-Änderung unter kognitivem Load
+**Current evidence boundary:**
+- repository tests and frozen fixtures establish production behavior,
+  checkpoint identity, postprocessing policy, and project-reference parity;
+- local UEyes sample checks are engineering sanity checks, not an official
+  benchmark or independent construct validation;
+- no end-to-end validation against new human data has been completed;
+- no HCEye correspondence result validates the screenshot-level layout index.
 
 ---
 
@@ -756,7 +779,7 @@ Das Modell simuliert visuelle Suche Fixierung für Fixierung:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  Screenshot (PNG/JPG)                                        │
+│  Screenshot (PNG/JPG/JPEG/BMP/TIFF)                          │
 └──────────────┬──────────────────────────────────────────────┘
                │
        ┌───────┴───────┐
@@ -919,9 +942,10 @@ from saliency.saliency_features import extract_saliency_features
 model = UMSIPlus("saliency/weights/model_weights/saliency_models/UMSI++/umsi++.hdf5")
 
 # Predict saliency
-heatmap, classif = model.predict_saliency("screenshot.png", return_classif=True)
+heatmap, auxiliary_head = model.predict_saliency("screenshot.png", return_classif=True)
 # heatmap: np.ndarray shape (H, W), float32 in [0,1]
-# classif: np.ndarray shape (6,), softmax probabilties
+# auxiliary_head: np.ndarray shape (6,), numeric softmax values;
+# semantic labels/order are not verified and are not used for scoring
 
 # Extract scalar features
 features = extract_saliency_features(heatmap)
@@ -973,7 +997,7 @@ Visual Complexity Vector v ∈ ℝ⁸:
 - Moderate hierarchy (0.57) — clear separation between map/nav bar/controls
 - Low element density (0.08) — few interactive elements visible
 
-### Saliency Output (06.05.2026)
+### Historical Saliency Output Example (06.05.2026)
 
 ```
 Saliency Features s ∈ ℝ⁵ (UMSI++):
@@ -983,13 +1007,13 @@ Saliency Features s ∈ ℝ⁵ (UMSI++):
   saliency_entropy             0.7169
   saliency_coverage            0.0642
 
-Design Classification:
-  poster                       0.1555
-  infographic                  0.1672
-  mobile_ui                    0.1654
-  desktop_ui                   0.1640
-  web_page                     0.2446  ← predicted class
-  natural_image                0.1032
+Numeric auxiliary head (semantic index order unverified):
+  index_0                      0.1555
+  index_1                      0.1672
+  index_2                      0.1654
+  index_3                      0.1640
+  index_4                      0.2446
+  index_5                      0.1032
 ```
 
 **Interpretation:**
@@ -998,7 +1022,7 @@ Design Classification:
 - Center Bias 0.31 → Aufmerksamkeit nicht besonders zentrumslastig (Karte füllt Rand-zu-Rand)
 - Entropy 0.72 → relativ gleichmäßig verteilte Salienz
 - Coverage 0.06 → nur 6.4% der Fläche erhält >50% der maximalen Salienz (wenige dominante Punkte)
-- Klasse "web_page" (24.5%) → plausibel für ein Navigations-UI mit kartenähnlichem Layout
+- The auxiliary values receive no semantic class interpretation.
 
 ---
 
@@ -1029,19 +1053,32 @@ For the web UI radar chart and bar display, features are normalized to [0, 1] us
 
 3. **Layout Symmetry** uses raw pixel NCC, which is sensitive to small translations. A more robust version could use SSIM or feature-point matching.
 
-4. All features are currently **unnormalized** (raw scale). Stage 2 should apply z-score or min-max normalization based on a reference dataset of automotive GUI screenshots.
+4. The Stage-1 visual block contains raw and already bounded component
+   measures. The public layout index applies the repository's fixed project
+   heuristics; any later dataset-level calibration remains an open research
+   decision outside the current production contract.
 
-5. The normalization constants in **Feature Congestion** (0.2088, 0.0660, 0.0269) were derived by Rosenholtz et al. for natural images. They may need recalibration for automotive GUI screenshots specifically.
+5. The normalization constants in **Feature Congestion** (0.2088, 0.0660,
+   0.0269) were derived by Rosenholtz et al. for natural images. Transfer to
+   any final thesis domain requires separate validation; that domain is not
+   fixed by this document.
 
 ### Stage 1b (Saliency — 06.05.2026)
 
 6. **UMSI++ auf CPU only** — TF 2.16 auf M4 Mac nutzt nur die CPU. Inference dauert ~3–5s pro Bild. Metal-Plugin (tensorflow-metal) könnte GPU-Beschleunigung bringen.
 
-7. **Klassifikation nicht kalibriert** — Die 6-Klassen-Klassifikation zeigt relativ gleichverteilte Wahrscheinlichkeiten (~16% pro Klasse). Auto-UI war nicht im Trainingsset → das Modell hat keine Auto-Dashboard-Klasse. Für uns hauptsächlich als Feature, nicht als harte Klassifikation relevant.
+7. **Auxiliary-head semantics unverified** — the six numeric values have no
+   public class-label interpretation and do not drive downstream scoring.
 
-8. **Keine formale Validierung** — Die UMSI++ Predictions müssen noch gegen die UEyes Ground-Truth Saliency Maps evaluiert werden (KL, CC, NSS Metriken).
+8. **Validation boundary** — repository parity/sanity evidence is not an
+   official external benchmark and does not validate cognitive load, observed
+   gaze, or human performance.
 
-### Nächste Schritte (geplant)
+### Historische Ideen (nicht als aktueller Plan freigegeben)
+
+The table below is retained as provenance from an earlier roadmap. It does not
+define current Stage-1 work, the final domain, the study design, or a post-study
+ML path. Those decisions remain open and require explicit thesis-level approval.
 
 | Priorität | Aufgabe | Relevanz |
 |-----------|---------|----------|

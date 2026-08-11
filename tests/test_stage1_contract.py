@@ -106,7 +106,7 @@ def client(monkeypatch):
     )
 
     class _SaliencyModel:
-        DESIGN_CLASSES = tuple(f"class_{index}" for index in range(6))
+        pass
 
     monkeypatch.setattr(app_module, "_get_saliency_model", lambda: _SaliencyModel())
 

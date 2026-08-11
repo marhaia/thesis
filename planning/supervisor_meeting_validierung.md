@@ -1,4 +1,9 @@
 # Supervisor-Meeting — Validierungsstrategie
+> **HISTORICAL DISCUSSION NOTE (02.06.2026) — SUPERSEDED.** This note records an
+> earlier validation discussion. Its Cognitive Load Score framing and proposed
+> domain/study options are not current decisions or validation evidence. Final
+> domain, study design, ML path, and claims remain open.
+
 **Erstellt:** 02.06.2026
 
 ---

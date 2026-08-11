@@ -1,4 +1,9 @@
-"""Generate expose_standard.docx from the final exposé content."""
+"""Regenerate the historical June-2026 exposé draft with a status notice.
+
+The prose below is intentionally retained as a historical snapshot. It must
+not be used as the current method/claim basis without a separate thesis-scope
+decision and substantive rewrite.
+"""
 
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
@@ -107,6 +112,20 @@ for label, value in meta:
     p.paragraph_format.space_after = Pt(2)
 
 doc.add_paragraph()
+
+status = doc.add_paragraph()
+status.paragraph_format.space_after = Pt(8)
+run = status.add_run("HISTORICAL WORKING DRAFT (June 2026) — SUPERSEDED\n")
+run.bold = True
+run.font.color.rgb = RGBColor(0x9C, 0x1C, 0x1C)
+run = status.add_run(
+    "Retained for provenance; this is not the current methodology or claim "
+    "basis. The automotive domain, post-study ML path, Cognitive Load Index, "
+    "HCEye-calibration framing, screening-tool claim, and final validation "
+    "strategy are superseded or remain open. See "
+    "Literature/notes/expose/README.md before reuse."
+)
+run.font.color.rgb = RGBColor(0x6B, 0x1A, 0x1A)
 
 # ═══════════════════════════════════════════════════════════════════════════
 # 1. INTRODUCTION
