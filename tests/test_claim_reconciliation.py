@@ -9,7 +9,7 @@ from zipfile import ZipFile
 ROOT = Path(__file__).resolve().parents[1]
 UI = (ROOT / "stage1" / "ui" / "index.html").read_text(encoding="utf-8")
 README = (ROOT / "README.md").read_text(encoding="utf-8")
-CI = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+PYTEST_CONFIG = (ROOT / "pytest.ini").read_text(encoding="utf-8")
 
 
 def test_ui_headline_and_history_use_task_independent_stage1_layout_value():
@@ -45,7 +45,7 @@ def test_readme_uses_bounded_construct_and_current_test_contract():
     assert "[v8 | s5 | h6]" in README
     assert "pytest -q" in README
     assert "deployed load score" not in lower
-    assert "tests/test_claim_reconciliation.py" in CI
+    assert "tests/test_claim_reconciliation.py" in PYTEST_CONFIG
 
 
 def test_latest_expose_is_self_identified_as_historical():

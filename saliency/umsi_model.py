@@ -347,7 +347,7 @@ def build_umsi_model(input_shape: Tuple[int, int, int] = (SHAPE_R, SHAPE_C, 3),
     out_classif = layers.Dense(6, activation='softmax',
                                 name='out_classif')(classif_feat)
 
-    # Fusion: tile the 256-d classification embedding to 32×32 spatial
+    # Fusion: tile the 256-d numeric auxiliary embedding to 32×32 spatial
     fusion = layers.Dense(256, name='dense_fusion')(classif_feat)
 
     def tile_to_spatial(x):
@@ -362,7 +362,7 @@ def build_umsi_model(input_shape: Tuple[int, int, int] = (SHAPE_R, SHAPE_C, 3),
     fusion_tiled = layers.Lambda(tile_to_spatial, name='lambda_1')(fusion)
     # → shape: (batch, 32, 32, 256)
 
-    # Merge ASPP and classification
+    # Merge ASPP and numeric auxiliary embedding
     concat_all = layers.Concatenate(name='concatenate_2')(
                                      [concat_aspp, fusion_tiled])
     # → shape: (batch, 32, 32, 1280)
@@ -516,10 +516,9 @@ class UMSIPlus:
                 "model_weights.zip"
             )
         # Load the pretrained weights.
-        # We load positionally (skip_mismatch=False) so that ANY architecture
-        # mismatch fails loudly. A silent skip_mismatch=True fallback is
-        # deliberately NOT used: it would leave mismatched layers randomly
-        # initialised while still serving predictions labelled "UMSI++", which
+        # Load positionally and fail loudly on any architecture mismatch. A
+        # mismatch-skipping partial load would leave layers randomly
+        # initialised while still serving predictions labelled "UMSI++" and
         # would invalidate every downstream saliency result without warning.
         try:
             self.model.load_weights(str(weights_path), skip_mismatch=False)

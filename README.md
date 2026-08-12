@@ -181,24 +181,22 @@ curl -F "image=@screenshot.png" http://localhost:5001/api/analyze
 
 ## Testing
 
-The authoritative lightweight suite is the explicit file list in
-`.github/workflows/ci.yml`; it includes the P7 claim-regression tests and runs
-with `STAGE1_RUNTIME_VERIFICATION=metadata_only`. Run the P7/Stage-1 contract
-block locally with:
+The authoritative lightweight suite is pinned in `pytest.ini`; GitHub CI runs
+the same collection with `STAGE1_RUNTIME_VERIFICATION=metadata_only`:
 
 ```bash
 source venv/bin/activate
-pytest -q tests/test_claim_reconciliation.py tests/test_stage1_contract.py \
-  tests/test_scientific_semantics.py tests/test_smoke.py \
-  tests/test_layout_fail_closed.py
+pytest -q
 ```
 
 Repository-root files such as `saliency/test_full_pipeline.py` and the upstream
 HCEye `dynamic_test.py` are manual/heavy integration scripts, not part of the
-lightweight CI collection. The Step-2b/P9 corrigendum evaluator also requires a
-fresh process without TensorFlow/Keras already imported. `tests/test_pipeline.py`
-likewise remains a direct end-to-end demo that accepts an image path and is
-therefore not collected as an ordinary zero-argument pytest test:
+lightweight CI collection. Additional heavy/evidence tests must be invoked by
+their explicit path so they run in the required isolated process. The
+Step-2b/P9 corrigendum evaluator, for example, must run alone before
+TensorFlow/Keras is imported. `tests/test_pipeline.py` likewise remains a direct
+end-to-end demo that accepts an image path and is therefore not collected as an
+ordinary zero-argument pytest test:
 
 ```bash
 python3 tests/test_pipeline.py

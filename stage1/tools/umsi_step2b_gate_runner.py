@@ -26,6 +26,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+
 # ── NO top-level TensorFlow, Keras or saliency imports. ───────────────────────
 # scipy and subprocess are stdlib/safe but also deferred where possible.
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1280,12 +1282,12 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--repo",
-        default="/Users/Q682780/Thesis_G_layout",
-        help="Production repository root.",
+        default=str(_REPO_ROOT),
+        help="Production repository root (defaults to this checkout).",
     )
     p.add_argument(
         "--contract",
-        default="stage1/evidence/umsi_raw_output_gate_contract.json",
+        default=str(_REPO_ROOT / "stage1/evidence/umsi_raw_output_gate_contract.json"),
         help="Path to the frozen gate contract JSON.",
     )
     p.add_argument(
@@ -1295,31 +1297,22 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--weights",
-        default=(
-            "/Users/Q682780/Thesis_G/saliency/weights/"
-            "model_weights/saliency_models/UMSI++/umsi++.hdf5"
-        ),
-        help="Path to UMSI++ weight file.",
+        required=True,
+        help="Required path to the UMSI++ checkpoint.",
     )
     p.add_argument(
         "--evidence-npz",
-        default=(
-            "/Users/Q682780/Thesis_G/golden_evidence/"
-            "umsi_resize_causality_arrays_6a17288_consolidated.npz"
-        ),
-        help="Path to the frozen reference NPZ.",
+        required=True,
+        help="Required path to the frozen reference NPZ.",
     )
     p.add_argument(
         "--fixture",
-        default=(
-            "/Users/Q682780/Thesis_G_umsi_legacy_resize_fix/"
-            "golden/fixtures/lowcontrast.png"
-        ),
-        help="Path to the low-contrast fixture image.",
+        required=True,
+        help="Required path to the hash-pinned low-contrast fixture image.",
     )
     p.add_argument(
         "--output-dir",
-        default="stage1/evidence",
+        default=str(_REPO_ROOT / "stage1/evidence"),
         help="Directory in which to write the evidence bundle.",
     )
     return p

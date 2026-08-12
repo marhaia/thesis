@@ -137,6 +137,12 @@ SCIENTIFIC_SEMANTICS = {
     "umsi_class_label_mapping_verified": False,
 }
 
+# One production format policy for every single-image endpoint. Screen-set
+# analysis intentionally adds animated GIF because it can decode multiple
+# frames; WebP is not part of either public upload contract.
+SINGLE_IMAGE_EXTENSIONS = frozenset({".png", ".jpg", ".jpeg", ".bmp", ".tiff"})
+SCREEN_SET_EXTENSIONS = SINGLE_IMAGE_EXTENSIONS | frozenset({".gif"})
+
 
 def _load_feature_norms():
     """Load the production GUI reference distribution from disk (cached).
@@ -634,7 +640,7 @@ def analyze():
 
     # Save uploaded file
     ext = Path(file.filename).suffix.lower()
-    if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
+    if ext not in SINGLE_IMAGE_EXTENSIONS:
         return jsonify({"error": f"Unsupported format: {ext}"}), 400
 
     # Hash the upload first so identical images reuse cached feature results.
@@ -740,7 +746,7 @@ def saliency():
         return jsonify({"error": "Empty filename"}), 400
 
     ext = Path(file.filename).suffix.lower()
-    if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
+    if ext not in SINGLE_IMAGE_EXTENSIONS:
         return jsonify({"error": f"Unsupported format: {ext}"}), 400
 
     image_hash, image_bytes = _hash_upload(file)
@@ -825,7 +831,7 @@ def search_time():
         return jsonify({"error": "Empty filename"}), 400
 
     ext = Path(file.filename).suffix.lower()
-    if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
+    if ext not in SINGLE_IMAGE_EXTENSIONS:
         return jsonify({"error": f"Unsupported format: {ext}"}), 400
 
     # Parse optional query parameters
@@ -961,7 +967,7 @@ def scanpath_to_target():
         return jsonify({"error": "Empty filename"}), 400
 
     ext = Path(file.filename).suffix.lower()
-    if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
+    if ext not in SINGLE_IMAGE_EXTENSIONS:
         return jsonify({"error": f"Unsupported format: {ext}"}), 400
 
     # Target selection params. Primary (VAS-style) mode is a drawn region box:
@@ -1265,7 +1271,7 @@ def cognitive_load():
         return jsonify({"error": "Empty filename"}), 400
 
     ext = Path(file.filename).suffix.lower()
-    if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
+    if ext not in SINGLE_IMAGE_EXTENSIONS:
         return jsonify({"error": f"Unsupported format: {ext}"}), 400
 
     # Hash once and reuse the same key for both the visual and saliency caches.
@@ -1409,8 +1415,11 @@ def cognitive_load():
         # Step 3: project-specific HCEye-derived proxy features (h∈ℝ⁶).
         # Their interpretation is deliberately bounded by SCIENTIFIC_SEMANTICS;
         # these values are not validated screenshot-level cognitive load.
-        lookup_path = Path(__file__).parent.parent / "hceye" / "sensitivity_lookup.json"
-        extractor = HCEyeFeatureExtractor(str(lookup_path))
+        # Live uploads are novel screenshots, so the source-study image lookup
+        # is intentionally not loaded here. Offline HCEye reproduction scripts
+        # can still opt into that lookup by passing both lookup_path and
+        # image_name directly to HCEyeFeatureExtractor.
+        extractor = HCEyeFeatureExtractor()
         h = extractor.extract_features(
             vis_results,
             saliency_features=(saliency_dict or None),
@@ -1732,7 +1741,7 @@ def _read_screen_set(req):
     import numpy as np
     from PIL import Image
 
-    allowed = {".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".gif"}
+    allowed = SCREEN_SET_EXTENSIONS
     frames = []
     names = []
 
@@ -1852,7 +1861,7 @@ def learning_curve():
         return jsonify({"error": "Empty filename"}), 400
 
     ext = Path(file.filename).suffix.lower()
-    if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
+    if ext not in SINGLE_IMAGE_EXTENSIONS:
         return jsonify({"error": f"Unsupported format: {ext}"}), 400
 
     # Optional exposures list, e.g. ?exposures=1,5,20,100

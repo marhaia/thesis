@@ -19,6 +19,9 @@ from typing import Any, Callable, Dict, Tuple
 import numpy as np
 
 
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
 @dataclass
 class PredictCapture:
     call_count: int
@@ -427,11 +430,13 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Probe UMSI production-boundary input")
     p.add_argument(
         "--target-repo",
-        default="/Users/Q682780/Thesis_G_layout",
+        default=str(_REPO_ROOT),
+        help="Production repository root (defaults to this checkout).",
     )
     p.add_argument(
         "--fixture",
-        default="/Users/Q682780/Thesis_G_umsi_legacy_resize_fix/golden/fixtures/lowcontrast.png",
+        required=True,
+        help="Required path to the hash-pinned low-contrast fixture.",
     )
     p.add_argument(
         "--fixture-sha256",
@@ -439,7 +444,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--evidence-npz",
-        default="/Users/Q682780/Thesis_G/golden_evidence/umsi_resize_causality_arrays_6a17288_consolidated.npz",
+        required=True,
+        help="Required path to the frozen reference NPZ.",
     )
     p.add_argument(
         "--evidence-sha256",
@@ -447,7 +453,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--weights",
-        default="/Users/Q682780/Thesis_G/saliency/weights/model_weights/saliency_models/UMSI++/umsi++.hdf5",
+        required=True,
+        help="Required path to the UMSI++ checkpoint.",
     )
     p.add_argument(
         "--weights-sha256",
