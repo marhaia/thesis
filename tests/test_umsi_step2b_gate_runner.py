@@ -795,7 +795,7 @@ def test_post_inference_gate_failure_produces_fail_closed_bundle(tmp_path: Path)
 # The SHA-256 of the *current* repaired runner (computed at test-authoring time).
 # This value is used ONLY to test that the preflight accepts a correct hash;
 # it is not hardcoded as a normative frozen value for production runs.
-_CURRENT_RUNNER_SHA = "df356064b4d20f5ba652f16348cd3ef295c66528b2539afafd8309a8f77302fa"
+_CURRENT_RUNNER_SHA = "5495e6b3068e53df6c5185980226d2317e32e686f408887939a4f9383cb10059"
 
 # A syntactically valid SHA-256 that does NOT match the runner on disk.
 _WRONG_RUNNER_SHA = "a" * 64
