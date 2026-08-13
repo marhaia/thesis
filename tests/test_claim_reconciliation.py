@@ -20,6 +20,10 @@ TEST_CONFTEST = (ROOT / "tests" / "conftest.py").read_text(encoding="utf-8")
 STAGE2_REGRESSION = (ROOT / "stage2" / "regression_model.py").read_text(
     encoding="utf-8"
 )
+COHERENCE = (ROOT / "stage2" / "coherence_check.py").read_text(encoding="utf-8")
+STAGE1_DOCUMENTATION = (ROOT / "stage1" / "DOCUMENTATION.md").read_text(
+    encoding="utf-8"
+)
 
 
 def _ui_slice(start: str, end: str) -> str:
@@ -149,6 +153,85 @@ def test_target_scanpath_prototype_is_outside_basic_stage1_ui_and_contract():
     assert "FUTURE WORK ONLY" in UI
     assert "Stage-1 acceptance boundary" in README
     assert "are not rendered by the standard Stage-1 UI" in compact_readme
+
+
+def test_design_diagnosis_describes_the_task_independent_heuristic_truthfully():
+    diagnosis = _ui_slice("function buildDesignDiagnosis", "// Normalization ranges")
+    assert "task-independent, hand-weighted project heuristic" in diagnosis
+    assert "selected normalized saliency descriptors" in diagnosis
+    assert "does not use target-search simulation" in diagnosis
+    assert "is not changed by task or profile selections" in diagnosis
+    assert "predicted saliency + eye-movement model" not in diagnosis
+    assert "shaped by the task context" not in diagnosis
+
+
+def test_visible_coherence_claims_are_bounded_as_unvalidated_proxy_checks():
+    from stage2.coherence_check import run_coherence_check
+
+    result = run_coherence_check(
+        saliency_spread=0.1,
+        estimated_fixation_count=None,
+        mean_search_time_s=5.0,
+        cognitive_load_score=70.0,
+    )
+    joined = " ".join(result["warnings"]).lower()
+    assert result["validated_behavioral_prediction"] is False
+    assert "not a validated cognitive-load" in joined
+    assert "typically reduces cognitive load" not in joined
+    assert "primary driver of cognitive load" not in joined
+    assert "exploratory heuristic consistency check only" in UI.lower()
+    assert "not measured gaze, validated behavioral predictions" in UI.lower()
+    assert "cognitive load should be reduced" not in COHERENCE.lower()
+
+
+def test_feature_metadata_endpoint_exposes_an_explicit_behavioral_boundary():
+    from stage1.app import app
+
+    response = app.test_client().get("/api/features")
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["validated_behavioral_prediction"] is False
+    assert "not validated predictions" in body["claim_boundary"]
+    assert [item["key"] for item in body["features"]] == [
+        "shannon_entropy",
+        "edge_density",
+        "feature_congestion",
+        "subband_entropy",
+        "layout_symmetry",
+        "chromatic_coherence",
+        "visual_hierarchy",
+        "interactive_element_density",
+    ]
+    descriptions = " ".join(item["description"] for item in body["features"])
+    for forbidden in (
+        "less visual search needed",
+        "less search effort",
+        "higher decisional load",
+    ):
+        assert forbidden not in descriptions.lower()
+
+
+def test_current_feature_documentation_uses_the_same_hypothesis_boundary():
+    lower = STAGE1_DOCUMENTATION.lower()
+    assert "unvalidated project hypothesis" in lower
+    assert "unvalidated design hypothesis" in lower
+    assert "decisional-load implications are unvalidated" in lower
+    for forbidden in (
+        "more structural boundaries = more parsing effort",
+        "more symmetric = less visual search needed",
+        "clearer layered structure = less search effort",
+        "more action possibilities = higher decisional load",
+    ):
+        assert forbidden not in lower
+
+
+def test_readme_documents_both_screen_set_routes_and_shared_limits():
+    compact = " ".join(README.split())
+    assert "`/api/screen-consistency` and `/api/product-learning`" in compact
+    assert "both screen-set endpoints" in compact
+    assert "16 px minimum for each dimension" in compact
+    assert "| `/api/product-learning` | POST |" in README
+    assert "shares the screen-set cumulative limits" in README
 
 
 def test_latest_expose_is_self_identified_as_historical():

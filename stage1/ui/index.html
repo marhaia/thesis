@@ -2469,12 +2469,12 @@
                 bullets.push({ cls:'ok', text: 'No single feature stands out as strongly elevated.' });
             }
 
-            // Explain the common case where the overall load is high while most
-            // individual features look typical: the load score is a bottom-up
-            // prediction (saliency + eye-movement model) plus task context, not
-            // an average of these structural features.
+            // Explain the common case where the task-independent layout index is
+            // high while most visual features look typical. The index is a
+            // hand-weighted project heuristic over a documented input subset,
+            // not an average of all eight visual features.
             if (loadScore >= 50 && (crits.length + highs.length) <= 2) {
-                bullets.push({ cls:'high', text: 'Why is the index high if most features are typical? The experimental layout-complexity index is a bottom-up computation (predicted saliency + eye-movement model) shaped by the task context — it is driven by the flagged feature(s) above, not by all 8 structural features being jointly atypical. Structural typicality and the exploratory index are complementary, not the same.' });
+                bullets.push({ cls:'high', text: 'Why is the index high if most features are typical? The experimental layout-complexity index is a task-independent, hand-weighted project heuristic over a documented subset of visual feature signals, selected normalized saliency descriptors, and measured layout/OCR inputs. It is not an eye-tracking measurement, does not use target-search simulation, and is not changed by task or profile selections. Structural typicality and the exploratory index are complementary, not the same.' });
             }
 
             // Specific actionable hints
@@ -2623,7 +2623,8 @@
         async function loadFeatures() {
             try {
                 const res = await fetch("/api/features");
-                featuresInfo = await res.json();
+                const payload = await res.json();
+                featuresInfo = Array.isArray(payload) ? payload : payload.features;
                 renderFeatureCards();
             } catch (e) {
                 console.error("Could not load features info", e);
@@ -4475,7 +4476,7 @@
             el.innerHTML = `
                 <div class="coherence-warning-title">Coherence Check — ${coherence.flags.length} inconsistenc${coherence.flags.length === 1 ? 'y' : 'ies'} detected</div>
                 ${items}
-                <div style="margin-top:8px; font-size:11px; color: var(--text-dim);">These are diagnostic flags, not errors. The result remains computable, but may lie outside the reference range and should be interpreted cautiously.</div>
+                <div style="margin-top:8px; font-size:11px; color: var(--text-dim);"><strong>Exploratory heuristic consistency check only.</strong> These flags are not measured gaze, validated behavioral predictions, or cognitive-load evidence. The result remains computable but should be interpreted cautiously.</div>
             `;
             el.classList.add('visible');
         }

@@ -160,11 +160,13 @@ python3 stage1/visual_complexity.py --dir path/to/folder/
 ### Supported image formats
 
 - Single-image analysis routes: PNG, JPG/JPEG, BMP, TIFF.
-- `/api/screen-consistency`: the same static formats plus animated GIF.
+- `/api/screen-consistency` and `/api/product-learning`: the same static
+  formats plus animated GIF.
 - WebP is not accepted by the production API.
 - The default decoded-image envelope is 8,192 px per dimension, 16 million
-  pixels and a 20:1 maximum aspect ratio per analysable image; screen sets additionally
-  have a 32-million-pixel / 96-MB cumulative decoded budget.
+  pixels, a 16 px minimum for each dimension, and a 20:1 maximum aspect ratio
+  per analysable image; both screen-set endpoints additionally have a
+  32-million-pixel / 96-MB cumulative decoded budget.
 
 ### Stage-1 acceptance boundary
 
@@ -187,6 +189,7 @@ are reserved for Future Work rather than Stage-1 acceptance.
 | `/api/scanpath-to-target` | POST | Dormant Future Work prototype; model-simulated target-driven path outside Stage-1 acceptance |
 | `/api/cognitive-load` | POST | Legacy route name; returns task-independent x19/layout proxy plus separately labelled context outputs |
 | `/api/screen-consistency` | POST | Exploratory inter-screen consistency diagnostic |
+| `/api/product-learning` | POST | Exploratory multi-screen/GIF product-learning simulation outside x19; shares the screen-set cumulative limits |
 | `/api/learning-curve` | POST | Exploratory novice-to-expert model simulation |
 | `/api/features` | GET | Metadata for the eight visual features |
 

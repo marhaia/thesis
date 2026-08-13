@@ -281,7 +281,7 @@ def test_scale_invariance_report_and_endpoint(fx_name):
 #    generic 500. Uses the Flask test client (same lightweight path as the smoke
 #    suite; no heavy ML stack required).
 # ---------------------------------------------------------------------------
-from app import app  # noqa: E402
+from app import app, IMAGE_RESOURCE_LIMIT_ERROR_MESSAGE  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -308,9 +308,13 @@ def test_analyze_too_small_returns_400(client, h, w, label):
                        content_type="multipart/form-data")
     assert resp.status_code == 400, f"{label}: expected 400, got {resp.status_code}"
     body = resp.get_json()
-    assert body is not None and "error" in body
-    # The documented message is client-safe and explains the size requirement.
-    assert "too small" in body["error"].lower()
+    assert body == {
+        "analysis_complete": False,
+        "error": {
+            "code": "image_resource_limit",
+            "message": IMAGE_RESOURCE_LIMIT_ERROR_MESSAGE,
+        },
+    }
 
 
 def test_analyze_normal_image_is_not_400(client):

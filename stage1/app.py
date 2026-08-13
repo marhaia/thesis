@@ -454,15 +454,13 @@ def _validate_image_dimensions(width: int, height: int) -> int:
     long_side = max(width, height)
     aspect_ratio = long_side / short_side
     if (
-        width > MAX_IMAGE_WIDTH
+        short_side < MIN_CANONICAL_INPUT_SHORT_SIDE
+        or long_side < MIN_CANONICAL_INPUT_LONG_SIDE
+        or width > MAX_IMAGE_WIDTH
         or height > MAX_IMAGE_HEIGHT
         or pixels > MAX_IMAGE_PIXELS
         or pixels * 3 > MAX_DECODED_BYTES_PER_IMAGE
-        or (
-            short_side >= MIN_CANONICAL_INPUT_SHORT_SIDE
-            and long_side >= MIN_CANONICAL_INPUT_LONG_SIDE
-            and aspect_ratio > MAX_IMAGE_ASPECT_RATIO
-        )
+        or aspect_ratio > MAX_IMAGE_ASPECT_RATIO
     ):
         raise InvalidImageUploadError(
             IMAGE_RESOURCE_LIMIT_ERROR_CODE,
@@ -894,66 +892,74 @@ def analyze():
 
 @app.route("/api/features", methods=["GET"])
 def features_info():
-    """Return metadata about the 8 features."""
+    """Return bounded metadata about the eight visual feature proxies."""
     features = [
         {
             "key": "shannon_entropy",
             "name": "Shannon Entropy",
-            "description": "Global information density of the image. Higher = more visual information competing for attention.",
+            "description": "Global image-information density under this metric. Higher values indicate more varied pixel information; any attention interpretation is an unvalidated project hypothesis.",
             "range": "[0, 8]",
             "reference": "Shannon (1948)"
         },
         {
             "key": "edge_density",
             "name": "Edge Density",
-            "description": "Proportion of pixels classified as edges. A proxy for structural complexity — more boundaries = more parsing effort.",
+            "description": "Proportion of pixels classified as edges. It is a structural-complexity proxy; a link to human parsing effort is an unvalidated project hypothesis.",
             "range": "[0, 1]",
             "reference": "Canny edge detection (AIM m4)"
         },
         {
             "key": "feature_congestion",
             "name": "Feature Congestion",
-            "description": "Multi-scale clutter combining color covariance, contrast variance, and orientation energy. Higher = more visual noise.",
+            "description": "Multi-scale clutter proxy combining color covariance, contrast variance, and orientation energy. Higher values mean more congestion under this metric, not validated human difficulty.",
             "range": "[0, ∞)",
             "reference": "Rosenholtz et al. (2007) — AIM m8"
         },
         {
             "key": "subband_entropy",
             "name": "Subband Entropy",
-            "description": "Redundancy-based clutter via steerable pyramid decomposition. Higher = more unpredictable spatial frequency content.",
+            "description": "Redundancy-based clutter proxy via steerable-pyramid decomposition. Higher values indicate less predictable spatial-frequency content under this metric.",
             "range": "[0, ∞)",
             "reference": "Rosenholtz et al. (2007) — AIM m7"
         },
         {
             "key": "layout_symmetry",
             "name": "Layout Symmetry",
-            "description": "Degree of axial balance (vertical + horizontal). Higher = more symmetric = less visual search needed.",
+            "description": "Degree of axial balance (vertical + horizontal). Higher values mean more symmetry under this metric; reduced visual search is only an unvalidated design hypothesis.",
             "range": "[0, 1]",
             "reference": "Miniukovich & De Angeli (2015)"
         },
         {
             "key": "chromatic_coherence",
             "name": "Chromatic Coherence",
-            "description": "Color palette fragmentation combining luminance variance, colorfulness, and hue/saturation spread. Higher = more fragmented.",
+            "description": "Color-palette fragmentation proxy combining luminance variance, colorfulness, and hue/saturation spread. Higher values mean more fragmentation under this metric.",
             "range": "[0, 1]",
             "reference": "Hasler & Süsstrunk (2003)"
         },
         {
             "key": "visual_hierarchy",
             "name": "Visual Hierarchy",
-            "description": "Strength of layered visual structure (contrast gradients + size dominance). Higher = clearer hierarchy = less search effort.",
+            "description": "Strength of layered visual structure from contrast gradients and size dominance. Higher values mean clearer hierarchy under this metric; reduced search effort is an unvalidated design hypothesis.",
             "range": "[0, 1]",
             "reference": "Tuch et al. (2009)"
         },
         {
             "key": "interactive_element_density",
             "name": "Interactive Element Density",
-            "description": "Estimated count of UI controls per area. Higher = more action possibilities = higher decisional load.",
+            "description": "Estimated count of control-like contours per area. Higher values mean more detected candidates under this custom proxy; decisional-load implications are unvalidated.",
             "range": "[0, ∞)",
             "reference": "Custom (contour-based)"
         },
     ]
-    return jsonify(features)
+    return jsonify({
+        "validated_behavioral_prediction": False,
+        "claim_boundary": (
+            "These are project-specific image-feature measurements and proxy "
+            "interpretations, not validated predictions of attention, visual "
+            "search, decisional load, or other human behavior."
+        ),
+        "features": features,
+    })
 
 
 @app.route("/api/saliency", methods=["POST"])

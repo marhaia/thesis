@@ -251,7 +251,7 @@ $$H(I) = -\sum_{k=0}^{255} p(k) \cdot \log_2 p(k)$$
 | **Function** | `edge_density(image)` |
 | **Output range** | [0, 1] |
 | **Unit** | proportion of edge pixels |
-| **Higher means** | More structural boundaries = more parsing effort |
+| **Higher means** | More structural boundaries under this metric; increased human parsing effort is an unvalidated project hypothesis |
 | **AIM source** | `m4_edge_density.py` |
 
 **Algorithm:**
@@ -370,7 +370,7 @@ A smooth gradient has low subband entropy (pyramig coefficients are mostly zero 
 | **Function** | `layout_symmetry(image)` |
 | **Output range** | [0, 1] |
 | **Unit** | normalized correlation |
-| **Higher means** | More symmetric = less visual search needed |
+| **Higher means** | More symmetry under this metric; reduced visual search is an unvalidated design hypothesis |
 | **Reference** | Miniukovich, A. & De Angeli, A. (2015). "Computation of Interface Aesthetics." *CHI '15*, pp. 1163–1172. |
 
 **Algorithm:**
@@ -441,7 +441,7 @@ $$\text{CC} = \frac{\text{norm\_lum} + \text{norm\_color} + \text{norm\_hue} + \
 | **Function** | `visual_hierarchy(image)` |
 | **Output range** | [0, 1] |
 | **Unit** | normalized composite score |
-| **Higher means** | Clearer layered structure = less search effort |
+| **Higher means** | Clearer layered structure under this metric; reduced search effort is an unvalidated design hypothesis |
 | **AIM source** | `m5_contour_density.py` (figure-ground part) |
 | **Reference** | Tuch, A. N. et al. (2009). "The Role of Visual Complexity and Prototypicality." *Interacting with Computers*. |
 
@@ -487,7 +487,7 @@ $$\text{VH} = \frac{\text{clip}(fg, 0, 1) + \text{clip}(sg, 0, 1)}{2}$$
 | **Function** | `interactive_element_density(image)` |
 | **Output range** | [0, ∞), typically 0.01–0.5 |
 | **Unit** | elements per 100×100 px |
-| **Higher means** | More action possibilities = higher decisional load |
+| **Higher means** | More detected control-like candidates under this custom proxy; decisional-load implications are unvalidated |
 | **Reference** | Custom heuristic (contour-based) |
 
 **Algorithm:**

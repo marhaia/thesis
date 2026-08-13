@@ -1,38 +1,26 @@
 """
-Mutual Coherence Check for the Two-Stage Pipeline
-==================================================
-Verifies that the three primary pipeline outputs are internally consistent.
-Incoherent output combinations are flagged as warnings — they do not invalidate
-the prediction but indicate that the inputs are at the boundary of the model's
-calibration range.
+Exploratory Proxy-Coherence Check
+=================================
+Applies three project-defined consistency hypotheses to separately generated
+proxy outputs. Flags are diagnostic prompts for inspection, not validation,
+measured gaze, cognitive-load evidence, or demonstrated human behavior.
 
 Scientific basis for each rule:
 
-Rule 1 — Saliency spread vs. fixation count:
-    High feature congestion (many competing saliency peaks) forces the visual
-    system to perform more fixations to resolve attentional competition.
-    Rosenholtz et al. (2007, J. Vision 7:2:17) show that clutter directly
-    increases the number of fixations needed to locate a target. Jokinen et al.
-    (2020, IJHCS 136:102376) model this as increased visual search steps under
-    high element density. A high spread with a low fixation estimate is therefore
-    internally inconsistent.
+Rule 1 — Saliency spread vs. fixation-count proxy:
+    The project hypothesis flags high normalized saliency spread paired with a
+    low model-estimated fixation count. The cited work motivates the direction;
+    it does not validate this deployed screenshot-level rule.
 
-Rule 2 — Concentrated saliency vs. high cognitive load:
-    When saliency is concentrated (clear attentional guidance), cognitive load
-    should be reduced because the visual system is efficiently directed to the
-    relevant region. Das et al. (2024, ETRA, doi:10.1145/3655610) show
-    empirically that dynamic highlighting — which concentrates saliency —
-    maintains AOI hit rate at ~69% even under high cognitive load (vs. 6.9%
-    without highlighting). Tuch et al. (2009, IJHCS 67:703-715) document the
-    same effect via visual hierarchy: a well-defined hierarchy reduces perceived
-    visual complexity and cognitive load.
+Rule 2 — Concentrated saliency vs. high layout-proxy value:
+    The project hypothesis flags concentrated normalized model activation paired
+    with a high exploratory layout index. HCEye aggregate observations provide
+    source-study context only; they do not validate this screenshot mapping.
 
-Rule 3 — Visual search time vs. cognitive load:
-    Predicted visual search time (Jokinen et al., 2020) is a direct
-    operationalization of the effort required to locate interface elements. High
-    search time implies high attentional demand, which is a primary component of
-    cognitive load (Hart & Staveland, 1988, NASA-TLX). A high search time
-    coexisting with a low load index is therefore logically inconsistent.
+Rule 3 — Search-time simulation vs. low layout-proxy value:
+    The project hypothesis flags high model-simulated search time paired with a
+    low exploratory layout index. The outputs are different constructs; the
+    rule does not establish a causal or validated cognitive-load relationship.
 
 References:
     Das, A., Wu, Z., Skrjanec, I., & Feit, A. M. (2024). Shifting Focus with
@@ -65,18 +53,17 @@ SPREAD_HIGH_THRESHOLD = 0.55
 # efficient search given high attentional competition.
 FIXATION_COUNT_LOW_THRESHOLD = 6.0
 
-# Rule 2: concentrated saliency vs. high load
+# Rule 2: concentrated saliency vs. high context-adjusted proxy
 # "Concentrated" = spread below the 25th percentile of HCEye distribution.
 SPREAD_LOW_THRESHOLD = 0.25
 
-# "High load" cutoff: score ≥ 60/100 places the screen in the high-load
-# category, consistent with the interpretation thresholds in the UI.
+# Project-defined high-proxy cutoff used only for this diagnostic comparison.
 LOAD_HIGH_THRESHOLD = 60.0
 
-# Rule 3: search time vs. load
+# Rule 3: search-time simulation vs. context-adjusted proxy
 # Jokinen et al. (2020) report mean search times of 1.2–3.5 s for standard GUIs.
-# Times > 4.0 s indicate a difficult layout; combined with a low load score
-# (< 35) this is inconsistent.
+# Times > 4.0 s enter the project's difficult-search band; pairing them with a
+# low proxy value (< 35) triggers an exploratory consistency flag.
 SEARCH_TIME_HIGH_THRESHOLD = 4.0  # seconds
 LOAD_LOW_THRESHOLD = 35.0
 
@@ -88,7 +75,7 @@ def run_coherence_check(
     cognitive_load_score: float,
 ) -> Dict:
     """
-    Run all three coherence rules and return a structured result.
+    Run all three exploratory proxy-coherence rules.
 
     Args:
         saliency_spread:         s₃ from saliency feature vector (0–1).
@@ -97,7 +84,9 @@ def run_coherence_check(
                                  None if search-time endpoint was not called.
         mean_search_time_s:      Mean predicted search time in seconds.
                                  None if search-time endpoint was not called.
-        cognitive_load_score:    Final adjusted cognitive load score (0–100).
+        cognitive_load_score:    Legacy parameter name for the context-adjusted
+                                 experimental proxy value (0–100); not validated
+                                 cognitive load or human behavior.
 
     Returns:
         Dict with keys:
@@ -120,9 +109,11 @@ def run_coherence_check(
             warnings.append(
                 f"Saliency spread is high ({saliency_spread:.2f} > {SPREAD_HIGH_THRESHOLD}) "
                 f"but estimated fixation count is low ({estimated_fixation_count:.1f} < "
-                f"{FIXATION_COUNT_LOW_THRESHOLD}). High attentional dispersion should "
-                f"require more fixations to resolve competing regions "
-                f"(Rosenholtz et al., 2007; Jokinen et al., 2020)."
+                f"{FIXATION_COUNT_LOW_THRESHOLD}). This exploratory rule flags "
+                f"the combination because the project hypothesis associates wider "
+                f"activation spread with more search steps; it is not measured gaze "
+                f"or a validated behavioral prediction (Rosenholtz et al., 2007; "
+                f"Jokinen et al., 2020)."
             )
 
     # ── Rule 2: Concentrated saliency vs. high load ──────────────────────────
@@ -134,12 +125,13 @@ def run_coherence_check(
             flags.append("concentrated_saliency_high_load")
             warnings.append(
                 f"Saliency is highly concentrated (spread {saliency_spread:.2f} < "
-                f"{SPREAD_LOW_THRESHOLD}) yet the cognitive load score is high "
-                f"({cognitive_load_score:.1f} ≥ {LOAD_HIGH_THRESHOLD}). Clear "
-                f"attentional guidance typically reduces cognitive load — HCEye data "
-                f"show dynamic highlighting maintains ~69% AOI hit rate even under "
-                f"load (Das et al., 2024). Visual features may be driving the load "
-                f"estimate independently of the saliency signal."
+                f"{SPREAD_LOW_THRESHOLD}) yet the context-adjusted experimental "
+                f"proxy value is "
+                f"high ({cognitive_load_score:.1f} ≥ {LOAD_HIGH_THRESHOLD}). The "
+                f"project heuristic expects concentrated activation and this layout "
+                f"proxy to align more closely. HCEye aggregate observations are "
+                f"source-study context only; this is not a validated cognitive-load "
+                f"or behavioral relation (Das et al., 2024)."
             )
 
     # ── Rule 3: Search time vs. load ─────────────────────────────────────────
@@ -151,11 +143,12 @@ def run_coherence_check(
             flags.append("search_time_load_mismatch")
             warnings.append(
                 f"Mean predicted search time is high ({mean_search_time_s:.1f} s > "
-                f"{SEARCH_TIME_HIGH_THRESHOLD} s) but cognitive load score is low "
-                f"({cognitive_load_score:.1f} < {LOAD_LOW_THRESHOLD}). High visual "
-                f"search effort is a primary driver of cognitive load "
-                f"(Jokinen et al., 2020; Hart & Staveland, 1988). These outputs "
-                f"are inconsistent."
+                f"{SEARCH_TIME_HIGH_THRESHOLD} s) but the context-adjusted "
+                f"experimental proxy value is low ({cognitive_load_score:.1f} < "
+                f"{LOAD_LOW_THRESHOLD}). "
+                f"This project rule marks the two model outputs for review; it does "
+                f"not establish measured search effort, cognitive load, or a causal "
+                f"relationship (Jokinen et al., 2020; Hart & Staveland, 1988)."
             )
 
     return {
@@ -163,6 +156,11 @@ def run_coherence_check(
         "flags": flags,
         "warnings": warnings,
         "rules_checked": rules_checked,
+        "validated_behavioral_prediction": False,
+        "claim_boundary": (
+            "Exploratory heuristic consistency flags only; not measured gaze, "
+            "validated behavior, or cognitive-load evidence."
+        ),
         "thresholds": {
             "spread_high": SPREAD_HIGH_THRESHOLD,
             "spread_low": SPREAD_LOW_THRESHOLD,

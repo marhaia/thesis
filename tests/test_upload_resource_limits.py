@@ -53,6 +53,20 @@ def _large_compressed_png() -> bytes:
     return _png_bytes((4096, 4096), mode="1")
 
 
+def _animated_gif_bytes(size=(96, 72)) -> bytes:
+    frames = [Image.new("P", size, color=value) for value in (1, 2)]
+    out = io.BytesIO()
+    frames[0].save(
+        out,
+        format="GIF",
+        save_all=True,
+        append_images=frames[1:],
+        duration=20,
+        loop=0,
+    )
+    return out.getvalue()
+
+
 def _assert_resource_failure(response):
     assert response.status_code == 400
     assert response.is_json
@@ -174,10 +188,90 @@ def test_screen_set_enforces_cumulative_decoded_byte_budget(
     _assert_resource_failure(response)
 
 
-def test_extreme_aspect_ratio_is_rejected_after_minimum_size_boundary():
+@pytest.mark.parametrize(
+    "width,height",
+    (
+        (15, 315),
+        (315, 15),
+        (1, 8192),
+        (8192, 1),
+        (16, 321),
+        (321, 16),
+    ),
+)
+def test_subminimum_or_over_aspect_dimensions_are_rejected(width, height):
     with pytest.raises(InvalidImageUploadError) as exc_info:
-        app_module._validate_uploaded_image_bytes(
-            _png_bytes((2100, 100), mode="1")
-        )
+        app_module._validate_image_dimensions(width, height)
 
     assert exc_info.value.code == "image_resource_limit"
+
+
+@pytest.mark.parametrize(
+    "width,height",
+    ((16, 16), (16, 320), (320, 16)),
+)
+def test_minimum_and_exact_twenty_to_one_boundaries_are_accepted(width, height):
+    assert app_module._validate_image_dimensions(width, height) == width * height
+
+
+@pytest.mark.parametrize("route", SINGLE_IMAGE_ROUTES)
+@pytest.mark.parametrize("size", ((315, 15), (8192, 1), (321, 16)))
+def test_every_single_image_route_rejects_boundary_bypass_before_full_decode(
+    client, monkeypatch, tmp_path, route, size
+):
+    def _must_not_decode(*_args, **_kwargs):
+        raise AssertionError("invalid header dimensions reached OpenCV decode")
+
+    monkeypatch.setattr(app_module, "UPLOAD_DIR", tmp_path)
+    monkeypatch.setattr(cv2, "imdecode", _must_not_decode)
+    response = client.post(
+        route,
+        data={"image": (io.BytesIO(_png_bytes(size, mode="1")), "strip.png")},
+        content_type="multipart/form-data",
+    )
+
+    _assert_resource_failure(response)
+    assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize("route", SCREEN_SET_ROUTES)
+@pytest.mark.parametrize("size", ((315, 15), (8192, 1), (321, 16)))
+def test_every_multifile_screen_route_rejects_boundary_bypass_before_decode(
+    client, monkeypatch, route, size
+):
+    def _must_not_decode(*_args, **_kwargs):
+        raise AssertionError("invalid screen header reached OpenCV decode")
+
+    monkeypatch.setattr(cv2, "imdecode", _must_not_decode)
+    response = client.post(
+        route,
+        data={
+            "images": [
+                (io.BytesIO(_png_bytes(size, mode="1")), "strip.png"),
+                (io.BytesIO(_png_bytes((32, 32), mode="1")), "normal.png"),
+            ]
+        },
+        content_type="multipart/form-data",
+    )
+
+    _assert_resource_failure(response)
+
+
+@pytest.mark.parametrize("route", SCREEN_SET_ROUTES)
+@pytest.mark.parametrize("size", ((315, 15), (8192, 1), (321, 16)))
+def test_every_animated_screen_route_rejects_boundary_bypass_before_conversion(
+    client, monkeypatch, route, size
+):
+    payload = _animated_gif_bytes(size)
+
+    def _must_not_convert(*_args, **_kwargs):
+        raise AssertionError("invalid GIF frame reached RGB conversion")
+
+    monkeypatch.setattr(Image.Image, "convert", _must_not_convert)
+    response = client.post(
+        route,
+        data={"image": (io.BytesIO(payload), "strip.gif")},
+        content_type="multipart/form-data",
+    )
+
+    _assert_resource_failure(response)
