@@ -1657,7 +1657,7 @@
 
         <header style="text-align:left; margin-bottom:24px;">
             <h1 style="font-size:26px; font-weight:600; line-height:1.25;">Interactional Complexity Analyzer</h1>
-            <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin-top:8px;">Computes an experimental layout-complexity index for a GUI screenshot from visual structure, predicted saliency, and an unvalidated HCEye-derived proxy block. Exploratory heuristic, not a validated cognitive-load measurement or observed eye-tracking result.</p>
+            <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin-top:8px;">Computes an experimental layout-complexity index for a GUI screenshot from visual structure, relative model-estimated saliency, and an unvalidated HCEye-derived proxy block. Exploratory heuristic, not a validated cognitive-load measurement or observed eye-tracking result.</p>
         </header>
 
         <!-- Steps 1 + 2 side by side -->
@@ -1839,23 +1839,23 @@
                 <div class="results-visual-row">
                     <div id="saliencyPanel" style="display:none;">
                         <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px;">
-                            <span style="font-size:13px; font-weight:600;">Predicted Saliency Map</span>
+                            <span style="font-size:13px; font-weight:600;">Relative Model-Estimated Saliency Map</span>
                             <button id="downloadSaliencyBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0;">Download Map</button>
                             <button id="downloadOriginalBtn" class="btn btn-secondary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0;">Download Original</button>
                         </div>
-                        <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">UMSI++ deep-learning saliency overlay (<a class="cite-link" href="https://doi.org/10.1145/3544548.3581096" target="_blank" rel="noopener">Jiang et al., CHI 2023</a>). The colours show the predicted probability that a user looks at each area within the first few seconds. Used as saliency feature vector s∈ℝ⁵.</p>
-                        <img id="saliencyImg" src="" alt="Saliency heatmap"
+                        <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">UMSI++ relative model-estimated saliency overlay (<a class="cite-link" href="https://doi.org/10.1145/3544548.3581096" target="_blank" rel="noopener">Jiang et al., CHI 2023</a>). The colours show within-image min–max normalized model activation on [0,1]. This is not observed gaze, a calibrated probability, or a timing prediction. Five numeric summaries form the saliency feature vector s∈ℝ⁵.</p>
+                        <img id="saliencyImg" src="" alt="Relative model-estimated saliency heatmap"
                              style="width:100%; border-radius:8px; border:1px solid var(--border);">
                         <!-- Colour legend (matches the JET colormap used for the
-                             overlay in the backend). Same reading as 3M VAS: cool
-                             colours = low fixation probability, warm = high. -->
+                             overlay in the backend). Cool colours indicate lower
+                             and warm colours higher within-image activation. -->
                         <div class="saliency-legend">
                             <div class="saliency-legend-bar"></div>
                             <div class="saliency-legend-labels">
-                                <span>Low — rarely looked at</span>
-                                <span>High — looked at first</span>
+                                <span>Low relative activation</span>
+                                <span>High relative activation</span>
                             </div>
-                            <div class="saliency-legend-note">Predicted probability of visual fixation within the first few seconds.</div>
+                            <div class="saliency-legend-note">Within-image normalized model activation — not gaze probability or viewing order.</div>
                         </div>
                     </div>
                     <div id="radarPanel" style="display:none;">
@@ -2027,7 +2027,7 @@
                     <div class="pipeline-node-label">Stage 1b</div>
                     <div class="pipeline-node-title">Saliency Features</div>
                     <div class="pipeline-node-dim">s ∈ ℝ⁵</div>
-                    <div class="pipeline-node-desc">UMSI++ produces a model-estimated saliency map. Five numeric summary statistics are retained: dispersion, entropy, coverage, peak count, and center bias. No semantic label is inferred from its auxiliary six-value head.</div>
+                    <div class="pipeline-node-desc">UMSI++ produces a relative model-estimated saliency map. Its within-image normalized activations are not observed gaze, calibrated probabilities, or timing predictions. Five numeric summary statistics are retained: dispersion, entropy, coverage, peak count, and center bias. No semantic label is inferred from its auxiliary six-value head.</div>
                     <div class="pipeline-node-ref"><a href="https://doi.org/10.1145/3544548.3581096" target="_blank" rel="noopener">Jiang et al. CHI 2023</a> · <a href="https://doi.org/10.1038/35058500" target="_blank" rel="noopener">Itti &amp; Koch (2001)</a> · <a href="https://doi.org/10.1167/7.14.4" target="_blank" rel="noopener">Tatler (2007)</a></div>
                 </div>
                 <div class="pipeline-node">
@@ -2075,7 +2075,7 @@
             <div class="pipeline-row">
                 <div class="pipeline-node">
                     <div class="pipeline-node-title">HCEye Aggregate-Ratio Reproduction</div>
-                    <div class="pipeline-node-desc">The rule reproduces an aggregate HCEye ratio (fewer fixations under the study's high-load condition) that was used in its construction. This is a source-study correspondence check, not independent validation of the screenshot-level index.<!-- legacy source-study statistic, hidden from UI: H1 (fewer fixations under high load): p = 2.55×10⁻²⁸, Cohen’s d = 1.47 (large effect). Model prediction deviation: 0.6% from observed ratio. --></div>
+                    <div class="pipeline-node-desc"><strong>Source-study context only:</strong> the rule reproduces an aggregate HCEye ratio (fewer fixations under the study's high-load condition) that was used in its construction. This source-study correspondence is separate from the screenshot proxy values and is not independent validation of the screenshot-level index.<!-- legacy source-study statistic, hidden from UI: H1 (fewer fixations under high load): p = 2.55×10⁻²⁸, Cohen’s d = 1.47 (large effect). Model prediction deviation: 0.6% from observed ratio. --></div>
                     <div class="pipeline-node-ref"><a href="https://doi.org/10.1145/3655610" target="_blank" rel="noopener">Das et al. ETRA 2024</a></div>
                 </div>
                 <div class="pipeline-node">
@@ -4479,7 +4479,6 @@
             const baseScore = (data.base_experimental_outputs && data.base_experimental_outputs.layout_complexity_score) || 0;
             const searchEff = data.context_adjusted_experimental_outputs.search_efficiency_proxy;
             const attnDem  = data.context_adjusted_experimental_outputs.attention_demand_proxy;
-            const hcEyeIdx = (data.hceye_proxy_features && data.hceye_proxy_features.experimental_layout_complexity_index) || 0;
             const fixRed   = (data.hceye_proxy_features && data.hceye_proxy_features.hceye_fixation_ratio_proxy) || 1;
             const durInc   = (data.hceye_proxy_features && data.hceye_proxy_features.hceye_duration_ratio_proxy) || 1;
             const hlEff    = (data.hceye_proxy_features && data.hceye_proxy_features.hceye_highlight_effectiveness_proxy) || 0;
@@ -4504,16 +4503,16 @@
                 body = `Many of the measured layout proxies are strongly elevated for this screen. This is an exploratory layout-complexity signal only; it does not establish actual user cognitive demand. The contributing feature patterns are shown below.`;
             }
 
-            // Derive concrete implications
-            const fixPct  = Math.round((1 - fixRed) * 100);
-            const durPct  = Math.round((durInc - 1) * 100);
+            // Surface screenshot-derived HCEye values only as raw, unitless
+            // project-specific proxies. Source-study effects are documented
+            // separately and must never be inferred from these values.
             const items = [];
 
-            if (fixPct > 3)
-                items.push(`HCEye model output: about <strong>~${fixPct}% fewer fixations</strong> under its high-load condition (model estimate, not a measured effect on your users).`);
+            if (fixRed < 0.97)
+                items.push(`<strong>HCEye-derived fixation-ratio proxy: ${fixRed.toFixed(3)}</strong> — a unitless, project-specific screenshot proxy; not a predicted fixation count, observed ratio, or percentage effect.`);
 
-            if (durPct > 3)
-                items.push(`HCEye model output: fixation duration about <strong>~${durPct}% longer</strong> under its high-load condition (model estimate, not measured).`);
+            if (durInc > 1.03)
+                items.push(`<strong>HCEye-derived duration-ratio proxy: ${durInc.toFixed(3)}</strong> — a unitless, project-specific screenshot proxy; not a predicted or observed fixation duration or percentage change.`);
 
             if (searchEff < 0.5)
                 items.push(`<strong>Search-efficiency proxy is low (${searchEff.toFixed(2)})</strong> — an exploratory, unvalidated signal that targets may be harder to locate.`);
@@ -4521,7 +4520,7 @@
                 items.push(`<strong>Search-efficiency proxy is high (${searchEff.toFixed(2)})</strong> — an exploratory, unvalidated signal that targets may be easier to locate.`);
 
             if (hlEff > 0.7)
-                items.push(`<strong>Dynamic highlighting</strong> — HCEye reports higher AOI retention with dynamic highlights (+${Math.round(hlEff*100)}%); an exploratory indication, not validated for this screen.`);
+                items.push(`<strong>HCEye-derived highlight-effectiveness proxy: ${hlEff.toFixed(3)}</strong> — a unitless, project-specific screenshot proxy; not measured AOI retention or a percentage uplift.`);
 
             const taskMod = data.task_descriptor && data.task_descriptor.modifier || 0;
             // Express the task modifier relative to the base score so the headline
@@ -4542,7 +4541,7 @@
                     </div>
                     <div class="interpretation-body">${body}</div>
                     ${items.length ? `<div class="interpretation-items">${items.map(i => `<div class="interpretation-item"><span>→</span><span>${i}</span></div>`).join('')}</div>` : ''}
-                    <div style="margin-top:12px; font-size:11px; color: var(--text-dim);">Based on: HCEye (Das et al., ETRA 2024) · Jokinen et al. (IJHCS 2020) · Rosenholtz et al. (JoV 2007)</div>
+                    <div style="margin-top:12px; font-size:11px; color: var(--text-dim);">Methods informed by: HCEye (Das et al., ETRA 2024) · Jokinen et al. (IJHCS 2020) · Rosenholtz et al. (JoV 2007). Screenshot proxy values are not source-study effect estimates.</div>
                 </div>
             `;
         }
@@ -5062,7 +5061,7 @@
                 sectionTitle("Visual Maps");
                 if (haveSal) {
                     addImage(salImg.src, "JPEG", salImg.naturalWidth, salImg.naturalHeight,
-                             "Saliency Overlay (UMSI++ heatmap on screenshot)");
+                             "Relative UMSI++ model activation (within-image normalized; not gaze probability)");
                 }
                 if (haveRadar) {
                     addImage(radarCanvas.toDataURL("image/png"), "PNG",
@@ -5079,7 +5078,7 @@
             row("Base Experimental Output", (d.base_experimental_output || 0).toFixed(2));
             row("Search Efficiency (exploratory proxy)",   (d.search_efficiency_proxy || 0).toFixed(3));
             row("Attention Demand (exploratory proxy)",    (d.attention_demand_proxy || 0).toFixed(3));
-            row("HCEye-derived Rule Index (exploratory)",       (d.hceye_proxy_index || 0).toFixed(3));
+            row("HCEye-derived Rule Index (unitless project-specific proxy)", (d.hceye_proxy_index || 0).toFixed(3));
             row("Task Modifier",                      (d.task_modifier || 0).toFixed(2));
             row("Profile Modifier",                   (d.profile_modifier || 0).toFixed(2));
             divider();
@@ -5094,7 +5093,7 @@
             divider();
 
             // ── Saliency Features ────────────────────────────────────────
-            sectionTitle("Saliency Features (s, 5 dims) - UMSI++");
+            sectionTitle("Relative UMSI++ Saliency Features (s, 5 dims)");
             if (d.saliency_features) {
                 Object.entries(d.saliency_features).forEach(([k, v]) =>
                     row(k.replace(/_/g, " "), typeof v === "number" ? v.toFixed(4) : v)
@@ -5103,7 +5102,7 @@
             divider();
 
             // ── HCEye Features ───────────────────────────────────────────
-            sectionTitle("HCEye-derived Proxy Features (h, 6 dims)");
+            sectionTitle("HCEye-Derived Unitless Proxies (h, 6 dims)");
             if (d.hceye_proxy_features) {
                 Object.entries(d.hceye_proxy_features).forEach(([k, v]) =>
                     row(k.replace(/_/g, " "), typeof v === "number" ? v.toFixed(4) : v)
@@ -5196,6 +5195,10 @@
                 ["source_commit", d => d.reproducibility && d.reproducibility.source && d.reproducibility.source.commit],
                 ["source_tree_state", d => d.reproducibility && d.reproducibility.source && d.reproducibility.source.tree_state],
                 ["umsi_checkpoint_sha256", d => d.reproducibility && d.reproducibility.umsi_checkpoint_sha256],
+                ["easyocr_model_identity_sha256", d => d.reproducibility && d.reproducibility.easyocr_model_identity_sha256],
+                ["easyocr_detector_sha256", d => d.reproducibility && d.reproducibility.easyocr_detector_sha256],
+                ["easyocr_recognizer_sha256", d => d.reproducibility && d.reproducibility.easyocr_recognizer_sha256],
+                ["layout_ocr_identity", d => d.reproducibility && d.reproducibility.layout_ocr_identity],
                 ["feature_norms_sha256", d => d.reproducibility && d.reproducibility.feature_norms_sha256],
                 ["reference_pack_manifest_sha256", d => d.reproducibility && d.reproducibility.reference_pack_manifest_sha256],
                 ["runtime_environment_manifest_sha256", d => d.reproducibility && d.reproducibility.runtime_environment_manifest_sha256],

@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import os
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
@@ -22,7 +23,15 @@ import canonical_layout as canonical_layout_module  # noqa: E402
 import cognitive.element_detector as element_detector_module  # noqa: E402
 import cognitive.jokinen_model as jokinen_module  # noqa: E402
 import cognitive.text_reader as text_reader_module  # noqa: E402
-from app import app, ScoreInputUnavailableError  # noqa: E402
+from app import (  # noqa: E402
+    app,
+    InvalidImageUploadError,
+    ScoreInputUnavailableError,
+)
+from cognitive.easyocr_identity import EasyOCRModelIntegrityError  # noqa: E402
+
+
+APP_SOURCE = (Path(ROOT) / "stage1" / "app.py").read_text(encoding="utf-8")
 
 
 FORBIDDEN_SUCCESS_FIELDS = (
@@ -115,6 +124,193 @@ def _assert_p4_failure(response, forbidden_text: str | None = None):
         assert forbidden_text not in raw
 
 
+def _assert_invalid_image_failure(response):
+    assert response.status_code == 400
+    assert response.is_json
+    body = response.get_json()
+    assert body == {
+        "analysis_complete": False,
+        "error": {
+            "code": "invalid_image",
+            "message": (
+                "Uploaded file could not be decoded as a supported image; "
+                "no analysis was performed."
+            ),
+        },
+    }
+    for key in FORBIDDEN_SUCCESS_FIELDS:
+        assert key not in body
+    raw = response.get_data(as_text=True)
+    assert "Traceback" not in raw
+    assert "cv2" not in raw
+    assert "OpenCV" not in raw
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        b"",
+        b"not-an-image",
+        b"\x89PNG\r\n\x1a\ncorrupt-truncated-payload",
+    ],
+    ids=["empty-bytes", "arbitrary-bytes", "png-signature-only"],
+)
+def test_corrupt_png_is_structured_400_before_analysis_or_persistence(
+    client, monkeypatch, tmp_path, payload
+):
+    monkeypatch.setattr(app_module, "UPLOAD_DIR", tmp_path)
+
+    def _must_not_analyse(*_args, **_kwargs):
+        raise AssertionError("corrupt input reached a score-bearing stage")
+
+    monkeypatch.setattr(app_module, "_compute_visual_cached", _must_not_analyse)
+    monkeypatch.setattr(app_module, "_predict_saliency_cached", _must_not_analyse)
+
+    response = client.post(
+        "/api/cognitive-load",
+        data={"image": (io.BytesIO(payload), "corrupt.png")},
+        content_type="multipart/form-data",
+    )
+
+    _assert_invalid_image_failure(response)
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_decoder_exception_uses_same_client_safe_invalid_image_contract(
+    client, monkeypatch, tmp_path
+):
+    sentinel = "/private/decoder/internal/table.bin"
+    monkeypatch.setattr(app_module, "UPLOAD_DIR", tmp_path)
+
+    def _decoder_failure(*_args, **_kwargs):
+        raise RuntimeError(f"decoder failed near {sentinel}")
+
+    monkeypatch.setattr(cv2, "imdecode", _decoder_failure)
+
+    response = client.post(
+        "/api/cognitive-load",
+        data={"image": (io.BytesIO(_png_bytes()), "decoder-error.png")},
+        content_type="multipart/form-data",
+    )
+
+    _assert_invalid_image_failure(response)
+    assert sentinel not in response.get_data(as_text=True)
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_upload_decoder_accepts_valid_image_bytes():
+    decoded = app_module._validate_uploaded_image_bytes(_png_bytes())
+
+    assert decoded.shape == (96, 128, 3)
+    assert decoded.dtype == np.uint8
+
+
+def test_upload_decoder_direct_failure_has_stable_code_and_message():
+    with pytest.raises(InvalidImageUploadError) as exc_info:
+        app_module._validate_uploaded_image_bytes(b"not-an-image")
+
+    assert exc_info.value.code == "invalid_image"
+    assert exc_info.value.message == (
+        "Uploaded file could not be decoded as a supported image; "
+        "no analysis was performed."
+    )
+
+
+@pytest.mark.parametrize(
+    "user_filename",
+    [
+        "../../outside.png",
+        "..\\..\\outside.png",
+        "/absolute/private/outside.png",
+        "nested/subdirectory/outside.png",
+    ],
+    ids=["posix-traversal", "windows-traversal", "absolute", "subdirectory"],
+)
+def test_user_filename_is_metadata_only_and_never_controls_storage_path(
+    client, monkeypatch, tmp_path, user_filename
+):
+    monkeypatch.setattr(app_module, "UPLOAD_DIR", tmp_path)
+    monkeypatch.setattr(canonical_layout_module, "detect_elements", lambda _image: [])
+    monkeypatch.setattr(element_detector_module, "detect_elements", lambda _image: [])
+    monkeypatch.setattr(
+        text_reader_module,
+        "compute_readability",
+        lambda *_args, **_kwargs: pytest.fail("OCR must not run without elements"),
+    )
+    monkeypatch.setattr(
+        jokinen_module.JokinenSearchModel,
+        "predict_search_times",
+        lambda self, **kwargs: {"mean_search_time_s": 0.0, "per_element": []},
+    )
+
+    captured_paths = []
+    mocked_visual = app_module._compute_visual_cached
+
+    def _capture_storage_path(image_hash, image_path):
+        captured_paths.append(Path(image_path))
+        return mocked_visual(image_hash, image_path)
+
+    monkeypatch.setattr(app_module, "_compute_visual_cached", _capture_storage_path)
+
+    response = client.post(
+        "/api/cognitive-load",
+        data={"image": (io.BytesIO(_png_bytes()), user_filename)},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 200, response.get_data(as_text=True)
+    assert len(captured_paths) == 1
+    internal_path = captured_paths[0]
+    assert internal_path.parent == tmp_path
+    assert internal_path.suffix == ".png"
+    assert len(internal_path.stem) == 32
+    assert set(internal_path.stem) <= set("0123456789abcdef")
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_upload_storage_failure_is_structured_json_and_cleans_partial_file(
+    client, monkeypatch, tmp_path
+):
+    missing_upload_dir = tmp_path / "missing" / "uploads"
+    monkeypatch.setattr(app_module, "UPLOAD_DIR", missing_upload_dir)
+
+    def _must_not_analyse(*_args, **_kwargs):
+        raise AssertionError("storage failure reached a score-bearing stage")
+
+    monkeypatch.setattr(app_module, "_compute_visual_cached", _must_not_analyse)
+    monkeypatch.setattr(app_module, "_predict_saliency_cached", _must_not_analyse)
+
+    response = client.post(
+        "/api/cognitive-load",
+        data={"image": (io.BytesIO(_png_bytes()), "valid.png")},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 500
+    assert response.is_json
+    assert response.get_json() == {
+        "analysis_complete": False,
+        "error": {
+            "code": "upload_storage_unavailable",
+            "message": (
+                "Uploaded image could not be stored for analysis; "
+                "no analysis was performed."
+            ),
+        },
+    }
+    raw = response.get_data(as_text=True)
+    assert str(missing_upload_dir) not in raw
+    assert "Traceback" not in raw
+    assert not missing_upload_dir.exists()
+
+
+def test_all_single_image_routes_use_one_uuid_only_persistence_boundary():
+    assert 'f"{uuid.uuid4().hex[:8]}_{file.filename}"' not in APP_SOURCE
+    assert "filepath.write_bytes(image_bytes)" in APP_SOURCE
+    assert APP_SOURCE.count("filepath.write_bytes(image_bytes)") == 1
+    assert APP_SOURCE.count("_persist_uploaded_image_bytes(ext, image_bytes)") == 6
+
+
 def test_layout_exception_returns_structured_non_success_without_score_or_x19(
     client, monkeypatch
 ):
@@ -153,6 +349,26 @@ def test_ocr_failure_or_unavailability_never_uses_neutral_substitute(
         )
 
     _assert_p4_failure(_post(client), forbidden_text=sentinel)
+
+
+@pytest.mark.parametrize("fault", ["missing", "tampered"])
+def test_easyocr_model_integrity_failure_reaches_structured_score_boundary(
+    client, monkeypatch, fault
+):
+    monkeypatch.setattr(
+        canonical_layout_module,
+        "detect_elements",
+        lambda _image: [{"id": 0, "bbox": (10, 10, 30, 20)}],
+    )
+    text_reader_module._READER = None
+    text_reader_module._READER_FAILED = False
+
+    def _reject_models():
+        raise EasyOCRModelIntegrityError(f"{fault}: /private/model/path")
+
+    monkeypatch.setattr(text_reader_module, "verify_easyocr_models", _reject_models)
+
+    _assert_p4_failure(_post(client), forbidden_text="/private/model/path")
 
 
 @pytest.mark.parametrize(

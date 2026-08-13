@@ -196,6 +196,10 @@ def test_score_route_exposes_only_bounded_proxy_semantics(client):
     assert reproducibility["source"]["tree_state"] in {"clean", "dirty"}
     for key in (
         "umsi_checkpoint_sha256",
+        "easyocr_model_identity_sha256",
+        "easyocr_detector_sha256",
+        "easyocr_recognizer_sha256",
+        "layout_ocr_identity",
         "feature_norms_sha256",
         "reference_pack_manifest_sha256",
         "runtime_environment_manifest_sha256",

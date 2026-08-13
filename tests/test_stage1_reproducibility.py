@@ -27,6 +27,7 @@ def _clear_identity_caches():
     repro.load_runtime_environment_manifest.cache_clear()
     repro.load_reference_pack_manifest.cache_clear()
     repro.verify_runtime_environment.cache_clear()
+    repro.layout_ocr_identity.cache_clear()
     repro.saliency_cache_identity.cache_clear()
     repro.visual_cache_identity.cache_clear()
     repro.resolve_source_state.cache_clear()
@@ -36,6 +37,7 @@ def _clear_identity_caches():
     repro.load_runtime_environment_manifest.cache_clear()
     repro.load_reference_pack_manifest.cache_clear()
     repro.verify_runtime_environment.cache_clear()
+    repro.layout_ocr_identity.cache_clear()
     repro.saliency_cache_identity.cache_clear()
     repro.visual_cache_identity.cache_clear()
     repro.resolve_source_state.cache_clear()
@@ -126,6 +128,12 @@ def test_study_metadata_exports_commit_checkpoint_norm_and_schema_ids(
     assert metadata["umsi_checkpoint_sha256"] == (
         "f4290c3f11f18befbb47de50d81e4555ec8e7a63066c71c343a32fe32799e9fe"
     )
+    assert metadata["easyocr_detector_sha256"] == (
+        "4a5efbfb48b4081100544e75e1e2b57f8de3d84f213004b14b85fd4b3748db17"
+    )
+    assert metadata["easyocr_recognizer_sha256"] == (
+        "e2272681d9d67a04e2dff396b6e95077bc19001f8f6d3593c307b9852e1c29e8"
+    )
     assert metadata["feature_norms_sha256"] == (
         "d17b3698c2e4b0016a091955e374203f3d6f2eb258c5de6a47a3dc0b6ba9736f"
     )
@@ -139,6 +147,8 @@ def test_study_metadata_exports_commit_checkpoint_norm_and_schema_ids(
     for key in (
         "runtime_environment_manifest_sha256",
         "reference_pack_manifest_sha256",
+        "easyocr_model_identity_sha256",
+        "layout_ocr_identity",
         "saliency_cache_identity",
         "visual_cache_identity",
     ):
@@ -222,6 +232,32 @@ def test_visual_cache_invalidates_when_analysis_identity_changes(monkeypatch):
     assert len(calls) == 2
 
 
+def test_visual_cache_identity_binds_layout_ocr_identity(monkeypatch):
+    monkeypatch.setattr(repro, "verify_runtime_environment", lambda: {})
+    monkeypatch.setattr(
+        repro,
+        "load_runtime_environment_manifest",
+        lambda: ({}, "1" * 64),
+    )
+    monkeypatch.setattr(
+        repro,
+        "load_reference_pack_manifest",
+        lambda: (
+            {"reference_pack": {"feature_norms": {"sha256": "2" * 64}}},
+            "3" * 64,
+        ),
+    )
+    identity = {"value": "4" * 64}
+    monkeypatch.setattr(repro, "layout_ocr_identity", lambda: identity["value"])
+
+    first = repro.visual_cache_identity()
+    repro.visual_cache_identity.cache_clear()
+    identity["value"] = "5" * 64
+    second = repro.visual_cache_identity()
+
+    assert first != second
+
+
 def test_active_csv_export_carries_required_reproducibility_columns():
     ui = (ROOT / "stage1" / "ui" / "index.html").read_text(encoding="utf-8")
 
@@ -230,6 +266,10 @@ def test_active_csv_export_carries_required_reproducibility_columns():
         "source_commit",
         "source_tree_state",
         "umsi_checkpoint_sha256",
+        "easyocr_model_identity_sha256",
+        "easyocr_detector_sha256",
+        "easyocr_recognizer_sha256",
+        "layout_ocr_identity",
         "feature_norms_sha256",
         "reference_pack_manifest_sha256",
         "runtime_environment_manifest_sha256",

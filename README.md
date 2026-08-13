@@ -114,21 +114,28 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Download the UMSI++ checkpoint:
+Install the external UMSI++ and EasyOCR model artifacts:
 
 ```bash
 python3 scripts/download_weights.py
+python3 scripts/download_easyocr_models.py
 ```
 
-or place it at:
+Alternatively, place the exact files at:
 
 ```text
 saliency/weights/model_weights/saliency_models/UMSI++/umsi++.hdf5
+cognitive/weights/easyocr/model/craft_mlt_25k.pth
+cognitive/weights/easyocr/model/english_g2.pth
 ```
 
-The checkpoint is not committed to Git. A score-bearing x19 analysis requires
-saliency and fails closed when the checkpoint or saliency processing is
-unavailable. The standalone visual-only endpoint can run without it.
+The checkpoint and EasyOCR model files are not committed to Git. Their exact
+filenames, byte sizes and SHA-256 hashes are tracked in repository identity
+manifests and are verified before model construction. EasyOCR uses a fixed
+repository-relative model directory and automatic downloads are disabled in
+the Production reader. A score-bearing x19 analysis requires both saliency and
+OCR and fails closed when either exact model identity or its processing is
+unavailable. The standalone visual-only endpoint can run without them.
 
 ---
 
@@ -194,9 +201,12 @@ HCEye `dynamic_test.py` are manual/heavy integration scripts, not part of the
 lightweight CI collection. Additional heavy/evidence tests must be invoked by
 their explicit path so they run in the required isolated process. The
 Step-2b/P9 corrigendum evaluator, for example, must run alone before
-TensorFlow/Keras is imported. `tests/test_pipeline.py` likewise remains a direct
-end-to-end demo that accepts an image path and is therefore not collected as an
-ordinary zero-argument pytest test:
+TensorFlow/Keras is imported. `tests/test_pipeline.py` is retained only as a
+**historical, incomplete development demo** and is not collected as an ordinary
+pytest test. It never computes UMSI++/s5 and instead uses five explicit zero
+placeholders; consequently its combined values are **not Stage-1 x19**, its
+retired Stage-2 fields are not measurements, and it is not current pipeline or
+validation evidence. It can be inspected directly with:
 
 ```bash
 python3 tests/test_pipeline.py

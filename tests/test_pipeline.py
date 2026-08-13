@@ -1,10 +1,15 @@
-"""
-End-to-end test: Full pipeline from screenshot → cognitive load prediction.
+"""HISTORICAL / INCOMPLETE DEMO — not the current Stage-1 contract.
 
-Tests the complete flow:
-  1. Visual complexity extraction (v ∈ ℝ⁸)
-  2. HCEye cognitive load features (h ∈ ℝ⁶)
-  3. Stage 2 regression → cognitive load score
+This manually invoked development script predates the audited Stage-1 x19
+boundary. It extracts v8 and h6 but does not run UMSI++; it substitutes five
+zeros where real s5 values would be required. The resulting 19 numeric slots
+are therefore only an incomplete historical Stage-2 scaffold input and must
+never be identified as a Stage-1 x19 vector, a production pipeline test, or
+validation evidence.
+
+The script is retained to document earlier development. Current Stage-1
+behavior and evidence are defined by ``stage1/app.py``, ``README.md``, and the
+automated tests selected in ``pytest.ini``.
 """
 import sys
 import os
@@ -17,10 +22,25 @@ from stage1.visual_complexity import compute_complexity_vector
 from hceye.hceye_features import HCEyeFeatureExtractor
 from stage2.regression_model import Stage2Model
 
-def test_full_pipeline(image_path: str):
-    """Run the full pipeline on a single image."""
+
+HISTORICAL_DEMO_BANNER = (
+    "HISTORICAL / INCOMPLETE DEMO — NOT THE CURRENT STAGE-1 CONTRACT"
+)
+
+
+def _print_historical_warning():
+    print(f"\n{'!'*72}")
+    print(f"  {HISTORICAL_DEMO_BANNER}")
+    print("  UMSI++/s5 is not computed; five zeros are only placeholders.")
+    print("  The combined values are not Stage-1 x19 and are not validation evidence.")
+    print(f"{'!'*72}")
+
+
+def run_historical_incomplete_demo(image_path: str):
+    """Run the retained incomplete scaffold on one image."""
+    _print_historical_warning()
     print(f"\n{'='*60}")
-    print(f"  FULL PIPELINE TEST: {os.path.basename(image_path)}")
+    print(f"  HISTORICAL SCAFFOLD DEMO: {os.path.basename(image_path)}")
     print(f"{'='*60}")
     
     # Step 1: Visual complexity
@@ -38,8 +58,8 @@ def test_full_pipeline(image_path: str):
     ], dtype=np.float32)
     print(f"  v = {v}")
     
-    # Step 2: HCEye cognitive load features
-    print("\n[2/3] HCEye Cognitive Load Features (h ∈ ℝ⁶)...")
+    # Step 2: Project-specific HCEye-derived screenshot proxies.
+    print("\n[2/3] HCEye-Derived Screenshot Proxies (h ∈ ℝ⁶)...")
     lookup_path = "hceye/sensitivity_lookup.json"
     extractor = HCEyeFeatureExtractor(lookup_path)
     # extract_features now takes the named visual-feature dict directly.
@@ -49,42 +69,36 @@ def test_full_pipeline(image_path: str):
     for name, val in zip(feature_names, h):
         print(f"    {name}: {val:.4f}")
     
-    # Step 3: Combine features (without saliency for this test)
-    # v⁸ + padding⁵ (no saliency) + h⁶ = ℝ¹⁹
+    # Step 3: Assemble the historical scaffold input. This demo does not run
+    # UMSI++: five zeros are placeholders, not saliency features.
+    # A vector with placeholder s5 values is not the audited Stage-1 x19.
     s_placeholder = np.zeros(5, dtype=np.float32)
-    x = np.concatenate([v, s_placeholder, h])
-    print(f"\n  Full vector: ℝ{len(x)} (v⁸ + s⁵ + h⁶)")
+    historical_scaffold_input = np.concatenate([v, s_placeholder, h])
+    print(
+        f"\n  Incomplete scaffold input: {len(historical_scaffold_input)} numeric slots "
+        "(v8 + zero placeholders5 + h6; NOT Stage-1 x19)"
+    )
     
     # Step 4: Stage 2 prediction
-    print("\n[3/3] Stage 2 Regression...")
+    print("\n[3/3] Historical Stage-2 Regression Scaffold...")
     model_path = "stage2/models/stage2_model.pkl"
     if os.path.exists(model_path):
         model = Stage2Model(model_path=model_path)
-        pred = model.predict(x)
-        print(f"  Predictions:")
-        print(f"    Cognitive Load Score:  {pred['cognitive_load_score']:.1f} / 100")
-        print(f"    Search Efficiency:     {pred['search_efficiency']:.3f}")
-        print(f"    Attention Demand:      {pred['attention_demand']:.3f}")
-        
-        # Interpret
-        score = pred['cognitive_load_score']
-        if score < 25:
-            level = "LOW"
-        elif score < 50:
-            level = "MODERATE"
-        elif score < 75:
-            level = "HIGH"
-        else:
-            level = "VERY HIGH"
-        print(f"\n  → Overall Cognitive Load: {level} ({score:.0f}/100)")
+        pred = model.predict(historical_scaffold_input)
+        print("  Retired Stage-2 scaffold outputs (not Stage-1 measurements/evidence):")
+        print(f"    Retired score field:      {pred['cognitive_load_score']:.1f} / 100")
+        print(f"    Retired search field:     {pred['search_efficiency']:.3f}")
+        print(f"    Retired attention field:  {pred['attention_demand']:.3f}")
     else:
-        print(f"  Model not found at {model_path}")
-        print(f"  Raw CLI from HCEye: {h[5]:.3f}")
+        print(f"  Historical Stage-2 model not found at {model_path}; no prediction produced.")
+        print(f"  HCEye-derived proxy h[5]: {h[5]:.3f} (not a measured load score)")
     
     return pred if os.path.exists(model_path) else None
 
 
 if __name__ == '__main__':
+    _print_historical_warning()
+
     # Find test images
     test_dirs = [
         'stage1/data/screenshots',
@@ -99,10 +113,10 @@ if __name__ == '__main__':
                     images.append(os.path.join(d, f))
     
     if not images:
-        print("No test images found. Generating synthetic test...")
-        # Synthetic test
+        print("No demo images found. Building synthetic historical scaffold inputs...")
         extractor = HCEyeFeatureExtractor("hceye/sensitivity_lookup.json")
-        model = Stage2Model(model_path="stage2/models/stage2_model.pkl")
+        model_path = "stage2/models/stage2_model.pkl"
+        model = Stage2Model(model_path=model_path) if os.path.exists(model_path) else None
         
         _v_keys = [
             "shannon_entropy", "edge_density", "feature_congestion",
@@ -120,11 +134,19 @@ if __name__ == '__main__':
         ]:
             vis = dict(zip(_v_keys, v.tolist()))
             h = extractor.extract_features(vis)
-            x = np.concatenate([v, np.zeros(5), h])
-            pred = model.predict(x)
-            print(f"  {name:25s}  CLI={pred['cognitive_load_score']:5.1f}  "
-                  f"SearchEff={pred['search_efficiency']:.3f}  "
-                  f"AttnDem={pred['attention_demand']:.3f}")
+            historical_scaffold_input = np.concatenate([v, np.zeros(5), h])
+            if model is None:
+                print(
+                    f"  {name:25s}  scaffold slots={len(historical_scaffold_input)}; "
+                    "no historical model, no prediction"
+                )
+                continue
+            pred = model.predict(historical_scaffold_input)
+            print(
+                f"  {name:25s}  retired_score={pred['cognitive_load_score']:5.1f}  "
+                f"retired_search={pred['search_efficiency']:.3f}  "
+                f"retired_attention={pred['attention_demand']:.3f}"
+            )
     else:
         for img in images[:3]:
-            test_full_pipeline(img)
+            run_historical_incomplete_demo(img)

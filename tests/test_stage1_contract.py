@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.join(ROOT, "stage1"))
 cv2 = pytest.importorskip("cv2", reason="opencv is required for endpoint tests")
 
 import app as app_module  # noqa: E402
-from app import app  # noqa: E402
+from app import app, Stage1VectorUnavailableError  # noqa: E402
 from stage2.task_descriptor import (  # noqa: E402
     SEARCH_MODE_WEIGHTS,
     SPECIFICITY_WEIGHTS,
@@ -50,6 +50,28 @@ EXPECTED_STAGE1_NAMES = [
     "experimental_layout_complexity_index",
 ]
 
+EXPECTED_VECTOR_FAILURE = {
+    "analysis_complete": False,
+    "error": {
+        "code": "stage1_vector_invalid",
+        "message": (
+            "A required Stage-1 feature was non-finite; no vector or score "
+            "was produced."
+        ),
+    },
+}
+
+FORBIDDEN_VECTOR_FAILURE_FIELDS = {
+    "layout",
+    "hceye_proxy_features",
+    "base_experimental_outputs",
+    "context_adjusted_experimental_outputs",
+    "stage1_feature_vector",
+    "stage1_feature_names",
+    "stage1_vector_dtype",
+    "vector_dimensions",
+}
+
 
 def _png_bytes() -> bytes:
     image = np.full((96, 128, 3), 235, dtype=np.uint8)
@@ -78,7 +100,7 @@ class _CanonicalMeasurement:
 
 
 @pytest.fixture()
-def client(monkeypatch):
+def client(monkeypatch, tmp_path):
     visual = {
         "shannon_entropy": 0.11,
         "edge_density": 0.22,
@@ -109,6 +131,7 @@ def client(monkeypatch):
         pass
 
     monkeypatch.setattr(app_module, "_get_saliency_model", lambda: _SaliencyModel())
+    monkeypatch.setattr(app_module, "UPLOAD_DIR", tmp_path)
 
     import canonical_layout
     import cognitive.element_detector
@@ -177,6 +200,104 @@ def test_public_stage1_boundary_is_exact_named_float32_x19(client):
     )
     expected_bytes = np.asarray(expected_values, dtype=np.float32).tobytes()
     assert _vector_bytes(response) == expected_bytes
+
+
+@pytest.mark.parametrize(
+    "nonfinite",
+    [
+        pytest.param(np.nan, id="nan"),
+        pytest.param(np.inf, id="positive-inf"),
+        pytest.param(-np.inf, id="negative-inf"),
+    ],
+)
+@pytest.mark.parametrize("position", range(19))
+def test_stage1_assembler_rejects_every_nonfinite_position(position, nonfinite):
+    values = np.linspace(0.1, 1.9, 19, dtype=np.float32)
+    values[position] = nonfinite
+
+    with pytest.raises(Stage1VectorUnavailableError) as exc_info:
+        app_module._assemble_stage1_vector(
+            values[:8], values[8:13], values[13:], EXPECTED_STAGE1_NAMES[13:]
+        )
+
+    assert exc_info.value.code == "stage1_vector_invalid"
+    assert exc_info.value.message == EXPECTED_VECTOR_FAILURE["error"]["message"]
+
+
+@pytest.mark.parametrize(
+    "nonfinite",
+    [
+        pytest.param(np.nan, id="nan"),
+        pytest.param(np.inf, id="positive-inf"),
+        pytest.param(-np.inf, id="negative-inf"),
+    ],
+)
+@pytest.mark.parametrize("position", range(19))
+def test_score_route_rejects_every_nonfinite_x19_position(
+    client, monkeypatch, position, nonfinite
+):
+    visual = {
+        name: float(index + 1) / 10.0
+        for index, name in enumerate(EXPECTED_STAGE1_NAMES[:8])
+    }
+    saliency = {
+        name: float(index + 1) / 10.0
+        for index, name in enumerate(EXPECTED_STAGE1_NAMES[8:13])
+    }
+    hceye = np.array([0.9, 1.1, 0.95, 0.25, 0.6, 0.52], dtype=np.float32)
+
+    if position < 8:
+        visual[EXPECTED_STAGE1_NAMES[position]] = nonfinite
+    elif position < 13:
+        saliency[EXPECTED_STAGE1_NAMES[position]] = nonfinite
+    else:
+        hceye[position - 13] = nonfinite
+
+    monkeypatch.setattr(
+        app_module,
+        "_compute_visual_cached",
+        lambda image_hash, image_path: (dict(visual), False),
+    )
+
+    import saliency.saliency_features as saliency_features_module
+    import hceye.hceye_features as hceye_features_module
+
+    monkeypatch.setattr(
+        saliency_features_module,
+        "extract_saliency_features",
+        lambda _heatmap: dict(saliency),
+    )
+
+    class _InjectedHCEyeExtractor:
+        def extract_features(self, *_args, **_kwargs):
+            return hceye.copy()
+
+        def get_feature_names(self):
+            return EXPECTED_STAGE1_NAMES[13:]
+
+    monkeypatch.setattr(
+        hceye_features_module, "HCEyeFeatureExtractor", _InjectedHCEyeExtractor
+    )
+
+    response = client.post(
+        "/api/cognitive-load",
+        data={"image": (io.BytesIO(_png_bytes()), "nonfinite.png")},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 503
+    body = response.get_json()
+    assert body == EXPECTED_VECTOR_FAILURE
+    assert FORBIDDEN_VECTOR_FAILURE_FIELDS.isdisjoint(body)
+    raw = response.get_data(as_text=True)
+    assert "NaN" not in raw
+    assert "Infinity" not in raw
+
+
+@pytest.mark.parametrize("nonfinite", [np.nan, np.inf, -np.inf])
+def test_json_provider_rejects_nonstandard_nonfinite_tokens(nonfinite):
+    with pytest.raises(ValueError, match="Out of range float values"):
+        app.json.dumps({"value": float(nonfinite)})
 
 
 def test_stage1_boundary_is_bit_identical_across_every_task_profile_selection(client):

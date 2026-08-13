@@ -31,6 +31,7 @@ from collections import OrderedDict
 from pathlib import Path
 
 from flask import Flask, jsonify, request, send_from_directory
+from flask.json.provider import DefaultJSONProvider
 
 # Add stage1 and project root to path
 sys.path.insert(0, os.path.dirname(__file__))
@@ -82,6 +83,42 @@ class ScoreInputUnavailableError(Exception):
         self.message = message
 
 
+class Stage1VectorUnavailableError(Exception):
+    """Raised when a mandatory Stage-1 block or x19 is non-finite.
+
+    The public response uses only the fixed client-safe ``message``.  Invalid
+    numerical data must never cross the API boundary as JSON NaN/Infinity or
+    appear alongside a valid-looking Stage-1 score.
+    """
+
+    def __init__(self, code: str, message: str):
+        super().__init__(message)
+        self.code = code
+        self.message = message
+
+
+class InvalidImageUploadError(Exception):
+    """Raised when supported-extension upload bytes cannot decode as an image.
+
+    This is a client-correctable input failure, not a pipeline/model failure.
+    The public response is fixed and must not expose decoder details.
+    """
+
+    def __init__(self, code: str, message: str):
+        super().__init__(message)
+        self.code = code
+        self.message = message
+
+
+class UploadStorageUnavailableError(Exception):
+    """Raised when a validated upload cannot be persisted for analysis."""
+
+    def __init__(self, code: str, message: str):
+        super().__init__(message)
+        self.code = code
+        self.message = message
+
+
 # Lazy-load saliency model (heavy TF import — only when needed)
 _saliency_model = None
 
@@ -122,6 +159,19 @@ LAYOUT_OCR_ERROR_CODE = "layout_ocr_unavailable"
 LAYOUT_OCR_ERROR_MESSAGE = (
     "Required layout/OCR analysis is unavailable; no score was produced. "
     "Check the server's layout/OCR setup and retry."
+)
+STAGE1_VECTOR_ERROR_CODE = "stage1_vector_invalid"
+STAGE1_VECTOR_ERROR_MESSAGE = (
+    "A required Stage-1 feature was non-finite; no vector or score was produced."
+)
+INVALID_IMAGE_ERROR_CODE = "invalid_image"
+INVALID_IMAGE_ERROR_MESSAGE = (
+    "Uploaded file could not be decoded as a supported image; "
+    "no analysis was performed."
+)
+UPLOAD_STORAGE_ERROR_CODE = "upload_storage_unavailable"
+UPLOAD_STORAGE_ERROR_MESSAGE = (
+    "Uploaded image could not be stored for analysis; no analysis was performed."
 )
 # P5 / AG-07..09 production semantics policy.  This metadata is returned with
 # every successful score-bearing response so API consumers cannot mistake the
@@ -261,10 +311,18 @@ def _assemble_stage1_vector(v, s, h, hceye_feature_names):
         )
     if len(names) != STAGE1_VECTOR_DIMENSIONS:
         raise ValueError("Stage-1 feature-name contract must contain 19 names")
+    if not all(np.isfinite(block).all() for block in (visual, saliency, hceye)):
+        raise Stage1VectorUnavailableError(
+            STAGE1_VECTOR_ERROR_CODE, STAGE1_VECTOR_ERROR_MESSAGE
+        )
 
     vector = np.concatenate([visual, saliency, hceye]).astype(dtype, copy=False)
     if vector.shape != (STAGE1_VECTOR_DIMENSIONS,):
         raise ValueError("Stage-1 feature vector must contain exactly 19 values")
+    if not np.isfinite(vector).all():
+        raise Stage1VectorUnavailableError(
+            STAGE1_VECTOR_ERROR_CODE, STAGE1_VECTOR_ERROR_MESSAGE
+        )
     return vector, names
 
 
@@ -325,6 +383,64 @@ def _hash_upload(file_storage):
     data = file_storage.read()
     file_storage.stream.seek(0)  # rewind so the bytes can be written to disk later
     return hashlib.sha256(data).hexdigest(), data
+
+
+def _validate_uploaded_image_bytes(image_bytes: bytes):
+    """Decode one upload before persistence or any score-bearing analysis.
+
+    Extension checks alone cannot establish that the payload is an image.
+    OpenCV may either return ``None`` or raise for corrupt/truncated inputs; both
+    cases map to the same fixed client-safe error contract. The decoded array is
+    returned for direct unit verification, while production stages continue to
+    consume the persisted file exactly as before.
+    """
+    import cv2
+    import numpy as np
+
+    try:
+        encoded = np.frombuffer(image_bytes, dtype=np.uint8)
+        decoded = (
+            cv2.imdecode(encoded, cv2.IMREAD_COLOR)
+            if encoded.size
+            else None
+        )
+    except Exception as exc:
+        raise InvalidImageUploadError(
+            INVALID_IMAGE_ERROR_CODE, INVALID_IMAGE_ERROR_MESSAGE
+        ) from exc
+
+    if (
+        decoded is None
+        or decoded.size == 0
+        or decoded.ndim != 3
+        or decoded.shape[2] != 3
+    ):
+        raise InvalidImageUploadError(
+            INVALID_IMAGE_ERROR_CODE, INVALID_IMAGE_ERROR_MESSAGE
+        )
+    return decoded
+
+
+def _persist_uploaded_image_bytes(extension: str, image_bytes: bytes) -> Path:
+    """Persist an upload under a generated name with fail-safe cleanup.
+
+    The original client filename is deliberately not accepted by this helper.
+    Every caller has already allowlisted ``extension``; UUID-only storage makes
+    traversal, absolute-path and nested-directory filename syntax irrelevant.
+    """
+    filepath = UPLOAD_DIR / f"{uuid.uuid4().hex}{extension}"
+    try:
+        filepath.write_bytes(image_bytes)
+    except OSError as exc:
+        try:
+            filepath.unlink(missing_ok=True)
+        except OSError:
+            # The fixed public error remains safe even if cleanup itself fails.
+            pass
+        raise UploadStorageUnavailableError(
+            UPLOAD_STORAGE_ERROR_CODE, UPLOAD_STORAGE_ERROR_MESSAGE
+        ) from exc
+    return filepath
 
 
 def _resolve_target_index(elements, target_id, target_x, target_y):
@@ -533,7 +649,16 @@ def _warmup_saliency_model():
         if warmup_path.exists():
             warmup_path.unlink()
 
+class _StrictJSONProvider(DefaultJSONProvider):
+    """Reject non-standard JSON NaN/Infinity tokens on every API surface."""
+
+    def dumps(self, obj, **kwargs):
+        kwargs["allow_nan"] = False
+        return super().dumps(obj, **kwargs)
+
+
 app = Flask(__name__, static_folder="ui", static_url_path="")
+app.json = _StrictJSONProvider(app)
 
 # --- Resource limits (guard against accidental or malicious exhaustion) ------
 # Maximum accepted request body size. Flask rejects larger uploads with 413
@@ -562,6 +687,13 @@ def _too_large(_err):
     return jsonify({
         "error": f"Upload too large (limit {MAX_UPLOAD_MB} MB)."
     }), 413
+
+
+@app.errorhandler(UploadStorageUnavailableError)
+def _upload_storage_unavailable(err):
+    """Return stable JSON when a validated upload cannot be persisted."""
+    app.logger.exception("Validated upload could not be persisted")
+    return _fail_closed_error(err.code, err.message, status=500)
 
 
 def _clamp_simulations(req):
@@ -645,9 +777,7 @@ def analyze():
 
     # Hash the upload first so identical images reuse cached feature results.
     image_hash, image_bytes = _hash_upload(file)
-    filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
-    filepath = UPLOAD_DIR / filename
-    filepath.write_bytes(image_bytes)
+    filepath = _persist_uploaded_image_bytes(ext, image_bytes)
 
     try:
         # Copy the cached dict before mutating it so the cache stays pristine.
@@ -750,9 +880,7 @@ def saliency():
         return jsonify({"error": f"Unsupported format: {ext}"}), 400
 
     image_hash, image_bytes = _hash_upload(file)
-    filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
-    filepath = UPLOAD_DIR / filename
-    filepath.write_bytes(image_bytes)
+    filepath = _persist_uploaded_image_bytes(ext, image_bytes)
 
     try:
         import base64
@@ -839,9 +967,7 @@ def search_time():
     use_saliency = request.args.get("use_saliency", "true").lower() != "false"
 
     image_hash, image_bytes = _hash_upload(file)
-    filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
-    filepath = UPLOAD_DIR / filename
-    filepath.write_bytes(image_bytes)
+    filepath = _persist_uploaded_image_bytes(ext, image_bytes)
 
     try:
         import cv2
@@ -999,9 +1125,7 @@ def scanpath_to_target():
      viewing_cm, display_preset_meta) = _resolve_display_preset(request)
 
     image_hash, image_bytes = _hash_upload(file)
-    filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
-    filepath = UPLOAD_DIR / filename
-    filepath.write_bytes(image_bytes)
+    filepath = _persist_uploaded_image_bytes(ext, image_bytes)
 
     try:
         import cv2
@@ -1276,9 +1400,13 @@ def cognitive_load():
 
     # Hash once and reuse the same key for both the visual and saliency caches.
     image_hash, image_bytes = _hash_upload(file)
-    filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
-    filepath = UPLOAD_DIR / filename
-    filepath.write_bytes(image_bytes)
+    try:
+        _validate_uploaded_image_bytes(image_bytes)
+    except InvalidImageUploadError as e:
+        return _fail_closed_error(e.code, e.message, status=400)
+
+    # The user-controlled filename remains response metadata only.
+    filepath = _persist_uploaded_image_bytes(ext, image_bytes)
 
     try:
         import numpy as np
@@ -1446,6 +1574,10 @@ def cognitive_load():
 
         model_path = Path(__file__).parent.parent / "stage2" / "models" / "stage2_model.pkl"
         stage1_score = float(h[5] * 100.0)
+        if not np.isfinite(stage1_score):
+            raise Stage1VectorUnavailableError(
+                STAGE1_VECTOR_ERROR_CODE, STAGE1_VECTOR_ERROR_MESSAGE
+            )
         base_experimental_outputs = {
             "layout_complexity_score": stage1_score,
             "search_efficiency_proxy": float(np.clip(1.0 - h[3], 0.0, 1.0)),
@@ -1661,8 +1793,9 @@ def cognitive_load():
             "trained_model_available": model_path.exists(),
             "scientific_semantics": dict(SCIENTIFIC_SEMANTICS),
             # P6 study-export identity: this binds every exported score to the
-            # source commit/tree state, exact checkpoint, reference norms,
-            # schema contracts, runtime freeze and versioned cache identities.
+            # source commit/tree state, exact UMSI and EasyOCR artifacts,
+            # reference norms, schema contracts, runtime freeze and versioned
+            # cache identities.
             "reproducibility": study_reproducibility_metadata(),
             "stage1_feature_vector": base_vector.tolist(),
             "stage1_feature_names": stage1_feature_names,
@@ -1690,6 +1823,9 @@ def cognitive_load():
         return _fail_closed_error(e.code, e.message)
     except ScoreInputUnavailableError as e:
         app.logger.exception("Score-driving layout/OCR analysis failed")
+        return _fail_closed_error(e.code, e.message)
+    except Stage1VectorUnavailableError as e:
+        app.logger.exception("Stage-1 vector validation failed")
         return _fail_closed_error(e.code, e.message)
     except FeatureNormsError as e:
         # Client-safe boundary: the underlying exception message may contain
@@ -1886,9 +2022,7 @@ def learning_curve():
      viewing_cm, display_preset_meta) = _resolve_display_preset(request)
 
     image_hash, image_bytes = _hash_upload(file)
-    filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
-    filepath = UPLOAD_DIR / filename
-    filepath.write_bytes(image_bytes)
+    filepath = _persist_uploaded_image_bytes(ext, image_bytes)
 
     try:
         import cv2

@@ -741,7 +741,9 @@ def test_standard_ui_final_framing_acceptance():
     # Positive assertions: the neutral replacements must be present.
     assert "internal checks and source-study correspondence" in html
     assert "not independent validation" in html
-    assert "hceye-derived rule index (exploratory)" in html
+    assert (
+        "hceye-derived rule index (unitless project-specific proxy)" in html
+    )
 
 
 def test_standard_ui_removes_unverified_umsi_class_mapping():

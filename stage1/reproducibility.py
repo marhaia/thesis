@@ -14,6 +14,10 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Mapping
 
+from cognitive.easyocr_identity import (
+    IDENTITY_PATH as EASYOCR_IDENTITY_PATH,
+    load_easyocr_model_identity,
+)
 from saliency.checkpoint_identity import load_umsi_checkpoint_identity
 
 
@@ -204,6 +208,34 @@ def _canonical_digest(payload: Mapping[str, object]) -> str:
 
 
 @lru_cache(maxsize=1)
+def layout_ocr_identity() -> str:
+    """Identity of every declared input that governs score-driving OCR."""
+    _, runtime_sha = load_runtime_environment_manifest()
+    identity = load_easyocr_model_identity()
+    return _canonical_digest({
+        "schema": "stage1-layout-ocr-v1",
+        "easyocr_model_identity_sha256": sha256_file(EASYOCR_IDENTITY_PATH),
+        "easyocr_version": identity["easyocr_version"],
+        "reader": identity["reader"],
+        "artifacts": {
+            role: {
+                "filename": artifact["filename"],
+                "bytes": artifact["bytes"],
+                "sha256": artifact["sha256"],
+            }
+            for role, artifact in identity["artifacts"].items()
+        },
+        "text_reader_sha256": sha256_file(
+            PROJECT_ROOT / "cognitive/text_reader.py"
+        ),
+        "canonical_layout_sha256": sha256_file(
+            PROJECT_ROOT / "stage1/canonical_layout.py"
+        ),
+        "runtime_environment_manifest_sha256": runtime_sha,
+    })
+
+
+@lru_cache(maxsize=1)
 def saliency_cache_identity() -> str:
     verify_runtime_environment()
     runtime, runtime_sha = load_runtime_environment_manifest()
@@ -242,6 +274,11 @@ def visual_cache_identity() -> str:
         ],
         "reference_pack_manifest_sha256": reference_sha,
         "runtime_environment_manifest_sha256": runtime_sha,
+        # The visual block is reused inside the complete score route. Binding
+        # its cache namespace to the layout/OCR identity is conservative: an
+        # OCR policy/model change invalidates reuse instead of carrying any
+        # component cache across a changed score-driving analysis identity.
+        "layout_ocr_identity": layout_ocr_identity(),
     })
 
 
@@ -290,6 +327,7 @@ def study_reproducibility_metadata() -> dict:
     runtime, runtime_sha = load_runtime_environment_manifest()
     reference, reference_sha = load_reference_pack_manifest()
     checkpoint = load_umsi_checkpoint_identity()
+    easyocr = load_easyocr_model_identity()
     schemas = reference["stage1_schema_identifiers"]
     return {
         "schema_id": schemas["study_export"],
@@ -302,6 +340,10 @@ def study_reproducibility_metadata() -> dict:
             "sha256"
         ],
         "umsi_checkpoint_sha256": checkpoint["sha256"],
+        "easyocr_model_identity_sha256": sha256_file(EASYOCR_IDENTITY_PATH),
+        "easyocr_detector_sha256": easyocr["artifacts"]["detector"]["sha256"],
+        "easyocr_recognizer_sha256": easyocr["artifacts"]["recognizer"]["sha256"],
+        "layout_ocr_identity": layout_ocr_identity(),
         "stage1_vector_schema": schemas["feature_vector"],
         "visual_norms_schema": schemas["canonical_visual"],
         "saliency_norms_schema": schemas["canonical_saliency"],
