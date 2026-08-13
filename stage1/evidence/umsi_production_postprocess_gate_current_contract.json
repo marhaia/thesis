@@ -8,8 +8,14 @@
   "created_before_current_v2_real_weight_execution": true,
   "source_state": {
     "base_head": "98bb0c9bc2f6955fee6df831889b463afea9cf6f",
-    "state": "stage1_audit_remediation_worktree_before_new_candidate_freeze",
-    "binding_policy": "Exact pinned source bytes below are authoritative. The gate must be rerun after the remediation worktree is committed as the new immutable candidate so repository_head records that candidate commit."
+    "remediation_commit": "7370f08cce9cac603a9891295f7d2509254966b6",
+    "state": "committed_stage1_audit_remediation_before_candidate_v2_evidence_commit",
+    "binding_policy": "Exact pinned source bytes below are authoritative. The tracked report records execution on remediation_commit. A separate replay report created after the final Candidate-v2 commit must record that final commit and is packaged outside the Git tree, avoiding a self-referential evidence commit."
+  },
+  "evidence_roles": {
+    "tracked_report": "stage1/evidence/p2_ag05_current_report_v2.json records the real-weight execution on source_state.remediation_commit and is committed as remediation evidence.",
+    "candidate_v2_replay": "A separate immutable handoff-package report reruns this exact contract after the Candidate-v2 commit exists; its repository_head must equal the Candidate-v2 commit and its overall_verdict must be PASS.",
+    "non_circularity": "A file inside a Git commit cannot truthfully contain that commit's own identity. The final candidate-bound replay therefore lives outside the candidate Git tree and is hash-bound by the handoff manifest."
   },
   "purpose": "Provide an explicit runnable successor to the historical P2/AG-05 production-postprocess contract. It binds the current saliency source bytes, preserves the previously frozen thresholds, exercises all five real-weight fixtures, checks untouched production E2E values and features, and does not rewrite any historical contract or report.",
   "supersedes_execution_contract": {
@@ -63,7 +69,7 @@
     },
     "current_gate_tests": {
       "path": "tests/test_umsi_production_postprocess_gate_current.py",
-      "sha256": "02294889f06cd49519357d485b4411688a79aac79533225cc4ca6f8efdc26ee9"
+      "sha256": "365308e08e90fe0d3650dd03e15959f32cbe3c30cfcff5fc5d47e8344dedf580"
     }
   },
   "thresholds": {
@@ -128,7 +134,8 @@
       "fixtures_root": "external directory containing the five hash-pinned fixture filenames",
       "output": "stage1/evidence/p2_ag05_current_report_v2.json"
     },
-    "post_commit_requirement": "Rerun this exact current contract after all Stage-1 audit remediations are committed as the new immutable candidate; repository_head in the report must then equal that candidate commit."
+    "tracked_report_requirement": "The tracked report must be generated with repository_head equal to source_state.remediation_commit before the contract and report are committed.",
+    "candidate_replay_requirement": "After the final Candidate-v2 commit is created, rerun this exact contract to a report outside the Git tree. That replay report must record the final Candidate-v2 commit and is then hash-bound by the handoff manifest."
   },
   "out_of_scope": [
     "Any rewrite of historical P8, P9, P10 or P2 contracts, reports, thresholds or verdicts",

@@ -155,3 +155,24 @@ def test_current_report_identity_block_matches_current_contract():
     assert report["identities"][
         "umsi_resize_causality_arrays_6a17288_consolidated.npz"
     ] == "9e933c1071924f180c32cc6327363ca5760b5968d497414a9f7939919b630079"
+
+
+def test_current_report_binds_committed_remediation_without_circular_claim():
+    contract = gate.load_and_validate_contract(CURRENT_CONTRACT)
+    report = _load(CURRENT_REPORT)
+
+    assert report["repository_head"] == contract["source_state"][
+        "remediation_commit"
+    ]
+    assert contract["source_state"]["state"] == (
+        "committed_stage1_audit_remediation_before_candidate_v2_evidence_commit"
+    )
+    assert "handoff-package report" in contract["evidence_roles"][
+        "candidate_v2_replay"
+    ]
+    assert "outside the candidate Git tree" in contract["evidence_roles"][
+        "non_circularity"
+    ]
+    assert "cannot truthfully contain that commit's own identity" in (
+        contract["evidence_roles"]["non_circularity"]
+    )
