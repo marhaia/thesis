@@ -1871,12 +1871,18 @@
                     </div>
                 </div>
 
-                <!-- 4b. Predicted search path to a clicked target (Jokinen model).
+                <!-- FUTURE WORK ONLY — intentionally hidden and not activated by
+                     the accepted Stage-1 UI. Target selection, scanpaths and
+                     multi-target comparison are experimental interaction
+                     simulations outside the basic Stage-1 acceptance boundary.
+                     The dormant implementation is retained for later research.
+
+                     4b. Predicted search path to a clicked target (Jokinen model).
                      The user clicks any element on the screenshot; the tool draws
                      the goal-directed visual-search scanpath the model predicts a
                      novice would follow to reach that target. Task-driven (not
                      free-viewing), computed from the existing Jokinen search model. -->
-                <div id="targetScanpathPanel" class="result-section" style="display:none; margin-top:32px;">
+                <div id="targetScanpathPanel" class="result-section" hidden aria-hidden="true" style="display:none; margin-top:32px;">
                     <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                         <span style="font-size:13px; font-weight:600;">Predicted Search Path</span>
                         <span id="scanpathStatus" style="font-size:11px; color:var(--text-dim);"></span>
@@ -3944,7 +3950,7 @@
                 <div class="summary-card">
                     <div class="summary-label">Experimental Layout Complexity <span class="feature-i" tabindex="0" aria-label="What is Experimental Layout Complexity?" data-tip="<div class='tip-title'>Experimental Layout Complexity</div><div class='tip-body'>An exploratory, screenshot-only complexity value for the whole screen, on a 0&ndash;100 scale. It is computed from the task-independent Stage-1 vector [v8 | s5 | h6]. Task and profile selections do not change this value. It is not a validated cognitive-load measurement.</div>">i</span></div>
                     <div class="summary-value">${layout.experimental_complexity_index.toFixed(1)}</div>
-                    <div class="summary-meta"><strong>Exploratory, project-specific heuristic &mdash; not a validated cognitive-load measurement.</strong> Task-independent Stage 1 · x = [v8 | s5 | h6] · float32. Task/profile effects are shown separately in the context simulation below. Select a target for a separate model-estimated search-difficulty result.</div>
+                    <div class="summary-meta"><strong>Exploratory, project-specific heuristic &mdash; not a validated cognitive-load measurement.</strong> Task-independent Stage 1 · x = [v8 | s5 | h6] · float32. Task/profile effects are shown separately in the context simulation below.</div>
                 </div>
             `;
             // Search Efficiency and Attention Demand are intentionally NOT shown
@@ -4008,7 +4014,9 @@
             };
 
             // ── Predicted search path (click a target) ────────────────────
-            renderTargetScanpath(data.detected_elements);
+            // Target selection, scanpaths and multi-target comparison remain a
+            // dormant Future Work prototype and are intentionally not rendered
+            // by the accepted basic Stage-1 interface.
 
             // ── Feature Vector Table ──────────────────────────────────────
             document.getElementById('featureSection').style.display = 'block';

@@ -26,6 +26,7 @@ Reference:
 """
 
 import math
+import numbers
 import numpy as np
 import os
 import json
@@ -35,7 +36,7 @@ from typing import Dict, Tuple, Optional
 class FeatureNormsError(Exception):
     """Raised when the production feature-norms reference distribution is
     missing, unreadable, syntactically invalid, or missing/invalid data for a
-    score-relevant saliency norm block.
+    score-driving visual or saliency norm block.
 
     A full score-bearing analysis must never silently substitute empty or
     neutral (0.5) defaults for this data; callers that require a complete
@@ -44,11 +45,22 @@ class FeatureNormsError(Exception):
     """
 
 
-# The five saliency norm blocks promoted by stage1/tools/canonical_saliency_norms.py
-# (see stage1/data/results/feature_norms.json). All five must be present and
-# numerically valid; only "saliency_dispersion" and "saliency_coverage" are
-# currently used by the highlight-effectiveness formula below, but the
-# production contract requires the full promoted set to be intact.
+# Every visual norm consumed by the HCEye-derived score mapping is mandatory.
+# A missing block previously reached ``_percentile_normalize`` with
+# ``required=False`` and silently became 0.5, producing a full-looking x19 and
+# a changed layout value.  These five blocks are therefore part of the same
+# fail-closed production contract as the promoted saliency blocks below.
+_REQUIRED_VISUAL_NORM_KEYS = (
+    "edge_density",
+    "feature_congestion",
+    "interactive_element_density",
+    "layout_symmetry",
+    "visual_hierarchy",
+)
+
+# The five saliency norm blocks promoted by
+# stage1/tools/canonical_saliency_norms.py. All five remain mandatory even
+# though only dispersion and coverage currently enter the final mapping.
 _REQUIRED_SALIENCY_NORM_KEYS = (
     "saliency_dispersion",
     "saliency_peak_count",
@@ -61,28 +73,54 @@ _REQUIRED_NORM_ANCHOR_KEYS = ("min", "p5", "p25", "p50", "p75", "p95", "max")
 
 
 def _is_finite_number(value) -> bool:
-    return isinstance(value, (int, float)) and not isinstance(value, bool) \
-        and math.isfinite(value)
+    if isinstance(value, bool) or not isinstance(value, numbers.Real):
+        return False
+    try:
+        return math.isfinite(float(value))
+    except (TypeError, ValueError, OverflowError):
+        return False
 
 
-def _validate_saliency_norm_blocks(features: dict) -> None:
-    """Fail closed if any of the 5 score-relevant saliency norm blocks is
-    missing, or contains a missing/non-finite anchor value needed by the
-    percentile-normalisation formula."""
-    for key in _REQUIRED_SALIENCY_NORM_KEYS:
+def _validate_required_norm_blocks(features: dict) -> None:
+    """Validate every score-driving visual and saliency norm block.
+
+    Quantile anchors may repeat for a discrete feature, but they must be
+    finite, monotone non-decreasing, and span at least two distinct values so
+    percentile interpolation remains meaningful.
+    """
+    if not isinstance(features, dict):
+        raise FeatureNormsError(
+            "Production feature norms must contain a 'features' object."
+        )
+
+    required_keys = _REQUIRED_VISUAL_NORM_KEYS + _REQUIRED_SALIENCY_NORM_KEYS
+    for key in required_keys:
         block = features.get(key)
         if not isinstance(block, dict):
             raise FeatureNormsError(
-                f"Required saliency norm block '{key}' is missing from the "
+                f"Required score-driving norm block '{key}' is missing from the "
                 f"production feature norms file."
             )
+        anchor_values = []
         for anchor in _REQUIRED_NORM_ANCHOR_KEYS:
             if not _is_finite_number(block.get(anchor)):
                 raise FeatureNormsError(
-                    f"Saliency norm block '{key}' has a missing or "
+                    f"Score-driving norm block '{key}' has a missing or "
                     f"non-finite '{anchor}' value in the production feature "
                     f"norms file."
                 )
+            anchor_values.append(float(block[anchor]))
+        if any(
+            right < left
+            for left, right in zip(anchor_values, anchor_values[1:])
+        ):
+            raise FeatureNormsError(
+                f"Score-driving norm block '{key}' has non-monotone anchors."
+            )
+        if anchor_values[0] == anchor_values[-1]:
+            raise FeatureNormsError(
+                f"Score-driving norm block '{key}' has no usable anchor span."
+            )
 
 # Project-local coefficient set derived from aggregate HCEye observations
 # (N=27 participants, 150 webpages).  The external
@@ -183,8 +221,8 @@ class HCEyeFeatureExtractor:
             )
         # Fail-closed: the production reference distribution is mandatory for
         # a complete score-bearing analysis. A missing, unreadable, or
-        # syntactically invalid file — or a missing/invalid score-relevant
-        # saliency norm block — must raise, not silently degrade to an empty
+        # syntactically invalid file — or a missing/invalid score-driving
+        # visual/saliency norm block — must raise, not silently degrade to an empty
         # structure or neutral defaults.
         try:
             with open(feature_norms_path, 'r') as f:
@@ -195,7 +233,7 @@ class HCEyeFeatureExtractor:
                 f"{feature_norms_path}"
             ) from e
         self.feature_norms = loaded_norms.get("features", {})
-        _validate_saliency_norm_blocks(self.feature_norms)
+        _validate_required_norm_blocks(self.feature_norms)
 
     
     def extract_features(self,
@@ -287,7 +325,9 @@ class HCEyeFeatureExtractor:
             """Percentile-normalised value of the Stage-1 feature mapped onto a
             given HCEye concept (see HCEYE_FEATURE_MAP)."""
             stage1_key, _kind = HCEYE_FEATURE_MAP[name]
-            return self._percentile_normalize(vf.get(stage1_key), stage1_key)
+            return self._percentile_normalize(
+                vf.get(stage1_key), stage1_key, required=True
+            )
 
         edge = concept("edge_density")
         layout_complexity = concept("layout_complexity")
@@ -403,13 +443,12 @@ class HCEyeFeatureExtractor:
         reference distribution (feature_norms.json).
 
         Args:
-            required: when True, this call is for a score-relevant saliency
-                feature whose caller explicitly supplied saliency data. A
+            required: when True, this call is for a score-driving visual or
+                saliency feature. A
                 missing raw value, a missing norm block, or a non-finite raw
                 value then raises FeatureNormsError instead of silently
-                returning the neutral 0.5 default. Non-required callers
-                (visual-feature concepts, or saliency omitted entirely) are
-                unaffected and keep the original neutral-default behaviour.
+                returning the neutral 0.5 default. Non-required callers are
+                limited to explicitly non-score-bearing/offline use.
 
         Piecewise-linear interpolation across the reference anchors
         min < p5 < p25 < p50 < p75 < p95 < max, mapped to
@@ -429,21 +468,21 @@ class HCEyeFeatureExtractor:
         if value is None:
             if required:
                 raise FeatureNormsError(
-                    f"Missing required raw value for score-relevant saliency "
+                    f"Missing required raw value for score-driving "
                     f"feature '{feature_key}'."
                 )
             return 0.5
         if required and not _is_finite_number(value):
             raise FeatureNormsError(
-                f"Non-finite raw value for score-relevant saliency feature "
+                f"Non-finite raw value for score-driving feature "
                 f"'{feature_key}'."
             )
         norms = self.feature_norms.get(feature_key)
         if not norms:
             if required:
                 raise FeatureNormsError(
-                    f"Missing production norm block for score-relevant "
-                    f"saliency feature '{feature_key}'."
+                    f"Missing production norm block for score-driving "
+                    f"feature '{feature_key}'."
                 )
             return 0.5
         anchors = [
@@ -468,7 +507,7 @@ class HCEyeFeatureExtractor:
         if not xs:
             if required:
                 raise FeatureNormsError(
-                    f"Production norm block for score-relevant saliency "
+                    f"Production norm block for score-driving "
                     f"feature '{feature_key}' has no usable anchors."
                 )
             return 0.5

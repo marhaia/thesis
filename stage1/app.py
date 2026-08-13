@@ -41,6 +41,8 @@ from visual_complexity import (
     CANONICAL_ANALYSIS_VERSION,
     FEATURE_KEYS,
     ImageTooSmallError,
+    MIN_CANONICAL_INPUT_LONG_SIDE,
+    MIN_CANONICAL_INPUT_SHORT_SIDE,
 )
 from stage2.coherence_check import run_coherence_check
 from hceye.hceye_features import FeatureNormsError
@@ -168,6 +170,11 @@ INVALID_IMAGE_ERROR_CODE = "invalid_image"
 INVALID_IMAGE_ERROR_MESSAGE = (
     "Uploaded file could not be decoded as a supported image; "
     "no analysis was performed."
+)
+IMAGE_RESOURCE_LIMIT_ERROR_CODE = "image_resource_limit"
+IMAGE_RESOURCE_LIMIT_ERROR_MESSAGE = (
+    "Uploaded image dimensions or decoded size exceed the supported analysis "
+    "limits; no analysis was performed."
 )
 UPLOAD_STORAGE_ERROR_CODE = "upload_storage_unavailable"
 UPLOAD_STORAGE_ERROR_MESSAGE = (
@@ -397,6 +404,11 @@ def _validate_uploaded_image_bytes(image_bytes: bytes):
     import cv2
     import numpy as np
 
+    # Inspect header dimensions before OpenCV allocates the full decoded array.
+    # This is the first resource guard; the decoded shape is checked again
+    # below so a malformed header cannot bypass the production limit.
+    _inspect_encoded_image_dimensions(image_bytes)
+
     try:
         encoded = np.frombuffer(image_bytes, dtype=np.uint8)
         decoded = (
@@ -418,7 +430,67 @@ def _validate_uploaded_image_bytes(image_bytes: bytes):
         raise InvalidImageUploadError(
             INVALID_IMAGE_ERROR_CODE, INVALID_IMAGE_ERROR_MESSAGE
         )
+    _validate_image_dimensions(decoded.shape[1], decoded.shape[0])
     return decoded
+
+
+def _validate_image_dimensions(width: int, height: int) -> int:
+    """Return pixel count or reject an image outside the analysis envelope."""
+    try:
+        width = int(width)
+        height = int(height)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise InvalidImageUploadError(
+            INVALID_IMAGE_ERROR_CODE, INVALID_IMAGE_ERROR_MESSAGE
+        ) from exc
+
+    if width < 1 or height < 1:
+        raise InvalidImageUploadError(
+            INVALID_IMAGE_ERROR_CODE, INVALID_IMAGE_ERROR_MESSAGE
+        )
+
+    pixels = width * height
+    short_side = min(width, height)
+    long_side = max(width, height)
+    aspect_ratio = long_side / short_side
+    if (
+        width > MAX_IMAGE_WIDTH
+        or height > MAX_IMAGE_HEIGHT
+        or pixels > MAX_IMAGE_PIXELS
+        or pixels * 3 > MAX_DECODED_BYTES_PER_IMAGE
+        or (
+            short_side >= MIN_CANONICAL_INPUT_SHORT_SIDE
+            and long_side >= MIN_CANONICAL_INPUT_LONG_SIDE
+            and aspect_ratio > MAX_IMAGE_ASPECT_RATIO
+        )
+    ):
+        raise InvalidImageUploadError(
+            IMAGE_RESOURCE_LIMIT_ERROR_CODE,
+            IMAGE_RESOURCE_LIMIT_ERROR_MESSAGE,
+        )
+    return pixels
+
+
+def _inspect_encoded_image_dimensions(image_bytes: bytes) -> tuple:
+    """Read image header dimensions without decoding full pixel storage."""
+    import io
+    from PIL import Image
+
+    try:
+        with Image.open(io.BytesIO(image_bytes)) as probe:
+            width, height = probe.size
+    except Image.DecompressionBombError as exc:
+        raise InvalidImageUploadError(
+            IMAGE_RESOURCE_LIMIT_ERROR_CODE,
+            IMAGE_RESOURCE_LIMIT_ERROR_MESSAGE,
+        ) from exc
+    except Exception as exc:
+        raise InvalidImageUploadError(
+            INVALID_IMAGE_ERROR_CODE, INVALID_IMAGE_ERROR_MESSAGE
+        ) from exc
+
+    _validate_image_dimensions(width, height)
+    return int(width), int(height)
 
 
 def _persist_uploaded_image_bytes(extension: str, image_bytes: bytes) -> Path:
@@ -666,9 +738,26 @@ app.json = _StrictJSONProvider(app)
 MAX_UPLOAD_MB = int(os.environ.get("MAX_UPLOAD_MB", "50"))
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
 
+# Decoded-image envelope. The request-body limit alone is insufficient because
+# a small compressed PNG can expand into tens or hundreds of megabytes. The
+# defaults accept ordinary 4K/5K screenshots and the thesis fixtures while
+# rejecting disproportionate dimensions before full OpenCV decoding.
+MAX_IMAGE_WIDTH = int(os.environ.get("MAX_IMAGE_WIDTH", "8192"))
+MAX_IMAGE_HEIGHT = int(os.environ.get("MAX_IMAGE_HEIGHT", "8192"))
+MAX_IMAGE_PIXELS = int(os.environ.get("MAX_IMAGE_PIXELS", "16000000"))
+MAX_DECODED_BYTES_PER_IMAGE = int(
+    os.environ.get("MAX_DECODED_BYTES_PER_IMAGE", "48000000")
+)
+MAX_IMAGE_ASPECT_RATIO = float(os.environ.get("MAX_IMAGE_ASPECT_RATIO", "20"))
 # Maximum number of screens accepted in one screen-set request (several files
 # or animated-GIF frames). Larger sets are rejected rather than processed.
 MAX_SCREENS = int(os.environ.get("MAX_SCREENS", "60"))
+MAX_SCREEN_SET_PIXELS = int(
+    os.environ.get("MAX_SCREEN_SET_PIXELS", "32000000")
+)
+MAX_SCREEN_SET_DECODED_BYTES = int(
+    os.environ.get("MAX_SCREEN_SET_DECODED_BYTES", "96000000")
+)
 
 # Maximum length of an exposure / total-uses schedule list.
 MAX_SCHEDULE_LEN = 50
@@ -694,6 +783,12 @@ def _upload_storage_unavailable(err):
     """Return stable JSON when a validated upload cannot be persisted."""
     app.logger.exception("Validated upload could not be persisted")
     return _fail_closed_error(err.code, err.message, status=500)
+
+
+@app.errorhandler(InvalidImageUploadError)
+def _invalid_image_upload(err):
+    """Return one structured 400 contract for invalid or excessive images."""
+    return _fail_closed_error(err.code, err.message, status=400)
 
 
 def _clamp_simulations(req):
@@ -777,6 +872,7 @@ def analyze():
 
     # Hash the upload first so identical images reuse cached feature results.
     image_hash, image_bytes = _hash_upload(file)
+    _validate_uploaded_image_bytes(image_bytes)
     filepath = _persist_uploaded_image_bytes(ext, image_bytes)
 
     try:
@@ -880,6 +976,7 @@ def saliency():
         return jsonify({"error": f"Unsupported format: {ext}"}), 400
 
     image_hash, image_bytes = _hash_upload(file)
+    _validate_uploaded_image_bytes(image_bytes)
     filepath = _persist_uploaded_image_bytes(ext, image_bytes)
 
     try:
@@ -967,6 +1064,7 @@ def search_time():
     use_saliency = request.args.get("use_saliency", "true").lower() != "false"
 
     image_hash, image_bytes = _hash_upload(file)
+    _validate_uploaded_image_bytes(image_bytes)
     filepath = _persist_uploaded_image_bytes(ext, image_bytes)
 
     try:
@@ -1125,6 +1223,7 @@ def scanpath_to_target():
      viewing_cm, display_preset_meta) = _resolve_display_preset(request)
 
     image_hash, image_bytes = _hash_upload(file)
+    _validate_uploaded_image_bytes(image_bytes)
     filepath = _persist_uploaded_image_bytes(ext, image_bytes)
 
     try:
@@ -1436,11 +1535,21 @@ def cognitive_load():
         # Step 1: Visual complexity (v∈ℝ⁸)
         vis_results, visual_cache_hit = _compute_visual_cached(image_hash, filepath)
         vis_results = dict(vis_results)
-        v = np.array(
-            [vis_results[name] for name in FEATURE_KEYS], dtype=np.float32
-        )
+        try:
+            v = np.asarray(
+                [vis_results.get(name) for name in FEATURE_KEYS],
+                dtype=np.float32,
+            )
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise Stage1VectorUnavailableError(
+                STAGE1_VECTOR_ERROR_CODE, STAGE1_VECTOR_ERROR_MESSAGE
+            ) from exc
+        if v.shape != (8,) or not np.isfinite(v).all():
+            raise Stage1VectorUnavailableError(
+                STAGE1_VECTOR_ERROR_CODE, STAGE1_VECTOR_ERROR_MESSAGE
+            )
 
-        # Step 2: Saliency features (s∈ℝ⁵) — optional
+        # Step 2: Saliency features (s∈ℝ⁵) — mandatory for x19
         s = None
         saliency_dict = {}
         saliency_overlay_b64 = None
@@ -1547,7 +1656,9 @@ def cognitive_load():
         # is intentionally not loaded here. Offline HCEye reproduction scripts
         # can still opt into that lookup by passing both lookup_path and
         # image_name directly to HCEyeFeatureExtractor.
-        extractor = HCEyeFeatureExtractor()
+        extractor = HCEyeFeatureExtractor(
+            feature_norms_path=str(_FEATURE_NORMS_PATH)
+        )
         h = extractor.extract_features(
             vis_results,
             saliency_features=(saliency_dict or None),
@@ -1562,14 +1673,16 @@ def cognitive_load():
         t_dict = task_descriptor.as_dict()
 
         # Build the sole public Stage-1 boundary (v⁸ + s⁵ + h⁶ = ℝ¹⁹).
-        parts = [v]
-        if s is not None:
-            parts.append(s)
-        else:
-            parts.append(np.zeros(5, dtype=np.float32))
-        parts.append(h)
+        # Saliency is mandatory on this score-bearing route. The preceding
+        # stage either produced a complete s5 block or raised
+        # SaliencyUnavailableError; retaining a zero-substitution branch here
+        # would be a latent fail-open hazard if that earlier guard changed.
+        if s is None:
+            raise Stage1VectorUnavailableError(
+                STAGE1_VECTOR_ERROR_CODE, STAGE1_VECTOR_ERROR_MESSAGE
+            )
         base_vector, stage1_feature_names = _assemble_stage1_vector(
-            parts[0], parts[1], parts[2], proxy_names
+            v, s, h, proxy_names
         )
 
         model_path = Path(__file__).parent.parent / "stage2" / "models" / "stage2_model.pkl"
@@ -1880,6 +1993,25 @@ def _read_screen_set(req):
     allowed = SCREEN_SET_EXTENSIONS
     frames = []
     names = []
+    total_pixels = 0
+    total_decoded_bytes = 0
+
+    def reserve_frame(width, height, decoded_bytes):
+        """Apply per-frame and cumulative decoded screen-set budgets."""
+        nonlocal total_pixels, total_decoded_bytes
+        pixels = _validate_image_dimensions(width, height)
+        next_pixels = total_pixels + pixels
+        next_bytes = total_decoded_bytes + int(decoded_bytes)
+        if (
+            next_pixels > MAX_SCREEN_SET_PIXELS
+            or next_bytes > MAX_SCREEN_SET_DECODED_BYTES
+        ):
+            raise InvalidImageUploadError(
+                IMAGE_RESOURCE_LIMIT_ERROR_CODE,
+                IMAGE_RESOURCE_LIMIT_ERROR_MESSAGE,
+            )
+        total_pixels = next_pixels
+        total_decoded_bytes = next_bytes
 
     # --- Format 1: multiple image files ---
     files = req.files.getlist("images")
@@ -1894,10 +2026,9 @@ def _read_screen_set(req):
             if ext not in allowed:
                 raise ValueError(f"Unsupported format: {ext}")
             data = f.read()
-            arr = np.frombuffer(data, dtype=np.uint8)
-            img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-            if img is None:
-                raise ValueError(f"Cannot read image: {f.filename}")
+            width, height = _inspect_encoded_image_dimensions(data)
+            reserve_frame(width, height, width * height * 3)
+            img = _validate_uploaded_image_bytes(data)
             frames.append(img)
             names.append(f.filename)
         return frames, names
@@ -1913,21 +2044,41 @@ def _read_screen_set(req):
         raise ValueError(f"Unsupported format: {ext}")
 
     data = single.read()
-    pil = Image.open(io.BytesIO(data))
+    try:
+        pil = Image.open(io.BytesIO(data))
+    except (OSError, ValueError) as exc:
+        raise ValueError(f"Cannot read image: {single.filename}") from exc
+
     frame_index = 0
-    while True:
-        try:
-            pil.seek(frame_index)
-        except EOFError:
-            break
-        if frame_index >= MAX_SCREENS:
+    try:
+        if int(getattr(pil, "n_frames", 1)) > MAX_SCREENS:
             raise ValueError(
                 f"Too many frames: GIF exceeds the {MAX_SCREENS}-screen limit"
             )
-        rgb = np.array(pil.convert("RGB"))
-        frames.append(cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
-        names.append(f"{single.filename}#frame{frame_index}")
-        frame_index += 1
+        while True:
+            try:
+                pil.seek(frame_index)
+            except EOFError:
+                break
+            if frame_index >= MAX_SCREENS:
+                raise ValueError(
+                    f"Too many frames: GIF exceeds the {MAX_SCREENS}-screen limit"
+                )
+
+            # Reserve capacity before conversion allocates a full RGB frame.
+            width, height = pil.size
+            reserve_frame(width, height, width * height * 3)
+            try:
+                rgb = np.array(pil.convert("RGB"))
+            except (OSError, ValueError) as exc:
+                raise ValueError(
+                    f"Cannot read image: {single.filename}"
+                ) from exc
+            frames.append(cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
+            names.append(f"{single.filename}#frame{frame_index}")
+            frame_index += 1
+    finally:
+        pil.close()
 
     if not frames:
         raise ValueError(f"Cannot read image: {single.filename}")
@@ -2022,6 +2173,7 @@ def learning_curve():
      viewing_cm, display_preset_meta) = _resolve_display_preset(request)
 
     image_hash, image_bytes = _hash_upload(file)
+    _validate_uploaded_image_bytes(image_bytes)
     filepath = _persist_uploaded_image_bytes(ext, image_bytes)
 
     try:

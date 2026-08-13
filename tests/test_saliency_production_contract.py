@@ -17,7 +17,9 @@ Scope (see the implementation run report for the full rationale):
   3. A missing or invalid (non-numeric / non-finite) score-relevant saliency
      norm block must raise / surface visibly -- never silently substitute a
      neutral 0.5.
-  4. The consumer-side percentile normalisation of a valid raw value against
+  4. Every visual norm block that drives h6/layout must meet the same contract;
+     a missing block, bad anchor or raw value must never become neutral 0.5.
+  5. The consumer-side percentile normalisation of a valid raw value against
      the real production norms is cross-checked against an independently
      computed application of the same (unchanged) formula.
 
@@ -64,6 +66,29 @@ REQUIRED_SALIENCY_KEYS = (
     "saliency_center_bias",
     "saliency_entropy",
     "saliency_coverage",
+)
+REQUIRED_VISUAL_KEYS = (
+    "edge_density",
+    "feature_congestion",
+    "interactive_element_density",
+    "layout_symmetry",
+    "visual_hierarchy",
+)
+REQUIRED_ANCHORS = ("min", "p5", "p25", "p50", "p75", "p95", "max")
+FORBIDDEN_SUCCESS_KEYS = (
+    "cognitive_load_index",
+    "adjusted_prediction",
+    "base_prediction",
+    "layout",
+    "cognitive_load_features",
+    "hceye_proxy_features",
+    "base_experimental_outputs",
+    "context_adjusted_experimental_outputs",
+    "scientific_semantics",
+    "stage1_feature_vector",
+    "stage1_feature_names",
+    "stage1_vector_dtype",
+    "vector_dimensions",
 )
 
 
@@ -117,6 +142,57 @@ def _valid_production_norms_dict() -> dict:
     on disk."""
     with open(PRODUCTION_NORMS_PATH) as f:
         return json.load(f)
+
+
+def _stub_complete_score_dependencies(monkeypatch, visual_overrides=None):
+    """Keep route-level norm probes fast and isolate only the injected fault."""
+    visual = {
+        "shannon_entropy": 0.11,
+        "edge_density": 0.022,
+        "feature_congestion": 12.0,
+        "subband_entropy": 0.44,
+        "layout_symmetry": 0.55,
+        "chromatic_coherence": 0.66,
+        "visual_hierarchy": 0.62,
+        "interactive_element_density": 0.12,
+    }
+    if visual_overrides:
+        visual.update(visual_overrides)
+
+    yy, xx = np.mgrid[0:64, 0:64]
+    heat = np.exp(-((xx - 31.0) ** 2 + (yy - 29.0) ** 2) / (2 * 8.0**2))
+    heat = (heat / heat.max()).astype(np.float32)
+    classif = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0], dtype=np.float32)
+
+    monkeypatch.setattr(
+        app_module,
+        "_compute_visual_cached",
+        lambda _image_hash, _image_path: (dict(visual), False),
+    )
+    monkeypatch.setattr(
+        app_module,
+        "_predict_saliency_cached",
+        lambda _image_hash, _image_path: (heat.copy(), classif.copy(), False),
+    )
+    return visual
+
+
+def _post_norm_failure(client):
+    response = client.post(
+        "/api/cognitive-load",
+        data={"image": (io.BytesIO(_small_png_bytes()), "norm-probe.png")},
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 503
+    body = response.get_json()
+    assert body["analysis_complete"] is False
+    assert body["error"]["code"] in {
+        "saliency_norms_invalid",
+        "stage1_vector_invalid",
+    }
+    for key in FORBIDDEN_SUCCESS_KEYS:
+        assert key not in body
+    return body
 
 
 # ---------------------------------------------------------------------------
@@ -352,6 +428,99 @@ def test_each_required_saliency_norm_block_is_enforced(tmp_path, key):
         HCEyeFeatureExtractor(feature_norms_path=str(bad_path))
 
 
+@pytest.mark.parametrize("key", REQUIRED_VISUAL_KEYS)
+def test_each_score_driving_visual_norm_block_is_enforced(tmp_path, key):
+    norms = _valid_production_norms_dict()
+    del norms["features"][key]
+    bad_path = tmp_path / f"norms_missing_{key}.json"
+    bad_path.write_text(json.dumps(norms))
+
+    with pytest.raises(FeatureNormsError, match=key):
+        HCEyeFeatureExtractor(feature_norms_path=str(bad_path))
+
+
+@pytest.mark.parametrize("key", REQUIRED_VISUAL_KEYS)
+@pytest.mark.parametrize(
+    "fault",
+    ("missing_anchor", "non_finite", "non_monotone", "no_span"),
+)
+def test_each_visual_norm_rejects_unusable_anchors(tmp_path, key, fault):
+    norms = _valid_production_norms_dict()
+    block = norms["features"][key]
+    if fault == "missing_anchor":
+        del block["p50"]
+    elif fault == "non_finite":
+        block["p50"] = float("nan")
+    elif fault == "non_monotone":
+        block["p50"] = block["p5"] - 1.0
+    else:
+        for anchor in REQUIRED_ANCHORS:
+            block[anchor] = 1.0
+
+    bad_path = tmp_path / f"norms_{key}_{fault}.json"
+    bad_path.write_text(json.dumps(norms))
+    with pytest.raises(FeatureNormsError, match=key):
+        HCEyeFeatureExtractor(feature_norms_path=str(bad_path))
+
+
+@pytest.mark.parametrize("key", REQUIRED_VISUAL_KEYS)
+def test_missing_visual_norm_block_fails_closed_through_real_route(
+    client, monkeypatch, tmp_path, key
+):
+    _stub_complete_score_dependencies(monkeypatch)
+    norms = _valid_production_norms_dict()
+    del norms["features"][key]
+    bad_path = tmp_path / f"route_missing_{key}.json"
+    bad_path.write_text(json.dumps(norms))
+    monkeypatch.setattr(app_module, "_FEATURE_NORMS_PATH", bad_path)
+
+    body = _post_norm_failure(client)
+    assert body["error"]["code"] == "saliency_norms_invalid"
+
+
+@pytest.mark.parametrize("key", REQUIRED_VISUAL_KEYS)
+@pytest.mark.parametrize(
+    "fault",
+    ("missing_anchor", "non_finite", "non_monotone", "no_span"),
+)
+def test_visual_norm_anchor_faults_fail_closed_through_real_route(
+    client, monkeypatch, tmp_path, key, fault
+):
+    _stub_complete_score_dependencies(monkeypatch)
+    norms = _valid_production_norms_dict()
+    block = norms["features"][key]
+    if fault == "missing_anchor":
+        del block["p50"]
+    elif fault == "non_finite":
+        block["p50"] = float("nan")
+    elif fault == "non_monotone":
+        block["p50"] = block["p5"] - 1.0
+    else:
+        for anchor in REQUIRED_ANCHORS:
+            block[anchor] = 1.0
+    bad_path = tmp_path / f"route_{key}_{fault}.json"
+    bad_path.write_text(json.dumps(norms))
+    monkeypatch.setattr(app_module, "_FEATURE_NORMS_PATH", bad_path)
+
+    body = _post_norm_failure(client)
+    assert body["error"]["code"] == "saliency_norms_invalid"
+
+
+@pytest.mark.parametrize("key", REQUIRED_VISUAL_KEYS)
+@pytest.mark.parametrize("fault", ("missing", "non_finite"))
+def test_visual_raw_value_faults_fail_closed_through_real_route(
+    client, monkeypatch, key, fault
+):
+    visual = _stub_complete_score_dependencies(monkeypatch)
+    if fault == "missing":
+        visual.pop(key)
+    else:
+        visual[key] = float("nan")
+
+    body = _post_norm_failure(client)
+    assert body["error"]["code"] == "stage1_vector_invalid"
+
+
 # ---------------------------------------------------------------------------
 # 5. Invalid (non-numeric / non-finite) required norm value.
 # ---------------------------------------------------------------------------
@@ -384,9 +553,8 @@ def test_non_finite_required_norm_value_rejected(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# 6. _percentile_normalize(): required=True fails closed; required=False
-#    (default, unrelated visual-feature callers) keeps the original neutral
-#    behaviour unchanged.
+# 6. _percentile_normalize(): required=True fails closed; required=False is
+#    retained only for explicitly non-score-bearing/offline callers.
 # ---------------------------------------------------------------------------
 
 def test_percentile_normalize_required_raises_on_missing_value():
@@ -405,9 +573,7 @@ def test_percentile_normalize_required_raises_on_missing_block():
 
 
 def test_percentile_normalize_non_required_still_returns_neutral_default():
-    """Non-required callers (e.g. visual-feature concept mapping, or the
-    legitimate saliency-omitted estimation mode) are unaffected by this
-    contract and keep the pre-existing neutral-default behaviour."""
+    """Explicit non-score-bearing callers may still request neutral defaults."""
     extractor = HCEyeFeatureExtractor()
     assert extractor._percentile_normalize(None, "saliency_dispersion") == 0.5
     assert extractor._percentile_normalize(0.5, "no_such_feature_key") == 0.5
@@ -465,6 +631,12 @@ def test_production_norms_file_has_expected_sha256():
 def test_production_norms_file_has_all_required_saliency_blocks():
     extractor = HCEyeFeatureExtractor()
     for key in REQUIRED_SALIENCY_KEYS:
+        assert key in extractor.feature_norms, f"missing block: {key}"
+
+
+def test_production_norms_file_has_all_score_driving_visual_blocks():
+    extractor = HCEyeFeatureExtractor()
+    for key in REQUIRED_VISUAL_KEYS:
         assert key in extractor.feature_norms, f"missing block: {key}"
 
 

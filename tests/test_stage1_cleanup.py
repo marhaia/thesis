@@ -70,7 +70,8 @@ def test_single_image_and_screen_set_formats_have_one_production_policy():
 
 def test_live_route_does_not_load_unreachable_hceye_study_lookup():
     source = _source("stage1/app.py")
-    assert 'extractor = HCEyeFeatureExtractor()' in source
+    assert "extractor = HCEyeFeatureExtractor(" in source
+    assert "feature_norms_path=str(_FEATURE_NORMS_PATH)" in source
     assert 'HCEyeFeatureExtractor(str(lookup_path))' not in source
 
 
@@ -256,3 +257,9 @@ def test_empty_screen_sanity_main_returns_nonzero_and_reports_failure(
     assert sanity.main() == 1
     captured = capsys.readouterr()
     assert "SANITY CHECK FAILED: schema drift" in captured.err
+
+
+def test_score_route_contains_no_latent_zero_saliency_substitution():
+    source = _source("stage1/app.py")
+    assert "parts.append(np.zeros(5" not in source
+    assert "Saliency is mandatory on this score-bearing route" in source

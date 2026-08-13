@@ -269,6 +269,9 @@ def test_score_route_rejects_every_nonfinite_x19_position(
     )
 
     class _InjectedHCEyeExtractor:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
         def extract_features(self, *_args, **_kwargs):
             return hceye.copy()
 

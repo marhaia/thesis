@@ -162,6 +162,18 @@ python3 stage1/visual_complexity.py --dir path/to/folder/
 - Single-image analysis routes: PNG, JPG/JPEG, BMP, TIFF.
 - `/api/screen-consistency`: the same static formats plus animated GIF.
 - WebP is not accepted by the production API.
+- The default decoded-image envelope is 8,192 px per dimension, 16 million
+  pixels and a 20:1 maximum aspect ratio per analysable image; screen sets additionally
+  have a 32-million-pixel / 96-MB cumulative decoded budget.
+
+### Stage-1 acceptance boundary
+
+The accepted basic Stage-1 function is the task-independent screenshot path
+that produces the finite `x19 = [v8 | s5 | h6]` contract and the explicitly
+exploratory layout-complexity index. Target selection, predicted scanpaths and
+multi-target comparison are dormant experimental prototypes: they are not
+rendered by the standard Stage-1 UI, do not affect x19 or the layout value, and
+are reserved for Future Work rather than Stage-1 acceptance.
 
 ---
 
@@ -172,7 +184,7 @@ python3 stage1/visual_complexity.py --dir path/to/folder/
 | `/api/analyze` | POST | Visual-only `v8` screenshot features |
 | `/api/saliency` | POST | Numeric UMSI++ heatmap features; no class labels |
 | `/api/search-time` | POST | Model-estimated per-element search diagnostics |
-| `/api/scanpath-to-target` | POST | Model-simulated target-driven path |
+| `/api/scanpath-to-target` | POST | Dormant Future Work prototype; model-simulated target-driven path outside Stage-1 acceptance |
 | `/api/cognitive-load` | POST | Legacy route name; returns task-independent x19/layout proxy plus separately labelled context outputs |
 | `/api/screen-consistency` | POST | Exploratory inter-screen consistency diagnostic |
 | `/api/learning-curve` | POST | Exploratory novice-to-expert model simulation |

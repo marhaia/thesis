@@ -17,6 +17,9 @@ HISTORICAL_PIPELINE_DEMO = (ROOT / "tests" / "test_pipeline.py").read_text(
     encoding="utf-8"
 )
 TEST_CONFTEST = (ROOT / "tests" / "conftest.py").read_text(encoding="utf-8")
+STAGE2_REGRESSION = (ROOT / "stage2" / "regression_model.py").read_text(
+    encoding="utf-8"
+)
 
 
 def _ui_slice(start: str, end: str) -> str:
@@ -124,6 +127,28 @@ def test_readme_uses_bounded_construct_and_current_test_contract():
     assert "pytest -q" in README
     assert "deployed load score" not in lower
     assert "tests/test_claim_reconciliation.py" in PYTEST_CONFIG
+
+
+def test_stage2_scaffold_never_describes_circular_targets_as_ground_truth():
+    lower = STAGE2_REGRESSION.lower()
+    assert "experimental multi-output regression scaffold" in lower
+    assert "not screenshot-level ground truth" in lower
+    assert "deployed cognitive-load score" not in lower
+    assert "as ground truth for how cognitive load affects" not in lower
+    assert "y = ground-truth cognitive load effects" not in lower
+    assert "predicts cognitive load indices" not in lower
+
+
+def test_target_scanpath_prototype_is_outside_basic_stage1_ui_and_contract():
+    compact_readme = " ".join(README.split())
+    assert (
+        'id="targetScanpathPanel" class="result-section" hidden '
+        'aria-hidden="true"'
+    ) in UI
+    assert "renderTargetScanpath(data.detected_elements)" not in UI
+    assert "FUTURE WORK ONLY" in UI
+    assert "Stage-1 acceptance boundary" in README
+    assert "are not rendered by the standard Stage-1 UI" in compact_readme
 
 
 def test_latest_expose_is_self_identified_as_historical():
