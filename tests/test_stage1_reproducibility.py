@@ -155,6 +155,20 @@ def test_study_metadata_exports_commit_checkpoint_norm_and_schema_ids(
         assert SHA256_RE.fullmatch(metadata[key])
 
 
+def test_exported_source_override_defaults_to_explicit_exported_state(
+    monkeypatch,
+):
+    commit = "2" * 40
+    monkeypatch.setenv("STAGE1_SOURCE_COMMIT", commit)
+    monkeypatch.delenv("STAGE1_SOURCE_TREE_STATE", raising=False)
+
+    assert repro.resolve_source_state() == {
+        "commit": commit,
+        "tree_state": "exported",
+        "source": "environment",
+    }
+
+
 def test_strict_runtime_verification_checks_all_locked_distributions(monkeypatch):
     lock_path = ROOT / "stage1/environment/requirements-macos-arm64-python3.9.lock.txt"
     locked = repro._locked_distributions(lock_path)

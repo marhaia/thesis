@@ -193,7 +193,11 @@ def test_score_route_exposes_only_bounded_proxy_semantics(client):
     reproducibility = body["reproducibility"]
     assert reproducibility["schema_id"] == "stage1-study-export-v1"
     assert re.fullmatch(r"[0-9a-f]{40}", reproducibility["source"]["commit"])
-    assert reproducibility["source"]["tree_state"] in {"clean", "dirty"}
+    assert reproducibility["source"]["tree_state"] in {
+        "clean",
+        "dirty",
+        "exported",
+    }
     for key in (
         "umsi_checkpoint_sha256",
         "easyocr_model_identity_sha256",

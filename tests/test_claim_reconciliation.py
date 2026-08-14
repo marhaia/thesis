@@ -24,6 +24,10 @@ COHERENCE = (ROOT / "stage2" / "coherence_check.py").read_text(encoding="utf-8")
 STAGE1_DOCUMENTATION = (ROOT / "stage1" / "DOCUMENTATION.md").read_text(
     encoding="utf-8"
 )
+PLANNING_STATUS_HTML = {
+    path.name: path.read_text(encoding="utf-8")
+    for path in sorted((ROOT / "planning" / "status").glob("*.html"))
+}
 
 
 def _ui_slice(start: str, end: str) -> str:
@@ -142,6 +146,22 @@ def test_stage2_scaffold_never_describes_circular_targets_as_ground_truth():
     assert "y = ground-truth cognitive load effects" not in lower
     assert "predicts cognitive load indices" not in lower
 
+    output_schema = STAGE2_REGRESSION[
+        STAGE2_REGRESSION.index("OUTPUT_NAMES = ["):
+        STAGE2_REGRESSION.index("    ]", STAGE2_REGRESSION.index("OUTPUT_NAMES = ["))
+    ]
+    required_target_qualifiers = {
+        "cognitive_load_score": ("circular", "proxy"),
+        "search_efficiency": ("simulated", "proxy"),
+        "attention_demand": ("simulated", "proxy"),
+    }
+    for target, qualifiers in required_target_qualifiers.items():
+        target_line = next(
+            line for line in output_schema.splitlines() if f"'{target}'" in line
+        ).lower()
+        assert all(qualifier in target_line for qualifier in qualifiers)
+        assert "ground truth" not in target_line
+
 
 def test_target_scanpath_prototype_is_outside_basic_stage1_ui_and_contract():
     compact_readme = " ".join(README.split())
@@ -171,6 +191,17 @@ def test_design_diagnosis_describes_the_task_independent_heuristic_truthfully():
         "is not changed by task or profile selections",
     ):
         assert required in unconditional_scope
+
+    scope_push_index = unconditional_scope.index("bullets.push({")
+    scope_push_line_start = unconditional_scope.rfind(
+        "\n", 0, scope_push_index
+    ) + 1
+    scope_push_line_end = unconditional_scope.index("\n", scope_push_index)
+    scope_push_line = unconditional_scope[
+        scope_push_line_start:scope_push_line_end
+    ]
+    assert "if (" not in unconditional_scope[:scope_push_index]
+    assert scope_push_line.strip() == "bullets.push({"
 
     assert "Combined feature signal:" in diagnosis
     assert "uncalibrated design heuristic" in diagnosis
@@ -326,6 +357,35 @@ def test_citation_matrix_is_prominently_self_identified_as_superseded():
         "the Cognitive Load Index quantifies how far a GUI exhausts"
     )
     assert banner_end < interactive_header < legacy_claim
+
+
+def test_planning_status_presentations_are_prominently_historical():
+    assert PLANNING_STATUS_HTML
+    for filename, document in PLANNING_STATUS_HTML.items():
+        assert '<meta name="robots" content="noindex,nofollow">' in document
+        assert "<title>HISTORICAL / SUPERSEDED" in document
+        assert '<body data-artifact-status="historical-superseded">' in document
+        assert 'class="artifact-status" id="artifactStatus" role="alert"' in document
+        assert "Historical / Superseded" in document
+        assert "not the current methodology" in document
+        assert "does not ship a validated cognitive-load score" in document
+
+        banner_end = document.index("</aside>")
+        content_start = min(
+            marker
+            for marker in (
+                document.find('<div class="deck">'),
+                document.find('<div class="slideshow"'),
+            )
+            if marker >= 0
+        )
+        assert banner_end < content_start, filename
+
+    supervisor = PLANNING_STATUS_HTML["supervisor_presentation.html"].lower()
+    assert "beide über dem publizierten sota-bereich" not in supervisor
+    assert "pipeline liegt deutlich darüber" not in supervisor
+    assert "kein unabhängiger benchmark oder validierungsnachweis" in supervisor
+    assert "kein sota-überlegenheitsnachweis" in supervisor
 
 
 def test_citation_matrix_banner_states_current_claim_boundaries_and_authority():

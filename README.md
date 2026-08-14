@@ -211,6 +211,21 @@ source venv/bin/activate
 pytest -q
 ```
 
+An extracted source archive has no `.git` directory from which the source
+commit can be resolved. Bind that archive explicitly to the audited commit
+before running the same suite; `exported` records that the files came from an
+immutable export rather than a Git working tree:
+
+```bash
+export STAGE1_SOURCE_COMMIT=<full-40-character-commit-sha>
+export STAGE1_SOURCE_TREE_STATE=exported
+STAGE1_RUNTIME_VERIFICATION=metadata_only pytest -q
+```
+
+`STAGE1_SOURCE_COMMIT` remains mandatory outside a Git working tree. When the
+tree-state variable is omitted for an explicit source commit, the runtime uses
+the conservative default `exported`.
+
 Repository-root files such as `saliency/test_full_pipeline.py` and the upstream
 HCEye `dynamic_test.py` are manual/heavy integration scripts, not part of the
 lightweight CI collection. Additional heavy/evidence tests must be invoked by
