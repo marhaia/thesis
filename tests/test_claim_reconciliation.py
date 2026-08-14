@@ -215,6 +215,26 @@ def test_task_and_profile_copy_keeps_context_simulation_separate_from_stage1():
         assert forbidden not in UI
 
 
+def test_ocr_text_is_escaped_before_readability_inner_html_rendering():
+    readability = _ui_slice(
+        "function renderReadabilityReport(report)",
+        "function renderTargetScanpath",
+    )
+    escaping = _ui_slice("function escapeHtml(value)", "function renderHistory")
+
+    assert "const label = escapeHtml((e.text || '').slice(0, 40));" in readability
+    assert "const label = (e.text || '').slice(0, 40);" not in readability
+    assert "list.innerHTML = elOverviewBlock()" in readability
+    for required_replacement in (
+        '.replace(/&/g, "&amp;")',
+        '.replace(/</g, "&lt;")',
+        '.replace(/>/g, "&gt;")',
+        '.replace(/"/g, "&quot;")',
+        ".replace(/'/g, \"&#39;\")",
+    ):
+        assert required_replacement in escaping
+
+
 def test_visible_coherence_claims_are_bounded_as_unvalidated_proxy_checks():
     from stage2.coherence_check import run_coherence_check
 

@@ -3380,7 +3380,10 @@
             }
             const rows = items.map((e, i) => {
                 const isTop = i === 0;
-                const label = (e.text || '').slice(0, 40);
+                // OCR text comes from attacker-controllable screenshot pixels.
+                // This row is assembled with innerHTML, so escape the label
+                // before using it in either visible markup or data attributes.
+                const label = escapeHtml((e.text || '').slice(0, 40));
                 const bbox = Array.isArray(e.bbox) ? e.bbox : null;
                 const rank = i + 1;
                 const tip = `Element ${rank}: \u201C${label}\u201D \u00B7 ${e.n_words} word` +
