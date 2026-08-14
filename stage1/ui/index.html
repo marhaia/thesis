@@ -1703,7 +1703,7 @@
                     <span class="tag-optional">Optional</span>
                     <span class="step-status" id="step2Status">Neutral baseline</span>
                 </div>
-                <p class="field-hint" style="margin-bottom:14px;">Adjust before clicking Analyze. These parameters shift the score to reflect how a user is actually interacting with this screen. Defaults give a neutral baseline.</p>
+                <p class="field-hint" style="margin-bottom:14px;">Adjust before clicking Analyze. These optional inputs change only a separate, unvalidated context-adjusted simulation. They never change the Stage-1 x19 vector or task-independent layout index. Defaults give a neutral context.</p>
                 <div class="control-grid">
                     <div class="field">
                         <label for="taskType">Task Type <span class="feature-i" tabindex="0" aria-label="Explanation of Task Type options" data-tip="<div class='tip-title'>Task Type</div><div class='tip-body'><strong>Find a specific item</strong> &mdash; locating one known control or item<br><strong>Move between screens</strong> &mdash; stepping through menus or pages<br><strong>Watch for changes</strong> &mdash; keeping an eye on status or updates<br><strong>Enter or edit data</strong> &mdash; typing or filling in fields<br><strong>Compare &amp; choose</strong> &mdash; weighing several options to pick one</div>">i</span></label>
@@ -1735,13 +1735,13 @@
                         <div class="field-hint">How precisely is the target defined? High specificity narrows the modelled search set. <span class="field-hint-default">If unsure, keep <em>Medium</em>.</span></div>
                     </div>
                     <div class="field">
-                        <label for="timePressure">Time Pressure <span class="feature-i" tabindex="0" aria-label="Explanation of Time Pressure options" data-tip="<div class='tip-title'>Time Pressure</div><div class='tip-body'>How much time the user has to act.<br><strong>Low</strong> &mdash; ample time, relaxed<br><strong>Medium</strong> &mdash; normal pace<br><strong>High</strong> &mdash; time-critical, must act fast<br>More pressure increases the modelling modifier applied to the experimental index.</div>">i</span></label>
+                        <label for="timePressure">Time Pressure <span class="feature-i" tabindex="0" aria-label="Explanation of Time Pressure options" data-tip="<div class='tip-title'>Time Pressure</div><div class='tip-body'>How much time the user has to act.<br><strong>Low</strong> &mdash; ample time, relaxed<br><strong>Medium</strong> &mdash; normal pace<br><strong>High</strong> &mdash; time-critical, must act fast<br>This unvalidated input changes only the separate context-adjusted simulation, never the Stage-1 layout index.</div>">i</span></label>
                         <select id="timePressure">
                             <option value="low">Low — ample time</option>
                             <option value="medium" selected>Medium — neutral default</option>
                             <option value="high">High — time-critical</option>
                         </select>
-                        <div class="field-hint">Time pressure sets an unvalidated modelling modifier applied to the experimental index (informed by Kahneman, 1973). <span class="field-hint-default">If unsure, keep <em>Medium</em>.</span></div>
+                        <div class="field-hint">Time pressure sets an unvalidated modelling modifier used only in the separate context-adjusted simulation (informed by Kahneman, 1973). It does not change the Stage-1 layout index. <span class="field-hint-default">If unsure, keep <em>Medium</em>.</span></div>
                     </div>
                 </div>
                 <div class="field" style="margin-top: 12px;">
@@ -1753,7 +1753,7 @@
                         <option value="social">Social / Extraverted</option>
                         <option value="stress_sensitive">Stress-Sensitive</option>
                     </select>
-                    <div class="field-hint">Big Five personality preset that applies a small modifier to the score. Leave on Neutral to evaluate the interface independent of a specific user type (Costa &amp; McCrae, 1992). <span class="field-hint-default">If unsure, keep <em>Neutral</em>.</span></div>
+                    <div class="field-hint">Big Five personality preset used only as an unvalidated modifier in the separate context-adjusted simulation. It does not change the Stage-1 layout index. Leave on Neutral for no profile adjustment (Costa &amp; McCrae, 1992). <span class="field-hint-default">If unsure, keep <em>Neutral</em>.</span></div>
                 </div>
                 <div class="field" style="margin-top: 12px;">
                     <label for="displayPreset">Display <span class="feature-i" tabindex="0" aria-label="Explanation of Display options" data-tip="<div class='tip-title'>Display</div><div class='tip-body'>Screen size and typical viewing distance, which together set how large the elements appear to the eye.<br><strong>Phone</strong> &mdash; ~6&Prime;, held close<br><strong>Laptop</strong> &mdash; 14&Prime;, arm's length<br><strong>Desktop monitor</strong> &mdash; 17&Prime;, arm's length</div>">i</span> <span class="tag-optional" style="vertical-align:middle;margin-left:6px;">Optional</span></label>
@@ -1762,7 +1762,7 @@
                         <option value="laptop">Laptop &mdash; 14&Prime;</option>
                         <option value="desktop" selected>Desktop monitor &mdash; 17&Prime;</option>
                     </select>
-                    <div class="field-hint">Screen size and typical viewing distance. This sets how large the elements appear to the eye, which affects visual search timing. <span class="field-hint-default">If unsure, keep <em>Desktop monitor</em>.</span></div>
+                    <div class="field-hint">Screen size and typical viewing distance are unvalidated inputs used only by the separate context-adjusted simulation. They do not change the Stage-1 layout index or constitute a measured visual-search effect. <span class="field-hint-default">If unsure, keep <em>Desktop monitor</em>.</span></div>
                 </div>
                 <div id="contextHint" class="context-hint">Tip: choose context first, then click Analyze Screenshot once. After results, use What-if for fast local simulation.</div>
             </div>
@@ -1812,7 +1812,7 @@
                     </div>
                     <div class="loading-stage" id="lstage-4">
                         <div class="stage-dot"></div>
-                        <span>Task &amp; profile modifiers → final score</span>
+                        <span>Separate task/profile context simulation (unvalidated)</span>
                     </div>
                 </div>
                 <div class="loading-note" id="loadingNote">
@@ -2446,6 +2446,14 @@
 
             const bullets = [];
 
+            // This scope boundary is deliberately unconditional: every Design
+            // Diagnosis must describe the exact inputs and validity limit,
+            // independent of the resulting layout score or feature bands.
+            bullets.push({
+                cls: 'ok',
+                text: '<strong>Scope:</strong> This task-independent Design Diagnosis is a hand-weighted project heuristic over normalized visual feature signals, selected normalized saliency descriptors, and measured layout/OCR inputs. It is not an eye-tracking or behavioral measurement, does not use target-search simulation, and is not changed by task or profile selections.'
+            });
+
             // Reconciled summary that always accounts for ALL features, so the
             // numbers can never appear to contradict (e.g. "6 of 8" while one
             // feature is critical and one is unlisted). critical + elevated +
@@ -2474,14 +2482,14 @@
             // hand-weighted project heuristic over a documented input subset,
             // not an average of all eight visual features.
             if (loadScore >= 50 && (crits.length + highs.length) <= 2) {
-                bullets.push({ cls:'high', text: 'Why is the index high if most features are typical? The experimental layout-complexity index is a task-independent, hand-weighted project heuristic over a documented subset of visual feature signals, selected normalized saliency descriptors, and measured layout/OCR inputs. It is not an eye-tracking measurement, does not use target-search simulation, and is not changed by task or profile selections. Structural typicality and the exploratory index are complementary, not the same.' });
+                bullets.push({ cls:'high', text: 'Why is the index high if most features are typical? The index combines a documented input subset with fixed project weights, so structural typicality across all eight visual features and the experimental index are complementary, not the same.' });
             }
 
             // Specific actionable hints
             const symSig = items.find(i=>i.key==='layout_symmetry')?.sig.cls;
             const hierSig = items.find(i=>i.key==='visual_hierarchy')?.sig.cls;
             if ((symSig==='crit'||symSig==='high') && (hierSig==='crit'||hierSig==='high')) {
-                bullets.push({ cls:'high', text: 'Low symmetry and weak visual hierarchy together increase scan path length — consider stronger alignment and size contrast.' });
+                bullets.push({ cls:'high', text: '<strong>Combined feature signal:</strong> Low symmetry and weak visual hierarchy both contribute to this uncalibrated design heuristic — consider stronger alignment and size contrast.' });
             }
             const congSig = items.find(i=>i.key==='feature_congestion')?.sig.cls;
             const entSig  = items.find(i=>i.key==='shannon_entropy')?.sig.cls;
@@ -2492,7 +2500,7 @@
             if (!bullets.length) bullets.push({ cls:'ok', text: 'No strongly elevated feature patterns detected across feature combinations.' });
 
             return `<div class="design-diagnosis">
-                <div class="design-diagnosis-title">Design Diagnosis <span style="text-transform:none; letter-spacing:0; font-weight:400; margin-left:6px; color:var(--text-dim);">(rule-based from normalized visual features + interaction patterns)</span></div>
+                <div class="design-diagnosis-title">Design Diagnosis <span style="text-transform:none; letter-spacing:0; font-weight:400; margin-left:6px; color:var(--text-dim);">(task-independent rule set over normalized feature combinations)</span></div>
                 ${bullets.map(b => `<div class="diagnosis-item"><div class="diagnosis-dot ${b.cls}"></div><span>${b.text}</span></div>`).join('')}
             </div>`;
         }
@@ -2553,7 +2561,7 @@
             }
 
             if (time === "high" && (task === "decision" || mode === "exploratory")) {
-                contextHint.textContent = "Higher-modifier setup selected (time-critical + decision/exploratory). Expect a higher adjusted index.";
+                contextHint.textContent = "Higher-modifier context selected (time-critical + decision/exploratory). Only the separate, unvalidated context-adjusted simulation may increase; Stage-1 x19 and the layout index remain unchanged.";
                 return;
             }
 
@@ -4275,8 +4283,8 @@
                     <!-- Baseline and What-if now live together in one collapsible panel. -->
                     <details class="whatif-details">
                         <summary class="whatif-summary">
-                            <span class="whatif-summary-title">Baseline &amp; What-if simulation</span>
-                            <span class="whatif-summary-hint">See the locked baseline, then adjust the context to simulate live</span>
+                            <span class="whatif-summary-title">Baseline &amp; What-if context simulation</span>
+                            <span class="whatif-summary-hint">Compare the locked context-adjusted output with an unvalidated What-if simulation</span>
                             <span class="whatif-summary-chevron" aria-hidden="true">&rsaquo;</span>
                         </summary>
                     <!-- Locked baseline: the original result of this run, kept read-only. -->
@@ -4286,12 +4294,12 @@
                         </div>
                         <div style="display:flex; align-items:end; justify-content:space-between; gap:8px; flex-wrap:wrap;">
                             <div>
-                                <div style="font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px;">Original adjusted score</div>
+                                <div style="font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px;">Original context-adjusted output</div>
                                 <div class="adjusted-hero-value" style="font-size:30px;">${final.toFixed(1)}</div>
                             </div>
                             <div style="text-align:right;">
                                 <span class="interpretation-badge ${scoreBand(final).cls}">${scoreBand(final).label}</span>
-                                <div style="font-size:11px; color:var(--text-dim); margin-top:6px;">This score never changes while you simulate below.</div>
+                                <div style="font-size:11px; color:var(--text-dim); margin-top:6px;">This separate context value remains locked while you simulate below.</div>
                             </div>
                         </div>
                         <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;">
@@ -4301,7 +4309,7 @@
                             <span class="pill">Source: ${data.prediction_source === "experimental_stage2_regressor" ? "Experimental Stage 2" : "Project-specific HCEye heuristic"}</span>
                         </div>
                         <div style="font-size:11px; color:var(--text-dim); margin-top:8px; line-height:1.5;">
-                            Baseline = the original result from this exact run (image + selected task/profile at analysis time). It is read-only and kept as your reference point.
+                            This is the original separate, unvalidated context-adjusted output from the image-based baseline plus the task/profile choices at analysis time. It is not the Stage-1 layout index and remains read-only as your reference point.
                         </div>
                     </div>
                     <div class="section-separator"></div>
@@ -4319,7 +4327,7 @@
                     <div class="score-block" style="margin-bottom:10px;">
                         <div style="display:flex; align-items:end; justify-content:space-between; gap:8px; flex-wrap:wrap;">
                             <div>
-                                <div style="font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px;">Simulated adjusted score</div>
+                                <div style="font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px;">Simulated context-adjusted output</div>
                                 <div id="bd-sim-score" class="adjusted-hero-value" style="font-size:30px;">${final.toFixed(1)}</div>
                             </div>
                             <div style="text-align:right;">
@@ -4351,7 +4359,7 @@
                         </div>
                     </div>
                     <div style="font-size:11px; color:var(--text-dim); margin:-4px 0 10px; line-height:1.5;">
-                        Formula: <strong>image</strong> is fixed from the uploaded screenshot. <strong>task</strong> and <strong>profile</strong> are context modifiers from the dropdowns. Their sum gives the simulated adjusted score.
+                        Formula: <strong>image</strong> is fixed from the uploaded screenshot. <strong>task</strong> and <strong>profile</strong> are unvalidated context modifiers from the dropdowns. Their sum gives only the separate context-adjusted output; Stage-1 x19 and the layout index remain unchanged.
                     </div>
                     <div class="decision-summary">
                         <div class="decision-summary-grid">
@@ -4537,9 +4545,9 @@
             // traceability (same pattern as the signed delta% feature headlines).
             const taskPct = baseScore ? Math.round(Math.abs(taskMod) / baseScore * 100) : 0;
             if (taskMod > 4)
-                items.push(`The selected <strong>task type raises the index by ~${taskPct}%</strong> (+${taskMod.toFixed(1)} points) — an unvalidated modelling modifier for exploratory/decision tasks.`);
+                items.push(`The selected task adds <strong>~${taskPct}% (+${taskMod.toFixed(1)} points) to the separate context-adjusted simulation</strong>. This unvalidated modelling modifier does not change the Stage-1 layout index.`);
             else if (taskMod < -2)
-                items.push(`The selected <strong>task type lowers the index by ~${taskPct}%</strong> (−${Math.abs(taskMod).toFixed(1)} points) — an unvalidated modelling modifier for navigation tasks.`);
+                items.push(`The selected task subtracts <strong>~${taskPct}% (−${Math.abs(taskMod).toFixed(1)} points) from the separate context-adjusted simulation</strong>. This unvalidated modelling modifier does not change the Stage-1 layout index.`);
 
             const panel = document.getElementById('interpretationPanel');
             panel.innerHTML = `

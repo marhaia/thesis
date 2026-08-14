@@ -157,12 +157,62 @@ def test_target_scanpath_prototype_is_outside_basic_stage1_ui_and_contract():
 
 def test_design_diagnosis_describes_the_task_independent_heuristic_truthfully():
     diagnosis = _ui_slice("function buildDesignDiagnosis", "// Normalization ranges")
-    assert "task-independent, hand-weighted project heuristic" in diagnosis
-    assert "selected normalized saliency descriptors" in diagnosis
-    assert "does not use target-search simulation" in diagnosis
-    assert "is not changed by task or profile selections" in diagnosis
-    assert "predicted saliency + eye-movement model" not in diagnosis
-    assert "shaped by the task context" not in diagnosis
+    unconditional_scope = diagnosis[
+        diagnosis.index("const bullets = [];"):
+        diagnosis.index("// Reconciled summary")
+    ]
+    for required in (
+        "task-independent Design Diagnosis",
+        "hand-weighted project heuristic",
+        "selected normalized saliency descriptors",
+        "measured layout/OCR inputs",
+        "not an eye-tracking or behavioral measurement",
+        "does not use target-search simulation",
+        "is not changed by task or profile selections",
+    ):
+        assert required in unconditional_scope
+
+    assert "Combined feature signal:" in diagnosis
+    assert "uncalibrated design heuristic" in diagnosis
+    for forbidden in (
+        "increase scan path length",
+        "interaction patterns",
+        "predicted saliency + eye-movement model",
+        "shaped by the task context",
+    ):
+        assert forbidden not in diagnosis
+
+
+def test_task_and_profile_copy_keeps_context_simulation_separate_from_stage1():
+    controls = _ui_slice("<!-- Step 2: Task Context -->", "<!-- Analyze action")
+    loading = _ui_slice('<div class="loading" id="loading">', '<div class="results"')
+    interpretation = _ui_slice(
+        "function renderInterpretation(data)",
+        "function renderRadarInterpretation(vf)",
+    )
+
+    assert "change only a separate, unvalidated context-adjusted simulation" in controls
+    assert "never change the Stage-1 x19 vector or task-independent layout index" in controls
+    assert "Separate task/profile context simulation (unvalidated)" in loading
+    assert "separate context-adjusted simulation" in interpretation
+    assert "does not change the Stage-1 layout index" in interpretation
+    assert "Original context-adjusted output" in UI
+    assert "Simulated context-adjusted output" in UI
+    assert "separate, unvalidated context-adjusted output" in UI
+    assert "Stage-1 x19 and the layout index remain unchanged" in UI
+
+    for forbidden in (
+        "shift the score to reflect how a user is actually interacting",
+        "modifier to the score",
+        "Task &amp; profile modifiers → final score",
+        "task type raises the index",
+        "task type lowers the index",
+        "higher adjusted index",
+        "Original adjusted score",
+        "Simulated adjusted score",
+        "simulated adjusted score",
+    ):
+        assert forbidden not in UI
 
 
 def test_visible_coherence_claims_are_bounded_as_unvalidated_proxy_checks():
