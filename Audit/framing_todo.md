@@ -1,4 +1,9 @@
-# Framing / honesty todo (construct validity)
+# HISTORICAL / SUPERSEDED — Framing / honesty todo (construct validity)
+
+> **ARCHIVED AUDIT TODO — NOT CURRENT DEFECT STATUS.** This July 2026 checklist
+> records issues that were subsequently reconciled. It is retained for
+> provenance and must not be interpreted as the current Stage-1 UI, claim,
+> implementation, or acceptance state.
 
 Deferred deliberately: these are thesis-prose + UI-label changes, not code. No
 regression risk, so they can be done at the end. Each item needs a decision

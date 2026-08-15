@@ -105,7 +105,33 @@ def test_known_silent_saliency_fallbacks_are_absent():
     assert "skip_mismatch=False" in model_source
     assert "skip_mismatch=True" not in model_source
     assert "except: pass" not in app_source
-    assert 'results["saliency_used"] = saliency_map is not None' in app_source
+    assert "using feature-only mode" not in app_source
+    assert "Saliency unavailable, feature-only mode" not in app_source
+    assert app_source.count("return _requested_saliency_failure(") == 3
+    assert app_source.count('"feature_only_explicit"') == 3
+
+
+def test_archived_hceye_programs_are_explicitly_outside_test_authority():
+    pytest_config = _source("pytest.ini")
+    archive_note = _source("hceye/saliency_pred/ARCHIVED.md")
+    assert "norecursedirs = hceye/saliency_pred" in pytest_config
+    assert "not Stage-1 runtime code" in archive_note
+    for relative in (
+        "hceye/saliency_pred/test.py",
+        "hceye/saliency_pred/dynamic_test.py",
+    ):
+        opening = _source(relative)[:800]
+        assert "ARCHIVED / NON-RUNNABLE UPSTREAM HCEye RESEARCH PROGRAM" in opening
+        assert "not part of the Stage-1 runtime" in opening
+
+
+def test_manual_umsi_diagnostic_defaults_to_temporary_output_only():
+    source = _source("saliency/test_full_pipeline.py")
+    assert 'tempfile.mkdtemp(prefix="umsi-full-pipeline-")' in source
+    assert '"--output-dir"' in source
+    assert 'output_dir = "saliency/output"' not in source
+    assert '"saliency/output"' not in source
+    assert "without repository writes" in source
 
 
 def test_ueyes_sample_script_has_no_benchmark_or_sota_verdict():

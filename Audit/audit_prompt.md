@@ -1,3 +1,7 @@
+> **HISTORICAL / SUPERSEDED AUDIT ARTIFACT — NOT A CURRENT VERDICT.** Retained
+> for provenance only; the requirements and candidate context below apply only
+> to the historical audit snapshot represented by this file.
+
 You are conducting a rigorous technical and methodological audit of a GitHub research repository. Do not summarize the README uncritically; verify claims against the actual code. Treat the README as one source among several, not as ground truth, since it may be outdated relative to the current state of the codebase.
 
 <repository_context>

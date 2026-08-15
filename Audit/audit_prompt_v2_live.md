@@ -1,3 +1,7 @@
+> **HISTORICAL / SUPERSEDED AUDIT ARTIFACT — NOT A CURRENT VERDICT.** Retained
+> for provenance only; the requirements and candidate context below apply only
+> to the historical audit snapshot represented by this file.
+
 # Live In-Workspace Audit Prompt (v2, companion)
 
 > Companion to `audit_prompt_v2.md`. Use THIS variant when the auditor is an

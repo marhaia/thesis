@@ -1,3 +1,7 @@
+> **HISTORICAL / SUPERSEDED AUDIT ARTIFACT — NOT A CURRENT VERDICT.** Retained
+> for provenance only; the requirements and candidate context below apply only
+> to the historical audit snapshot represented by this file.
+
 # ChatGPT (GPT-5.6) Audit Prompt (v2, no-tools variant)
 
 > Companion to `audit_prompt_v2.md` (external, static clone) and

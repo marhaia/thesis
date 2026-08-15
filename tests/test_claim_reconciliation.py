@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from pathlib import Path
+import subprocess
+from xml.etree import ElementTree
 from zipfile import ZipFile
 
 
@@ -29,16 +31,29 @@ PLANNING_STATUS_HTML = {
     for path in sorted((ROOT / "planning" / "status").glob("*.html"))
 }
 CLAIM_ARTIFACT_ROOTS = (
+    ROOT / "Audit",
     ROOT / "Literature" / "notes",
     ROOT / "planning",
 )
 REQUIRED_HISTORICAL_CLAIM_ARTIFACTS = (
+    ROOT / "Audit" / "audit_prompt.md",
+    ROOT / "Audit" / "audit_prompt_v2.md",
+    ROOT / "Audit" / "audit_prompt_v2_chatgpt.md",
+    ROOT / "Audit" / "audit_prompt_v2_live.md",
+    ROOT / "Audit" / "audit_report.md",
+    ROOT / "Audit" / "framing_todo.md",
+    ROOT / "Audit" / "thesis_audit_report.md",
     ROOT / "Literature" / "notes" / "_projektplan.md",
     ROOT / "Literature" / "notes" / "_gem_context.md",
+    ROOT / "Literature" / "notes" / "_overview.md",
     ROOT / "Literature" / "notes" / "_overview_obsidian.md",
     ROOT / "Literature" / "notes" / "_reading_plan.md",
+    ROOT / "Literature" / "notes" / "expose" / "README.md",
     ROOT / "Literature" / "notes" / "media" / "presentation_literature.html",
     ROOT / "Literature" / "notes" / "media" / "presentation_research_methodik.html",
+    ROOT / "planning" / "README.md",
+    ROOT / "planning" / "daily" / "2026-06-03.md",
+    ROOT / "planning" / "weekly" / "2026-KW23.md",
 )
 PLANNING_README = (ROOT / "planning" / "README.md").read_text(encoding="utf-8")
 
@@ -81,27 +96,101 @@ def _assert_prominent_historical_boundary(path: Path, document: str) -> None:
         )
         assert banner < content, path
     else:
-        assert "HISTORICAL / SUPERSEDED" in document[:1200], path
+        opening = document[:1500].upper()
+        assert "HISTORICAL" in opening and "SUPERSEDED" in opening, path
+
+
+def _tracked_claim_artifacts() -> tuple[Path, ...]:
+    """Enumerate the real tracked inventory, with archive-export fallback."""
+    result = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+    )
+    if result.returncode == 0 and result.stdout:
+        candidates = [ROOT / item.decode("utf-8") for item in result.stdout.split(b"\0") if item]
+    else:
+        candidates = [path for path in ROOT.rglob("*") if path.is_file() and ".git" not in path.parts]
+
+    suffixes = {".md", ".html", ".docx", ".xlsx"}
+    return tuple(
+        sorted(
+            path
+            for path in candidates
+            if path.suffix.lower() in suffixes
+            and any(path.is_relative_to(directory) for directory in CLAIM_ARTIFACT_ROOTS)
+        )
+    )
+
+
+def _docx_text(path: Path) -> str:
+    with ZipFile(path) as archive:
+        root = ElementTree.fromstring(archive.read("word/document.xml"))
+    return " ".join(text for text in root.itertext() if text)
+
+
+def _xlsx_sheet_names_and_text(path: Path) -> tuple[list[str], str]:
+    with ZipFile(path) as archive:
+        workbook = ElementTree.fromstring(archive.read("xl/workbook.xml"))
+        names = [element.attrib["name"] for element in workbook.iter() if element.tag.endswith("}sheet")]
+        text_parts = []
+        for name in archive.namelist():
+            if name == "xl/sharedStrings.xml" or name.startswith("xl/worksheets/sheet"):
+                root = ElementTree.fromstring(archive.read(name))
+                text_parts.extend(text for text in root.itertext() if text)
+    return names, " ".join(text_parts)
 
 
 def test_repository_wide_claim_inventory_requires_historical_boundaries():
+    inventory = _tracked_claim_artifacts()
+    assert inventory
+    assert any(path.parent == ROOT / "Audit" for path in inventory)
+    assert any(path.suffix == ".docx" for path in inventory)
+    assert any(path.suffix == ".xlsx" for path in inventory)
+
     discovered = set()
-    for directory in CLAIM_ARTIFACT_ROOTS:
-        for path in sorted(directory.rglob("*")):
-            if path.suffix not in {".md", ".html"}:
-                continue
-            document = path.read_text(encoding="utf-8", errors="replace")
-            if _claim_risk_signals(document):
-                discovered.add(path)
-                _assert_prominent_historical_boundary(path, document)
+    for path in inventory:
+        if path.suffix.lower() not in {".md", ".html"}:
+            continue
+        document = path.read_text(encoding="utf-8", errors="replace")
+        if _claim_risk_signals(document):
+            discovered.add(path)
+            _assert_prominent_historical_boundary(path, document)
 
     for path in REQUIRED_HISTORICAL_CLAIM_ARTIFACTS:
         document = path.read_text(encoding="utf-8")
         _assert_prominent_historical_boundary(path, document)
 
-    assert set(REQUIRED_HISTORICAL_CLAIM_ARTIFACTS).issubset(discovered | {
-        ROOT / "Literature" / "notes" / "media" / "presentation_research_methodik.html"
-    })
+    assert set(REQUIRED_HISTORICAL_CLAIM_ARTIFACTS).issubset(set(inventory))
+
+
+def test_every_tracked_expose_docx_has_a_point_of_use_historical_boundary():
+    docx_paths = [
+        path for path in _tracked_claim_artifacts()
+        if path.parent == ROOT / "Literature" / "notes" / "expose"
+        and path.suffix.lower() == ".docx"
+    ]
+    assert len(docx_paths) == 24
+    for path in docx_paths:
+        opening = _docx_text(path)[:1500].upper()
+        assert "HISTORICAL WORKING DRAFT" in opening, path
+        assert "SUPERSEDED" in opening, path
+        assert "NOT THE CURRENT METHODOLOGY OR CLAIM BASIS" in opening, path
+
+
+def test_tracked_literature_workbook_is_historical_at_workbook_and_sheet_level():
+    path = ROOT / "Literature" / "notes" / "Literatur_Research.xlsx"
+    assert path in _tracked_claim_artifacts()
+    names, workbook_text = _xlsx_sheet_names_and_text(path)
+    assert "STATUS - READ FIRST" in names
+    original_sheets = [name for name in names if name != "STATUS - READ FIRST"]
+    assert len(original_sheets) == 8
+    assert all(name.startswith("HIST - ") for name in original_sheets)
+    upper = workbook_text.upper()
+    assert "HISTORICAL / SUPERSEDED RESEARCH WORKBOOK" in upper
+    assert "NOT THE CURRENT STAGE-1 METHODOLOGY" in upper
+    assert "DO NOT CITE THEM AS CURRENT EVIDENCE" in upper
 
 
 def test_superseded_claim_artifacts_do_not_present_current_authority_or_validation():

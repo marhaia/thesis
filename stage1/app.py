@@ -180,6 +180,12 @@ UPLOAD_STORAGE_ERROR_CODE = "upload_storage_unavailable"
 UPLOAD_STORAGE_ERROR_MESSAGE = (
     "Uploaded image could not be stored for analysis; no analysis was performed."
 )
+AUXILIARY_SALIENCY_ERROR_CODE = "saliency_unavailable"
+AUXILIARY_SALIENCY_ERROR_MESSAGE = (
+    "Requested saliency analysis is unavailable; no diagnostic result was produced. "
+    "Retry when the saliency stage is available or explicitly request "
+    "use_saliency=false for the separate feature-only contract."
+)
 # P5 / AG-07..09 production semantics policy.  This metadata is returned with
 # every successful score-bearing response so API consumers cannot mistake the
 # project-specific HCEye adaptation for a validated cognitive-load measure or
@@ -843,6 +849,20 @@ def _fail_closed_error(code: str, message: str, status: int = 503):
     }), status
 
 
+def _requested_saliency_failure(route_name: str):
+    """Fail closed when an auxiliary diagnostic explicitly requested saliency.
+
+    Feature-only execution is a separate, caller-selected contract. A failed
+    requested saliency stage must never be converted into an HTTP 200 result.
+    """
+    app.logger.exception("Requested saliency failed on %s", route_name)
+    return _fail_closed_error(
+        AUXILIARY_SALIENCY_ERROR_CODE,
+        AUXILIARY_SALIENCY_ERROR_MESSAGE,
+        status=503,
+    )
+
+
 @app.route("/")
 def index():
     from flask import make_response
@@ -1098,11 +1118,8 @@ def search_time():
         if use_saliency:
             try:
                 saliency_map, _, _ = _predict_saliency_cached(image_hash, filepath)
-            except Exception as e:
-                # Degrade to feature-only mode, but do NOT fail silently: log
-                # loudly so a broken saliency stage is visible instead of a
-                # partial result that still looks valid.
-                print(f"[Saliency] Saliency map unavailable, using feature-only mode: {e!r}")
+            except Exception:
+                return _requested_saliency_failure("/api/search-time")
 
         # Step 3: Run Jokinen model
         params = JokinenParams(
@@ -1119,6 +1136,11 @@ def search_time():
         # Add metadata
         results["filename"] = file.filename
         results["model_info"] = jokinen.get_model_info()
+        results["analysis_complete"] = True
+        results["analysis_mode"] = (
+            "saliency_augmented" if use_saliency else "feature_only_explicit"
+        )
+        results["saliency_requested"] = use_saliency
         results["saliency_used"] = saliency_map is not None
 
         return jsonify(results)
@@ -1278,8 +1300,8 @@ def scanpath_to_target():
         if use_saliency:
             try:
                 saliency_map, _, _ = _predict_saliency_cached(image_hash, filepath)
-            except Exception as e:
-                print(f"[Scanpath] Saliency unavailable, feature-only mode: {e!r}")
+            except Exception:
+                return _requested_saliency_failure("/api/scanpath-to-target")
 
         params = JokinenParams(
             n_simulations=min(n_simulations, 500),
@@ -1392,11 +1414,16 @@ def scanpath_to_target():
 
         target_elem = elements[target_idx]
         return jsonify({
+            "analysis_complete": True,
+            "analysis_mode": (
+                "saliency_augmented" if use_saliency else "feature_only_explicit"
+            ),
             "filename": file.filename,
             "n_elements": len(elements),
             "target_id": target_elem.get("id"),
             "target_center": list(target_elem.get("center", [])),
             "target_bbox": list(target_elem.get("bbox", [])),
+            "saliency_requested": use_saliency,
             "saliency_used": saliency_map is not None,
             "scanpath": scanpath,
             # Canonical, methodologically-separate search-difficulty result.
@@ -2203,8 +2230,8 @@ def learning_curve():
         if use_saliency:
             try:
                 saliency_map, _, _ = _predict_saliency_cached(image_hash, filepath)
-            except Exception as e:
-                print(f"[LearningCurve] Saliency unavailable, feature-only mode: {e!r}")
+            except Exception:
+                return _requested_saliency_failure("/api/learning-curve")
 
         params = JokinenParams(
             n_simulations=min(n_simulations, 500),
@@ -2223,6 +2250,12 @@ def learning_curve():
         result["filename"] = file.filename
         result["n_elements"] = len(elements)
         result["display_preset"] = display_preset_meta
+        result["analysis_complete"] = True
+        result["analysis_mode"] = (
+            "saliency_augmented" if use_saliency else "feature_only_explicit"
+        )
+        result["saliency_requested"] = use_saliency
+        result["saliency_used"] = saliency_map is not None
         return jsonify(result)
     except Exception as e:
         return _server_error(e)

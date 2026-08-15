@@ -1,14 +1,19 @@
-# Thesis Planning System
+# HISTORICAL / SUPERSEDED — Thesis Planning System
+
+> **ARCHIVED PLANNING SNAPSHOT — NOT CURRENT WORK STATUS.** Dates, branches,
+> paths, “current week”, “tomorrow”, Stage-2 tasks, and commands below describe
+> the June 2026 working environment only. They are retained for provenance and
+> must not be treated as the current pipeline, validation, or execution plan.
 
 ```
 planning/
 ├── README.md              ← dieses File (System-Erklärung)
 ├── weekly/                ← wöchentliche Pläne + Logs
 │   ├── TEMPLATE_week.md
-│   └── 2026-KW23.md      ← aktuelle Woche
+│   └── 2026-KW23.md      ← historische Woche
 ├── daily/                 ← tägliche Check-ins
 │   ├── TEMPLATE_day.md
-│   └── 2026-06-03.md     ← morgen
+│   └── 2026-06-03.md     ← historischer Tagesplan
 ├── status/
 │   └── dev_status.md     ← historische Statusaufnahme; superseded
 └── scripts/

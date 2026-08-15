@@ -1,4 +1,4 @@
-# Exposé archive status
+# HISTORICAL / SUPERSEDED — Exposé archive status
 
 All dated/versioned exposé files in this directory are retained as historical
 working drafts. None is the final or current thesis-method specification.

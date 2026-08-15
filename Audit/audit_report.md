@@ -1,3 +1,7 @@
+> **HISTORICAL / SUPERSEDED AUDIT ARTIFACT — NOT A CURRENT VERDICT.** Retained
+> for provenance only; candidate identity, findings, and verdict below apply
+> only to the historical snapshot audited in this file.
+
 # Technical & Methodological Audit
 ## Two-Stage Interactional Complexity Pipeline
 

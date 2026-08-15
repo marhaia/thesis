@@ -1,3 +1,11 @@
+"""ARCHIVED / NON-RUNNABLE UPSTREAM HCEye RESEARCH PROGRAM.
+
+Retained for provenance only. This file is not part of the Stage-1 runtime,
+pytest contract, reproducibility evidence, or acceptance authority. It depends
+on unshipped upstream checkpoints/data, the optional ``pytorch_ssim`` package,
+and developer-machine paths. Do not execute it as a repository test.
+"""
+
 import argparse
 import glob, os
 import torch

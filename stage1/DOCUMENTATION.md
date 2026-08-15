@@ -834,6 +834,13 @@ Query params (optional):
   use_saliency=true  (integrate UMSI++ saliency)
 ```
 
+`use_saliency=true` is fail-closed: if the requested UMSI++ stage fails, the
+route returns structured HTTP 503 with `analysis_complete=false` and no
+diagnostic result. Feature-only mode is a separate caller-selected contract
+available only with `use_saliency=false`; successful responses identify it as
+`analysis_mode=feature_only_explicit`. The scanpath-to-target and learning-curve
+diagnostics use the same policy.
+
 **Response:**
 ```json
 {
@@ -844,6 +851,9 @@ Query params (optional):
   "min_search_time_s": 2.479,
   "search_time_std_s": 1.259,
   "predicted_difficulty": "very_hard",
+  "analysis_complete": true,
+  "analysis_mode": "saliency_augmented",
+  "saliency_requested": true,
   "saliency_used": true,
   "per_element": [
     {"id": 0, "search_time_s": 2.479, "fixation_count": 9.6,

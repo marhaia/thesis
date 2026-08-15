@@ -193,6 +193,13 @@ are reserved for Future Work rather than Stage-1 acceptance.
 | `/api/learning-curve` | POST | Exploratory novice-to-expert model simulation |
 | `/api/features` | GET | Metadata for the eight visual features |
 
+For `/api/search-time`, `/api/scanpath-to-target`, and `/api/learning-curve`,
+saliency is requested by default. A failed requested saliency stage returns a
+structured HTTP 503 with `analysis_complete=false` and no score/path/curve.
+Feature-only execution remains available only through the explicit
+`use_saliency=false` request and identifies itself as
+`analysis_mode=feature_only_explicit`; it is never entered as a fallback.
+
 Example:
 
 ```bash
