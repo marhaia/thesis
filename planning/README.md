@@ -10,7 +10,7 @@ planning/
 │   ├── TEMPLATE_day.md
 │   └── 2026-06-03.md     ← morgen
 ├── status/
-│   └── dev_status.md     ← aktueller Entwicklungsstand (für Supervisor)
+│   └── dev_status.md     ← historische Statusaufnahme; superseded
 └── scripts/
     ├── morning.sh         ← morgens ausführen
     ├── evening.sh         ← abends ausführen

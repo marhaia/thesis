@@ -28,10 +28,100 @@ PLANNING_STATUS_HTML = {
     path.name: path.read_text(encoding="utf-8")
     for path in sorted((ROOT / "planning" / "status").glob("*.html"))
 }
+CLAIM_ARTIFACT_ROOTS = (
+    ROOT / "Literature" / "notes",
+    ROOT / "planning",
+)
+REQUIRED_HISTORICAL_CLAIM_ARTIFACTS = (
+    ROOT / "Literature" / "notes" / "_projektplan.md",
+    ROOT / "Literature" / "notes" / "_gem_context.md",
+    ROOT / "Literature" / "notes" / "_overview_obsidian.md",
+    ROOT / "Literature" / "notes" / "_reading_plan.md",
+    ROOT / "Literature" / "notes" / "media" / "presentation_literature.html",
+    ROOT / "Literature" / "notes" / "media" / "presentation_research_methodik.html",
+)
+PLANNING_README = (ROOT / "planning" / "README.md").read_text(encoding="utf-8")
 
 
 def _ui_slice(start: str, end: str) -> str:
     return UI[UI.index(start):UI.index(end, UI.index(start))]
+
+
+def _claim_risk_signals(document: str) -> set[str]:
+    """Identify current-authority markers and the superseded R8/Stage-2 plan."""
+    lower = document.lower()
+    signals = set()
+    if "status: active" in lower or "**status:** aktiv" in lower:
+        signals.add("active-authority")
+    if "aktueller entwicklungsstand" in lower:
+        signals.add("current-status")
+    if "pipeline bereits implementiert" in lower:
+        signals.add("implemented-pipeline")
+    if "alles läuft" in lower:
+        signals.add("all-components-running")
+    old_stage1 = any(marker in lower for marker in ("ℝ⁸", "r8", "8d feature", "8d-feature"))
+    if old_stage1 and "stage 1" in lower and "stage 2" in lower and "cognitive load index" in lower:
+        signals.add("superseded-r8-stage2-architecture")
+    return signals
+
+
+def _assert_prominent_historical_boundary(path: Path, document: str) -> None:
+    if path.suffix == ".html":
+        assert '<meta name="robots" content="noindex,nofollow">' in document, path
+        assert "<title>HISTORICAL / SUPERSEDED" in document, path
+        assert '<body data-artifact-status="historical-superseded">' in document, path
+        assert 'class="artifact-status" id="artifactStatus" role="alert"' in document, path
+        assert "HISTORICAL / SUPERSEDED" in document, path
+        banner = document.index('id="artifactStatus"')
+        content = min(
+            marker for marker in (
+                document.find('<div class="slideshow"'),
+                document.find('<div class="deck"'),
+            ) if marker >= 0
+        )
+        assert banner < content, path
+    else:
+        assert "HISTORICAL / SUPERSEDED" in document[:1200], path
+
+
+def test_repository_wide_claim_inventory_requires_historical_boundaries():
+    discovered = set()
+    for directory in CLAIM_ARTIFACT_ROOTS:
+        for path in sorted(directory.rglob("*")):
+            if path.suffix not in {".md", ".html"}:
+                continue
+            document = path.read_text(encoding="utf-8", errors="replace")
+            if _claim_risk_signals(document):
+                discovered.add(path)
+                _assert_prominent_historical_boundary(path, document)
+
+    for path in REQUIRED_HISTORICAL_CLAIM_ARTIFACTS:
+        document = path.read_text(encoding="utf-8")
+        _assert_prominent_historical_boundary(path, document)
+
+    assert set(REQUIRED_HISTORICAL_CLAIM_ARTIFACTS).issubset(discovered | {
+        ROOT / "Literature" / "notes" / "media" / "presentation_research_methodik.html"
+    })
+
+
+def test_superseded_claim_artifacts_do_not_present_current_authority_or_validation():
+    combined = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in REQUIRED_HISTORICAL_CLAIM_ARTIFACTS
+    ).lower()
+    for forbidden in (
+        "**status:** aktiv — zentrale architektur-referenz",
+        "status: active",
+        "must treat these findings as ground truth",
+        "pipeline bereits implementiert",
+        "die kopplung dieser outputs ist nicht nur theoretisch sinnvoll — sie ist empirisch belegt",
+        "stage 1, stage 2, umsi++, jokinen afg, hceye-features, flask api</strong> — alles läuft",
+    ):
+        assert forbidden not in combined
+
+    assert "historical context only — do not use as current project instructions" in combined
+    assert "nicht als stage 2 akzeptiert oder validiert" in combined
+    assert "aktueller entwicklungsstand" not in PLANNING_README.lower()
 
 
 def test_ui_headline_and_history_use_task_independent_stage1_layout_value():

@@ -9,10 +9,16 @@ updated: 2026-06-02
 rq: "Does the integration of cognitive predictive metrics into the AIM platform improve the computational evaluation of GUIs?"
 papers_total: 50
 papers_with_notes: 39
-status: active
+status: historical-superseded
 ---
 
-# Literature Overview
+# HISTORICAL / SUPERSEDED — Literature Overview
+
+> [!warning] Nicht aktuelle Architektur- oder Claim-Grundlage
+> Diese Übersicht konserviert den Literatur- und Planungsstand vom 2. Juni 2026.
+> Die unten genannte R8-/Stage-2-Pipeline ist verworfen. Aktuell gelten
+> `README.md` und `stage1/DOCUMENTATION.md`; Stage 2 ist nicht akzeptiert oder
+> validiert.
 
 > [!abstract] Forschungsfrage
 > **Does the integration of cognitive predictive metrics into the AIM platform improve the computational evaluation of GUIs?**
