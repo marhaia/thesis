@@ -20,6 +20,9 @@ from stage2.scenario_proxy import (
 ROOT = Path(__file__).resolve().parents[1]
 APP_SOURCE = (ROOT / "stage1" / "app.py").read_text(encoding="utf-8")
 UI_SOURCE = (ROOT / "stage1" / "ui" / "index.html").read_text(encoding="utf-8")
+PIPELINE_FIGURE_SOURCE = (
+    ROOT / "scripts" / "generate_pipeline_figure.py"
+).read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize("task_type", TASK_CATEGORIES)
@@ -156,3 +159,36 @@ def test_active_v1_route_and_ui_exclude_legacy_personality_and_ml_paths():
         "numeric_modifier=null",
     ):
         assert required_ui_contract in UI_SOURCE
+
+
+def test_pipeline_figure_generator_matches_the_active_stage2_v1_boundary():
+    from PIL import Image
+
+    for required_claim in (
+        "Current Technical Pipeline — Stage 1 + Stage 2 v1",
+        "Deterministic scenario proxy",
+        "score_bearing=false · numeric_modifier=null",
+        "Optional Jokinen diagnostic",
+        "Exploratory Cross-Signal Review",
+        "No personality input · no trained regressor · no numeric task modifier",
+    ):
+        assert required_claim in PIPELINE_FIGURE_SOURCE
+
+    for retired_claim in (
+        "Big Five (optional)",
+        "Task-Conditioned Multi-Output Prediction",
+        "Cognitive Load Index 0–100",
+        "Corr. NASA-TLX",
+        "jointly optimised",
+    ):
+        assert retired_claim not in PIPELINE_FIGURE_SOURCE
+
+    image_path = ROOT / "scripts" / "pipeline_figure.png"
+    assert image_path.is_file()
+    with Image.open(image_path) as image:
+        assert image.info["Title"] == (
+            "Current Technical Pipeline — Stage 1 + Stage 2 v1"
+        )
+        assert "qualitative, non-score-bearing Stage 2 v1" in image.info[
+            "Description"
+        ]

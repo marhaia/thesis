@@ -362,6 +362,23 @@ def test_stage2_v1_rejects_legacy_context_fields(client, unsupported):
     assert response.get_json()["error"]["code"] == "stage2_scenario_invalid"
 
 
+@pytest.mark.parametrize("empty_field", ["task_type", "time_pressure"])
+def test_stage2_v1_rejects_explicit_empty_scenario_fields(client, empty_field):
+    payload = {
+        "image": (io.BytesIO(_png_bytes()), "empty-scenario.png"),
+        "task_type": "search",
+        "time_pressure": "medium",
+    }
+    payload[empty_field] = ""
+
+    response = client.post(
+        "/api/cognitive-load", data=payload, content_type="multipart/form-data"
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "stage2_scenario_invalid"
+
+
 def test_optional_jokinen_is_off_by_default_and_explicit_when_requested(client):
     default = _post(client)
     requested = _post(client, include_jokinen_diagnostic="true")
@@ -372,6 +389,56 @@ def test_optional_jokinen_is_off_by_default_and_explicit_when_requested(client):
     assert requested["jokinen_diagnostic"]["score_bearing"] is False
     assert default["layout"] == requested["layout"]
     assert _vector_bytes(default) == _vector_bytes(requested)
+
+
+@pytest.mark.parametrize(
+    "nonfinite",
+    [
+        pytest.param(np.nan, id="nan"),
+        pytest.param(np.inf, id="positive-inf"),
+        pytest.param(-np.inf, id="negative-inf"),
+    ],
+)
+@pytest.mark.parametrize("field", ["mean_search_time_s", "fixation_count"])
+def test_optional_jokinen_contains_nonfinite_results(
+    client, monkeypatch, field, nonfinite
+):
+    import cognitive.jokinen_model
+
+    result = {"mean_search_time_s": 1.5, "per_element": []}
+    if field == "mean_search_time_s":
+        result[field] = nonfinite
+    else:
+        result["per_element"] = [{field: nonfinite}]
+
+    monkeypatch.setattr(
+        cognitive.jokinen_model.JokinenSearchModel,
+        "predict_search_times",
+        lambda self, **kwargs: result,
+    )
+
+    response = client.post(
+        "/api/cognitive-load",
+        data={
+            "image": (io.BytesIO(_png_bytes()), "nonfinite-jokinen.png"),
+            "task_type": "search",
+            "time_pressure": "medium",
+            "include_jokinen_diagnostic": "true",
+        },
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["jokinen_diagnostic"]["requested"] is True
+    assert body["jokinen_diagnostic"]["status"] == "unavailable"
+    assert body["jokinen_diagnostic"]["result"] is None
+    assert body["jokinen_diagnostic"]["score_bearing"] is False
+    assert body["cross_signal_review"]["score_bearing"] is False
+    assert len(body["stage1_feature_vector"]) == 19
+    raw = response.get_data(as_text=True)
+    assert "NaN" not in raw
+    assert "Infinity" not in raw
 
 
 @pytest.mark.parametrize(

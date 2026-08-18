@@ -1491,6 +1491,26 @@ def _request_value(req, name):
     return None
 
 
+def _require_finite_optional_result(value, path="jokinen_result"):
+    """Reject non-finite numeric values in an optional diagnostic result."""
+    import math
+    import numbers
+
+    if isinstance(value, bool) or value is None or isinstance(value, str):
+        return
+    if isinstance(value, numbers.Real):
+        if not math.isfinite(float(value)):
+            raise ValueError(f"{path} must contain only finite numeric values")
+        return
+    if isinstance(value, dict):
+        for key, child in value.items():
+            _require_finite_optional_result(child, f"{path}.{key}")
+        return
+    if isinstance(value, (list, tuple)):
+        for index, child in enumerate(value):
+            _require_finite_optional_result(child, f"{path}[{index}]")
+
+
 def _stage2_v1_context(req):
     """Validate the exact public Stage-2 v1 context boundary."""
     unknown = sorted(
@@ -1511,9 +1531,17 @@ def _stage2_v1_context(req):
             f"supplied: {', '.join(rejected)}"
         )
 
+    raw_task_type = _request_value(req, "task_type")
+    raw_time_pressure = _request_value(req, "time_pressure")
     proxy = build_scenario_proxy(
-        task_type=(_request_value(req, "task_type") or "search").strip(),
-        time_pressure=(_request_value(req, "time_pressure") or "medium").strip(),
+        task_type=(
+            "search" if raw_task_type is None else str(raw_task_type).strip()
+        ),
+        time_pressure=(
+            "medium"
+            if raw_time_pressure is None
+            else str(raw_time_pressure).strip()
+        ),
     )
 
     raw_jokinen = _request_value(req, "include_jokinen_diagnostic")
@@ -1843,6 +1871,10 @@ def cognitive_load():
                     screen_height_cm=screen_h_cm,
                     viewing_distance_cm=viewing_cm,
                 )
+                # The diagnostic is optional, so numerically invalid model
+                # output must be contained here before it can reach either the
+                # Cross-Signal Review or strict JSON serialization.
+                _require_finite_optional_result(jresult)
                 mean_search_time_s = float(jresult["mean_search_time_s"])
                 per_elem = jresult.get("per_element", [])
                 if per_elem:
@@ -1937,6 +1969,11 @@ def cognitive_load():
             except Exception as e:
                 print(f"[Jokinen] Optional diagnostic unavailable: {e!r}")
                 jokinen_diagnostic["status"] = "unavailable"
+                jokinen_diagnostic["result"] = None
+                mean_search_time_s = None
+                estimated_fixation_count = None
+                search_feedback = None
+                contrast_report = None
 
         saliency_spread = saliency_dict.get("saliency_dispersion") if saliency_dict else None
         cross_signal_review = run_cross_signal_review(
