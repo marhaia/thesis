@@ -211,17 +211,28 @@ def test_score_route_exposes_only_bounded_proxy_semantics(client):
         assert re.fullmatch(r"[0-9a-f]{64}", reproducibility[key])
     assert set(body["hceye_proxy_features"]) == set(EXPECTED_PROXY_NAMES)
     assert body["stage1_feature_names"][-6:] == EXPECTED_PROXY_NAMES
-    assert set(body["base_experimental_outputs"]) == {
-        "layout_complexity_score",
-        "search_efficiency_proxy",
-        "attention_demand_proxy",
+    scenario = body["stage2_scenario_proxy"]
+    assert scenario["task_type"] == "search"
+    assert scenario["time_pressure"] == "medium"
+    assert scenario["direction"] == "baseline"
+    assert scenario["score_bearing"] is False
+    assert scenario["numeric_modifier"] is None
+    assert scenario["simulated_process"] is False
+    assert body["cross_signal_review"]["score_bearing"] is False
+    assert body["cross_signal_review"]["status"] in {
+        "not_evaluable",
+        "no_review_flag",
+        "review_recommended",
     }
-    assert set(body["context_adjusted_experimental_outputs"]) == {
-        "layout_complexity_score",
-        "search_efficiency_proxy",
-        "attention_demand_proxy",
-    }
-    assert body["prediction_source"] == "project_specific_hceye_heuristic"
+    assert body["jokinen_diagnostic"]["status"] == "not_requested"
+    for legacy in (
+        "base_experimental_outputs",
+        "context_adjusted_experimental_outputs",
+        "prediction_source",
+        "task_descriptor",
+        "big_five_profile",
+    ):
+        assert legacy not in body
     assert body["layout"]["experimental_complexity_index"] == pytest.approx(
         100.0
         * body["hceye_proxy_features"]["experimental_layout_complexity_index"]

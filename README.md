@@ -1,4 +1,4 @@
-# Stage-1 GUI Layout Analysis Pipeline
+# GUI Layout Analysis Pipeline — Frozen Stage 1 + Stage 2 v1
 
 > Task-independent screenshot analysis with an exploratory, project-specific
 > layout-complexity index and explicit claim boundaries.
@@ -29,9 +29,7 @@ x = [v8 | s5 | h6] ∈ R19, dtype float32
 - `h ∈ R6`: six project-specific HCEye-derived screenshot proxies.
 
 The Stage-1 vector and `layout.experimental_complexity_index` are computed from
-the screenshot only. Task and user-profile selections are kept outside x19 and
-cannot change that layout value. They may change only separately labelled
-`context_adjusted_experimental_outputs`.
+the screenshot only. Stage 2 v1 cannot change either value.
 
 The route name `/api/cognitive-load` is retained for compatibility. Its
 successful response explicitly reports that the construct is an exploratory
@@ -40,18 +38,42 @@ measurement**.
 
 ---
 
+## Current Stage-2 v1 contract
+
+The active v1 context boundary accepts exactly:
+
+- `task_type`: `navigation`, `search`, `monitoring`, `data_entry`, or
+  `decision`; category label only.
+- `time_pressure`: `low`, `medium`, or `high`; deterministically mapped to
+  `lower`, `baseline`, or `higher`.
+
+All 15 combinations are declared compatible. The response is
+`score_bearing=false`, `numeric_modifier=null`, `simulated_process=false`, and
+`validated_measurement=false`. Legacy profile, search-mode, target-specificity,
+and trained-model fields are rejected rather than silently interpreted.
+
+---
+
 ## Outputs
 
 - **Experimental Layout-Complexity Index (0–100):** task-independent Stage-1
   screenshot heuristic, exposed under `layout.experimental_complexity_index`.
-- **Context-adjusted experimental outputs:** separate, unvalidated task/profile
-  simulations. They are not part of x19 and are not layout measurements.
+- **Deterministic Stage-2 v1 scenario proxy:** task type is one of five declared
+  scenario labels and time pressure maps to the qualitative direction
+  `lower`, `baseline`, or `higher`. It is explicitly non-score-bearing and has
+  no numeric modifier, task-process simulation, calibrated effect size, or
+  measurement claim.
 - **Model-estimated saliency:** a UMSI++ heatmap and five numeric descriptors.
   The auxiliary six-value head remains numeric because its semantic class order
   has not been verified.
-- **Model-simulated search diagnostics:** Jokinen-based search times, fixation
-  counts, and target paths. These are simulations, not eye-tracking
-  observations or validated behavioral predictions.
+- **Optional Jokinen diagnostic:** off by default and methodologically separate
+  from the scenario proxy. When requested, its model-simulated search outputs
+  are not score-bearing, eye-tracking observations, or validated behavioral
+  predictions.
+- **Exploratory Cross-Signal Review:** visible tri-state review cue
+  (`not_evaluable`, `no_review_flag`, `review_recommended`) using
+  author-selected, uncalibrated inspection triggers. It never changes a score
+  and does not validate one signal against another.
 - **Reference comparisons and reproducibility identity:** corpus-relative
   feature comparisons plus source/checkpoint/norm/runtime hashes.
 
@@ -74,8 +96,9 @@ measurement**.
 - **No independent end-to-end human validation has been completed.** Internal
   correspondence, parity, invariance, and sanity checks establish engineering
   behavior and reproducibility, not construct validity.
-- **No trained Stage-2 model ships.** The optional regression path is off by
-  default and no trained model file is included.
+- **Personality and machine learning are excluded from Stage 2 v1.** No profile
+  input, trained-model selection, numeric profile effect, or ML prediction is
+  accepted or returned by the active v1 route.
 
 ---
 
@@ -87,7 +110,7 @@ measurement**.
 ├── saliency/          # UMSI++ port, postprocessing, numeric s5 extraction
 ├── hceye/             # Project-specific HCEye-derived proxy rules (h6)
 ├── cognitive/         # Jokinen-based model simulations and element detection
-├── stage2/            # Separate experimental task/profile and regressor scaffolds
+├── stage2/            # Stage-2 v1 scenario proxy and cross-signal review
 ├── scripts/           # Reproducible analysis and evidence utilities
 ├── tests/             # Pytest unit, regression, contract, and smoke tests
 └── requirements.txt
@@ -187,7 +210,7 @@ are reserved for Future Work rather than Stage-1 acceptance.
 | `/api/saliency` | POST | Numeric UMSI++ heatmap features; no class labels |
 | `/api/search-time` | POST | Model-estimated per-element search diagnostics |
 | `/api/scanpath-to-target` | POST | Dormant Future Work prototype; model-simulated target-driven path outside Stage-1 acceptance |
-| `/api/cognitive-load` | POST | Legacy route name; returns task-independent x19/layout proxy plus separately labelled context outputs |
+| `/api/cognitive-load` | POST | Legacy route name; returns task-independent x19/layout proxy, non-score-bearing Stage-2 v1 scenario proxy, tri-state cross-signal review, and an optional separate Jokinen diagnostic |
 | `/api/screen-consistency` | POST | Exploratory inter-screen consistency diagnostic |
 | `/api/product-learning` | POST | Exploratory multi-screen/GIF product-learning simulation outside x19; shares the screen-set cumulative limits |
 | `/api/learning-curve` | POST | Exploratory novice-to-expert model simulation |

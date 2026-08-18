@@ -19,13 +19,10 @@ cv2 = pytest.importorskip("cv2", reason="opencv is required for endpoint tests")
 
 import app as app_module  # noqa: E402
 from app import app, Stage1VectorUnavailableError  # noqa: E402
-from stage2.task_descriptor import (  # noqa: E402
-    SEARCH_MODE_WEIGHTS,
-    SPECIFICITY_WEIGHTS,
-    TASK_TYPE_WEIGHTS,
-    TIME_PRESSURE_WEIGHTS,
+from stage2.scenario_proxy import (  # noqa: E402
+    TASK_CATEGORIES,
+    TIME_PRESSURE_DIRECTIONS,
 )
-from stage2.user_profile import PROFILE_PRESETS  # noqa: E402
 
 
 EXPECTED_STAGE1_NAMES = [
@@ -66,6 +63,9 @@ FORBIDDEN_VECTOR_FAILURE_FIELDS = {
     "hceye_proxy_features",
     "base_experimental_outputs",
     "context_adjusted_experimental_outputs",
+    "stage2_scenario_proxy",
+    "cross_signal_review",
+    "jokinen_diagnostic",
     "stage1_feature_vector",
     "stage1_feature_names",
     "stage1_vector_dtype",
@@ -158,10 +158,7 @@ def client(monkeypatch, tmp_path):
 def _post(client, **context):
     payload = {
         "task_type": "search",
-        "target_specificity": "medium",
         "time_pressure": "medium",
-        "search_mode": "known_item",
-        "profile_preset": "neutral",
     }
     payload.update(context)
     payload["image"] = (io.BytesIO(_png_bytes()), "p3.png")
@@ -303,43 +300,100 @@ def test_json_provider_rejects_nonstandard_nonfinite_tokens(nonfinite):
         app.json.dumps({"value": float(nonfinite)})
 
 
-def test_stage1_boundary_is_bit_identical_across_every_task_profile_selection(client):
+def test_stage1_boundary_is_bit_identical_across_every_stage2_v1_scenario(client):
     baseline = _post(client)
     baseline_vector = _vector_bytes(baseline)
     baseline_score = _score_bytes(baseline)
 
-    selections = {
-        "task_type": tuple(TASK_TYPE_WEIGHTS),
-        "target_specificity": tuple(SPECIFICITY_WEIGHTS),
-        "time_pressure": tuple(TIME_PRESSURE_WEIGHTS),
-        "search_mode": tuple(SEARCH_MODE_WEIGHTS),
-        "profile_preset": tuple(PROFILE_PRESETS),
-    }
-    for field, values in selections.items():
-        for value in values:
-            response = _post(client, **{field: value})
-            assert _vector_bytes(response) == baseline_vector, (field, value)
-            assert _score_bytes(response) == baseline_score, (field, value)
+    for task_type in TASK_CATEGORIES:
+        for time_pressure in TIME_PRESSURE_DIRECTIONS:
+            response = _post(
+                client,
+                task_type=task_type,
+                time_pressure=time_pressure,
+            )
+            scenario = (task_type, time_pressure)
+            assert _vector_bytes(response) == baseline_vector, scenario
+            assert _score_bytes(response) == baseline_score, scenario
             assert response["stage1_feature_names"] == EXPECTED_STAGE1_NAMES
             assert response["vector_dimensions"] == 19
 
 
-def test_stage2_modifiers_remain_separate_from_stage1_layout(client):
-    neutral = _post(client)
-    maximal = _post(
-        client,
-        task_type="decision",
-        target_specificity="low",
-        time_pressure="high",
-        search_mode="exploratory",
-        profile_preset="stress_sensitive",
-    )
+def test_stage2_v1_is_qualitative_non_score_bearing_and_has_no_legacy_outputs(client):
+    low = _post(client, task_type="navigation", time_pressure="low")
+    high = _post(client, task_type="decision", time_pressure="high")
 
-    assert neutral["layout"] == maximal["layout"]
-    assert set(neutral["layout"]) == {"experimental_complexity_index"}
-    assert (
-        neutral["context_adjusted_experimental_outputs"]
-        != maximal["context_adjusted_experimental_outputs"]
+    assert low["layout"] == high["layout"]
+    assert low["stage2_scenario_proxy"]["direction"] == "lower"
+    assert high["stage2_scenario_proxy"]["direction"] == "higher"
+    for response in (low, high):
+        proxy = response["stage2_scenario_proxy"]
+        assert proxy["score_bearing"] is False
+        assert proxy["numeric_modifier"] is None
+        assert response["cross_signal_review"]["score_bearing"] is False
+        assert response["jokinen_diagnostic"]["requested"] is False
+        for legacy in (
+            "task_descriptor",
+            "big_five_profile",
+            "base_experimental_outputs",
+            "context_adjusted_experimental_outputs",
+            "prediction_source",
+            "trained_model_requested",
+            "trained_model_available",
+        ):
+            assert legacy not in response
+
+
+@pytest.mark.parametrize(
+    "unsupported",
+    ["target_specificity", "search_mode", "profile_preset", "use_trained_model"],
+)
+def test_stage2_v1_rejects_legacy_context_fields(client, unsupported):
+    payload = {
+        "image": (io.BytesIO(_png_bytes()), "legacy.png"),
+        "task_type": "search",
+        "time_pressure": "medium",
+        unsupported: "legacy-value",
+    }
+    response = client.post(
+        "/api/cognitive-load", data=payload, content_type="multipart/form-data"
     )
-    assert neutral["task_descriptor"]["modifier"] != maximal["task_descriptor"]["modifier"]
-    assert neutral["big_five_profile"]["modifier"] != maximal["big_five_profile"]["modifier"]
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "stage2_scenario_invalid"
+
+
+def test_optional_jokinen_is_off_by_default_and_explicit_when_requested(client):
+    default = _post(client)
+    requested = _post(client, include_jokinen_diagnostic="true")
+
+    assert default["jokinen_diagnostic"]["status"] == "not_requested"
+    assert requested["jokinen_diagnostic"]["requested"] is True
+    assert requested["jokinen_diagnostic"]["status"] == "complete"
+    assert requested["jokinen_diagnostic"]["score_bearing"] is False
+    assert default["layout"] == requested["layout"]
+    assert _vector_bytes(default) == _vector_bytes(requested)
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        {"undeclared_context": "value"},
+        {"display_preset": "desktop"},
+        {
+            "include_jokinen_diagnostic": "true",
+            "display_preset": "automotive_legacy",
+        },
+    ],
+)
+def test_stage2_v1_rejects_undeclared_or_misplaced_optional_fields(client, extra):
+    payload = {
+        "image": (io.BytesIO(_png_bytes()), "invalid-context.png"),
+        "task_type": "search",
+        "time_pressure": "medium",
+        **extra,
+    }
+    response = client.post(
+        "/api/cognitive-load", data=payload, content_type="multipart/form-data"
+    )
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "stage2_scenario_invalid"

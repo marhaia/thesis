@@ -685,14 +685,15 @@ def test_standard_ui_has_no_rendered_load_or_performance_verdicts():
     )
     # The neutral replacements must be present.
     assert "experimental layout complexity" in html
-    assert "result remains computable" in html
+    assert "exploratory cross-signal review" in html
+    assert "not calibrated validation" in html
 
 
-def test_standard_ui_demotes_search_and_attention_proxies():
+def test_standard_ui_removes_legacy_context_adjusted_proxy_outputs():
     html = _standard_ui_html().lower()
-    # Where the proxies remain (technical details / PDF), they must be
-    # explicitly labelled as exploratory proxies.
-    assert "exploratory proxy" in html or "exploratory, unvalidated rule-based proxies" in html
+    assert "search efficiency" not in html
+    assert "attention demand" not in html
+    assert "context-adjusted experimental output" not in html
 
 
 def test_standard_ui_has_no_visible_driver_glance_panel():
@@ -761,18 +762,23 @@ def test_standard_ui_removes_unverified_umsi_class_mapping():
         assert forbidden not in lower
 
 
-def test_standard_ui_consumes_only_bounded_p5_proxy_schema():
+def test_standard_ui_consumes_only_bounded_stage2_v1_schema():
     html = _standard_ui_html()
     for required in (
-        "data.base_experimental_outputs",
-        "data.context_adjusted_experimental_outputs",
+        "data.stage2_scenario_proxy",
+        "data.cross_signal_review",
+        "data.jokinen_diagnostic",
         "data.hceye_proxy_features",
         "experimental_layout_complexity",
-        "search_efficiency_proxy",
-        "attention_demand_proxy",
+        "scenario_direction",
+        "scenario_score_bearing",
     ):
         assert required in html
     for forbidden in (
+        "data.base_experimental_outputs",
+        "data.context_adjusted_experimental_outputs",
+        "data.task_descriptor",
+        "data.big_five_profile",
         "data.base_prediction",
         "data.adjusted_prediction",
         "data.cognitive_load_features",

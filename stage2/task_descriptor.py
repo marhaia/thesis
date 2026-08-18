@@ -1,4 +1,10 @@
-"""Task descriptor encoding for the pipeline concept.
+"""ARCHIVED LEGACY RESEARCH SCAFFOLD — excluded from Stage 2 v1.
+
+The active v1 contract is :mod:`stage2.scenario_proxy`. This module is retained
+only for provenance of the superseded numeric-modifier experiment. Production
+routes and the standard UI must not import or expose it.
+
+Task descriptor encoding for the earlier pipeline concept.
 
 Encodes a lightweight task descriptor vector `t` from structured UI inputs.
 This is intentionally simple and explicit so it can be used before a

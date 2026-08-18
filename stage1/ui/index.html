@@ -208,7 +208,7 @@
             color: var(--border);
         }
 
-        /* Collapsible What-if simulation */
+        /* Stage-2 scenario presentation */
         .whatif-details {
             border: 1px solid var(--border);
             border-radius: 8px;
@@ -1703,68 +1703,43 @@
                     <span class="tag-optional">Optional</span>
                     <span class="step-status" id="step2Status">Neutral baseline</span>
                 </div>
-                <p class="field-hint" style="margin-bottom:14px;">Adjust before clicking Analyze. These optional inputs change only a separate, unvalidated context-adjusted simulation. They never change the Stage-1 x19 vector or task-independent layout index. Defaults give a neutral context.</p>
+                <p class="field-hint" style="margin-bottom:14px;">Stage 2 v1 adds a deterministic scenario proxy to the frozen screenshot result. Task type is a label only; time pressure supplies only the qualitative direction <strong>lower / baseline / higher</strong>. There is no numeric modifier, task simulation, or validated measurement, and Stage-1 x19 never changes.</p>
                 <div class="control-grid">
                     <div class="field">
                         <label for="taskType">Task Type <span class="feature-i" tabindex="0" aria-label="Explanation of Task Type options" data-tip="<div class='tip-title'>Task Type</div><div class='tip-body'><strong>Find a specific item</strong> &mdash; locating one known control or item<br><strong>Move between screens</strong> &mdash; stepping through menus or pages<br><strong>Watch for changes</strong> &mdash; keeping an eye on status or updates<br><strong>Enter or edit data</strong> &mdash; typing or filling in fields<br><strong>Compare &amp; choose</strong> &mdash; weighing several options to pick one</div>">i</span></label>
                         <select id="taskType">
-                            <option value="search" selected>Find a specific item &mdash; neutral default</option>
-                            <option value="navigation">Move between screens or menus</option>
-                            <option value="monitoring">Watch for changes or status</option>
-                            <option value="data_entry">Enter or edit data</option>
-                            <option value="decision">Compare &amp; choose an option</option>
+                            <option value="search" selected>Search &mdash; scenario label</option>
+                            <option value="navigation">Navigation &mdash; scenario label</option>
+                            <option value="monitoring">Monitoring &mdash; scenario label</option>
+                            <option value="data_entry">Data Entry &mdash; scenario label</option>
+                            <option value="decision">Decision &mdash; scenario label</option>
                         </select>
-                        <div class="field-hint">What is the user's primary activity on this screen? <span class="field-hint-default">e.g. locating a specific control = <em>Find a specific item</em>. If unsure, keep the default.</span></div>
+                        <div class="field-hint">The category records the declared scenario only. It does not simulate a task or change any number.</div>
                     </div>
                     <div class="field">
-                        <label for="searchMode">Search Mode <span class="feature-i" tabindex="0" aria-label="Explanation of Search Mode options" data-tip="<div class='tip-title'>Search Mode</div><div class='tip-body'><strong>Known Item</strong> &mdash; the user knows exactly what to look for<br><strong>Comparative</strong> &mdash; weighing several items against each other<br><strong>Exploratory</strong> &mdash; browsing without a fixed target in mind</div>">i</span></label>
-                        <select id="searchMode">
-                            <option value="known_item" selected>Known Item — neutral default</option>
-                            <option value="comparative">Comparative</option>
-                            <option value="exploratory">Exploratory</option>
-                        </select>
-                        <div class="field-hint">Does the user know exactly what to look for, or are they browsing? <span class="field-hint-default">e.g. tapping a known menu item = <em>Known Item</em>. If unsure, keep <em>Known Item</em>.</span></div>
-                    </div>
-                    <div class="field">
-                        <label for="targetSpecificity">Target Specificity <span class="feature-i" tabindex="0" aria-label="Explanation of Target Specificity options" data-tip="<div class='tip-title'>Target Specificity</div><div class='tip-body'>How precisely the target is defined.<br><strong>High</strong> &mdash; well defined (e.g. a named button)<br><strong>Medium</strong> &mdash; roughly defined<br><strong>Low</strong> &mdash; vague or open-ended goal<br>Higher specificity narrows the modelled search set.</div>">i</span></label>
-                        <select id="targetSpecificity">
-                            <option value="high">High — target well defined</option>
-                            <option value="medium" selected>Medium — neutral default</option>
-                            <option value="low">Low — vague or open-ended</option>
-                        </select>
-                        <div class="field-hint">How precisely is the target defined? High specificity narrows the modelled search set. <span class="field-hint-default">If unsure, keep <em>Medium</em>.</span></div>
-                    </div>
-                    <div class="field">
-                        <label for="timePressure">Time Pressure <span class="feature-i" tabindex="0" aria-label="Explanation of Time Pressure options" data-tip="<div class='tip-title'>Time Pressure</div><div class='tip-body'>How much time the user has to act.<br><strong>Low</strong> &mdash; ample time, relaxed<br><strong>Medium</strong> &mdash; normal pace<br><strong>High</strong> &mdash; time-critical, must act fast<br>This unvalidated input changes only the separate context-adjusted simulation, never the Stage-1 layout index.</div>">i</span></label>
+                        <label for="timePressure">Time Pressure <span class="feature-i" tabindex="0" aria-label="Explanation of Time Pressure options" data-tip="<div class='tip-title'>Time Pressure</div><div class='tip-body'><strong>Low</strong> &mdash; lower qualitative direction<br><strong>Medium</strong> &mdash; baseline direction<br><strong>High</strong> &mdash; higher qualitative direction<br>No numeric modifier or calibrated effect size is produced.</div>">i</span></label>
                         <select id="timePressure">
                             <option value="low">Low — ample time</option>
                             <option value="medium" selected>Medium — neutral default</option>
                             <option value="high">High — time-critical</option>
                         </select>
-                        <div class="field-hint">Time pressure sets an unvalidated modelling modifier used only in the separate context-adjusted simulation (informed by Kahneman, 1973). It does not change the Stage-1 layout index. <span class="field-hint-default">If unsure, keep <em>Medium</em>.</span></div>
+                        <div class="field-hint">Pre-specified ordinal hypothesis only: low = lower, medium = baseline, high = higher. No magnitude or empirical effect size is asserted.</div>
                     </div>
                 </div>
                 <div class="field" style="margin-top: 12px;">
-                    <label for="profilePreset">User Profile <span class="feature-i" tabindex="0" aria-label="Explanation of User Profile options" data-tip="<div class='tip-title'>User Profile</div><div class='tip-body'>A Big Five personality preset that adjusts only the separate context simulation; it never changes Stage-1 x19 or the layout index.<br><strong>Neutral</strong> &mdash; no adjustment (default)<br><strong>Focused / Conscientious</strong> &mdash; careful, goal-driven<br><strong>Exploratory / Open</strong> &mdash; curious, likes to browse<br><strong>Social / Extraverted</strong> &mdash; outgoing, engagement-driven<br><strong>Stress-Sensitive</strong> &mdash; receives the largest upward profile modifier (unvalidated)<br>All profile modifiers are unvalidated modelling choices, not measured personality effects.</div>">i</span> <span class="tag-optional" style="vertical-align:middle;margin-left:6px;">Optional</span></label>
-                    <select id="profilePreset">
-                        <option value="neutral" selected>Neutral — neutral default (no adjustment)</option>
-                        <option value="focused">Focused / Conscientious</option>
-                        <option value="exploratory">Exploratory / Open</option>
-                        <option value="social">Social / Extraverted</option>
-                        <option value="stress_sensitive">Stress-Sensitive</option>
-                    </select>
-                    <div class="field-hint">Big Five personality preset used only as an unvalidated modifier in the separate context-adjusted simulation. It does not change the Stage-1 layout index. Leave on Neutral for no profile adjustment (Costa &amp; McCrae, 1992). <span class="field-hint-default">If unsure, keep <em>Neutral</em>.</span></div>
+                    <label><input id="includeJokinenDiagnostic" type="checkbox"> Run optional Jokinen diagnostic</label>
+                    <div class="field-hint">Methodologically separate and off by default. It is not score-bearing, measured search, eye tracking, or a validated behavioral prediction.</div>
                 </div>
-                <div class="field" style="margin-top: 12px;">
-                    <label for="displayPreset">Display <span class="feature-i" tabindex="0" aria-label="Explanation of Display options" data-tip="<div class='tip-title'>Display</div><div class='tip-body'>Screen size and typical viewing distance, which together set how large the elements appear to the eye.<br><strong>Phone</strong> &mdash; ~6&Prime;, held close<br><strong>Laptop</strong> &mdash; 14&Prime;, arm's length<br><strong>Desktop monitor</strong> &mdash; 17&Prime;, arm's length</div>">i</span> <span class="tag-optional" style="vertical-align:middle;margin-left:6px;">Optional</span></label>
+                <div class="field" id="displayPresetField" style="margin-top: 12px; display:none;">
+                    <label for="displayPreset">Display for optional diagnostic</label>
                     <select id="displayPreset">
                         <option value="phone">Phone &mdash; small screen</option>
                         <option value="laptop">Laptop &mdash; 14&Prime;</option>
                         <option value="desktop" selected>Desktop monitor &mdash; 17&Prime;</option>
                     </select>
-                    <div class="field-hint">Screen size and typical viewing distance are unvalidated inputs used only by the separate context-adjusted simulation. They do not change the Stage-1 layout index or constitute a measured visual-search effect. <span class="field-hint-default">If unsure, keep <em>Desktop monitor</em>.</span></div>
+                    <div class="field-hint">Used only by the optional Jokinen diagnostic; it never changes the Stage-1 result or scenario direction.</div>
                 </div>
-                <div id="contextHint" class="context-hint">Tip: choose context first, then click Analyze Screenshot once. After results, use What-if for fast local simulation.</div>
+                <div id="contextHint" class="context-hint">Medium time pressure gives the baseline qualitative scenario direction.</div>
             </div>
 
         </div><!-- end grid-inputs -->
@@ -1812,7 +1787,7 @@
                     </div>
                     <div class="loading-stage" id="lstage-4">
                         <div class="stage-dot"></div>
-                        <span>Separate task/profile context simulation (unvalidated)</span>
+                        <span>Attaching deterministic qualitative scenario proxy</span>
                     </div>
                 </div>
                 <div class="loading-note" id="loadingNote">
@@ -2018,7 +1993,7 @@
         <!-- View: Pipeline -->
         <div class="view" id="view-pipeline">
             <h2 style="font-size:26px; font-weight:600; line-height:1.25; margin-bottom:8px;">How the Pipeline Works</h2>
-            <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin-bottom:28px;">Two-Stage Multi-Output architecture for computational estimation of interactional complexity from GUI screenshots.</p>
+            <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin-bottom:28px;">Frozen Stage-1 screenshot analysis plus a non-score-bearing deterministic Stage-2 v1 scenario proxy.</p>
 
             <div class="pipeline-section-title">Stage 1 — Task-Independent Screenshot Analysis</div>
             <div class="pipeline-row">
@@ -2047,21 +2022,19 @@
 
             <div class="pipeline-arrow">↓</div>
 
-            <div class="pipeline-section-title">Context Simulation — Separate from the Stage-1 Boundary</div>
+            <div class="pipeline-section-title">Stage 2 v1 — Deterministic Scenario Proxy</div>
             <div class="pipeline-row">
                 <div class="pipeline-node">
-                    <div class="pipeline-node-label">Task Descriptor</div>
-                    <div class="pipeline-node-title">Task Context</div>
-                    <div class="pipeline-node-dim">t ∈ ℝ⁶</div>
-                    <div class="pipeline-node-desc">Task type, target specificity, time pressure, and search mode produce an unvalidated ordinal modifier for a separate context-adjusted experimental output. They never enter or alter x19.</div>
-                    <div class="pipeline-node-ref">Kahneman (1973) · <a href="https://doi.org/10.1518/001872008X288394" target="_blank" rel="noopener">Wickens (2008)</a> · <a href="https://doi.org/10.1016/0010-0285(80)90005-5" target="_blank" rel="noopener">Treisman &amp; Gelade (1980)</a></div>
+                    <div class="pipeline-node-label">Scenario label</div>
+                    <div class="pipeline-node-title">Task Type</div>
+                    <div class="pipeline-node-dim">5 declared categories</div>
+                    <div class="pipeline-node-desc">Navigation, Search, Monitoring, Data Entry and Decision are labels only. They do not simulate processes and do not change the Stage-1 result or scenario direction.</div>
                 </div>
                 <div class="pipeline-node">
-                    <div class="pipeline-node-label">User Profile</div>
-                    <div class="pipeline-node-title">Big Five Personality</div>
-                    <div class="pipeline-node-dim">p ∈ ℝ⁵</div>
-                    <div class="pipeline-node-desc">An optional, exploratory Big Five preset produces a separate ordinal modifier. It never enters or alters x19 and is not a validated user-performance model.</div>
-                    <div class="pipeline-node-ref"><a href="https://doi.org/10.48550/arXiv.2307.00184" target="_blank" rel="noopener">Serapio-García et al. (2023)</a> · <a href="https://doi.org/10.1016/S0001-4575(03)00010-1" target="_blank" rel="noopener">Taubman-Ben-Ari et al. (2004)</a></div>
+                    <div class="pipeline-node-label">Ordinal hypothesis</div>
+                    <div class="pipeline-node-title">Time Pressure</div>
+                    <div class="pipeline-node-dim">lower · baseline · higher</div>
+                    <div class="pipeline-node-desc">Time pressure supplies only a pre-specified qualitative direction. There is no numeric modifier, calibrated effect size, new score, or validated measurement.</div>
                 </div>
             </div>
 
@@ -2072,7 +2045,7 @@
                     <div class="pipeline-node-label">Authoritative Public Stage-1 Boundary</div>
                     <div class="pipeline-node-title">Task-Independent x19</div>
                     <div class="pipeline-node-dim">x = [v, s, h] ∈ ℝ¹⁹</div>
-                    <div class="pipeline-node-desc">The public Stage-1 vector and its Experimental Layout-Complexity Index are computed from the screenshot only. Task and profile remain separate and may change only explicitly labelled context-adjusted experimental outputs. The standard path is a project-specific heuristic, not a validated cognitive-load measurement.</div>
+                    <div class="pipeline-node-desc">The public Stage-1 vector and its Experimental Layout-Complexity Index are computed from the screenshot only. Stage 2 v1 only attaches a qualitative scenario proxy and never changes either value. Personality and machine learning are excluded from v1.</div>
                     <div class="pipeline-node-ref">Schema: [v8 | s5 | h6], float32 · Canonical analysis: 1280 px long side</div>
                 </div>
             </div>
@@ -2130,9 +2103,7 @@
                 <div class="ref-item"><strong>Borchani, Varando, Bielza &amp; Larrañaga (2015)</strong> A survey on multi-output regression. WIREs Data Mining and Knowledge Discovery, 5(5). <a class="ref-doi" href="https://doi.org/10.1002/widm.1157" target="_blank" rel="noopener">doi:10.1002/widm.1157</a></div>
                 <div class="ref-item"><strong>Bylinskii, Judd, Oliva, Torralba &amp; Durand (2018)</strong> What do different evaluation metrics tell us about saliency models? IEEE Transactions on Pattern Analysis and Machine Intelligence, 41(3). <a class="ref-doi" href="https://doi.org/10.1109/TPAMI.2018.2815601" target="_blank" rel="noopener">doi:10.1109/TPAMI.2018.2815601</a></div>
                 <div class="ref-item"><strong>Torralba &amp; Efros (2011)</strong> Unbiased look at dataset bias. CVPR 2011. <a class="ref-doi" href="https://doi.org/10.1109/CVPR.2011.5995347" target="_blank" rel="noopener">doi:10.1109/CVPR.2011.5995347</a></div>
-                <div class="ref-item"><strong>Serapio-García, Safdari, Crepy, Sun, Fitz, Romero, Abdulhai, Faust &amp; Matarić (2023)</strong> Personality Traits in Large Language Models. arXiv preprint. <a class="ref-doi" href="https://doi.org/10.48550/arXiv.2307.00184" target="_blank" rel="noopener">doi:10.48550/arXiv.2307.00184</a></div>
                 <div class="ref-item"><strong>Kahneman (1973)</strong> Attention and Effort. Prentice-Hall. (Book — no DOI)</div>
-                <div class="ref-item"><strong>Costa &amp; McCrae (1992)</strong> Revised NEO Personality Inventory (NEO PI-R). Psychological Assessment Resources. (Test manual — no DOI)</div>
             </div>
         </div><!-- end view-pipeline -->
 
@@ -2551,31 +2522,24 @@
 
         function updateContextHint() {
             if (!contextHint) return;
-            const task = document.getElementById("taskType")?.value || "search";
-            const mode = document.getElementById("searchMode")?.value || "known_item";
             const time = document.getElementById("timePressure")?.value || "medium";
+            const direction = {low:"lower", medium:"baseline", high:"higher"}[time];
+            const includeJokinen = !!document.getElementById("includeJokinenDiagnostic")?.checked;
+            const displayField = document.getElementById("displayPresetField");
+            if (displayField) displayField.style.display = includeJokinen ? "block" : "none";
 
             if (!selectedFile) {
-                contextHint.textContent = "Tip: choose context first, then click Analyze Screenshot once. After results, use What-if for fast local simulation.";
+                contextHint.textContent = `Scenario direction: ${direction}. This is a qualitative proxy, not a measurement or numeric effect.`;
                 return;
             }
-
-            if (time === "high" && (task === "decision" || mode === "exploratory")) {
-                contextHint.textContent = "Higher-modifier context selected (time-critical + decision/exploratory). Only the separate, unvalidated context-adjusted simulation may increase; Stage-1 x19 and the layout index remain unchanged.";
-                return;
-            }
-
-            contextHint.textContent = "Context ready. Click Analyze Screenshot to compute a new baseline, or adjust later in What-if.";
+            contextHint.textContent = `Scenario direction: ${direction}. Stage-1 x19 and the layout index remain unchanged.${includeJokinen ? " The separate Jokinen diagnostic will also run." : ""}`;
         }
 
         // Default (neutral baseline) values for the optional Task Context fields.
         // Used to decide whether Step 2 is still on defaults or has been customised.
         const CONTEXT_DEFAULTS = {
             taskType: "search",
-            searchMode: "known_item",
-            targetSpecificity: "medium",
             timePressure: "medium",
-            profilePreset: "neutral",
         };
 
         // Reflects Step 2's state without ever blocking it: a neutral grey pill
@@ -2791,12 +2755,12 @@
             const formData = new FormData();
             formData.append("image", selectedFile);
             formData.append("task_type", document.getElementById("taskType").value);
-            formData.append("target_specificity", document.getElementById("targetSpecificity").value);
             formData.append("time_pressure", document.getElementById("timePressure").value);
-            formData.append("search_mode", document.getElementById("searchMode").value);
-            formData.append("profile_preset", document.getElementById("profilePreset").value);
-            formData.append("display_preset", document.getElementById("displayPreset").value);
-            formData.append("use_trained_model", "false");
+            const runJokinen = document.getElementById("includeJokinenDiagnostic").checked;
+            formData.append("include_jokinen_diagnostic", runJokinen ? "true" : "false");
+            if (runJokinen) {
+                formData.append("display_preset", document.getElementById("displayPreset").value);
+            }
 
             try {
                 const res = await fetch("/api/cognitive-load", {
@@ -2837,24 +2801,17 @@
                 history.push({
                     filename: data.filename,
                     experimental_layout_complexity: data.layout.experimental_complexity_index,
-                    context_adjusted_experimental_output: data.context_adjusted_experimental_outputs.layout_complexity_score,
                     included: true,
-                    base_experimental_output: data.base_experimental_outputs.layout_complexity_score,
-                    search_efficiency_proxy: data.context_adjusted_experimental_outputs.search_efficiency_proxy,
-                    attention_demand_proxy: data.context_adjusted_experimental_outputs.attention_demand_proxy,
-                    task_type: data.task_descriptor.task_type,
-                    search_mode: data.task_descriptor.search_mode,
-                    specificity: data.task_descriptor.target_specificity,
-                    time_pressure: data.task_descriptor.time_pressure,
-                    profile: data.big_five_profile.label,
+                    task_type: data.stage2_scenario_proxy.task_type,
+                    time_pressure: data.stage2_scenario_proxy.time_pressure,
+                    scenario_direction: data.stage2_scenario_proxy.direction,
+                    scenario_score_bearing: data.stage2_scenario_proxy.score_bearing,
                     visual_features: data.visual_features,
                     saliency_features: data.saliency_features,
                     hceye_proxy_features: data.hceye_proxy_features,
                     hceye_proxy_index: data.hceye_proxy_features && data.hceye_proxy_features.experimental_layout_complexity_index,
-                    task_modifier: data.task_descriptor.modifier,
-                    profile_modifier: data.big_five_profile.modifier,
-                    coherence_data: data.coherence,
-                    prediction_source: data.prediction_source,
+                    cross_signal_review: data.cross_signal_review,
+                    jokinen_diagnostic: data.jokinen_diagnostic,
                     vector_dimensions: data.vector_dimensions,
                     reproducibility: data.reproducibility,
                 });
@@ -2885,8 +2842,7 @@
             const el = document.getElementById("contextSummary");
             if (!el) return;
             const fields = [
-                "taskType", "searchMode", "targetSpecificity",
-                "timePressure", "profilePreset",
+                "taskType", "timePressure",
             ];
             const chips = fields.map((id) => {
                 const sel = document.getElementById(id);
@@ -3949,34 +3905,28 @@
             results.classList.add("visible");
             emptyState.style.display = "none";
 
-            const base = data.base_experimental_outputs || {};
-            const adjusted = data.context_adjusted_experimental_outputs || {};
             const layout = data.layout || {};
             // Remember the stable layout complexity value so the search-path
             // panel can show a SEPARATE target search-difficulty card. This
             // value never changes when a target is selected.
             _layoutLoadScore = (typeof layout.experimental_complexity_index === 'number')
                 ? layout.experimental_complexity_index
-                : adjusted.layout_complexity_score;
+                : 0;
             summaryGrid.innerHTML = `
                 <div class="summary-card">
                     <div class="summary-label">Experimental Layout Complexity <span class="feature-i" tabindex="0" aria-label="What is Experimental Layout Complexity?" data-tip="<div class='tip-title'>Experimental Layout Complexity</div><div class='tip-body'>An exploratory, screenshot-only complexity value for the whole screen, on a 0&ndash;100 scale. It is computed from the task-independent Stage-1 vector [v8 | s5 | h6]. Task and profile selections do not change this value. It is not a validated cognitive-load measurement.</div>">i</span></div>
                     <div class="summary-value">${layout.experimental_complexity_index.toFixed(1)}</div>
-                    <div class="summary-meta"><strong>Exploratory, project-specific heuristic &mdash; not a validated cognitive-load measurement.</strong> Task-independent Stage 1 · x = [v8 | s5 | h6] · float32. Task/profile effects are shown separately in the context simulation below.</div>
+                    <div class="summary-meta"><strong>Exploratory, project-specific heuristic &mdash; not a validated cognitive-load measurement.</strong> Task-independent Stage 1 · x = [v8 | s5 | h6] · float32. The Stage-2 scenario proxy never changes this value.</div>
                 </div>
             `;
-            // Search Efficiency and Attention Demand are intentionally NOT shown
-            // as headline cards: they are exploratory, unvalidated rule-based
-            // proxies. They remain only in the technical details / PDF export,
-            // explicitly labelled as exploratory proxies.
-
             renderContextSummary();
 
             renderInterpretation(data);
 
-            renderSearchFeedback(data.search_feedback);
+            const jokinenResult = data.jokinen_diagnostic && data.jokinen_diagnostic.result;
+            renderSearchFeedback(jokinenResult ? jokinenResult.search_feedback : null);
 
-            renderContrastReport(data.contrast_report);
+            renderContrastReport(jokinenResult ? jokinenResult.contrast_report : null);
 
             renderReadabilityReport(data.readability_report);
 
@@ -4136,369 +4086,60 @@
                 featureRows.addEventListener('mouseleave', () => highlightRadarFeature(null));
             }
 
-            // ─── Score Breakdown Panel ───
-            const baseScore = data.base_experimental_outputs.layout_complexity_score;
-            const tMod   = data.task_descriptor.modifier;
-            const pMod   = data.big_five_profile.modifier;
-            const final  = data.context_adjusted_experimental_outputs.layout_complexity_score;
-            const td     = data.task_descriptor;
-
-            // Store base score globally so live-update can recalculate
-            window._baseScore = baseScore;
-
-            // ── Modifier weights (mirror of Python task_descriptor.py) ──────
-            const TASK_W  = { navigation:0.45, search:0.65, monitoring:0.55, data_entry:0.70, decision:0.80 };
-            const SPEC_W  = { high:0.25, medium:0.55, low:0.85 };
-            const TIME_W  = { low:0.20, medium:0.55, high:0.90 };
-            const MODE_W  = { known_item:0.30, comparative:0.70, exploratory:0.90 };
-
-            // ── Profile modifier weights (mirror of Python user_profile.py) ─
-            // modifier = 4*N - 2.5*C - 1.5*(1-N) + 1*O - 1, clipped [-5, 6]
-            const PROFILES = {
-                neutral:          { label:'Neutral',                vec:[0.50,0.50,0.50,0.50,0.50] },
-                focused:          { label:'Focused / Conscientious',vec:[0.40,0.82,0.35,0.55,0.25] },
-                exploratory:      { label:'Exploratory / Open',     vec:[0.72,0.48,0.82,0.58,0.32] },
-                social:           { label:'Social / Extraverted',   vec:[0.68,0.52,0.60,0.84,0.34] },
-                stress_sensitive: { label:'Stress-Sensitive',       vec:[0.35,0.46,0.42,0.40,0.82] },
+            // ─── Stage 2 v1 Scenario Proxy ───
+            const scenario = data.stage2_scenario_proxy || {};
+            const directionLabels = {
+                lower: "Lower directional hypothesis",
+                baseline: "Baseline directional hypothesis",
+                higher: "Higher directional hypothesis",
             };
-
-            function calcTaskMod(taskT, specif, timeP, searchM) {
-                const t = TASK_W[taskT]||0.65, s = SPEC_W[specif]||0.55,
-                      tp = TIME_W[timeP]||0.55, sm = MODE_W[searchM]||0.30;
-                return Math.max(-8, Math.min(12, 8*t + 6*s + 10*tp + 7*sm - 15));
-            }
-            function calcProfileMod(profileKey) {
-                const v = (PROFILES[profileKey]||PROFILES.neutral).vec;
-                const [O,C,,, N] = v;
-                return Math.max(-5, Math.min(6, 4*N - 2.5*C - 1.5*(1-N) + 1*O - 1));
-            }
-            function deltaClass(d) { return d > 0.05 ? 'pos' : d < -0.05 ? 'neg' : 'zero'; }
-            function deltaStr(d)   { return (d >= 0 ? '+' : '') + d.toFixed(1); }
-            function scoreBand(score) {
-                if (score < 25) return { label: 'Low context-adjusted output', note: 'The exploratory context-adjusted output is in the low band.', cls: 'badge-low' };
-                if (score < 50) return { label: 'Moderate context-adjusted output', note: 'The exploratory context-adjusted output is in the moderate band.', cls: 'badge-moderate' };
-                if (score < 75) return { label: 'High context-adjusted output', note: 'The exploratory context-adjusted output is in the high band.', cls: 'badge-high' };
-                return { label: 'Very high context-adjusted output', note: 'The exploratory context-adjusted output is in the very-high band.', cls: 'badge-very-high' };
-            }
-            function recommendationFor(score, delta) {
-                if (score >= 75 || delta >= 10) return 'Review cue: inspect the contributing feature patterns.';
-                if (score >= 50 || delta >= 5) return 'Review cue: inspect the contributing feature patterns.';
-                return 'Review cue: no elevated feature patterns stand out.';
-            }
-
-            // ── Explanations shown below each dropdown ────────────────────
-            const TASK_DESC = {
-                navigation:  'Spatial/procedural — user follows a known path. Smallest upward modifier.',
-                search:      'Sustained focused search for a specific target — moderate upward modifier.',
-                monitoring:  'Peripheral scanning — small upward modifier.',
-                data_entry:  'Sustained input task — larger upward modifier.',
-                decision:    'Simultaneous evaluation of alternatives — largest upward modifier.',
-            };
-            const MODE_DESC = {
-                known_item:  'User knows exactly what to look for — direct memory retrieval.',
-                comparative: 'User must compare multiple options before choosing.',
-                exploratory: 'No fixed target — exhaustive scanning assumed. Largest upward modifier.',
-            };
-            const SPEC_DESC = {
-                high:   'Target is well-defined — narrows the modelled search set.',
-                medium: 'Partially defined target — moderate search effort.',
-                low:    'Vague target — user must evaluate many candidates.',
-            };
-            const TIME_DESC = {
-                low:    'Ample time — user can process at their own pace.',
-                medium: 'Moderate time constraint — some pressure to act.',
-                high:   'Severe time constraint — larger upward modifier.',
-            };
-            const PROFILE_DESC = {
-                neutral:          'Baseline — no personality adjustment applied.',
-                focused:          'High conscientiousness, low neuroticism — downward profile modifier.',
-                exploratory:      'High openness — smaller upward profile modifier.',
-                social:           'High extraversion — small profile modifier.',
-                stress_sensitive: 'High neuroticism — largest upward profile modifier (unvalidated).',
-            };
-
-            const originalContext = {
-                task_type: td.task_type,
-                target_specificity: td.target_specificity,
-                time_pressure: td.time_pressure,
-                search_mode: td.search_mode,
-                profile: data.big_five_profile.key,
-            };
-
-            function isSimulationActive(taskT, specif, timeP, searchM, profK) {
-                return taskT !== originalContext.task_type ||
-                    specif !== originalContext.target_specificity ||
-                    timeP !== originalContext.time_pressure ||
-                    searchM !== originalContext.search_mode ||
-                    profK !== originalContext.profile;
-            }
-
-            function updateBreakdown() {
-                const taskT   = document.getElementById('bd-taskType').value;
-                const specif  = document.getElementById('bd-specificity').value;
-                const timeP   = document.getElementById('bd-timePressure').value;
-                const searchM = document.getElementById('bd-searchMode').value;
-                const profK   = document.getElementById('bd-profile').value;
-                const simActive = isSimulationActive(taskT, specif, timeP, searchM, profK);
-
-                const tM = calcTaskMod(taskT, specif, timeP, searchM);
-                const pM = calcProfileMod(profK);
-                const simScore = Math.max(0, Math.min(100, window._baseScore + tM + pM));
-                const deltaVsOriginal = simScore - final;
-                const band = scoreBand(simScore);
-
-                document.getElementById('bd-tmod').textContent  = deltaStr(tM);
-                document.getElementById('bd-tmod').className    = 'score-flow-delta ' + deltaClass(tM);
-                document.getElementById('bd-pmod').textContent  = deltaStr(pM);
-                document.getElementById('bd-pmod').className    = 'score-flow-delta ' + deltaClass(pM);
-                document.getElementById('bd-sim-score').textContent = simScore.toFixed(1);
-                document.getElementById('bd-sim-level').textContent = band.label;
-                document.getElementById('bd-sim-level').className = 'interpretation-badge ' + band.cls;
-                document.getElementById('bd-sim-note').textContent = band.note;
-                document.getElementById('bd-sim-delta').textContent = `${deltaStr(deltaVsOriginal)} vs original (${final.toFixed(1)})`;
-                document.getElementById('bd-sim-delta').className = 'score-flow-delta ' + deltaClass(deltaVsOriginal);
-
-                document.getElementById('bd-ds-base').textContent = final.toFixed(1);
-                document.getElementById('bd-ds-sim').textContent = simScore.toFixed(1);
-                document.getElementById('bd-ds-delta').textContent = deltaStr(deltaVsOriginal);
-                document.getElementById('bd-ds-delta').className = 'score-flow-delta ' + deltaClass(deltaVsOriginal);
-                document.getElementById('bd-ds-band').textContent = band.label;
-                document.getElementById('bd-ds-reco').textContent = recommendationFor(simScore, deltaVsOriginal);
-
-                const stateEl = document.getElementById('bd-sim-state');
-                if (simActive) {
-                    stateEl.textContent = 'Simulation active (values differ from original analysis).';
-                    stateEl.className = 'analysis-tag';
-                } else {
-                    stateEl.textContent = 'Original context selected (no simulation change).';
-                    stateEl.className = 'pill';
-                }
-
-                document.getElementById('bd-desc-task').textContent    = TASK_DESC[taskT] || '';
-                document.getElementById('bd-desc-mode').textContent    = MODE_DESC[searchM] || '';
-                document.getElementById('bd-desc-spec').textContent    = SPEC_DESC[specif] || '';
-                document.getElementById('bd-desc-time').textContent    = TIME_DESC[timeP] || '';
-                document.getElementById('bd-desc-profile').textContent = PROFILE_DESC[profK] || '';
-            }
-
-            document.getElementById('scoreBreakdown').innerHTML = `
+            const direction = scenario.direction || "baseline";
+            document.getElementById("scoreBreakdown").innerHTML = `
                 <div class="score-breakdown">
-                    <!-- Baseline and What-if now live together in one collapsible panel. -->
-                    <details class="whatif-details">
-                        <summary class="whatif-summary">
-                            <span class="whatif-summary-title">Baseline &amp; What-if context simulation</span>
-                            <span class="whatif-summary-hint">Compare the locked context-adjusted output with an unvalidated What-if simulation</span>
-                            <span class="whatif-summary-chevron" aria-hidden="true">&rsaquo;</span>
-                        </summary>
-                    <!-- Locked baseline: the original result of this run, kept read-only. -->
                     <div class="score-block" style="margin:12px 0 10px;">
-                        <div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-dim); margin-bottom:4px;">
-                            Baseline (locked, from your uploaded image)
+                        <div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-dim); margin-bottom:8px;">
+                            Stage 2 v1 — Deterministic Scenario Proxy
                         </div>
-                        <div style="display:flex; align-items:end; justify-content:space-between; gap:8px; flex-wrap:wrap;">
-                            <div>
-                                <div style="font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px;">Original context-adjusted output</div>
-                                <div class="adjusted-hero-value" style="font-size:30px;">${final.toFixed(1)}</div>
-                            </div>
-                            <div style="text-align:right;">
-                                <span class="interpretation-badge ${scoreBand(final).cls}">${scoreBand(final).label}</span>
-                                <div style="font-size:11px; color:var(--text-dim); margin-top:6px;">This separate context value remains locked while you simulate below.</div>
-                            </div>
+                        <div style="font-size:24px; font-weight:700; color:var(--accent); margin-bottom:8px;">
+                            ${directionLabels[direction] || direction}
                         </div>
-                        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;">
-                            <span class="pill">Task: ${data.task_descriptor.task_type}</span>
-                            <span class="pill">Mode: ${data.task_descriptor.search_mode}</span>
-                            <span class="pill">Profile: ${data.big_five_profile.label}</span>
-                            <span class="pill">Source: ${data.prediction_source === "experimental_stage2_regressor" ? "Experimental Stage 2" : "Project-specific HCEye heuristic"}</span>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;">
+                            <span class="pill">Task label: ${scenario.task_label || scenario.task_type || "—"}</span>
+                            <span class="pill">Time pressure: ${scenario.time_pressure_label || scenario.time_pressure || "—"}</span>
+                            <span class="pill">score_bearing=false</span>
+                            <span class="pill">numeric_modifier=null</span>
                         </div>
-                        <div style="font-size:11px; color:var(--text-dim); margin-top:8px; line-height:1.5;">
-                            This is the original separate, unvalidated context-adjusted output from the image-based baseline plus the task/profile choices at analysis time. It is not the Stage-1 layout index and remains read-only as your reference point.
+                        <div style="font-size:12px; color:var(--text-dim); line-height:1.6;">
+                            This is a transparent qualitative scenario proxy only. Task type is a label, not a simulated process. Time pressure supplies only the pre-specified ordinal direction lower / baseline / higher. No magnitude, calibrated effect, measurement, or validated behavioral prediction is asserted, and the Stage-1 x19 vector and layout index remain unchanged.
                         </div>
                     </div>
-                    <div class="section-separator"></div>
-                    <div style="display:flex; gap:8px; align-items:center; margin:12px 0 10px; flex-wrap:wrap;">
-                        <div id="bd-sim-state" class="pill">Original context selected (no simulation change).</div>
-                        <button id="bd-reset" class="btn btn-tertiary" style="width:auto; margin:0; padding:6px 10px; font-size:11px;">Reset to original</button>
-                        <button id="bd-run-analysis" class="btn btn-secondary" style="width:auto; margin:0; padding:6px 10px; font-size:11px;">Run new analysis with these settings</button>
-                    </div>
-                    <div class="preset-row">
-                        <button class="preset-btn" data-preset="default">Default</button>
-                        <button class="preset-btn" data-preset="time_critical">Time-Critical</button>
-                        <button class="preset-btn" data-preset="exploratory">Exploratory User</button>
-                        <button class="preset-btn" data-preset="stress">Stress-Sensitive</button>
-                    </div>
-                    <div class="score-block" style="margin-bottom:10px;">
-                        <div style="display:flex; align-items:end; justify-content:space-between; gap:8px; flex-wrap:wrap;">
-                            <div>
-                                <div style="font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px;">Simulated context-adjusted output</div>
-                                <div id="bd-sim-score" class="adjusted-hero-value" style="font-size:30px;">${final.toFixed(1)}</div>
-                            </div>
-                            <div style="text-align:right;">
-                                <span id="bd-sim-level" class="interpretation-badge ${scoreBand(final).cls}">${scoreBand(final).label}</span>
-                                <div id="bd-sim-delta" class="score-flow-delta zero" style="padding-bottom:0; margin-top:8px;">+0.0 vs original (${final.toFixed(1)})</div>
-                            </div>
-                        </div>
-                        <div id="bd-sim-note" class="adjusted-hero-note">${scoreBand(final).note}</div>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px 14px; margin-bottom:12px; font-size:12px;">
-                        <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                            <span style="font-size:18px; font-weight:700;">${baseScore.toFixed(1)}</span>
-                            <span style="font-size:10px; color:var(--text-dim);">image</span>
-                        </div>
-                        <span style="color:var(--text-dim);">+</span>
-                        <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                            <span id="bd-tmod" class="score-flow-delta ${deltaClass(tMod)}">${deltaStr(tMod)}</span>
-                            <span style="font-size:10px; color:var(--text-dim);">task</span>
-                        </div>
-                        <span style="color:var(--text-dim);">+</span>
-                        <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                            <span id="bd-pmod" class="score-flow-delta ${deltaClass(pMod)}">${deltaStr(pMod)}</span>
-                            <span style="font-size:10px; color:var(--text-dim);">profile</span>
-                        </div>
-                        <span style="color:var(--text-dim);">=</span>
-                        <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                            <span id="bd-final" style="font-size:18px; font-weight:700; color:var(--accent);">${final.toFixed(1)}</span>
-                            <span style="font-size:10px; color:var(--text-dim);">simulated</span>
-                        </div>
-                    </div>
-                    <div style="font-size:11px; color:var(--text-dim); margin:-4px 0 10px; line-height:1.5;">
-                        Formula: <strong>image</strong> is fixed from the uploaded screenshot. <strong>task</strong> and <strong>profile</strong> are unvalidated context modifiers from the dropdowns. Their sum gives only the separate context-adjusted output; Stage-1 x19 and the layout index remain unchanged.
-                    </div>
-                    <div class="decision-summary">
-                        <div class="decision-summary-grid">
-                            <div class="decision-summary-item">Baseline<strong id="bd-ds-base">${final.toFixed(1)}</strong></div>
-                            <div class="decision-summary-item">Simulated<strong id="bd-ds-sim">${final.toFixed(1)}</strong></div>
-                            <div class="decision-summary-item">Delta<strong id="bd-ds-delta">+0.0</strong></div>
-                            <div class="decision-summary-item">Band<strong id="bd-ds-band">${scoreBand(final).label}</strong></div>
-                        </div>
-                        <div id="bd-ds-reco" class="decision-summary-reco">Recommendation: Keep as is.</div>
-                    </div>
-                    <div style="font-size:12px; color:var(--text-dim); margin-bottom:10px; line-height:1.5;">
-                        Change dropdowns to test scenarios. This section updates only the simulated score and never overwrites the locked baseline above.
-                    </div>
-                    <div class="task-context-grid">
-                        <div class="task-context-item">
-                            <div class="task-context-key">Task Type</div>
-                            <select id="bd-taskType" class="bd-select">
-                                <option value="navigation" ${td.task_type==='navigation'?'selected':''}>Move between screens or menus</option>
-                                <option value="search"     ${td.task_type==='search'?'selected':''}>Find a specific item</option>
-                                <option value="monitoring" ${td.task_type==='monitoring'?'selected':''}>Watch for changes or status</option>
-                                <option value="data_entry" ${td.task_type==='data_entry'?'selected':''}>Enter or edit data</option>
-                                <option value="decision"   ${td.task_type==='decision'?'selected':''}>Compare &amp; choose an option</option>
-                            </select>
-                            <div id="bd-desc-task" class="bd-desc">${TASK_DESC[td.task_type]||''}</div>
-                        </div>
-                        <div class="task-context-item">
-                            <div class="task-context-key">Search Mode</div>
-                            <select id="bd-searchMode" class="bd-select">
-                                <option value="known_item"   ${td.search_mode==='known_item'?'selected':''}>Known Item</option>
-                                <option value="comparative"  ${td.search_mode==='comparative'?'selected':''}>Comparative</option>
-                                <option value="exploratory"  ${td.search_mode==='exploratory'?'selected':''}>Exploratory</option>
-                            </select>
-                            <div id="bd-desc-mode" class="bd-desc">${MODE_DESC[td.search_mode]||''}</div>
-                        </div>
-                        <div class="task-context-item">
-                            <div class="task-context-key">Target Specificity</div>
-                            <select id="bd-specificity" class="bd-select">
-                                <option value="high"   ${td.target_specificity==='high'?'selected':''}>High — target well defined</option>
-                                <option value="medium" ${td.target_specificity==='medium'?'selected':''}>Medium</option>
-                                <option value="low"    ${td.target_specificity==='low'?'selected':''}>Low — vague or open-ended</option>
-                            </select>
-                            <div id="bd-desc-spec" class="bd-desc">${SPEC_DESC[td.target_specificity]||''}</div>
-                        </div>
-                        <div class="task-context-item">
-                            <div class="task-context-key">Time Pressure</div>
-                            <select id="bd-timePressure" class="bd-select">
-                                <option value="low"    ${td.time_pressure==='low'?'selected':''}>Low — ample time</option>
-                                <option value="medium" ${td.time_pressure==='medium'?'selected':''}>Medium</option>
-                                <option value="high"   ${td.time_pressure==='high'?'selected':''}>High — time-critical</option>
-                            </select>
-                            <div id="bd-desc-time" class="bd-desc">${TIME_DESC[td.time_pressure]||''}</div>
-                        </div>
-                        <div class="task-context-item" style="grid-column:1/-1">
-                            <div class="task-context-key">User Profile (Big Five)</div>
-                            <select id="bd-profile" class="bd-select">
-                                <option value="neutral"          ${data.big_five_profile.key==='neutral'?'selected':''}>Neutral — no adjustment</option>
-                                <option value="focused"          ${data.big_five_profile.key==='focused'?'selected':''}>Focused / Conscientious</option>
-                                <option value="exploratory"      ${data.big_five_profile.key==='exploratory'?'selected':''}>Exploratory / Open</option>
-                                <option value="social"           ${data.big_five_profile.key==='social'?'selected':''}>Social / Extraverted</option>
-                                <option value="stress_sensitive" ${data.big_five_profile.key==='stress_sensitive'?'selected':''}>Stress-Sensitive</option>
-                            </select>
-                            <div id="bd-desc-profile" class="bd-desc">${PROFILE_DESC[data.big_five_profile.key]||''}</div>
-                        </div>
-                    </div>
-                    </details>
                 </div>
             `;
-            // Attach live-update listeners
-            ['bd-taskType','bd-specificity','bd-timePressure','bd-searchMode','bd-profile']
-                .forEach(id => document.getElementById(id).addEventListener('change', updateBreakdown));
-
-            const PRESETS = {
-                default: { task_type: 'search', search_mode: 'known_item', target_specificity: 'medium', time_pressure: 'medium', profile: 'neutral' },
-                time_critical: { task_type: 'decision', search_mode: 'known_item', target_specificity: 'high', time_pressure: 'high', profile: 'focused' },
-                exploratory: { task_type: 'search', search_mode: 'exploratory', target_specificity: 'low', time_pressure: 'medium', profile: 'exploratory' },
-                stress: { task_type: 'search', search_mode: 'comparative', target_specificity: 'medium', time_pressure: 'high', profile: 'stress_sensitive' },
-            };
-            document.querySelectorAll('.preset-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const p = PRESETS[btn.dataset.preset];
-                    if (!p) return;
-                    document.getElementById('bd-taskType').value = p.task_type;
-                    document.getElementById('bd-searchMode').value = p.search_mode;
-                    document.getElementById('bd-specificity').value = p.target_specificity;
-                    document.getElementById('bd-timePressure').value = p.time_pressure;
-                    document.getElementById('bd-profile').value = p.profile;
-                    updateBreakdown();
-                });
-            });
-
-            document.getElementById('bd-reset').addEventListener('click', () => {
-                document.getElementById('bd-taskType').value = originalContext.task_type;
-                document.getElementById('bd-specificity').value = originalContext.target_specificity;
-                document.getElementById('bd-timePressure').value = originalContext.time_pressure;
-                document.getElementById('bd-searchMode').value = originalContext.search_mode;
-                document.getElementById('bd-profile').value = originalContext.profile;
-                updateBreakdown();
-            });
-
-            document.getElementById('bd-run-analysis').addEventListener('click', () => {
-                document.getElementById('taskType').value = document.getElementById('bd-taskType').value;
-                document.getElementById('searchMode').value = document.getElementById('bd-searchMode').value;
-                document.getElementById('targetSpecificity').value = document.getElementById('bd-specificity').value;
-                document.getElementById('timePressure').value = document.getElementById('bd-timePressure').value;
-                document.getElementById('profilePreset').value = document.getElementById('bd-profile').value;
-                analyze();
-            });
-            updateBreakdown();
         }
 
-        // ─── Coherence Warning ───
-        function renderCoherence(coherence) {
+        // ─── Exploratory Cross-Signal Review ───
+        function renderCrossSignalReview(review) {
             const el = document.getElementById('coherenceWarning');
-            if (!coherence || coherence.is_coherent) {
+            if (!review) {
                 el.classList.remove('visible');
                 el.innerHTML = '';
                 return;
             }
-            const items = coherence.warnings.map(w =>
+            const items = (review.review_notes || []).map(w =>
                 `<div class="coherence-warning-item">&rsaquo; ${w}</div>`
             ).join('');
             el.innerHTML = `
-                <div class="coherence-warning-title">Coherence Check — ${coherence.flags.length} inconsistenc${coherence.flags.length === 1 ? 'y' : 'ies'} detected</div>
+                <div class="coherence-warning-title">Exploratory Cross-Signal Review — ${review.status || 'not_evaluable'}</div>
                 ${items}
-                <div style="margin-top:8px; font-size:11px; color: var(--text-dim);"><strong>Exploratory heuristic consistency check only.</strong> These flags are not measured gaze, validated behavioral predictions, or cognitive-load evidence. The result remains computable but should be interpreted cautiously.</div>
+                <div style="margin-top:8px; font-size:11px; color: var(--text-dim);"><strong>score_bearing=false.</strong> Author-selected review triggers only; the tri-state status is not calibrated validation, measurement, cognitive-load evidence, or a behavioral prediction.</div>
             `;
             el.classList.add('visible');
         }
 
         // ─── Interpretation ───
         function renderInterpretation(data) {
-            renderCoherence(data.coherence);
+            renderCrossSignalReview(data.cross_signal_review);
             const score = data.layout.experimental_complexity_index;
-            const baseScore = (data.base_experimental_outputs && data.base_experimental_outputs.layout_complexity_score) || 0;
-            const searchEff = data.context_adjusted_experimental_outputs.search_efficiency_proxy;
-            const attnDem  = data.context_adjusted_experimental_outputs.attention_demand_proxy;
             const fixRed   = (data.hceye_proxy_features && data.hceye_proxy_features.hceye_fixation_ratio_proxy) || 1;
             const durInc   = (data.hceye_proxy_features && data.hceye_proxy_features.hceye_duration_ratio_proxy) || 1;
             const hlEff    = (data.hceye_proxy_features && data.hceye_proxy_features.hceye_highlight_effectiveness_proxy) || 0;
@@ -4534,23 +4175,8 @@
             if (durInc > 1.03)
                 items.push(`<strong>HCEye-derived duration-ratio proxy: ${durInc.toFixed(3)}</strong> — a unitless, project-specific screenshot proxy; not a predicted or observed fixation duration or percentage change.`);
 
-            if (searchEff < 0.5)
-                items.push(`<strong>Search-efficiency proxy is low (${searchEff.toFixed(2)})</strong> — an exploratory, unvalidated signal that targets may be harder to locate.`);
-            else if (searchEff > 0.75)
-                items.push(`<strong>Search-efficiency proxy is high (${searchEff.toFixed(2)})</strong> — an exploratory, unvalidated signal that targets may be easier to locate.`);
-
             if (hlEff > 0.7)
                 items.push(`<strong>HCEye-derived highlight-effectiveness proxy: ${hlEff.toFixed(3)}</strong> — a unitless, project-specific screenshot proxy; not measured AOI retention or a percentage uplift.`);
-
-            const taskMod = data.task_descriptor && data.task_descriptor.modifier || 0;
-            // Express the task modifier relative to the base score so the headline
-            // number is a percentage; keep the raw points in parentheses for
-            // traceability (same pattern as the signed delta% feature headlines).
-            const taskPct = baseScore ? Math.round(Math.abs(taskMod) / baseScore * 100) : 0;
-            if (taskMod > 4)
-                items.push(`The selected task adds <strong>~${taskPct}% (+${taskMod.toFixed(1)} points) to the separate context-adjusted simulation</strong>. This unvalidated modelling modifier does not change the Stage-1 layout index.`);
-            else if (taskMod < -2)
-                items.push(`The selected task subtracts <strong>~${taskPct}% (−${Math.abs(taskMod).toFixed(1)} points) from the separate context-adjusted simulation</strong>. This unvalidated modelling modifier does not change the Stage-1 layout index.`);
 
             const panel = document.getElementById('interpretationPanel');
             panel.innerHTML = `
@@ -4830,33 +4456,34 @@
                 return;
             }
 
-            const shortKeys = ["Layout", "Search", "Attention", "Task", "Profile"];
             let html = `<div style="overflow-x: auto;"><table class="history-table"><tr>
                 <th title="Include this analysis in the overall comparison"><input type="checkbox" id="historySelectAll"></th>
                 <th>File</th>
                 <th title="Task-independent Stage-1 Experimental Layout Complexity (0-100, screenshot characteristic)">Layout</th>
-                ${shortKeys.slice(1).map(k => {
-                    const tt = k === 'Search' ? 'Search Efficiency (exploratory, unvalidated proxy)'
-                             : k === 'Attention' ? 'Attention Demand (exploratory, unvalidated proxy)'
-                             : k;
-                    return `<th title="${tt}">${k}</th>`;
-                }).join("")}
+                <th>Task label</th>
+                <th>Time pressure</th>
+                <th title="Non-score-bearing Stage-2 v1 direction">Scenario direction</th>
+                <th>Cross-signal review</th>
             </tr>`;
 
             history.forEach((row, i) => {
                 const checked = row.included !== false ? "checked" : "";
                 const fileName = escapeHtml(row.filename);
                 const taskType = escapeHtml(row.task_type);
-                const profile = escapeHtml(row.profile);
+                const timePressure = escapeHtml(row.time_pressure);
+                const direction = escapeHtml(row.scenario_direction);
+                const reviewStatus = escapeHtml(
+                    row.cross_signal_review && row.cross_signal_review.status
+                );
                 html += `<tr>
                     <td><input type="checkbox" class="history-select" data-idx="${i}" ${checked}></td>
                     <td style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
                         title="${fileName}">${fileName}</td>
                     <td>${row.experimental_layout_complexity.toFixed(1)}</td>
-                    <td>${row.search_efficiency_proxy.toFixed(3)}</td>
-                    <td>${row.attention_demand_proxy.toFixed(3)}</td>
                     <td>${taskType}</td>
-                    <td title="${profile}">${profile}</td>
+                    <td>${timePressure}</td>
+                    <td>${direction}</td>
+                    <td>${reviewStatus}</td>
                 </tr>`;
             });
 
@@ -5050,11 +4677,9 @@
             // ── Context / Settings ───────────────────────────────────────
             sectionTitle("Analysis Settings");
             row("Task Type",      d.task_type   || "-");
-            row("Search Mode",    d.search_mode || "-");
-            row("Target Specificity", d.specificity || "-");
             row("Time Pressure",  d.time_pressure || "-");
-            row("User Profile",   d.profile || "Neutral");
-            row("Score Source",   d.prediction_source === "experimental_stage2_regressor" ? "Experimental Stage 2" : "Project-specific HCEye heuristic");
+            row("Scenario Direction", d.scenario_direction || "-");
+            row("Scenario Score-Bearing", d.scenario_score_bearing ? "Yes" : "No");
             row("Vector Dims",    d.vector_dimensions || "-");
             divider();
 
@@ -5094,13 +4719,10 @@
             // ── Scores ───────────────────────────────────────────────────
             sectionTitle("Experimental Outputs");
             row("Stage-1 Experimental Layout-Complexity Index", score.toFixed(2), lvlColor);
-            row("Context-Adjusted Experimental Output", (d.context_adjusted_experimental_output || 0).toFixed(2));
-            row("Base Experimental Output", (d.base_experimental_output || 0).toFixed(2));
-            row("Search Efficiency (exploratory proxy)",   (d.search_efficiency_proxy || 0).toFixed(3));
-            row("Attention Demand (exploratory proxy)",    (d.attention_demand_proxy || 0).toFixed(3));
+            row("Stage-2 v1 Qualitative Scenario Direction", d.scenario_direction || "-");
+            row("Stage-2 Numeric Modifier", "None");
+            row("Stage-2 Score-Bearing", "No");
             row("HCEye-derived Rule Index (unitless project-specific proxy)", (d.hceye_proxy_index || 0).toFixed(3));
-            row("Task Modifier",                      (d.task_modifier || 0).toFixed(2));
-            row("Profile Modifier",                   (d.profile_modifier || 0).toFixed(2));
             divider();
 
             // ── Visual Features ──────────────────────────────────────────
@@ -5130,13 +4752,14 @@
             }
             divider();
 
-            // ── Coherence ────────────────────────────────────────────────
-            sectionTitle("Coherence Check");
-            const coh = d.coherence_data || {};
-            row("Is Coherent", coh.is_coherent ? "Yes" : "No", coh.is_coherent ? ok : danger);
-            row("Rules Checked", coh.rules_checked || "-");
-            if (coh.warnings && coh.warnings.length) {
-                coh.warnings.forEach(w => row("Warning", w, warn));
+            // ── Exploratory Cross-Signal Review ─────────────────────────
+            sectionTitle("Exploratory Cross-Signal Review");
+            const review = d.cross_signal_review || {};
+            row("Status", review.status || "not_evaluable");
+            row("Score-Bearing", "No");
+            row("Rules Checked", review.rules_checked || "-");
+            if (review.review_notes && review.review_notes.length) {
+                review.review_notes.forEach(note => row("Review note", note, warn));
             }
             divider();
 
@@ -5161,7 +4784,7 @@
             doc.setFont("helvetica", "italic");
             doc.setFontSize(7.5);
             doc.setTextColor(...dim);
-            doc.text("Pipeline: Two-Stage Multi-Output Pipeline · Das et al. (ETRA 2024) · Jokinen et al. (IJHCS 2020) · Rosenholtz et al. (JoV 2007)", margin, y);
+            doc.text("Pipeline: Frozen Stage 1 screenshot analysis + deterministic Stage 2 v1 scenario proxy", margin, y);
             y += 5;
             doc.text("Output is an experimental layout-complexity index - not a direct measure of cognitive load.", margin, y);
 
@@ -5205,13 +4828,11 @@
             const columns = [
                 ["filename", d => d.filename],
                 ["stage1_experimental_layout_complexity_index", d => d.experimental_layout_complexity],
-                ["context_adjusted_experimental_output", d => d.context_adjusted_experimental_output],
-                ["search_efficiency_proxy", d => d.search_efficiency_proxy],
-                ["attention_demand_proxy", d => d.attention_demand_proxy],
                 ["task_type", d => d.task_type],
-                ["profile", d => d.profile],
-                ["task_modifier", d => d.task_modifier],
-                ["profile_modifier", d => d.profile_modifier],
+                ["time_pressure", d => d.time_pressure],
+                ["stage2_scenario_direction", d => d.scenario_direction],
+                ["stage2_score_bearing", d => d.scenario_score_bearing],
+                ["cross_signal_review_status", d => d.cross_signal_review && d.cross_signal_review.status],
                 ["source_commit", d => d.reproducibility && d.reproducibility.source && d.reproducibility.source.commit],
                 ["source_tree_state", d => d.reproducibility && d.reproducibility.source && d.reproducibility.source.tree_state],
                 ["umsi_checkpoint_sha256", d => d.reproducibility && d.reproducibility.umsi_checkpoint_sha256],
@@ -5326,7 +4947,7 @@
             });
         }
         loadFeatures();
-        ["taskType", "searchMode", "targetSpecificity", "timePressure", "profilePreset"]
+        ["taskType", "timePressure", "includeJokinenDiagnostic"]
             .forEach(id => document.getElementById(id).addEventListener("change", () => {
                 updateContextHint();
                 updateContextStatus();

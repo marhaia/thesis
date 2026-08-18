@@ -219,21 +219,23 @@ def test_ui_headline_and_history_use_task_independent_stage1_layout_value():
         "experimental_layout_complexity: "
         "data.layout.experimental_complexity_index"
     ) in UI
-    assert (
-        "context_adjusted_experimental_output: "
-        "data.context_adjusted_experimental_outputs.layout_complexity_score"
-    ) in UI
+    assert "scenario_direction: data.stage2_scenario_proxy.direction" in UI
+    assert "scenario_score_bearing: data.stage2_scenario_proxy.score_bearing" in UI
+    assert "context_adjusted_experimental_output" not in UI
 
 
 def test_ui_declares_exact_x19_and_keeps_context_outside_boundary():
     assert "x = [v, s, h] ∈ ℝ¹⁹" in UI
     assert "x = [v, s, h, t, p] ∈ ℝ³⁰" not in UI
-    assert "They never enter or alter x19" in UI
+    assert "never changes either value" in UI
 
 
-def test_ui_and_csv_labels_do_not_mislabel_context_adjusted_output():
+def test_ui_and_csv_labels_expose_only_qualitative_stage2_v1_proxy():
     assert "stage1_experimental_layout_complexity_index" in UI
-    assert "context_adjusted_experimental_output" in UI
+    assert "stage2_scenario_direction" in UI
+    assert "stage2_score_bearing" in UI
+    assert "numeric_modifier=null" in UI
+    assert "context_adjusted_experimental_output" not in UI
     assert 'accept="image/png,image/jpeg,image/jpg,image/bmp,image/tiff"' in UI
     assert "image/webp" not in UI
 
@@ -318,7 +320,8 @@ def test_readme_uses_bounded_construct_and_current_test_contract():
 
 def test_stage2_scaffold_never_describes_circular_targets_as_ground_truth():
     lower = STAGE2_REGRESSION.lower()
-    assert "experimental multi-output regression scaffold" in lower
+    assert "archived legacy research scaffold" in lower
+    assert "excluded from stage 2 v1" in lower
     assert "not screenshot-level ground truth" in lower
     assert "deployed cognitive-load score" not in lower
     assert "as ground truth for how cognitive load affects" not in lower
@@ -393,7 +396,7 @@ def test_design_diagnosis_describes_the_task_independent_heuristic_truthfully():
         assert forbidden not in diagnosis
 
 
-def test_task_and_profile_copy_keeps_context_simulation_separate_from_stage1():
+def test_stage2_v1_copy_is_qualitative_and_excludes_profile_and_ml():
     controls = _ui_slice("<!-- Step 2: Task Context -->", "<!-- Analyze action")
     loading = _ui_slice('<div class="loading" id="loading">', '<div class="results"')
     interpretation = _ui_slice(
@@ -401,17 +404,21 @@ def test_task_and_profile_copy_keeps_context_simulation_separate_from_stage1():
         "function renderRadarInterpretation(vf)",
     )
 
-    assert "change only a separate, unvalidated context-adjusted simulation" in controls
-    assert "never change the Stage-1 x19 vector or task-independent layout index" in controls
-    assert "Separate task/profile context simulation (unvalidated)" in loading
-    assert "separate context-adjusted simulation" in interpretation
-    assert "does not change the Stage-1 layout index" in interpretation
-    assert "Original context-adjusted output" in UI
-    assert "Simulated context-adjusted output" in UI
-    assert "separate, unvalidated context-adjusted output" in UI
-    assert "Stage-1 x19 and the layout index remain unchanged" in UI
+    assert "qualitative direction" in controls
+    assert "There is no numeric modifier" in controls
+    assert "Attaching deterministic qualitative scenario proxy" in loading
+    assert "data.stage2_scenario_proxy" in UI
+    assert "score_bearing=false" in UI
+    assert "numeric_modifier=null" in UI
+    assert "Stage-1 x19 vector and layout index remain unchanged" in UI
 
     for forbidden in (
+        "User Profile",
+        "Big Five",
+        "use_trained_model",
+        "context-adjusted simulation",
+        "Original context-adjusted output",
+        "Simulated context-adjusted output",
         "shift the score to reflect how a user is actually interacting",
         "modifier to the score",
         "Task &amp; profile modifiers → final score",
@@ -445,22 +452,24 @@ def test_ocr_text_is_escaped_before_readability_inner_html_rendering():
         assert required_replacement in escaping
 
 
-def test_visible_coherence_claims_are_bounded_as_unvalidated_proxy_checks():
-    from stage2.coherence_check import run_coherence_check
+def test_visible_cross_signal_claims_are_bounded_tri_state_review_cues():
+    from stage2.coherence_check import run_cross_signal_review
 
-    result = run_coherence_check(
+    result = run_cross_signal_review(
         saliency_spread=0.1,
         estimated_fixation_count=None,
         mean_search_time_s=5.0,
-        cognitive_load_score=70.0,
+        layout_proxy_value=70.0,
     )
-    joined = " ".join(result["warnings"]).lower()
+    joined = " ".join(result["review_notes"]).lower()
+    assert result["status"] == "review_recommended"
+    assert result["score_bearing"] is False
     assert result["validated_behavioral_prediction"] is False
-    assert "not a validated cognitive-load" in joined
+    assert "not mutual validation" in joined
     assert "typically reduces cognitive load" not in joined
     assert "primary driver of cognitive load" not in joined
-    assert "exploratory heuristic consistency check only" in UI.lower()
-    assert "not measured gaze, validated behavioral predictions" in UI.lower()
+    assert "exploratory cross-signal review" in UI.lower()
+    assert "not calibrated validation" in UI.lower()
     assert "cognitive load should be reduced" not in COHERENCE.lower()
 
 

@@ -44,7 +44,8 @@ from visual_complexity import (
     MIN_CANONICAL_INPUT_LONG_SIDE,
     MIN_CANONICAL_INPUT_SHORT_SIDE,
 )
-from stage2.coherence_check import run_coherence_check
+from stage2.coherence_check import run_cross_signal_review
+from stage2.scenario_proxy import ScenarioProxyInputError, build_scenario_proxy
 from hceye.hceye_features import FeatureNormsError
 from saliency.checkpoint_identity import verify_umsi_checkpoint
 from reproducibility import (
@@ -1466,6 +1467,85 @@ DISPLAY_PRESETS = {
     "hud":       {"label": "Head-up display",            "width_cm": 30.0, "height_cm": 12.0, "viewing_distance_cm": 220.0},
 }
 
+STAGE2_V1_UNSUPPORTED_FIELDS = (
+    "target_specificity",
+    "search_mode",
+    "profile_preset",
+    "use_trained_model",
+)
+STAGE2_V1_ALLOWED_FORM_FIELDS = {
+    "task_type",
+    "time_pressure",
+    "include_jokinen_diagnostic",
+    "display_preset",
+}
+STAGE2_V1_DISPLAY_PRESETS = {"phone", "laptop", "desktop"}
+
+
+def _request_value(req, name):
+    """Read a form/query value without treating an empty string as absent."""
+    if name in req.form:
+        return req.form.get(name)
+    if name in req.args:
+        return req.args.get(name)
+    return None
+
+
+def _stage2_v1_context(req):
+    """Validate the exact public Stage-2 v1 context boundary."""
+    unknown = sorted(
+        (set(req.form) | set(req.args)) - STAGE2_V1_ALLOWED_FORM_FIELDS
+    )
+    # Keep an explicit legacy list so the error remains stable and auditable,
+    # while also rejecting any future undeclared field rather than ignoring it.
+    unsupported = [
+        name
+        for name in STAGE2_V1_UNSUPPORTED_FIELDS
+        if _request_value(req, name) not in (None, "")
+    ]
+    rejected = sorted(set(unknown) | set(unsupported))
+    if rejected:
+        raise ScenarioProxyInputError(
+            "Stage-2 v1 accepts only task_type and time_pressure plus the "
+            "explicit optional Jokinen controls; unsupported fields were "
+            f"supplied: {', '.join(rejected)}"
+        )
+
+    proxy = build_scenario_proxy(
+        task_type=(_request_value(req, "task_type") or "search").strip(),
+        time_pressure=(_request_value(req, "time_pressure") or "medium").strip(),
+    )
+
+    raw_jokinen = _request_value(req, "include_jokinen_diagnostic")
+    if raw_jokinen is None:
+        include_jokinen = False
+    elif isinstance(raw_jokinen, bool):
+        include_jokinen = raw_jokinen
+    else:
+        normalized = str(raw_jokinen).strip().lower()
+        if normalized in {"1", "true", "yes", "on"}:
+            include_jokinen = True
+        elif normalized in {"0", "false", "no", "off"}:
+            include_jokinen = False
+        else:
+            raise ScenarioProxyInputError(
+                "include_jokinen_diagnostic must be true or false"
+            )
+
+    raw_display = _request_value(req, "display_preset")
+    if raw_display not in (None, ""):
+        display_key = str(raw_display).strip().lower()
+        if not include_jokinen:
+            raise ScenarioProxyInputError(
+                "display_preset is accepted only when the optional Jokinen "
+                "diagnostic is requested"
+            )
+        if display_key not in STAGE2_V1_DISPLAY_PRESETS:
+            raise ScenarioProxyInputError(
+                "display_preset must be one of phone, laptop, desktop"
+            )
+    return proxy, include_jokinen
+
 
 def _resolve_display_preset(req):
     """Resolve the physical display geometry from the request.
@@ -1504,7 +1584,9 @@ def cognitive_load():
 
     Combines visual complexity (v∈ℝ⁸) + saliency (s∈ℝ⁵) + HCEye-derived
     proxy features (h∈ℝ⁶) into the task/profile-independent Stage-1 x19
-    boundary.
+    boundary. Stage 2 v1 attaches a deterministic, non-score-bearing scenario
+    proxy from ``task_type`` and ``time_pressure`` only. Personality and ML
+    inputs are rejected. The Jokinen diagnostic is separate and opt-in.
 
     Response JSON:
         {
@@ -1512,6 +1594,9 @@ def cognitive_load():
             "visual_features": {...},         # v∈ℝ⁸
             "saliency_features": {...},       # s∈ℝ⁵  
             "hceye_proxy_features": {...},     # h∈ℝ⁶
+            "stage2_scenario_proxy": {...},    # qualitative; no number
+            "cross_signal_review": {...},      # non-score-bearing tri-state
+            "jokinen_diagnostic": {...},       # separate, off by default
             "scientific_semantics": {...},
             "stage1_feature_vector": [...],   # [v8 | s5 | h6]
             "stage1_feature_names": [...],
@@ -1530,6 +1615,15 @@ def cognitive_load():
     if ext not in SINGLE_IMAGE_EXTENSIONS:
         return jsonify({"error": f"Unsupported format: {ext}"}), 400
 
+    try:
+        scenario_proxy, include_jokinen_diagnostic = _stage2_v1_context(request)
+    except ScenarioProxyInputError as exc:
+        return _fail_closed_error(
+            "stage2_scenario_invalid",
+            str(exc),
+            status=400,
+        )
+
     # Hash once and reuse the same key for both the visual and saliency caches.
     image_hash, image_bytes = _hash_upload(file)
     try:
@@ -1543,25 +1637,9 @@ def cognitive_load():
     try:
         import numpy as np
         from hceye.hceye_features import HCEyeFeatureExtractor
-        from stage2.task_descriptor import TaskDescriptor
-        from stage2.user_profile import get_profile
-        from stage2.regression_model import Stage2Model
 
-        use_trained_model = _as_bool(
-            request.form.get("use_trained_model", request.args.get("use_trained_model")),
-            default=False,
-        )
-
-        task_descriptor = TaskDescriptor(
-            task_type=request.form.get("task_type", "search"),
-            target_specificity=request.form.get("target_specificity", "medium"),
-            time_pressure=request.form.get("time_pressure", "medium"),
-            search_mode=request.form.get("search_mode", "known_item"),
-        )
-        profile = get_profile(request.form.get("profile_preset", "neutral"))
-
-        # Physical display geometry for the Jokinen search model (affects the
-        # coherence check's search-time estimate; pixel features are unaffected).
+        # Physical display geometry is used only when the optional, separate
+        # Jokinen diagnostic is requested; pixel features are unaffected.
         (screen_w_cm, screen_h_cm,
          viewing_cm, display_preset_meta) = _resolve_display_preset(request)
 
@@ -1701,10 +1779,6 @@ def cognitive_load():
         proxy_names = extractor.get_feature_names()
         hceye_proxy_dict = dict(zip(proxy_names, h.tolist()))
 
-        # Step 4: Optional Stage-2 task/profile context.  These values must not
-        # enter the public Stage-1 vector or its screenshot-only layout value.
-        t_dict = task_descriptor.as_dict()
-
         # Build the sole public Stage-1 boundary (v⁸ + s⁵ + h⁶ = ℝ¹⁹).
         # Saliency is mandatory on this score-bearing route. The preceding
         # stage either produced a complete s5 block or raised
@@ -1718,92 +1792,63 @@ def cognitive_load():
             v, s, h, proxy_names
         )
 
-        model_path = Path(__file__).parent.parent / "stage2" / "models" / "stage2_model.pkl"
         stage1_score = float(h[5] * 100.0)
         if not np.isfinite(stage1_score):
             raise Stage1VectorUnavailableError(
                 STAGE1_VECTOR_ERROR_CODE, STAGE1_VECTOR_ERROR_MESSAGE
             )
-        base_experimental_outputs = {
-            "layout_complexity_score": stage1_score,
-            "search_efficiency_proxy": float(np.clip(1.0 - h[3], 0.0, 1.0)),
-            "attention_demand_proxy": float(np.clip(h[5] + 0.15, 0.0, 1.0)),
-        }
-        prediction_source = "project_specific_hceye_heuristic"
-        if use_trained_model and model_path.exists():
-            stage2_model = Stage2Model(model_path=str(model_path))
-            stage2_prediction = stage2_model.predict(base_vector)
-            # Preserve Stage 2's numerical behavior while bounding the public
-            # semantics at this Stage-1 API boundary.
-            base_experimental_outputs = {
-                "layout_complexity_score": float(
-                    stage2_prediction["cognitive_load_score"]
-                ),
-                "search_efficiency_proxy": float(
-                    stage2_prediction["search_efficiency"]
-                ),
-                "attention_demand_proxy": float(
-                    stage2_prediction["attention_demand"]
-                ),
-            }
-            prediction_source = "experimental_stage2_regressor"
 
-        base_score = float(base_experimental_outputs["layout_complexity_score"])
-        descriptor_modifier = float(t_dict["modifier"])
-        profile_modifier = float(profile["modifier"])
-        adjusted_score = float(np.clip(base_score + descriptor_modifier + profile_modifier, 0.0, 100.0))
-        search_efficiency = float(np.clip(
-            base_experimental_outputs["search_efficiency_proxy"]
-            - 0.0025 * descriptor_modifier - 0.0030 * profile_modifier,
-            0.0,
-            1.0,
-        ))
-        attention_demand = float(np.clip(
-            base_experimental_outputs["attention_demand_proxy"]
-            + 0.0040 * descriptor_modifier + 0.0040 * profile_modifier,
-            0.0,
-            1.0,
-        ))
-
-        # Coherence check — validate internal consistency of pipeline outputs
-        # Extract Jokinen search metrics if available (computed on-demand here).
-        mean_search_time_s: float | None = None
-        estimated_fixation_count: float | None = None
+        # Optional, methodologically separate Jokinen diagnostic. It never
+        # changes x19, the Stage-1 layout index or the Stage-2 scenario proxy.
+        mean_search_time_s = None
+        estimated_fixation_count = None
         search_feedback = None
         contrast_report = None
-        try:
-            import cv2
-            from cognitive.jokinen_model import JokinenSearchModel, JokinenParams
-            from cognitive.element_detector import detect_elements
-            # Reuse the native image and native element boxes from Step 2.5.
-            # Only re-read/re-detect if that earlier step failed for any reason.
-            if native_img is None:
-                native_img = cv2.imread(str(filepath))
-            if native_img is None:
-                raise ValueError(f"Cannot read image for Jokinen search model: {filepath}")
-            if native_elements is None:
-                native_elements = detect_elements(native_img)
-            # Reuse the already-computed UMSI++ heatmap when saliency succeeded
-            # (avoids re-running the slow saliency step). s is not None implies
-            # the saliency block ran past the heatmap assignment above.
-            jokinen_saliency = heatmap if s is not None else None
-            jokinen_model = JokinenSearchModel(JokinenParams())
-            jresult = jokinen_model.predict_search_times(
-                elements=native_elements,
-                saliency_map=jokinen_saliency,
-                image_shape=native_img.shape[:2],
-                screen_width_cm=screen_w_cm,
-                screen_height_cm=screen_h_cm,
-                viewing_distance_cm=viewing_cm,
-            )
-            mean_search_time_s = float(jresult["mean_search_time_s"])
-            # The model returns per-element fixation counts; aggregate to a
-            # layout-wide mean for the coherence check (no aggregate key exists).
-            per_elem = jresult.get("per_element", [])
-            if per_elem:
-                estimated_fixation_count = float(
-                    sum(e["fixation_count"] for e in per_elem) / len(per_elem)
+        jokinen_diagnostic = {
+            "requested": include_jokinen_diagnostic,
+            "status": "not_requested",
+            "score_bearing": False,
+            "methodologically_separate": True,
+            "validated_behavioral_prediction": False,
+            "claim_boundary": (
+                "Optional Jokinen model diagnostic only; not measured search, "
+                "eye tracking, or a validated behavioral prediction."
+            ),
+            "display_preset": display_preset_meta,
+            "result": None,
+        }
+        if include_jokinen_diagnostic:
+            try:
+                import cv2
+                from cognitive.jokinen_model import JokinenSearchModel, JokinenParams
+                from cognitive.element_detector import detect_elements
+
+                # Reuse the native image and native element boxes from Step 2.5.
+                # Only re-read/re-detect if that earlier step failed.
+                if native_img is None:
+                    native_img = cv2.imread(str(filepath))
+                if native_img is None:
+                    raise ValueError(
+                        f"Cannot read image for Jokinen search model: {filepath}"
+                    )
+                if native_elements is None:
+                    native_elements = detect_elements(native_img)
+
+                jokinen_model = JokinenSearchModel(JokinenParams())
+                jresult = jokinen_model.predict_search_times(
+                    elements=native_elements,
+                    saliency_map=heatmap,
+                    image_shape=native_img.shape[:2],
+                    screen_width_cm=screen_w_cm,
+                    screen_height_cm=screen_h_cm,
+                    viewing_distance_cm=viewing_cm,
                 )
+                mean_search_time_s = float(jresult["mean_search_time_s"])
+                per_elem = jresult.get("per_element", [])
+                if per_elem:
+                    estimated_fixation_count = float(
+                        sum(e["fixation_count"] for e in per_elem) / len(per_elem)
+                    )
 
                 # Generative feedback (diagnosis -> design): turn the per-element
                 # search costs into a ranked list of "bottleneck" elements so the
@@ -1841,51 +1886,64 @@ def cognitive_load():
                     "bottlenecks": bottlenecks,
                 }
 
-            # Accessibility / legibility report (WCAG 2.1, ISO 15008): the
-            # element detector already measures a per-element contrast ratio.
-            # This is a NATIVE contrast diagnostic, so it uses native_elements.
-            # Here we summarise it and list the worst offenders so the designer
-            # sees WHICH elements are hard to read, not just an average. We use
-            # the 3:1 threshold (WCAG AA for large text / non-text UI elements,
-            # also the common ISO 15008 in-vehicle minimum).
-            if native_elements:
-                wcag_threshold = 3.0
-                ratios = [float(e.get("contrast_ratio", 1.0)) for e in native_elements]
-                failing = sorted(
-                    (e for e in native_elements
-                     if float(e.get("contrast_ratio", 1.0)) < wcag_threshold),
-                    key=lambda e: float(e.get("contrast_ratio", 1.0)),
-                )
-                low_contrast = [{
-                    "id": e["id"],
-                    "contrast_ratio": round(float(e.get("contrast_ratio", 1.0)), 2),
-                    "bbox": e["bbox"],
-                    "center": e["center"],
-                    "color_category": e.get("color_category", "unknown"),
-                } for e in failing[:5]]
-                n_pass = sum(1 for r in ratios if r >= wcag_threshold)
-                contrast_report = {
-                    "wcag_threshold": wcag_threshold,
-                    "n_elements": len(native_elements),
-                    "n_pass": n_pass,
-                    "n_fail": len(native_elements) - n_pass,
-                    "min_contrast_ratio": round(min(ratios), 2),
-                    "mean_contrast_ratio": round(float(sum(ratios) / len(ratios)), 2),
-                    # Lowest-contrast (hardest to read) elements first (top 5).
-                    "low_contrast_elements": low_contrast,
-                }
+                # Display-only contrast summary attached to this optional
+                # diagnostic; it is not part of the scenario proxy.
+                if native_elements:
+                    wcag_threshold = 3.0
+                    ratios = [
+                        float(e.get("contrast_ratio", 1.0))
+                        for e in native_elements
+                    ]
+                    failing = sorted(
+                        (
+                            e for e in native_elements
+                            if float(e.get("contrast_ratio", 1.0))
+                            < wcag_threshold
+                        ),
+                        key=lambda e: float(e.get("contrast_ratio", 1.0)),
+                    )
+                    contrast_report = {
+                        "wcag_threshold": wcag_threshold,
+                        "n_elements": len(native_elements),
+                        "n_pass": sum(1 for ratio in ratios if ratio >= wcag_threshold),
+                        "n_fail": sum(1 for ratio in ratios if ratio < wcag_threshold),
+                        "min_contrast_ratio": round(min(ratios), 2),
+                        "mean_contrast_ratio": round(
+                            float(sum(ratios) / len(ratios)), 2
+                        ),
+                        "low_contrast_elements": [
+                            {
+                                "id": e["id"],
+                                "contrast_ratio": round(
+                                    float(e.get("contrast_ratio", 1.0)), 2
+                                ),
+                                "bbox": e["bbox"],
+                                "center": e["center"],
+                                "color_category": e.get(
+                                    "color_category", "unknown"
+                                ),
+                            }
+                            for e in failing[:5]
+                        ],
+                    }
 
-        except Exception as e:
-            # Do NOT fail silently: the coherence check depends on these values.
-            # Log loudly so a broken search model is visible during the study.
-            print(f"[Jokinen] Search model unavailable for coherence check: {e!r}")
+                jokinen_diagnostic["status"] = "complete"
+                jokinen_diagnostic["result"] = {
+                    "mean_search_time_s": mean_search_time_s,
+                    "estimated_fixation_count": estimated_fixation_count,
+                    "search_feedback": search_feedback,
+                    "contrast_report": contrast_report,
+                }
+            except Exception as e:
+                print(f"[Jokinen] Optional diagnostic unavailable: {e!r}")
+                jokinen_diagnostic["status"] = "unavailable"
 
         saliency_spread = saliency_dict.get("saliency_dispersion") if saliency_dict else None
-        coherence = run_coherence_check(
+        cross_signal_review = run_cross_signal_review(
             saliency_spread=saliency_spread,
             estimated_fixation_count=estimated_fixation_count,
             mean_search_time_s=mean_search_time_s,
-            cognitive_load_score=adjusted_score,
+            layout_proxy_value=stage1_score,
         )
 
         # Per-feature comparison against the empirical GUI reference distribution
@@ -1918,14 +1976,9 @@ def cognitive_load():
                     analysis_measurement.as_dict() if analysis_measurement else None
                 ),
             },
-            "task_descriptor": t_dict,
-            "big_five_profile": profile,
-            "base_experimental_outputs": base_experimental_outputs,
-            "context_adjusted_experimental_outputs": {
-                "layout_complexity_score": adjusted_score,
-                "search_efficiency_proxy": search_efficiency,
-                "attention_demand_proxy": attention_demand,
-            },
+            "stage2_scenario_proxy": scenario_proxy,
+            "cross_signal_review": cross_signal_review,
+            "jokinen_diagnostic": jokinen_diagnostic,
             # Methodologically-separate LAYOUT construct. This is the stable,
             # image-based value that must NOT change when a target is selected.
             # Named "experimental_complexity_index" to keep it distinct from the
@@ -1934,9 +1987,6 @@ def cognitive_load():
             "layout": {
                 "experimental_complexity_index": stage1_score,
             },
-            "prediction_source": prediction_source,
-            "trained_model_requested": use_trained_model,
-            "trained_model_available": model_path.exists(),
             "scientific_semantics": dict(SCIENTIFIC_SEMANTICS),
             # P6 study-export identity: this binds every exported score to the
             # source commit/tree state, exact UMSI and EasyOCR artifacts,
@@ -1947,12 +1997,8 @@ def cognitive_load():
             "stage1_feature_names": stage1_feature_names,
             "stage1_vector_dtype": STAGE1_VECTOR_DTYPE,
             "vector_dimensions": int(base_vector.size),
-            "coherence": coherence,
             "reference": reference,
             "reference_meta": reference_meta,
-            "display_preset": display_preset_meta,
-            "search_feedback": search_feedback,
-            "contrast_report": contrast_report,
             "readability_report": readability_report,
             # Lightweight list of every detected element's box, so the target
             # selector in the UI can offer the detected elements as one-tap

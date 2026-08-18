@@ -462,7 +462,12 @@ def test_cognitive_load_endpoint_wires_two_paths(client, monkeypatch):
     monkeypatch.setattr(app_module, "_predict_saliency_cached",
                         _synthetic_saliency_success)
 
-    data = {"image": (io.BytesIO(buf.tobytes()), "wiring.png")}
+    data = {
+        "image": (io.BytesIO(buf.tobytes()), "wiring.png"),
+        # Stage 2 v1 keeps the native Jokinen path methodologically separate
+        # and off by default; this wiring test requests it explicitly.
+        "include_jokinen_diagnostic": "true",
+    }
     resp = client.post("/api/cognitive-load", data=data,
                        content_type="multipart/form-data")
     assert resp.status_code == 200, resp.get_data(as_text=True)

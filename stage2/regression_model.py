@@ -1,6 +1,10 @@
 """
-Stage 2 — Experimental Multi-Output Regression Scaffold
+ARCHIVED LEGACY RESEARCH SCAFFOLD — excluded from Stage 2 v1
 ========================================================
+The active Stage-2 v1 route has no ML input, model selection, prediction, or
+training path. This file is retained only to document the rejected circular
+prototype and must not be used as evidence or imported by production routes.
+
 Explores proxy-output regression from the combined feature vector produced by
 Stage 1. Uses classical ML (Ridge Regression, Random Forest, XGBoost) on
 pre-extracted feature vectors — no CNN/ViT. No trained or validated Stage-2
