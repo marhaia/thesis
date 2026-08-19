@@ -1483,6 +1483,32 @@ STAGE2_V1_ALLOWED_FORM_FIELDS = {
     "display_preset",
 }
 STAGE2_V1_DISPLAY_PRESETS = {"phone", "laptop", "desktop"}
+JOKINEN_RESULT_FIELDS = frozenset({
+    "per_element",
+    "mean_search_time_s",
+    "max_search_time_s",
+    "min_search_time_s",
+    "search_time_std_s",
+    "predicted_difficulty",
+    "n_elements",
+    "n_simulations",
+})
+JOKINEN_ELEMENT_FIELDS = frozenset({
+    "id",
+    "search_time_s",
+    "search_time_std_s",
+    "fixation_count",
+    "bbox",
+    "center",
+    "color_category",
+})
+JOKINEN_DIFFICULTY_LABELS = frozenset({
+    "trivial",
+    "easy",
+    "moderate",
+    "difficult",
+    "very_hard",
+})
 
 
 def _request_value(req, name):
@@ -1548,6 +1574,22 @@ def _finite_integer(value, path):
     return int(number)
 
 
+def _nonnegative_number(value, path):
+    """Require a finite real number greater than or equal to zero."""
+    number = _finite_number(value, path)
+    if number < 0:
+        raise ValueError(f"{path} must be non-negative")
+    return number
+
+
+def _nonnegative_integer(value, path):
+    """Require a finite integral value greater than or equal to zero."""
+    number = _finite_integer(value, path)
+    if number < 0:
+        raise ValueError(f"{path} must be non-negative")
+    return number
+
+
 def _finite_sequence(value, length, path):
     """Require an exact-length finite numeric sequence and return plain floats."""
     if isinstance(value, (str, bytes, dict)):
@@ -1601,48 +1643,141 @@ def _validated_native_elements(elements):
 
 def _validated_jokinen_result(result):
     """Validate the complete optional Jokinen result schema before use."""
+    import math
+
     safe = _plain_finite_tree(result, "jokinen_result")
     if not isinstance(safe, dict):
         raise TypeError("jokinen_result must be an object")
-    for required in ("mean_search_time_s", "per_element"):
-        if required not in safe:
-            raise ValueError(f"jokinen_result.{required} is required")
-    safe["mean_search_time_s"] = _finite_number(
-        safe["mean_search_time_s"], "jokinen_result.mean_search_time_s"
+    actual_fields = set(safe)
+    if actual_fields != JOKINEN_RESULT_FIELDS:
+        missing = sorted(JOKINEN_RESULT_FIELDS - actual_fields)
+        unexpected = sorted(actual_fields - JOKINEN_RESULT_FIELDS)
+        raise ValueError(
+            "jokinen_result must match the declared schema exactly; "
+            f"missing={missing}, unexpected={unexpected}"
+        )
+    for numeric in (
+        "mean_search_time_s",
+        "max_search_time_s",
+        "min_search_time_s",
+        "search_time_std_s",
+    ):
+        safe[numeric] = _nonnegative_number(
+            safe[numeric], f"jokinen_result.{numeric}"
+        )
+    if safe["min_search_time_s"] > safe["max_search_time_s"]:
+        raise ValueError(
+            "jokinen_result.min_search_time_s must not exceed "
+            "max_search_time_s"
+        )
+    if not (
+        safe["min_search_time_s"]
+        <= safe["mean_search_time_s"]
+        <= safe["max_search_time_s"]
+    ):
+        raise ValueError(
+            "jokinen_result.mean_search_time_s must lie between the declared "
+            "minimum and maximum"
+        )
+    difficulty = safe["predicted_difficulty"]
+    if not isinstance(difficulty, str) or difficulty not in JOKINEN_DIFFICULTY_LABELS:
+        raise ValueError(
+            "jokinen_result.predicted_difficulty must be a declared text label"
+        )
+    safe["n_elements"] = _nonnegative_integer(
+        safe["n_elements"], "jokinen_result.n_elements"
     )
+    safe["n_simulations"] = _nonnegative_integer(
+        safe["n_simulations"], "jokinen_result.n_simulations"
+    )
+    if safe["n_simulations"] < 1:
+        raise ValueError("jokinen_result.n_simulations must be at least 1")
     per_element = safe["per_element"]
     if not isinstance(per_element, list):
         raise TypeError("jokinen_result.per_element must be a list")
+    if safe["n_elements"] != len(per_element):
+        raise ValueError(
+            "jokinen_result.n_elements must equal len(per_element)"
+        )
     for index, element in enumerate(per_element):
         path = f"jokinen_result.per_element[{index}]"
         if not isinstance(element, dict):
             raise TypeError(f"{path} must be an object")
-        for required in (
-            "id",
-            "search_time_s",
-            "fixation_count",
-            "bbox",
-            "center",
-        ):
-            if required not in element:
-                raise ValueError(f"{path}.{required} is required")
-        element["id"] = _finite_integer(element["id"], f"{path}.id")
-        for numeric in ("search_time_s", "fixation_count"):
-            element[numeric] = _finite_number(
-                element[numeric], f"{path}.{numeric}"
+        actual_element_fields = set(element)
+        if actual_element_fields != JOKINEN_ELEMENT_FIELDS:
+            missing = sorted(JOKINEN_ELEMENT_FIELDS - actual_element_fields)
+            unexpected = sorted(actual_element_fields - JOKINEN_ELEMENT_FIELDS)
+            raise ValueError(
+                f"{path} must match the declared schema exactly; "
+                f"missing={missing}, unexpected={unexpected}"
             )
-        if "search_time_std_s" in element:
-            element["search_time_std_s"] = _finite_number(
-                element["search_time_std_s"], f"{path}.search_time_std_s"
+        element["id"] = _nonnegative_integer(element["id"], f"{path}.id")
+        for numeric in (
+            "search_time_s",
+            "search_time_std_s",
+            "fixation_count",
+        ):
+            element[numeric] = _nonnegative_number(
+                element[numeric], f"{path}.{numeric}"
             )
         element["bbox"] = _finite_sequence(element["bbox"], 4, f"{path}.bbox")
         element["center"] = _finite_sequence(
             element["center"], 2, f"{path}.center"
         )
-        if "color_category" in element and not isinstance(
-            element["color_category"], str
-        ):
-            raise TypeError(f"{path}.color_category must be text")
+        if not isinstance(element["color_category"], str) or not element[
+            "color_category"
+        ]:
+            raise TypeError(f"{path}.color_category must be non-empty text")
+    if not per_element:
+        if any(
+            safe[field] != 0.0
+            for field in (
+                "mean_search_time_s",
+                "max_search_time_s",
+                "min_search_time_s",
+                "search_time_std_s",
+            )
+        ) or safe["predicted_difficulty"] != "trivial":
+            raise ValueError(
+                "an empty Jokinen result must use zero aggregates and the "
+                "trivial difficulty label"
+            )
+    else:
+        times = [element["search_time_s"] for element in per_element]
+        expected_mean = sum(times) / len(times)
+        expected_min = min(times)
+        expected_max = max(times)
+        expected_std = math.sqrt(
+            sum((value - expected_mean) ** 2 for value in times) / len(times)
+        )
+        expected_aggregates = {
+            "mean_search_time_s": expected_mean,
+            "min_search_time_s": expected_min,
+            "max_search_time_s": expected_max,
+            "search_time_std_s": expected_std,
+        }
+        for field, expected in expected_aggregates.items():
+            if not math.isclose(
+                safe[field], expected, rel_tol=0.0, abs_tol=1e-4
+            ):
+                raise ValueError(
+                    f"jokinen_result.{field} is inconsistent with per_element"
+                )
+        mean_time = safe["mean_search_time_s"]
+        expected_difficulty = (
+            "easy"
+            if mean_time < 1.0
+            else "moderate"
+            if mean_time < 2.5
+            else "difficult"
+            if mean_time < 5.0
+            else "very_hard"
+        )
+        if safe["predicted_difficulty"] != expected_difficulty:
+            raise ValueError(
+                "jokinen_result.predicted_difficulty is inconsistent with "
+                "mean_search_time_s"
+            )
     return safe
 
 

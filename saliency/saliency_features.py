@@ -9,10 +9,10 @@ Stage-1 vector x = [v8 | s5 | h6] ∈ ℝ¹⁹.
 
 Features extracted (s∈ℝ⁵):
   1. saliency_dispersion    — spatial spread of attention (σ of hotspots)
-  2. saliency_peak_count    — number of distinct attention peaks
-  3. saliency_center_bias   — how much attention concentrates at center
-  4. saliency_entropy        — Shannon entropy of the saliency distribution
-  5. saliency_coverage       — fraction of image area receiving >50% max attention
+  2. saliency_entropy       — Shannon entropy of the saliency distribution
+  3. saliency_coverage      — fraction of image area receiving >50% max attention
+  4. saliency_peak_count    — number of distinct attention peaks
+  5. saliency_center_bias   — how much attention concentrates at center
 
 The five values are numeric screenshot descriptors. They do not by themselves
 measure cognitive load or observed human attention.
@@ -21,9 +21,12 @@ Mathematical Definitions
 ------------------------
 Let S(x,y) be the normalized saliency map, S∈[0,1].
 
-1. **Dispersion** (spatial σ):
-   $\\sigma_S = \\sqrt{\\text{Var}[x \\cdot S] + \\text{Var}[y \\cdot S]}$
-   where x,y are normalized pixel coordinates ∈[0,1].
+1. **Dispersion** (saliency-weighted spatial σ):
+   Let T = sum(S), mu_x = sum(x*S)/T, and mu_y = sum(y*S)/T.
+   For T > 0, variance_x = sum((x-mu_x)^2*S)/T and
+   variance_y = sum((y-mu_y)^2*S)/T. The returned value is
+   min(sqrt(variance_x + variance_y) / 0.707, 1), where x and y are
+   normalized pixel coordinates in [0,1]. For T = 0, dispersion is 0.
 
 2. **Peak count**:
    Number of local maxima in S after Gaussian blur (σ=5) with value ≥ 0.3·max(S).

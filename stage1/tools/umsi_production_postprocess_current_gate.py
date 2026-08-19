@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""XR-04 current launcher for the five-fixture P2/AG-05 evidence gate.
+"""Current-successor launcher for the five-fixture P2/AG-05 evidence gate.
 
 The comparison and inference logic remains in the existing successor gate
-library. This launcher adds only the current-v2 lifecycle and prospective exact
+library. This launcher adds only the current lifecycle and exact
 production-output identity checks. Historical contracts and reports are never
 modified.
 """
@@ -20,11 +20,12 @@ from stage1.tools import umsi_production_postprocess_gate as base_gate
 def validate_current_report(
     contract: Mapping[str, Any], report: Mapping[str, Any]
 ) -> dict:
-    """Fail closed unless the real report satisfies the current-v2 additions."""
+    """Fail closed unless the real report satisfies the current additions."""
     if contract.get("lifecycle") != "CURRENT_SUCCESSOR":
         raise base_gate.ContractError("current contract lifecycle mismatch")
-    if contract.get("remediation_finding") != "XR-04":
-        raise base_gate.ContractError("current contract remediation finding mismatch")
+    remediation_finding = contract.get("remediation_finding")
+    if not isinstance(remediation_finding, str) or not remediation_finding:
+        raise base_gate.ContractError("current contract remediation finding is missing")
     if report.get("overall_verdict") != "PASS":
         raise base_gate.ContractError("base five-fixture gate did not pass")
 
@@ -60,7 +61,7 @@ def validate_current_report(
     return {
         "passed": True,
         "lifecycle": "CURRENT_SUCCESSOR",
-        "remediation_finding": "XR-04",
+        "remediation_finding": remediation_finding,
         "exact_production_e2e_sha256": observed_hashes,
         "historical_artifacts_mutated": False,
     }

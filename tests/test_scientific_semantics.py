@@ -136,7 +136,16 @@ def client(monkeypatch):
     monkeypatch.setattr(
         cognitive.jokinen_model.JokinenSearchModel,
         "predict_search_times",
-        lambda self, **kwargs: {"mean_search_time_s": 0.0, "per_element": []},
+        lambda self, **kwargs: {
+            "per_element": [],
+            "mean_search_time_s": 0.0,
+            "max_search_time_s": 0.0,
+            "min_search_time_s": 0.0,
+            "search_time_std_s": 0.0,
+            "predicted_difficulty": "trivial",
+            "n_elements": 0,
+            "n_simulations": 100,
+        },
     )
 
     app.config.update(TESTING=True)

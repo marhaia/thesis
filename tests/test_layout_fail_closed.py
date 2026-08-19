@@ -240,7 +240,16 @@ def test_user_filename_is_metadata_only_and_never_controls_storage_path(
     monkeypatch.setattr(
         jokinen_module.JokinenSearchModel,
         "predict_search_times",
-        lambda self, **kwargs: {"mean_search_time_s": 0.0, "per_element": []},
+        lambda self, **kwargs: {
+            "per_element": [],
+            "mean_search_time_s": 0.0,
+            "max_search_time_s": 0.0,
+            "min_search_time_s": 0.0,
+            "search_time_std_s": 0.0,
+            "predicted_difficulty": "trivial",
+            "n_elements": 0,
+            "n_simulations": 100,
+        },
     )
 
     captured_paths = []
@@ -426,7 +435,16 @@ def test_defined_no_element_measurement_can_complete_the_endpoint(client, monkey
     monkeypatch.setattr(
         jokinen_module.JokinenSearchModel,
         "predict_search_times",
-        lambda self, **kwargs: {"mean_search_time_s": 0.0, "per_element": []},
+        lambda self, **kwargs: {
+            "per_element": [],
+            "mean_search_time_s": 0.0,
+            "max_search_time_s": 0.0,
+            "min_search_time_s": 0.0,
+            "search_time_std_s": 0.0,
+            "predicted_difficulty": "trivial",
+            "n_elements": 0,
+            "n_simulations": 100,
+        },
     )
 
     response = _post(client)

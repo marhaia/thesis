@@ -4807,7 +4807,7 @@
         // ─── CSV Export ───
         document.getElementById("exportBtn").addEventListener("click", () => {
             if (history.length === 0) return;
-            exportCSV([history[history.length - 1]], "complexity_vector.csv");
+            exportCSV([history[history.length - 1]], "complexity_analysis.csv");
         });
 
         document.getElementById("exportHistoryBtn").addEventListener("click", () => {
@@ -4816,7 +4816,7 @@
             const sel = history.filter(r => r.included !== false);
             const rows = sel.length ? sel : history;
             const allSelected = rows.length === history.length;
-            exportCSV(rows, allSelected ? "complexity_vectors_all.csv" : "complexity_vectors_selected.csv");
+            exportCSV(rows, allSelected ? "complexity_analyses_all.csv" : "complexity_analyses_selected.csv");
         });
 
         document.getElementById("clearHistoryBtn").addEventListener("click", () => {

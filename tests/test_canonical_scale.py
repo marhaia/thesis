@@ -449,7 +449,16 @@ def test_cognitive_load_endpoint_wires_two_paths(client, monkeypatch):
                     *a, **k):
         captured["jokinen_elements"] = elements
         captured["jokinen_image_shape"] = tuple(image_shape)
-        return {"mean_search_time_s": 1.0, "per_element": []}
+        return {
+            "per_element": [],
+            "mean_search_time_s": 0.0,
+            "max_search_time_s": 0.0,
+            "min_search_time_s": 0.0,
+            "search_time_std_s": 0.0,
+            "predicted_difficulty": "trivial",
+            "n_elements": 0,
+            "n_simulations": 100,
+        }
 
     # Saliency stays on its mandatory success path (no ML weights needed)
     # via a deterministic synthetic heatmap; see _synthetic_saliency_success.

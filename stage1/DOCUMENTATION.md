@@ -136,10 +136,10 @@ Input:  GUI screenshot (PNG/JPG/JPEG/BMP/TIFF)
    │                                                          │
    │  Derived features (saliency/saliency_features.py):       │
    │    s₁  Saliency Dispersion                               │
-   │    s₂  Saliency Peak Count                               │
-   │    s₃  Saliency Center Bias                              │
-   │    s₄  Saliency Entropy                                  │
-   │    s₅  Saliency Coverage                                 │
+   │    s₂  Saliency Entropy                                  │
+   │    s₃  Saliency Coverage                                 │
+   │    s₄  Saliency Peak Count                               │
+   │    s₅  Saliency Center Bias                              │
    │                                                          │
    │  → s = [s₁, …, s₅] ∈ ℝ⁵                               │
    └──────────────────────────────────────────────────────────┘
@@ -692,11 +692,16 @@ $S(x,y) \in [0,1]$:
 
 | # | Feature | Formula | Range | Bounded interpretation |
 |---|---------|---------|-------|------------------------|
-| s₁ | **Dispersion** | $\sigma_S = \sqrt{\text{Var}[x \cdot S] + \text{Var}[y \cdot S]}$ (normalized) | [0, 1] | Spatial spread of model-estimated saliency activation |
-| s₂ | **Peak Count** | Number of local maxima after Gaussian smoothing (σ=5) with value ≥ 0.3·max | ℕ₀ | Distinct model-activation peaks, not observed attention hotspots |
-| s₃ | **Center Bias** | $\frac{\sum_{(x,y) \in C_{25\%}} S(x,y)}{\sum S}$ | [0, 1] | Relative model activation in the central image region |
-| s₄ | **Entropy** | $H = -\sum_b p_b \log_2 p_b$ (32 bins, normalized) | [0, 1] | Evenness of the model-activation distribution |
-| s₅ | **Coverage** | $\frac{|\{(x,y): S > 0.5 \cdot \max(S)\}|}{W \cdot H}$ | [0, 1] | Image area above the declared relative-activation threshold |
+| s₁ | **Dispersion** | For T=sum(S)>0: mu_x=sum(xS)/T, mu_y=sum(yS)/T, var_x=sum((x-mu_x)^2S)/T, var_y=sum((y-mu_y)^2S)/T, and dispersion=min(sqrt(var_x+var_y)/0.707, 1); for T=0: dispersion=0 | [0, 1] | Saliency-weighted spatial spread of model-estimated activation on normalized coordinates |
+| s₂ | **Entropy** | $H = -\sum_b p_b \log_2 p_b$ (32 bins, normalized) | [0, 1] | Evenness of the model-activation distribution |
+| s₃ | **Coverage** | $\frac{|\{(x,y): S > 0.5 \cdot \max(S)\}|}{W \cdot H}$ | [0, 1] | Image area above the declared relative-activation threshold |
+| s₄ | **Peak Count** | Number of local maxima after Gaussian smoothing (σ=5) with value ≥ 0.3·max | ℕ₀ | Distinct model-activation peaks, not observed attention hotspots |
+| s₅ | **Center Bias** | $\frac{\sum_{(x,y) \in C_{25\%}} S(x,y)}{\sum S}$ | [0, 1] | Relative model activation in the central image region |
+
+The public x19 positions are fixed as follows: zero-based indices 8–12
+(one-based positions 9–13) contain dispersion, entropy, coverage, peak count,
+and center bias in exactly that order. The API field stage1_feature_names is the
+authoritative machine-readable schema.
 
 ### 6.5 Numeric Auxiliary Head (6 values)
 
@@ -935,7 +940,7 @@ reproduction protocol.
 | Package | Version | Purpose |
 |---------|---------|---------|
 | numpy | 1.26.4 | Array operations |
-| opencv-python | 4.13.0 | Image I/O, Canny, morphology, connected components |
+| opencv-python-headless | 4.10.0.84 | Image I/O, Canny, morphology, connected components |
 | scipy | 1.13.1 | 2D convolution (`signal.convolve2d`) |
 | scikit-image | 0.24.0 | Image rotation (`transform.rotate`) |
 | Pillow | 11.3.0 | (Optional, used for compatibility) |
@@ -951,8 +956,12 @@ Install all:
 ```bash
 python -m venv venv
 source venv/bin/activate
-pip install numpy opencv-python scipy scikit-image Pillow PyWavelets pyrtools matplotlib flask tensorflow-macos
+python -m pip install -r stage1/environment/requirements-macos-arm64-python3.9.lock.txt
+python stage1/reproducibility.py verify-runtime --strict
 ```
+
+The requirement files and the frozen 97-distribution lock are authoritative.
+Do not substitute the GUI OpenCV package or an unpinned dependency list.
 
 ---
 

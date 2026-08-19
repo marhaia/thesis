@@ -15,7 +15,10 @@ EVIDENCE_ROOT = ROOT / "stage1" / "evidence"
 CURRENT_CONTRACT = (
     EVIDENCE_ROOT / "umsi_production_postprocess_gate_current_contract.json"
 )
-CURRENT_REPORT = EVIDENCE_ROOT / "p2_ag05_current_report_v2.json"
+V2_CONTRACT = (
+    EVIDENCE_ROOT / "umsi_production_postprocess_gate_current_contract_v2.json"
+)
+V2_REPORT = EVIDENCE_ROOT / "p2_ag05_current_report_v2.json"
 HISTORICAL_CONTRACT = (
     EVIDENCE_ROOT / "umsi_production_postprocess_gate_contract.json"
 )
@@ -26,6 +29,12 @@ HISTORICAL_CONTRACT_SHA256 = (
 )
 HISTORICAL_REPORT_SHA256 = (
     "a310c787c996630f53e39cef98a677dd76849eec82528b95f2c1b27b7ac66d85"
+)
+V2_CONTRACT_SHA256 = (
+    "43cd688e10eac46d27963909e35ad1c10fadfd192636a0b89a844361ead65786"
+)
+V2_REPORT_SHA256 = (
+    "99ee6c11105323d1390f9cd8310146bff5c750fec4f63945d5b86b2699029f6e"
 )
 CURRENT_PRODUCTION_E2E_SHA256 = {
     "lowcontrast": "65d9dfbb7cf2fc83958b72da041e3ec8e3bc84f18b886ad120d985aaeb03e8d8",
@@ -45,17 +54,22 @@ def test_historical_p2_contract_and_report_remain_byte_identical():
     assert gate.sha256_file(HISTORICAL_REPORT) == HISTORICAL_REPORT_SHA256
 
 
+def test_executed_current_v2_contract_and_report_remain_byte_identical():
+    assert gate.sha256_file(V2_CONTRACT) == V2_CONTRACT_SHA256
+    assert gate.sha256_file(V2_REPORT) == V2_REPORT_SHA256
+
+
 def test_current_contract_is_explicit_successor_with_unchanged_thresholds():
     contract = gate.load_and_validate_contract(CURRENT_CONTRACT)
 
-    assert contract["contract_version"] == "p2_ag05_current_v2"
+    assert contract["contract_version"] == "p2_ag05_current_v3_docs_only"
     assert contract["lifecycle"] == "CURRENT_SUCCESSOR"
-    assert contract["remediation_finding"] == "XR-04"
+    assert contract["remediation_finding"] == "RC1_TC_02_TC_03"
     assert contract["supersedes_execution_contract"] == {
-        "filename": HISTORICAL_CONTRACT.name,
-        "sha256": HISTORICAL_CONTRACT_SHA256,
-        "report_filename": HISTORICAL_REPORT.name,
-        "report_sha256": HISTORICAL_REPORT_SHA256,
+        "filename": V2_CONTRACT.name,
+        "sha256": V2_CONTRACT_SHA256,
+        "report_filename": V2_REPORT.name,
+        "report_sha256": V2_REPORT_SHA256,
         "mutation_policy": "immutable_historical_evidence",
     }
     assert contract["thresholds"] == {
@@ -68,6 +82,15 @@ def test_current_contract_is_explicit_successor_with_unchanged_thresholds():
     assert contract["expected_production_e2e_sha256"] == (
         CURRENT_PRODUCTION_E2E_SHA256
     )
+    migration = contract["documentation_only_source_migration"]
+    assert migration["previous_sha256"] == (
+        "f425375767739c5a668e810d14b25bdb85f523b038aea3d38f1475479f678f45"
+    )
+    assert migration["current_sha256"] == (
+        "f899f6ecf32155d1da4b7c71b817e6f385f36f6051abfcef7638f99e7bb36d7f"
+    )
+    assert migration["ast_without_docstrings_equal"] is True
+    assert migration["computation_changed"] is False
 
 
 def test_current_contract_pins_and_verifies_current_source_bytes():
@@ -90,17 +113,17 @@ def test_current_contract_pins_and_verifies_current_source_bytes():
     }
     assert contract["pinned_sources"]["production_saliency_features"][
         "sha256"
-    ] == "f425375767739c5a668e810d14b25bdb85f523b038aea3d38f1475479f678f45"
+    ] == "f899f6ecf32155d1da4b7c71b817e6f385f36f6051abfcef7638f99e7bb36d7f"
 
 
 def test_current_real_weight_report_passes_all_five_exact_value_gates():
-    contract = gate.load_and_validate_contract(CURRENT_CONTRACT)
-    report = _load(CURRENT_REPORT)
+    contract = gate.load_and_validate_contract(V2_CONTRACT)
+    report = _load(V2_REPORT)
 
     assert report["overall_verdict"] == "PASS"
     assert report["scope"] == "P2_AG_05_ONLY"
     assert report["fixture_order"] == list(CURRENT_PRODUCTION_E2E_SHA256)
-    assert report["p2_contract_sha256"] == gate.sha256_file(CURRENT_CONTRACT)
+    assert report["p2_contract_sha256"] == gate.sha256_file(V2_CONTRACT)
     assert report["thresholds"] == contract["thresholds"]
     for fixture, expected_sha in contract[
         "expected_production_e2e_sha256"
@@ -126,8 +149,8 @@ def test_current_real_weight_report_passes_all_five_exact_value_gates():
 
 
 def test_current_launcher_rejects_one_same_shape_output_identity_mutation():
-    contract = gate.load_and_validate_contract(CURRENT_CONTRACT)
-    report = copy.deepcopy(_load(CURRENT_REPORT))
+    contract = gate.load_and_validate_contract(V2_CONTRACT)
+    report = copy.deepcopy(_load(V2_REPORT))
     report["per_fixture"]["ui2"]["observed"][
         "production_e2e_sha256"
     ] = "0" * 64
@@ -141,8 +164,8 @@ def test_current_launcher_rejects_one_same_shape_output_identity_mutation():
 
 
 def test_current_report_identity_block_matches_current_contract():
-    contract = gate.load_and_validate_contract(CURRENT_CONTRACT)
-    report = _load(CURRENT_REPORT)
+    contract = gate.load_and_validate_contract(V2_CONTRACT)
+    report = _load(V2_REPORT)
 
     assert report["identities"]["historical_reference_contract"] == (
         contract["historical_reference_contract"]["sha256"]
@@ -158,8 +181,8 @@ def test_current_report_identity_block_matches_current_contract():
 
 
 def test_current_report_binds_committed_remediation_without_circular_claim():
-    contract = gate.load_and_validate_contract(CURRENT_CONTRACT)
-    report = _load(CURRENT_REPORT)
+    contract = gate.load_and_validate_contract(V2_CONTRACT)
+    report = _load(V2_REPORT)
 
     assert report["repository_head"] == contract["source_state"][
         "remediation_commit"

@@ -148,7 +148,7 @@ def client(monkeypatch, tmp_path):
     monkeypatch.setattr(
         cognitive.jokinen_model.JokinenSearchModel,
         "predict_search_times",
-        lambda self, **kwargs: {"mean_search_time_s": 0.0, "per_element": []},
+        lambda self, **kwargs: _valid_jokinen_result(),
     )
 
     app.config.update(TESTING=True)
@@ -189,6 +189,20 @@ def _valid_jokinen_element():
         "bbox": [10.0, 12.0, 30.0, 20.0],
         "center": [25.0, 22.0],
         "color_category": "blue",
+    }
+
+
+def _valid_jokinen_result():
+    element = _valid_jokinen_element()
+    return {
+        "per_element": [element],
+        "mean_search_time_s": 1.5,
+        "max_search_time_s": 1.5,
+        "min_search_time_s": 1.5,
+        "search_time_std_s": 0.0,
+        "predicted_difficulty": "moderate",
+        "n_elements": 1,
+        "n_simulations": 100,
     }
 
 
@@ -513,8 +527,8 @@ def test_optional_jokinen_contains_nonfinite_results(
 ):
     import cognitive.jokinen_model
 
-    element = _valid_jokinen_element()
-    result = {"mean_search_time_s": 1.5, "per_element": [element]}
+    result = _valid_jokinen_result()
+    element = result["per_element"][0]
     if field == "mean_search_time_s":
         result[field] = nonfinite
     elif field == "bbox":
@@ -591,9 +605,15 @@ def test_optional_jokinen_contains_malformed_results(client, monkeypatch, result
 def test_optional_jokinen_contains_nonfinite_derived_arithmetic(client, monkeypatch):
     import cognitive.jokinen_model
 
-    element = _valid_jokinen_element()
-    element["search_time_s"] = 1e308
-    result = {"mean_search_time_s": 1e-308, "per_element": [element]}
+    result = _valid_jokinen_result()
+    first = result["per_element"][0]
+    first["fixation_count"] = 1e308
+    second = dict(first)
+    second["id"] = 1
+    second["bbox"] = [50.0, 12.0, 30.0, 20.0]
+    second["center"] = [65.0, 22.0]
+    result["per_element"] = [first, second]
+    result["n_elements"] = 2
     monkeypatch.setattr(
         cognitive.jokinen_model.JokinenSearchModel,
         "predict_search_times",
@@ -619,7 +639,8 @@ def test_optional_jokinen_rejects_finite_numpy_containers(
         per_element = [element]
     else:
         per_element = np.array([element], dtype=object)
-    result = {"mean_search_time_s": 1.5, "per_element": per_element}
+    result = _valid_jokinen_result()
+    result["per_element"] = per_element
     monkeypatch.setattr(
         cognitive.jokinen_model.JokinenSearchModel,
         "predict_search_times",
@@ -631,6 +652,148 @@ def test_optional_jokinen_rejects_finite_numpy_containers(
     assert body["jokinen_diagnostic"]["status"] == "unavailable"
     assert body["jokinen_diagnostic"]["result"] is None
     assert len(body["stage1_feature_vector"]) == 19
+
+
+@pytest.mark.parametrize(
+    "field,bad_value",
+    [
+        ("max_search_time_s", "bad"),
+        ("max_search_time_s", True),
+        ("min_search_time_s", "bad"),
+        ("min_search_time_s", False),
+        ("search_time_std_s", "bad"),
+        ("search_time_std_s", True),
+        ("predicted_difficulty", 7),
+        ("n_elements", "one"),
+        ("n_elements", True),
+        ("n_simulations", "many"),
+        ("n_simulations", False),
+    ],
+)
+def test_optional_jokinen_contains_malformed_declared_aggregate_fields(
+    client, monkeypatch, field, bad_value
+):
+    import cognitive.jokinen_model
+
+    result = _valid_jokinen_result()
+    result[field] = bad_value
+    monkeypatch.setattr(
+        cognitive.jokinen_model.JokinenSearchModel,
+        "predict_search_times",
+        lambda self, **kwargs: result,
+    )
+
+    body = _post(client, include_jokinen_diagnostic="true")
+
+    assert body["jokinen_diagnostic"]["status"] == "unavailable"
+    assert body["jokinen_diagnostic"]["result"] is None
+    assert len(body["stage1_feature_vector"]) == 19
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "max_search_time_s",
+        "min_search_time_s",
+        "search_time_std_s",
+        "predicted_difficulty",
+        "n_elements",
+        "n_simulations",
+    ],
+)
+def test_optional_jokinen_contains_missing_declared_aggregate_fields(
+    client, monkeypatch, field
+):
+    import cognitive.jokinen_model
+
+    result = _valid_jokinen_result()
+    result.pop(field)
+    monkeypatch.setattr(
+        cognitive.jokinen_model.JokinenSearchModel,
+        "predict_search_times",
+        lambda self, **kwargs: result,
+    )
+
+    body = _post(client, include_jokinen_diagnostic="true")
+
+    assert body["jokinen_diagnostic"]["status"] == "unavailable"
+    assert body["jokinen_diagnostic"]["result"] is None
+    assert len(body["stage1_feature_vector"]) == 19
+
+
+@pytest.mark.parametrize("field", ["search_time_std_s", "color_category"])
+def test_optional_jokinen_contains_missing_declared_per_element_fields(
+    client, monkeypatch, field
+):
+    import cognitive.jokinen_model
+
+    result = _valid_jokinen_result()
+    result["per_element"][0].pop(field)
+    monkeypatch.setattr(
+        cognitive.jokinen_model.JokinenSearchModel,
+        "predict_search_times",
+        lambda self, **kwargs: result,
+    )
+
+    body = _post(client, include_jokinen_diagnostic="true")
+
+    assert body["jokinen_diagnostic"]["status"] == "unavailable"
+    assert body["jokinen_diagnostic"]["result"] is None
+    assert len(body["stage1_feature_vector"]) == 19
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "unexpected_top_level",
+        "unexpected_element",
+        "count_mismatch",
+        "aggregate_mismatch",
+        "difficulty_mismatch",
+    ],
+)
+def test_optional_jokinen_requires_one_exact_result_schema(
+    client, monkeypatch, mutation
+):
+    import cognitive.jokinen_model
+
+    result = _valid_jokinen_result()
+    if mutation == "unexpected_top_level":
+        result["extra"] = 1
+    elif mutation == "unexpected_element":
+        result["per_element"][0]["extra"] = 1
+    elif mutation == "count_mismatch":
+        result["n_elements"] = 2
+    elif mutation == "aggregate_mismatch":
+        result["max_search_time_s"] = 2.0
+    else:
+        result["predicted_difficulty"] = "easy"
+    monkeypatch.setattr(
+        cognitive.jokinen_model.JokinenSearchModel,
+        "predict_search_times",
+        lambda self, **kwargs: result,
+    )
+
+    body = _post(client, include_jokinen_diagnostic="true")
+
+    assert body["jokinen_diagnostic"]["status"] == "unavailable"
+    assert body["jokinen_diagnostic"]["result"] is None
+    assert len(body["stage1_feature_vector"]) == 19
+
+
+def test_empty_jokinen_producer_matches_the_complete_public_schema():
+    from cognitive.jokinen_model import JokinenParams, JokinenSearchModel
+
+    result = JokinenSearchModel(
+        JokinenParams(n_simulations=7)
+    ).predict_search_times(elements=[], image_shape=(64, 64))
+
+    assert set(result) == app_module.JOKINEN_RESULT_FIELDS
+    assert result["per_element"] == []
+    assert result["n_elements"] == 0
+    assert result["n_simulations"] == 7
+    assert result["predicted_difficulty"] == "trivial"
+    assert app_module._validated_jokinen_result(result) == result
 
 
 @pytest.mark.parametrize("container_position", ["center", "elements"])

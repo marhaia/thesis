@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from saliency.postprocessing import normalize_saliency_map, postprocess_saliency
-from saliency.saliency_features import extract_saliency_features
+from saliency.saliency_features import _compute_dispersion, extract_saliency_features
 
 
 @pytest.mark.parametrize(
@@ -100,3 +100,28 @@ def test_finite_extreme_range_is_normalized_without_overflow():
         observed,
         np.array([[0.0, 0.5, 1.0]], dtype=np.float32),
     )
+
+
+def test_dispersion_matches_hand_computable_weighted_variance_definition():
+    saliency_map = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [0.0, 0.2, 0.0],
+            [0.0, 0.0, 1.0],
+        ],
+        dtype=np.float64,
+    )
+    yy, xx = np.mgrid[0:3, 0:3]
+    xx = xx.astype(np.float64) / 2.0
+    yy = yy.astype(np.float64) / 2.0
+    total = saliency_map.sum()
+    mean_x = (xx * saliency_map).sum() / total
+    mean_y = (yy * saliency_map).sum() / total
+    variance_x = (((xx - mean_x) ** 2) * saliency_map).sum() / total
+    variance_y = (((yy - mean_y) ** 2) * saliency_map).sum() / total
+    expected = min(np.sqrt(variance_x + variance_y) / 0.707, 1.0)
+
+    observed = _compute_dispersion(saliency_map)
+
+    assert observed == pytest.approx(expected, rel=0, abs=1e-15)
+    assert observed == pytest.approx(0.37273428337675385, rel=0, abs=1e-15)

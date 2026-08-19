@@ -293,12 +293,14 @@ class JokinenSearchModel:
         Dict with keys:
             'per_element': List[Dict] — per-element results:
                 'id', 'search_time_s', 'search_time_std_s', 'fixation_count',
-                'bbox', 'center'
+                'bbox', 'center', 'color_category'
             'mean_search_time_s': float — layout-wide average
             'max_search_time_s': float — worst-case element
             'min_search_time_s': float — best-case element
             'search_time_std_s': float — standard deviation across elements
             'predicted_difficulty': str — categorical rating
+            'n_elements': int — number of per-element results
+            'n_simulations': int — Monte Carlo trials per element
         """
         if len(elements) == 0:
             return {
@@ -308,6 +310,8 @@ class JokinenSearchModel:
                 "min_search_time_s": 0.0,
                 "search_time_std_s": 0.0,
                 "predicted_difficulty": "trivial",
+                "n_elements": 0,
+                "n_simulations": self.params.n_simulations,
             }
 
         # --- Precompute element saliency from UMSI++ map ---
