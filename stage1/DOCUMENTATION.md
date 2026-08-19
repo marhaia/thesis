@@ -2,18 +2,21 @@
 
 ## Documentation & Technical Reference
 
-**Thesis:** *Two-Stage Multi-Output Pipeline: Computational Estimation of Interactional Complexity from GUI Screenshots*  
+**Technical scope:** *Frozen Stage-1 Screenshot Pipeline + Qualitative Stage-2 v1 Scenario Proxy*
 **Author:** Hannah Mueller (Q682780)  
 **Module:** `stage1/visual_complexity.py` + `saliency/umsi_model.py`  
-**Version:** 3.0 (11.08.2026)
+**Version:** 3.1 (18.08.2026)
 
 > **Current P7 claim policy (authoritative):** A complete score-bearing
 > Stage-1 analysis exposes the task-independent float32 vector
 > `x = [v8 | s5 | h6] ∈ ℝ¹⁹` and the screenshot-only
 > `layout.experimental_complexity_index`. HCEye supplies project-specific,
 > unvalidated proxy rules; it does not calibrate a cognitive-load measurement.
-> Task/profile modifiers remain outside x19 and affect only separately labelled
-> context-adjusted experimental outputs. UMSI++ provides a numeric saliency map
+> Stage 2 v1 accepts only `task_type` and `time_pressure` and attaches a
+> deterministic qualitative direction (`lower` / `baseline` / `higher`). It is
+> non-score-bearing, has no numeric modifier, and never changes x19 or the
+> layout index. Personality inputs and trained regressors are excluded. UMSI++
+> provides a numeric saliency map
 > and an internal six-value auxiliary head whose semantic label order is not
 > verified. Search times, fixation counts, and paths are model simulations, not
 > observed user data. Historical development notes below are subordinate to
@@ -47,6 +50,7 @@
 | 16.07.2026 | 2.7 | Display-Preset-Wording vereinfacht (Phone / Laptop 14″ / Desktop 17″, „at desk distance" entfernt); alle Emoji-Feature-Icons aus `/api/features` entfernt (waren ungenutzt) |
 | 16.07.2026 | 2.7 | **Quellen-Audit:** Feature-DOIs mit dem angezeigten Referenztext abgeglichen — Edge Density → **Canny (1986)**, Visual Hierarchy → **Tuch et al. (2009)**; Out-of-Domain-Warnung mit wissenschaftlichem Beleg zur Dataset-Shift-Problematik versehen (**Torralba & Efros 2011**, **Jiang et al. 2023**) |
 | 11.08.2026 | 3.0 | **P7 Claim reconciliation:** x19-Vertrag, Task-Unabhängigkeit, Canonical 1280, HCEye-/UMSI-Grenzen, simulierte Fixations-/Zeitwerte, Formate und Validierungsstatus vereinheitlicht |
+| 18.08.2026 | 3.1 | **Stage 2 v1 boundary:** qualitativer, nicht-score-tragender Szenario-Proxy; Persönlichkeit, ML und numerische Task-/Profil-Modifikatoren aus dem aktiven Vertrag ausgeschlossen |
 
 ---
 
@@ -83,10 +87,13 @@ Together they form the sole public, task-independent boundary
 `x = [v8 | s5 | h6] ∈ ℝ¹⁹` (`float32`).
 
 The screenshot-only **Experimental Layout-Complexity Index** is an exploratory
-project-specific heuristic, not a validated cognitive-load measurement. Task
-context and an optional coarse Big-Five preset are explicitly separate inputs:
-they never enter x19 or alter `layout.experimental_complexity_index`; they only
-produce separately labelled context-adjusted experimental outputs.
+project-specific heuristic, not a validated cognitive-load measurement. Stage
+2 v1 attaches only a deterministic qualitative scenario proxy from
+`task_type` and `time_pressure`. The proxy has `score_bearing=false` and
+`numeric_modifier=null`; it never enters x19 or alters
+`layout.experimental_complexity_index`. Personality/Big-Five inputs, trained
+regressors, and numeric task/profile modifiers are excluded from the active
+pipeline.
 
 The Jokinen 2020 implementation supplies model-estimated per-element search
 times, fixation counts, and target-driven paths as separate diagnostics. These
@@ -1095,7 +1102,7 @@ ML path. Those decisions remain open and require explicit thesis-level approval.
 | Hoch | DeepGaze++ / PathGAN++ portieren | Fixation-Verteilung für Stage 2 |
 | Hoch | Validierung gegen UEyes Ground Truth | Qualitätsnachweis |
 | Mittel | HCEye-Datensatz integrieren | Saliency unter kognitivem Load |
-| Mittel | Stage 2 Multi-Output Head aufsetzen | Hauptziel der Thesis |
+| Mittel | Stage 2 Multi-Output Head aufsetzen | Historische Idee; aus Stage 2 v1 und der aktuellen technischen Thesis-Pipeline ausgeschlossen |
 | Niedrig | UMSI++ GPU-Beschleunigung (Metal) | Performance-Optimierung |
 
 ---

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import math
 from pathlib import Path
 
@@ -22,6 +23,23 @@ APP_SOURCE = (ROOT / "stage1" / "app.py").read_text(encoding="utf-8")
 UI_SOURCE = (ROOT / "stage1" / "ui" / "index.html").read_text(encoding="utf-8")
 PIPELINE_FIGURE_SOURCE = (
     ROOT / "scripts" / "generate_pipeline_figure.py"
+).read_text(encoding="utf-8")
+STAGE1_DOCUMENTATION = (ROOT / "stage1" / "DOCUMENTATION.md").read_text(
+    encoding="utf-8"
+)
+ENDPOINT_SCALE_TOOL = (
+    ROOT / "stage1" / "tools" / "endpoint_scale_matrix.py"
+).read_text(encoding="utf-8")
+ENDPOINT_SCALE_REPORT = json.loads(
+    (ROOT / "stage1" / "canonical_eval" / "endpoint_scale_report.json").read_text(
+        encoding="utf-8"
+    )
+)
+CANONICAL_SCALE_TOOL = (
+    ROOT / "stage1" / "tools" / "canonical_scale_eval.py"
+).read_text(encoding="utf-8")
+CANONICAL_SCALE_DOCUMENTATION = (
+    ROOT / "stage1" / "canonical_resolution_evaluation.md"
 ).read_text(encoding="utf-8")
 
 
@@ -192,3 +210,73 @@ def test_pipeline_figure_generator_matches_the_active_stage2_v1_boundary():
         assert "qualitative, non-score-bearing Stage 2 v1" in image.info[
             "Description"
         ]
+
+
+def test_authoritative_stage1_documentation_matches_the_active_v1_contract():
+    current_policy = STAGE1_DOCUMENTATION[
+        STAGE1_DOCUMENTATION.index("> **Current P7 claim policy"):
+        STAGE1_DOCUMENTATION.index("---")
+    ]
+    overview = STAGE1_DOCUMENTATION[
+        STAGE1_DOCUMENTATION.index("## 1. Overview"):
+        STAGE1_DOCUMENTATION.index("```", STAGE1_DOCUMENTATION.index("## 1. Overview"))
+    ]
+    active_copy = current_policy + overview
+
+    for required in (
+        "deterministic qualitative direction",
+        "non-score-bearing",
+        "has no numeric modifier",
+        "Personality inputs and trained regressors are excluded",
+        "score_bearing=false",
+        "numeric_modifier=null",
+    ):
+        assert required in active_copy
+
+    for retired_claim in (
+        "Task/profile modifiers remain",
+        "optional coarse Big-Five preset",
+        "context-adjusted experimental outputs",
+    ):
+        assert retired_claim not in active_copy
+
+
+def test_legacy_endpoint_scale_tool_and_export_are_unmistakably_inactive():
+    assert ENDPOINT_SCALE_TOOL.startswith('"""ARCHIVED LEGACY TOOL')
+    assert "must not be executed or cited as current pipeline evidence" in (
+        ENDPOINT_SCALE_TOOL
+    )
+    assert "return 2" in ENDPOINT_SCALE_TOOL
+    for removed_active_schema in (
+        'body["cognitive_load_index"]',
+        'body["task_descriptor"]',
+        'body["big_five_profile"]',
+        "fallback_neutral",
+        "TRUE endpoint scale matrix",
+    ):
+        assert removed_active_schema not in ENDPOINT_SCALE_TOOL
+
+    assert ENDPOINT_SCALE_REPORT == {
+        "status": "historical_superseded_do_not_use",
+        "active_pipeline_evidence": False,
+        "claim_boundary": (
+            "This legacy endpoint-scale export depended on retired fail-open "
+            "saliency, neutral OCR fallbacks, task/profile modifiers, and "
+            "response fields that are not part of the frozen Stage-1 plus "
+            "Stage-2-v1 contract."
+        ),
+        "replacement_evidence": [
+            "maintained canonical-scale regression tests",
+            "real-weight Stage-1 and Stage-2-v1 acceptance replay",
+        ],
+        "legacy_measurements_removed": True,
+    }
+
+
+def test_active_scale_evidence_uses_the_current_layout_output_name():
+    for active_scale_surface in (
+        CANONICAL_SCALE_TOOL,
+        CANONICAL_SCALE_DOCUMENTATION,
+    ):
+        assert "`cognitive_load_index`" not in active_scale_surface
+        assert "layout.experimental_complexity_index" in active_scale_surface

@@ -47,6 +47,11 @@ The active v1 context boundary accepts exactly:
 - `time_pressure`: `low`, `medium`, or `high`; deterministically mapped to
   `lower`, `baseline`, or `higher`.
 
+These public context values are case-sensitive and may be supplied at most
+once across form and query data. Explicit blanks and ambiguous duplicates fail
+with HTTP 400. The optional `display_preset` accepts only `phone`, `laptop`, or
+`desktop` and is valid only when the separate Jokinen diagnostic is requested.
+
 All 15 combinations are declared compatible. The response is
 `score_bearing=false`, `numeric_modifier=null`, `simulated_process=false`, and
 `validated_measurement=false`. Legacy profile, search-mode, target-specificity,

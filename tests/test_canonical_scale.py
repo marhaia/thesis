@@ -421,6 +421,7 @@ def test_cognitive_load_endpoint_wires_two_paths(client, monkeypatch):
     # (C) native element detection (app.py re-imports this name at call time
     #     from cognitive.element_detector).
     def spy_native_detect(image, *a, **k):
+        captured["native_detect_calls"] = captured.get("native_detect_calls", 0) + 1
         captured["native_img_shape"] = tuple(image.shape[:2])
         els = real_detect(image, *a, **k)
         captured["native_elements"] = els
@@ -491,7 +492,17 @@ def test_cognitive_load_endpoint_wires_two_paths(client, monkeypatch):
     assert max(captured["native_img_shape"]) != CANONICAL_LONG_SIDE
 
     # (D) Jokinen received the native element set and the native image shape.
-    assert captured["jokinen_elements"] is captured["native_elements"]
+    assert captured["native_detect_calls"] == 1
+    assert len(captured["jokinen_elements"]) == len(captured["native_elements"])
+    assert [e["id"] for e in captured["jokinen_elements"]] == [
+        e["id"] for e in captured["native_elements"]
+    ]
+    assert [list(e["bbox"]) for e in captured["jokinen_elements"]] == [
+        list(e["bbox"]) for e in captured["native_elements"]
+    ]
+    assert [list(e["center"]) for e in captured["jokinen_elements"]] == [
+        list(e["center"]) for e in captured["native_elements"]
+    ]
     assert captured["jokinen_image_shape"] == (NATIVE_H, NATIVE_W)
 
     # (E) returned detected_elements are the native-coordinate elements.

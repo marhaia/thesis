@@ -242,9 +242,9 @@ a deliberate architectural choice rather than an unresolved defect of the score.
 
 Scope of the scale evidence: only the reduced HCEye rule index (visual features
 + whitespace, no saliency, no OCR, no modifiers) is exercised across scales. The
-**complete production `cognitive_load_index` with the real UMSI++ saliency model
-and real EasyOCR text density has NOT been scale-validated** and no such claim is
-made here.
+**complete production `layout.experimental_complexity_index` with the real
+UMSI++ saliency model and real EasyOCR text density has NOT been
+scale-validated** and no such claim is made here.
 
 ## Scope / limitations
 

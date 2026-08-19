@@ -428,6 +428,7 @@ def test_stage2_v1_copy_is_qualitative_and_excludes_profile_and_ml():
         "Original adjusted score",
         "Simulated adjusted score",
         "simulated adjusted score",
+        "Applying task & profile modifiers",
     ):
         assert forbidden not in UI
 

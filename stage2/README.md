@@ -16,6 +16,10 @@ the frozen Stage-1 x19 vector or layout index.
 The Jokinen model is an optional, methodologically separate diagnostic exposed
 through the main route only when explicitly requested. It is non-score-bearing
 and is not measured search, eye tracking, or a validated behavioral prediction.
+Public context fields are case-sensitive and may be supplied at most once
+across form and query data. Explicit blank values and ambiguous duplicate
+values fail with HTTP 400. `display_preset` accepts only `phone`, `laptop`, or
+`desktop`, and only when the Jokinen diagnostic is explicitly enabled.
 
 `task_descriptor.py`, `user_profile.py`, and `regression_model.py` are archived
 legacy research scaffolds. Personality and ML are excluded from Stage 2 v1;

@@ -180,6 +180,32 @@ def _score_bytes(response):
     return struct.pack("!d", score)
 
 
+def _valid_jokinen_element():
+    return {
+        "id": 0,
+        "search_time_s": 1.5,
+        "search_time_std_s": 0.2,
+        "fixation_count": 3.0,
+        "bbox": [10.0, 12.0, 30.0, 20.0],
+        "center": [25.0, 22.0],
+        "color_category": "blue",
+    }
+
+
+def _valid_native_element():
+    return {
+        "id": 0,
+        "bbox": [10.0, 12.0, 30.0, 20.0],
+        "center": [25.0, 22.0],
+        "area": 600.0,
+        "dominant_color_hsv": [210.0, 0.8, 0.7],
+        "color_category": "blue",
+        "angular_size": 2.5,
+        "contrast_ratio": 4.5,
+        "wcag_aa_pass": True,
+    }
+
+
 def test_public_stage1_boundary_is_exact_named_float32_x19(client):
     response = _post(client)
 
@@ -379,6 +405,78 @@ def test_stage2_v1_rejects_explicit_empty_scenario_fields(client, empty_field):
     assert response.get_json()["error"]["code"] == "stage2_scenario_invalid"
 
 
+@pytest.mark.parametrize(
+    "context",
+    [
+        {"include_jokinen_diagnostic": "true", "display_preset": ""},
+        {"include_jokinen_diagnostic": "true", "display_preset": "   "},
+        {"include_jokinen_diagnostic": "true", "display_preset": "PHONE"},
+        {"include_jokinen_diagnostic": "TRUE"},
+    ],
+)
+def test_stage2_v1_rejects_empty_or_case_variant_optional_values(client, context):
+    payload = {
+        "image": (io.BytesIO(_png_bytes()), "invalid-optional.png"),
+        "task_type": "search",
+        "time_pressure": "medium",
+        **context,
+    }
+
+    response = client.post(
+        "/api/cognitive-load", data=payload, content_type="multipart/form-data"
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "stage2_scenario_invalid"
+
+
+@pytest.mark.parametrize(
+    "field,form_value,query_value",
+    [
+        ("task_type", "search", ""),
+        ("task_type", "search", "SEARCH"),
+        ("time_pressure", "medium", ""),
+        ("include_jokinen_diagnostic", "true", "false"),
+        ("display_preset", "phone", "PHONE"),
+    ],
+)
+def test_stage2_v1_rejects_duplicate_form_and_query_values(
+    client, field, form_value, query_value
+):
+    payload = {
+        "image": (io.BytesIO(_png_bytes()), "duplicate-context.png"),
+        "task_type": "search",
+        "time_pressure": "medium",
+        "include_jokinen_diagnostic": "true",
+    }
+    payload[field] = form_value
+
+    response = client.post(
+        "/api/cognitive-load",
+        query_string=[(field, query_value)],
+        data=payload,
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "stage2_scenario_invalid"
+
+
+def test_stage2_v1_rejects_duplicate_values_within_one_request_source(client):
+    response = client.post(
+        "/api/cognitive-load",
+        query_string=[("task_type", "search"), ("task_type", "SEARCH")],
+        data={
+            "image": (io.BytesIO(_png_bytes()), "duplicate-query.png"),
+            "time_pressure": "medium",
+        },
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "stage2_scenario_invalid"
+
+
 def test_optional_jokinen_is_off_by_default_and_explicit_when_requested(client):
     default = _post(client)
     requested = _post(client, include_jokinen_diagnostic="true")
@@ -399,17 +497,32 @@ def test_optional_jokinen_is_off_by_default_and_explicit_when_requested(client):
         pytest.param(-np.inf, id="negative-inf"),
     ],
 )
-@pytest.mark.parametrize("field", ["mean_search_time_s", "fixation_count"])
+@pytest.mark.parametrize(
+    "field",
+    [
+        "mean_search_time_s",
+        "search_time_s",
+        "search_time_std_s",
+        "fixation_count",
+        "bbox",
+        "center",
+    ],
+)
 def test_optional_jokinen_contains_nonfinite_results(
     client, monkeypatch, field, nonfinite
 ):
     import cognitive.jokinen_model
 
-    result = {"mean_search_time_s": 1.5, "per_element": []}
+    element = _valid_jokinen_element()
+    result = {"mean_search_time_s": 1.5, "per_element": [element]}
     if field == "mean_search_time_s":
         result[field] = nonfinite
+    elif field == "bbox":
+        element[field] = np.array([10.0, nonfinite, 30.0, 20.0])
+    elif field == "center":
+        element[field] = [25.0, nonfinite]
     else:
-        result["per_element"] = [{field: nonfinite}]
+        element[field] = nonfinite
 
     monkeypatch.setattr(
         cognitive.jokinen_model.JokinenSearchModel,
@@ -439,6 +552,98 @@ def test_optional_jokinen_contains_nonfinite_results(
     raw = response.get_data(as_text=True)
     assert "NaN" not in raw
     assert "Infinity" not in raw
+
+
+@pytest.mark.parametrize(
+    "result",
+    [
+        None,
+        [],
+        {},
+        {"mean_search_time_s": 1.0},
+        {"mean_search_time_s": 1.0, "per_element": "not-a-list"},
+        {"mean_search_time_s": "1.0", "per_element": []},
+        {"mean_search_time_s": True, "per_element": []},
+        {"mean_search_time_s": 1.0, "per_element": [{}]},
+        {"mean_search_time_s": 1.0, "per_element": ["not-an-object"]},
+        {
+            "mean_search_time_s": 1.0,
+            "per_element": [{**_valid_jokinen_element(), "id": 1.5}],
+        },
+    ],
+)
+def test_optional_jokinen_contains_malformed_results(client, monkeypatch, result):
+    import cognitive.jokinen_model
+
+    monkeypatch.setattr(
+        cognitive.jokinen_model.JokinenSearchModel,
+        "predict_search_times",
+        lambda self, **kwargs: result,
+    )
+
+    body = _post(client, include_jokinen_diagnostic="true")
+
+    assert body["jokinen_diagnostic"]["status"] == "unavailable"
+    assert body["jokinen_diagnostic"]["result"] is None
+    assert len(body["stage1_feature_vector"]) == 19
+
+
+def test_optional_jokinen_contains_nonfinite_derived_arithmetic(client, monkeypatch):
+    import cognitive.jokinen_model
+
+    element = _valid_jokinen_element()
+    element["search_time_s"] = 1e308
+    result = {"mean_search_time_s": 1e-308, "per_element": [element]}
+    monkeypatch.setattr(
+        cognitive.jokinen_model.JokinenSearchModel,
+        "predict_search_times",
+        lambda self, **kwargs: result,
+    )
+
+    body = _post(client, include_jokinen_diagnostic="true")
+
+    assert body["jokinen_diagnostic"]["status"] == "unavailable"
+    assert body["jokinen_diagnostic"]["result"] is None
+    assert len(body["stage1_feature_vector"]) == 19
+
+
+@pytest.mark.parametrize("include_jokinen", [False, True])
+@pytest.mark.parametrize(
+    "field,bad_value",
+    [
+        ("contrast_ratio", np.nan),
+        ("contrast_ratio", np.inf),
+        ("contrast_ratio", -np.inf),
+        ("bbox", [10.0, np.nan, 30.0, 20.0]),
+        ("bbox", np.array([10.0, np.inf, 30.0, 20.0])),
+        ("bbox", "not-a-box"),
+        ("center", [25.0, -np.inf]),
+        ("center", [True, 22.0]),
+    ],
+)
+def test_invalid_native_elements_never_break_the_stage1_response(
+    client, monkeypatch, include_jokinen, field, bad_value
+):
+    import cognitive.element_detector
+
+    element = _valid_native_element()
+    element[field] = bad_value
+    monkeypatch.setattr(
+        cognitive.element_detector,
+        "detect_elements",
+        lambda image: [element],
+    )
+
+    context = {
+        "include_jokinen_diagnostic": "true" if include_jokinen else "false"
+    }
+    body = _post(client, **context)
+
+    assert len(body["stage1_feature_vector"]) == 19
+    assert body["detected_elements"] == []
+    expected_status = "unavailable" if include_jokinen else "not_requested"
+    assert body["jokinen_diagnostic"]["status"] == expected_status
+    assert body["jokinen_diagnostic"]["result"] is None
 
 
 @pytest.mark.parametrize(

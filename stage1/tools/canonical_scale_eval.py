@@ -11,8 +11,8 @@ and behind the corrective scale re-audit:
      relative gap of all eight Stage-1 features, the five percentile-normalised
      HCEye inputs, and the resulting HCEye rule index computed from visual
      features + whitespace only (no saliency, no OCR, no task/profile
-     modifiers), so it is deliberately NOT the full endpoint
-     ``cognitive_load_index``;
+     modifiers), so it is deliberately NOT the complete endpoint
+     ``layout.experimental_complexity_index``;
   3. a held-out real-UI scale evaluation on a seeded UEyes sample that EXCLUDES
      the images used to select 1280 (variants are raster-enlarged, not natively
      re-rendered, and are reported descriptively). Percentile-normalised inputs
@@ -202,8 +202,9 @@ def hceye_rule_index_no_saliency_no_ocr(
     """HCEye rule index (h[5]) from visual features + whitespace ONLY.
 
     This deliberately omits the saliency term, the OCR-derived text_density and
-    the task/profile modifiers, so it is NOT the full endpoint
-    ``cognitive_load_index``. It isolates the visual-feature + whitespace
+    task/profile inputs are not part of the active score contract, so this is
+    NOT the complete endpoint ``layout.experimental_complexity_index``. It
+    isolates the visual-feature + whitespace
     contribution, which is exactly the part whose resolution behaviour this
     audit measures. It is named accordingly to avoid overclaiming.
     """

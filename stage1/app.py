@@ -1483,32 +1483,168 @@ STAGE2_V1_DISPLAY_PRESETS = {"phone", "laptop", "desktop"}
 
 
 def _request_value(req, name):
-    """Read a form/query value without treating an empty string as absent."""
-    if name in req.form:
-        return req.form.get(name)
-    if name in req.args:
-        return req.args.get(name)
-    return None
+    """Return one unambiguous form/query value, preserving explicit blanks."""
+    values = list(req.form.getlist(name)) + list(req.args.getlist(name))
+    if len(values) > 1:
+        raise ScenarioProxyInputError(
+            f"{name} must be supplied at most once across form and query data"
+        )
+    return values[0] if values else None
 
 
-def _require_finite_optional_result(value, path="jokinen_result"):
-    """Reject non-finite numeric values in an optional diagnostic result."""
+def _plain_finite_tree(value, path="value"):
+    """Return a JSON-safe copy while rejecting non-finite/unsupported leaves."""
     import math
     import numbers
 
-    if isinstance(value, bool) or value is None or isinstance(value, str):
-        return
+    if value is None or isinstance(value, (bool, str)):
+        return value
     if isinstance(value, numbers.Real):
         if not math.isfinite(float(value)):
             raise ValueError(f"{path} must contain only finite numeric values")
-        return
+        if isinstance(value, numbers.Integral):
+            return int(value)
+        return float(value)
     if isinstance(value, dict):
-        for key, child in value.items():
-            _require_finite_optional_result(child, f"{path}.{key}")
-        return
+        if not all(isinstance(key, str) for key in value):
+            raise TypeError(f"{path} must use string object keys")
+        return {
+            key: _plain_finite_tree(child, f"{path}.{key}")
+            for key, child in value.items()
+        }
     if isinstance(value, (list, tuple)):
-        for index, child in enumerate(value):
-            _require_finite_optional_result(child, f"{path}[{index}]")
+        return [
+            _plain_finite_tree(child, f"{path}[{index}]")
+            for index, child in enumerate(value)
+        ]
+    # NumPy arrays are legitimate internal containers, but must be converted
+    # before Flask's strict JSON provider sees them.
+    tolist = getattr(value, "tolist", None)
+    if callable(tolist):
+        return _plain_finite_tree(tolist(), path)
+    raise TypeError(f"{path} contains unsupported value type {type(value).__name__}")
+
+
+def _finite_number(value, path):
+    """Require a real finite number (booleans and numeric strings are invalid)."""
+    import math
+    import numbers
+
+    if isinstance(value, bool) or not isinstance(value, numbers.Real):
+        raise TypeError(f"{path} must be a finite real number")
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"{path} must be a finite real number")
+    return number
+
+
+def _finite_integer(value, path):
+    """Require a finite integral value without silently truncating decimals."""
+    number = _finite_number(value, path)
+    if not number.is_integer():
+        raise ValueError(f"{path} must be an integer")
+    return int(number)
+
+
+def _finite_sequence(value, length, path):
+    """Require an exact-length finite numeric sequence and return plain floats."""
+    if isinstance(value, (str, bytes, dict)):
+        raise TypeError(f"{path} must be a numeric sequence of length {length}")
+    tolist = getattr(value, "tolist", None)
+    if callable(tolist):
+        value = tolist()
+    if not isinstance(value, (list, tuple)) or len(value) != length:
+        raise TypeError(f"{path} must be a numeric sequence of length {length}")
+    return [
+        _finite_number(child, f"{path}[{index}]")
+        for index, child in enumerate(value)
+    ]
+
+
+def _validated_native_elements(elements):
+    """Validate and sanitize non-score-bearing native detector output."""
+    safe = _plain_finite_tree(elements, "native_elements")
+    if not isinstance(safe, list):
+        raise TypeError("native_elements must be a list")
+    for index, element in enumerate(safe):
+        path = f"native_elements[{index}]"
+        if not isinstance(element, dict):
+            raise TypeError(f"{path} must be an object")
+        for required in ("id", "bbox", "center"):
+            if required not in element:
+                raise ValueError(f"{path}.{required} is required")
+        element["id"] = _finite_integer(element["id"], f"{path}.id")
+        element["bbox"] = _finite_sequence(element["bbox"], 4, f"{path}.bbox")
+        element["center"] = _finite_sequence(
+            element["center"], 2, f"{path}.center"
+        )
+        for optional in ("area", "angular_size", "contrast_ratio"):
+            if optional in element:
+                element[optional] = _finite_number(
+                    element[optional], f"{path}.{optional}"
+                )
+        if "dominant_color_hsv" in element:
+            element["dominant_color_hsv"] = _finite_sequence(
+                element["dominant_color_hsv"],
+                3,
+                f"{path}.dominant_color_hsv",
+            )
+        if "color_category" in element and not isinstance(
+            element["color_category"], str
+        ):
+            raise TypeError(f"{path}.color_category must be text")
+        if "wcag_aa_pass" in element and not isinstance(
+            element["wcag_aa_pass"], bool
+        ):
+            raise TypeError(f"{path}.wcag_aa_pass must be boolean")
+    return safe
+
+
+def _validated_jokinen_result(result):
+    """Validate the complete optional Jokinen result schema before use."""
+    safe = _plain_finite_tree(result, "jokinen_result")
+    if not isinstance(safe, dict):
+        raise TypeError("jokinen_result must be an object")
+    for required in ("mean_search_time_s", "per_element"):
+        if required not in safe:
+            raise ValueError(f"jokinen_result.{required} is required")
+    safe["mean_search_time_s"] = _finite_number(
+        safe["mean_search_time_s"], "jokinen_result.mean_search_time_s"
+    )
+    per_element = safe["per_element"]
+    if not isinstance(per_element, list):
+        raise TypeError("jokinen_result.per_element must be a list")
+    for index, element in enumerate(per_element):
+        path = f"jokinen_result.per_element[{index}]"
+        if not isinstance(element, dict):
+            raise TypeError(f"{path} must be an object")
+        for required in (
+            "id",
+            "search_time_s",
+            "fixation_count",
+            "bbox",
+            "center",
+        ):
+            if required not in element:
+                raise ValueError(f"{path}.{required} is required")
+        element["id"] = _finite_integer(element["id"], f"{path}.id")
+        for numeric in ("search_time_s", "fixation_count"):
+            element[numeric] = _finite_number(
+                element[numeric], f"{path}.{numeric}"
+            )
+        if "search_time_std_s" in element:
+            element["search_time_std_s"] = _finite_number(
+                element["search_time_std_s"], f"{path}.search_time_std_s"
+            )
+        element["bbox"] = _finite_sequence(element["bbox"], 4, f"{path}.bbox")
+        element["center"] = _finite_sequence(
+            element["center"], 2, f"{path}.center"
+        )
+        if "color_category" in element and not isinstance(
+            element["color_category"], str
+        ):
+            raise TypeError(f"{path}.color_category must be text")
+    return safe
 
 
 def _stage2_v1_context(req):
@@ -1550,7 +1686,7 @@ def _stage2_v1_context(req):
     elif isinstance(raw_jokinen, bool):
         include_jokinen = raw_jokinen
     else:
-        normalized = str(raw_jokinen).strip().lower()
+        normalized = str(raw_jokinen).strip()
         if normalized in {"1", "true", "yes", "on"}:
             include_jokinen = True
         elif normalized in {"0", "false", "no", "off"}:
@@ -1561,8 +1697,14 @@ def _stage2_v1_context(req):
             )
 
     raw_display = _request_value(req, "display_preset")
-    if raw_display not in (None, ""):
-        display_key = str(raw_display).strip().lower()
+    if raw_display is None:
+        display_key = "desktop"
+    else:
+        display_key = str(raw_display).strip()
+        if not display_key:
+            raise ScenarioProxyInputError(
+                "display_preset must be one of phone, laptop, desktop"
+            )
         if not include_jokinen:
             raise ScenarioProxyInputError(
                 "display_preset is accepted only when the optional Jokinen "
@@ -1572,7 +1714,27 @@ def _stage2_v1_context(req):
             raise ScenarioProxyInputError(
                 "display_preset must be one of phone, laptop, desktop"
             )
-    return proxy, include_jokinen
+    return proxy, include_jokinen, display_key
+
+
+def _display_preset_geometry(key):
+    """Return physical geometry for an already validated preset key."""
+    if key not in DISPLAY_PRESETS:
+        raise ValueError(f"Unknown display preset: {key}")
+    preset = DISPLAY_PRESETS[key]
+    meta = {
+        "key": key,
+        "label": preset["label"],
+        "width_cm": preset["width_cm"],
+        "height_cm": preset["height_cm"],
+        "viewing_distance_cm": preset["viewing_distance_cm"],
+    }
+    return (
+        preset["width_cm"],
+        preset["height_cm"],
+        preset["viewing_distance_cm"],
+        meta,
+    )
 
 
 def _resolve_display_preset(req):
@@ -1588,16 +1750,7 @@ def _resolve_display_preset(req):
            or "desktop").strip().lower()
     if key not in DISPLAY_PRESETS:
         key = "desktop"
-    preset = DISPLAY_PRESETS[key]
-    meta = {
-        "key": key,
-        "label": preset["label"],
-        "width_cm": preset["width_cm"],
-        "height_cm": preset["height_cm"],
-        "viewing_distance_cm": preset["viewing_distance_cm"],
-    }
-    return (preset["width_cm"], preset["height_cm"],
-            preset["viewing_distance_cm"], meta)
+    return _display_preset_geometry(key)
 
 
 @app.route("/api/cognitive-load", methods=["POST"])
@@ -1644,7 +1797,11 @@ def cognitive_load():
         return jsonify({"error": f"Unsupported format: {ext}"}), 400
 
     try:
-        scenario_proxy, include_jokinen_diagnostic = _stage2_v1_context(request)
+        (
+            scenario_proxy,
+            include_jokinen_diagnostic,
+            display_preset_key,
+        ) = _stage2_v1_context(request)
     except ScenarioProxyInputError as exc:
         return _fail_closed_error(
             "stage2_scenario_invalid",
@@ -1669,7 +1826,9 @@ def cognitive_load():
         # Physical display geometry is used only when the optional, separate
         # Jokinen diagnostic is requested; pixel features are unaffected.
         (screen_w_cm, screen_h_cm,
-         viewing_cm, display_preset_meta) = _resolve_display_preset(request)
+         viewing_cm, display_preset_meta) = _display_preset_geometry(
+            display_preset_key
+        )
 
         # Step 1: Visual complexity (v∈ℝ⁸)
         vis_results, visual_cache_hit = _compute_visual_cached(image_hash, filepath)
@@ -1780,11 +1939,15 @@ def cognitive_load():
             raise _layout_ocr_unavailable() from exc
 
         # --- Native path (Jokinen / interaction) -------------------------
-        native_elements = None
+        native_elements = []
+        native_elements_available = False
         if native_img is not None:
             try:
                 from cognitive.element_detector import detect_elements
-                native_elements = detect_elements(native_img)
+                native_elements = _validated_native_elements(
+                    detect_elements(native_img)
+                )
+                native_elements_available = True
             except Exception as e:
                 print(f"[HCEye] Native element detection unavailable: {e!r}")
 
@@ -1849,7 +2012,6 @@ def cognitive_load():
             try:
                 import cv2
                 from cognitive.jokinen_model import JokinenSearchModel, JokinenParams
-                from cognitive.element_detector import detect_elements
 
                 # Reuse the native image and native element boxes from Step 2.5.
                 # Only re-read/re-detect if that earlier step failed.
@@ -1859,8 +2021,8 @@ def cognitive_load():
                     raise ValueError(
                         f"Cannot read image for Jokinen search model: {filepath}"
                     )
-                if native_elements is None:
-                    native_elements = detect_elements(native_img)
+                if not native_elements_available:
+                    raise ValueError("Native element data is unavailable")
 
                 jokinen_model = JokinenSearchModel(JokinenParams())
                 jresult = jokinen_model.predict_search_times(
@@ -1874,7 +2036,7 @@ def cognitive_load():
                 # The diagnostic is optional, so numerically invalid model
                 # output must be contained here before it can reach either the
                 # Cross-Signal Review or strict JSON serialization.
-                _require_finite_optional_result(jresult)
+                jresult = _validated_jokinen_result(jresult)
                 mean_search_time_s = float(jresult["mean_search_time_s"])
                 per_elem = jresult.get("per_element", [])
                 if per_elem:
@@ -1959,13 +2121,19 @@ def cognitive_load():
                         ],
                     }
 
-                jokinen_diagnostic["status"] = "complete"
-                jokinen_diagnostic["result"] = {
+                diagnostic_result = {
                     "mean_search_time_s": mean_search_time_s,
                     "estimated_fixation_count": estimated_fixation_count,
                     "search_feedback": search_feedback,
                     "contrast_report": contrast_report,
                 }
+                # Validate derived arithmetic as well as raw model output so
+                # overflow or conversion in feedback assembly cannot escape
+                # the optional containment boundary.
+                jokinen_diagnostic["result"] = _plain_finite_tree(
+                    diagnostic_result, "jokinen_diagnostic.result"
+                )
+                jokinen_diagnostic["status"] = "complete"
             except Exception as e:
                 print(f"[Jokinen] Optional diagnostic unavailable: {e!r}")
                 jokinen_diagnostic["status"] = "unavailable"
