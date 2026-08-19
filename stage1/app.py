@@ -1517,11 +1517,10 @@ def _plain_finite_tree(value, path="value"):
             _plain_finite_tree(child, f"{path}[{index}]")
             for index, child in enumerate(value)
         ]
-    # NumPy arrays are legitimate internal containers, but must be converted
-    # before Flask's strict JSON provider sees them.
-    tolist = getattr(value, "tolist", None)
-    if callable(tolist):
-        return _plain_finite_tree(tolist(), path)
+    # Array-like containers are not part of the optional public contract.
+    # Reject them instead of silently normalizing a malformed model result into
+    # a diagnostic labelled complete. NumPy scalar numbers were already
+    # handled by numbers.Real above.
     raise TypeError(f"{path} contains unsupported value type {type(value).__name__}")
 
 
@@ -1550,9 +1549,6 @@ def _finite_sequence(value, length, path):
     """Require an exact-length finite numeric sequence and return plain floats."""
     if isinstance(value, (str, bytes, dict)):
         raise TypeError(f"{path} must be a numeric sequence of length {length}")
-    tolist = getattr(value, "tolist", None)
-    if callable(tolist):
-        value = tolist()
     if not isinstance(value, (list, tuple)) or len(value) != length:
         raise TypeError(f"{path} must be a numeric sequence of length {length}")
     return [

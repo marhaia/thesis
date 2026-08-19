@@ -607,6 +607,58 @@ def test_optional_jokinen_contains_nonfinite_derived_arithmetic(client, monkeypa
     assert len(body["stage1_feature_vector"]) == 19
 
 
+@pytest.mark.parametrize("container_position", ["bbox", "per_element"])
+def test_optional_jokinen_rejects_finite_numpy_containers(
+    client, monkeypatch, container_position
+):
+    import cognitive.jokinen_model
+
+    element = _valid_jokinen_element()
+    if container_position == "bbox":
+        element["bbox"] = np.array([10.0, 12.0, 30.0, 20.0])
+        per_element = [element]
+    else:
+        per_element = np.array([element], dtype=object)
+    result = {"mean_search_time_s": 1.5, "per_element": per_element}
+    monkeypatch.setattr(
+        cognitive.jokinen_model.JokinenSearchModel,
+        "predict_search_times",
+        lambda self, **kwargs: result,
+    )
+
+    body = _post(client, include_jokinen_diagnostic="true")
+
+    assert body["jokinen_diagnostic"]["status"] == "unavailable"
+    assert body["jokinen_diagnostic"]["result"] is None
+    assert len(body["stage1_feature_vector"]) == 19
+
+
+@pytest.mark.parametrize("container_position", ["center", "elements"])
+def test_native_detection_rejects_finite_numpy_containers(
+    client, monkeypatch, container_position
+):
+    import cognitive.element_detector
+
+    element = _valid_native_element()
+    if container_position == "center":
+        element["center"] = np.array([25.0, 22.0])
+        elements = [element]
+    else:
+        elements = np.array([element], dtype=object)
+    monkeypatch.setattr(
+        cognitive.element_detector,
+        "detect_elements",
+        lambda image: elements,
+    )
+
+    body = _post(client, include_jokinen_diagnostic="true")
+
+    assert body["detected_elements"] == []
+    assert body["jokinen_diagnostic"]["status"] == "unavailable"
+    assert body["jokinen_diagnostic"]["result"] is None
+    assert len(body["stage1_feature_vector"]) == 19
+
+
 @pytest.mark.parametrize("include_jokinen", [False, True])
 @pytest.mark.parametrize(
     "field,bad_value",
