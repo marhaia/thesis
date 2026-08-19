@@ -11,6 +11,7 @@ from zipfile import ZipFile
 ROOT = Path(__file__).resolve().parents[1]
 UI = (ROOT / "stage1" / "ui" / "index.html").read_text(encoding="utf-8")
 README = (ROOT / "README.md").read_text(encoding="utf-8")
+APP_SOURCE = (ROOT / "stage1" / "app.py").read_text(encoding="utf-8")
 PYTEST_CONFIG = (ROOT / "pytest.ini").read_text(encoding="utf-8")
 CITATION_MATRIX = (
     ROOT / "Literature" / "notes" / "media" / "citation_matrix.html"
@@ -513,6 +514,76 @@ def test_current_feature_documentation_uses_the_same_hypothesis_boundary():
         "more action possibilities = higher decisional load",
     ):
         assert forbidden not in lower
+
+
+def test_umsi_source_history_and_categories_are_not_conflated():
+    section = STAGE1_DOCUMENTATION[
+        STAGE1_DOCUMENTATION.index("### 6.1 Background and source boundary"):
+        STAGE1_DOCUMENTATION.index("### 6.2 Architecture")
+    ]
+    compact = " ".join(section.split())
+    assert "62 participants viewing 1,980 screenshots" in compact
+    assert "Webpage, Desktop UI, Mobile UI, Poster" in compact
+    assert (
+        "The broader graphic-design and natural-image classes associated with "
+        "the predecessor UMSI must not be described as UEyes categories."
+    ) in compact
+    assert "Infografiken, Mobile UI, Desktop UI, Webseiten, Natural Images" not in section
+
+
+def test_jokinen_documentation_is_an_engineering_claim_not_validation():
+    section = STAGE1_DOCUMENTATION[
+        STAGE1_DOCUMENTATION.index(
+            "## 7. Optional Jokinen-Based Visual-Search Diagnostic"
+        ):
+        STAGE1_DOCUMENTATION.index("## 8. Dependencies")
+    ]
+    compact = " ".join(section.split())
+    for required in (
+        "model-simulated",
+        "off by default, non-score-bearing",
+        "Project-specific author choice; not source-paper calibrated",
+        "Engineering sanity check — not validation",
+        "does **not** reproduce the original paper's experiment",
+    ):
+        assert required in compact
+    for forbidden in (
+        "### 7.8 Validierung",
+        "Konsistent mit Jokinen's NYT-Daten",
+        "exakt der Pop-Out-Effekt",
+    ):
+        assert forbidden not in section
+
+
+def test_active_reference_claims_are_complete_and_corpus_relative():
+    for doi in (
+        "10.1145/3544548.3581096",
+        "10.1145/3655610",
+        "10.1016/j.ijhcs.2019.102376",
+        "10.1016/S1389-0417(00)00015-2",
+        "10.1016/j.cogsys.2012.12.010",
+        "10.1016/j.ipm.2019.04.004",
+        "10.1109/CVPR.2011.5995347",
+    ):
+        assert doi in STAGE1_DOCUMENTATION
+
+    assert "Das, A., Wu, Z., Škrjanec, I., & Feit, A. M. (2024)" in STAGE1_DOCUMENTATION
+    assert "Jokinen, Wang, Sarcar, Oulasvirta &amp; Ren (2020)" in UI
+    assert "Silpasuwanchai" not in UI
+    assert "authorized 1,485-image UEyes GUI" in APP_SOURCE
+    assert "typical GUI" not in APP_SOURCE
+    assert "typical GUI" not in UI
+
+
+def test_feature_metadata_distinguishes_source_metrics_from_project_composites():
+    from stage1.app import app
+
+    body = app.test_client().get("/api/features").get_json()
+    references = {item["key"]: item["reference"] for item in body["features"]}
+    assert references["edge_density"] == "Canny (1986); AIM m4 defaults"
+    assert references["layout_symmetry"].startswith("Custom project metric")
+    assert references["chromatic_coherence"].startswith("Custom project composite")
+    assert references["visual_hierarchy"].startswith("Custom project composite")
 
 
 def test_readme_documents_both_screen_set_routes_and_shared_limits():

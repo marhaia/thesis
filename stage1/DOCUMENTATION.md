@@ -5,7 +5,7 @@
 **Technical scope:** *Frozen Stage-1 Screenshot Pipeline + Qualitative Stage-2 v1 Scenario Proxy*
 **Author:** Hannah Mueller (Q682780)  
 **Module:** `stage1/visual_complexity.py` + `saliency/umsi_model.py`  
-**Version:** 3.1 (18.08.2026)
+**Version:** 3.2 (19.08.2026)
 
 > **Current P7 claim policy (authoritative):** A complete score-bearing
 > Stage-1 analysis exposes the task-independent float32 vector
@@ -26,31 +26,35 @@
 
 ## Change Log
 
-| Datum | Version | Änderung |
-|-------|---------|----------|
-| 04.05.2026 | 1.0 | Stage 1: Feature-Vektor v∈ℝ⁸ implementiert (8 visuelle Komplexitätsmetriken) |
-| 04.05.2026 | 1.0 | Flask-WebUI + API auf Port 5001 |
-| 04.05.2026 | 1.0 | Inline-Kommentare + DOCUMENTATION.md erstellt |
-| 05.05.2026 | 1.5 | UEyes-Repo geclont, UMSI++ Architektur analysiert |
-| 06.05.2026 | 2.0 | UMSI++ TF2-Port (Keras 3) — lauffähig auf M4 Mac (CPU) |
-| 06.05.2026 | 2.0 | Saliency-Feature-Extraktion s∈ℝ⁵ implementiert |
-| 06.05.2026 | 2.0 | Flask-Endpoint `/api/saliency` integriert |
-| 06.05.2026 | 2.0 | Pretrained Weights geladen (UEyes CHI2023, ~115 MB / 120 MB Datei) |
-| 06.05.2026 | 2.0 | PathGAN++ und DeepGaze++ Weights heruntergeladen (noch nicht portiert) |
-| 06.05.2026 | 2.5 | **Jokinen 2020 Visual Search Model** implementiert (`cognitive/jokinen_model.py`) |
-| 06.05.2026 | 2.5 | Element-Detektor für UI-Elemente (`cognitive/element_detector.py`) |
-| 06.05.2026 | 2.5 | Integration: UMSI++ Saliency als Bottom-Up-Signal in Jokinen-Modell |
-| 06.05.2026 | 2.5 | Flask-Endpoint `/api/search-time` — kognitive Suchzeit-Vorhersage |
-| 06.05.2026 | 2.5 | Monte-Carlo-Simulation (50–500 Trials pro Element, EMMA, VSTM) |
-| 26.05.2026 | 2.6 | `/api/cognitive-load` standardmäßig auf **HCEye-Regeln + Descriptor/Profile-Modifikatoren** gestellt |
-| 26.05.2026 | 2.6 | Trainiertes Stage-2-Modell nur noch als **explizites experimentelles Opt-in** |
-| 16.07.2026 | 2.7 | **Web-UI/UX-Überarbeitung** (nur Darstellung/Copy, keine Scoring-Änderung): konsistente Info-„i"-Icons inkl. Tooltips für Cognitive Load Score, Search Efficiency & Attention Demand; einheitliche Trennlinien zwischen Ergebnis-Blöcken |
-| 16.07.2026 | 2.7 | Comparison-History: Spalte „Attn" → **„Attention"** ausgeschrieben; CSV-Export-Button dynamisch **„Export all / Export selected (N)"** und exportiert nur ausgewählte Zeilen |
-| 16.07.2026 | 2.7 | Navigation: Burger-Menü durch **Einstellungs-Zahnrad-Icon** ersetzt (nur „Alerts"); Contact in den **Footer** verschoben; Footer-Platzhalter für **GitHub / OSF / DOI** ergänzt |
-| 16.07.2026 | 2.7 | Display-Preset-Wording vereinfacht (Phone / Laptop 14″ / Desktop 17″, „at desk distance" entfernt); alle Emoji-Feature-Icons aus `/api/features` entfernt (waren ungenutzt) |
-| 16.07.2026 | 2.7 | **Quellen-Audit:** Feature-DOIs mit dem angezeigten Referenztext abgeglichen — Edge Density → **Canny (1986)**, Visual Hierarchy → **Tuch et al. (2009)**; Out-of-Domain-Warnung mit wissenschaftlichem Beleg zur Dataset-Shift-Problematik versehen (**Torralba & Efros 2011**, **Jiang et al. 2023**) |
-| 11.08.2026 | 3.0 | **P7 Claim reconciliation:** x19-Vertrag, Task-Unabhängigkeit, Canonical 1280, HCEye-/UMSI-Grenzen, simulierte Fixations-/Zeitwerte, Formate und Validierungsstatus vereinheitlicht |
-| 18.08.2026 | 3.1 | **Stage 2 v1 boundary:** qualitativer, nicht-score-tragender Szenario-Proxy; Persönlichkeit, ML und numerische Task-/Profil-Modifikatoren aus dem aktiven Vertrag ausgeschlossen |
+Historical terminology below records implementation history and does not
+override the current claim policy at the top of this document.
+
+| Date | Version | Change |
+|------|---------|--------|
+| 04.05.2026 | 1.0 | Implemented Stage-1 feature vector v∈ℝ⁸ (eight visual-complexity metrics) |
+| 04.05.2026 | 1.0 | Added Flask web UI and API on port 5001 |
+| 04.05.2026 | 1.0 | Added inline comments and `DOCUMENTATION.md` |
+| 05.05.2026 | 1.5 | Cloned the UEyes repository and inspected the UMSI++ architecture |
+| 06.05.2026 | 2.0 | Implemented the UMSI++ TensorFlow 2 / Keras 3 port for the recorded M4 CPU runtime |
+| 06.05.2026 | 2.0 | Implemented saliency-feature extraction s∈ℝ⁵ |
+| 06.05.2026 | 2.0 | Added `/api/saliency` |
+| 06.05.2026 | 2.0 | Loaded the UEyes/UMSI++ checkpoint |
+| 06.05.2026 | 2.0 | Downloaded PathGAN++ and DeepGaze++ weights; neither model is part of the current pipeline |
+| 06.05.2026 | 2.5 | Implemented the project Jokinen-based visual-search simulation (`cognitive/jokinen_model.py`) |
+| 06.05.2026 | 2.5 | Implemented the project UI-element detector (`cognitive/element_detector.py`) |
+| 06.05.2026 | 2.5 | Added project-specific UMSI++ activation to the Jokinen-based simulation |
+| 06.05.2026 | 2.5 | Added `/api/search-time`; current policy classifies its output as model simulation, not measured search time |
+| 06.05.2026 | 2.5 | Added Monte Carlo simulation (50–500 trials per element, EMMA, VSTM) |
+| 26.05.2026 | 2.6 | Historical release used HCEye rules plus descriptor/profile modifiers on `/api/cognitive-load`; those modifiers are retired |
+| 26.05.2026 | 2.6 | Historical release exposed a trained Stage-2 model as an experimental opt-in; it is excluded from Stage 2 v1 |
+| 16.07.2026 | 2.7 | Revised web UI presentation and copy without changing scoring |
+| 16.07.2026 | 2.7 | Expanded comparison-history labels and added selected-row CSV export |
+| 16.07.2026 | 2.7 | Revised navigation, contact placement, and repository-link placeholders |
+| 16.07.2026 | 2.7 | Simplified display-preset wording and removed unused emoji metadata |
+| 16.07.2026 | 2.7 | Audited displayed feature references and added dataset-shift context |
+| 11.08.2026 | 3.0 | Reconciled x19, task independence, canonical scale, HCEye/UMSI boundaries, simulated outputs, formats, and validation status |
+| 18.08.2026 | 3.1 | Established the qualitative, non-score-bearing Stage-2 v1 scenario boundary and excluded personality, ML, and numeric task/profile modifiers |
+| 19.08.2026 | 3.2 | Finalized English claim boundaries, source provenance, and release-facing documentation without changing score-bearing computation |
 
 ---
 
@@ -70,7 +74,7 @@
 4. [AIM Source Mapping](#4-aim-source-mapping)
 5. [Utility Functions Reference](#5-utility-functions-reference)
 6. [Saliency Pipeline (UMSI++)](#6-saliency-pipeline-umsi)
-7. [Cognitive Metrics: Jokinen 2020 Visual Search](#7-cognitive-metrics-jokinen-2020-visual-search)
+7. [Optional Jokinen-Based Visual-Search Diagnostic](#7-optional-jokinen-based-visual-search-diagnostic)
 8. [Dependencies](#8-dependencies)
 9. [Usage](#9-usage)
 10. [Example Output](#10-example-output)
@@ -122,8 +126,8 @@ Input:  GUI screenshot (PNG/JPG/JPEG/BMP/TIFF)
    │  Stage 1b: saliency/umsi_model.py        [06.05.2026]    │
    │                                                          │
    │  UMSI++ (Jiang et al., CHI 2023)                         │
-   │  Pretrained on UEyes dataset (62 participants,           │
-   │  1980 UI screenshots, 5 duration conditions)             │
+   │  UEyes source: 62 participants, 1,980 screenshots,       │
+   │  four UI types (webpage, desktop, mobile, poster)        │
    │                                                          │
    │  Outputs:                                                │
    │    • Saliency heatmap (512×512 → original resolution)   │
@@ -166,40 +170,32 @@ Output: x = [v8 | s5 | h6] ∈ ℝ¹⁹ + separate model diagnostics
 ### File Structure
 
 ```
-Thesis_G/
-├── stage1/                            ← Stage 1a: Visual Complexity
-│   ├── visual_complexity.py           ← Core pipeline (v∈ℝ⁸)
-│   ├── app.py                         ← Flask server (Port 5001)
-│   ├── DOCUMENTATION.md               ← This file
-│   ├── ui/
-│   │   └── index.html                 ← Web interface
-│   └── data/
-│       ├── screenshots/               ← Input images
-│       ├── uploads/                   ← Temp upload storage (Flask)
-│       └── results/                   ← Output CSVs
-│
-├── saliency/                          ← Stage 1b: Saliency (06.05.2026)
-│   ├── __init__.py
-│   ├── umsi_model.py                  ← UMSI++ TF2 port (Keras 3)
-│   ├── saliency_features.py           ← Feature extraction (s∈ℝ⁵)
-│   ├── inspect_weights.py             ← HDF5 weight inspector utility
-│   ├── test_full_pipeline.py          ← E2E test script
-│   ├── output/                        ← Generated heatmaps/overlays
-│   └── weights/model_weights/
-│       ├── saliency_models/UMSI++/
-│       │   └── umsi++.hdf5            ← 29.9M params (pretrained)
-│       └── scanpath_models/
-│           ├── PathGAN++/             ← Generator + Discriminator
-│           └── DeepGaze++/            ← Center bias + model
-│
-├── ueyes/                             ← UEyes CHI2023 original repo (reference)
-│   └── saliency_models/UMSI++/src/    ← Original TF1 code (not executed)
-│
-├── aim/                               ← AIM repository (source for F3, F4)
-│   └── backend/aim/metrics/...        
-│
-└── venv/                              ← Python 3.9 virtual environment
+.
+├── stage1/
+│   ├── visual_complexity.py           # Screenshot-derived v8 block
+│   ├── app.py                         # Flask API and x19 assembly
+│   ├── reproducibility.py             # Runtime and artifact verification
+│   ├── reference_pack_manifest.json   # Pinned reference identities
+│   ├── DOCUMENTATION.md               # This technical reference
+│   ├── ui/index.html                  # Standard web interface
+│   └── data/results/                  # Pinned normalization artifacts
+├── saliency/
+│   ├── umsi_model.py                  # UMSI++ TensorFlow 2 port
+│   ├── postprocessing.py              # Finite min-max normalization policy
+│   └── saliency_features.py           # Numeric s5 extraction
+├── hceye/                             # Project-specific h6 proxy rules
+├── cognitive/                         # Optional model-simulated diagnostics
+├── stage2/
+│   ├── scenario_proxy.py              # Non-score-bearing scenario proxy
+│   └── coherence_check.py             # Exploratory cross-signal review
+├── scripts/                           # Active evidence/replay utilities
+└── tests/                             # Unit, regression, contract, and gates
 ```
+
+The upstream UEyes and AIM repositories, virtual environments, downloaded
+model artifacts, literature notes, and user-study materials are not part of
+the active source-code architecture shown above. Their required technical
+identities or source relationships are recorded separately where applicable.
 
 ### Processing Flow
 
@@ -232,7 +228,7 @@ Thesis_G/
 | **Function** | `shannon_entropy(image)` |
 | **Output range** | [0, 8] bits |
 | **Unit** | bits per pixel |
-| **Higher means** | More visual information competing for attention |
+| **Higher means** | Greater grayscale-intensity variability under this metric; any attention interpretation is an unvalidated project hypothesis |
 | **Reference** | Shannon, C. E. (1948). "A Mathematical Theory of Communication." *Bell System Technical Journal*, 27, 379–423. |
 
 **Algorithm:**
@@ -247,7 +243,9 @@ $$H(I) = -\sum_{k=0}^{255} p(k) \cdot \log_2 p(k)$$
 **Interpretation:**
 - H = 0: All pixels have the same intensity (perfectly uniform).
 - H = 8: All 256 possible intensities occur with equal probability (maximum entropy for 8-bit images).
-- Typical GUI screenshots: 5.5–7.5 bits.
+- Screenshots in the project's authorized UEyes GUI reference subset commonly
+  fall within approximately 5.5–7.5 bits. This is a corpus-relative observation,
+  not a universal range for typical GUIs.
 
 ---
 
@@ -273,7 +271,9 @@ $$H(I) = -\sum_{k=0}^{255} p(k) \cdot \log_2 p(k)$$
 $$\text{edge\_density} = \frac{|\{(x,y) : \text{Canny}(x,y) = 255\}|}{W \times H}$$
 
 **Why these thresholds?**
-The 0.11/0.27 values are the default AIM m4 thresholds calibrated for desktop UI screenshots. They balance sensitivity (detecting real edges) with specificity (ignoring noise/texture).
+The 0.11/0.27 values are AIM m4 defaults adopted by this implementation. They
+are deterministic engineering parameters, not independently calibrated
+human-performance or universal desktop-UI thresholds.
 
 ---
 
@@ -378,7 +378,7 @@ A smooth gradient has low subband entropy (pyramig coefficients are mostly zero 
 | **Output range** | [0, 1] |
 | **Unit** | normalized correlation |
 | **Higher means** | More symmetry under this metric; reduced visual search is an unvalidated design hypothesis |
-| **Reference** | Miniukovich, A. & De Angeli, A. (2015). "Computation of Interface Aesthetics." *CHI '15*, pp. 1163–1172. |
+| **Reference** | Custom project metric inspired by Miniukovich, A. & De Angeli, A. (2015), "Computation of Interface Aesthetics." *CHI '15*, 1163–1172. |
 
 **Algorithm:**
 
@@ -408,7 +408,7 @@ NCC = 1 means the image is identical to its mirror. NCC = 0 means no linear corr
 | **Unit** | normalized composite score |
 | **Higher means** | More fragmented color palette |
 | **AIM source** | `m13_luminance_std.py`, `m15_colorfulness.py`, `m16_hsv_avg.py` |
-| **Reference** | Hasler, D. & Süsstrunk, S. E. (2003). "Measuring Colorfulness in Natural Images." *SPIE 5007*. |
+| **Reference** | Custom project composite; the colorfulness submetric follows Hasler, D. & Süsstrunk, S. E. (2003), "Measuring Colorfulness in Natural Images." *SPIE 5007*. |
 
 **Combines 4 sub-metrics:**
 
@@ -450,7 +450,7 @@ $$\text{CC} = \frac{\text{norm\_lum} + \text{norm\_color} + \text{norm\_hue} + \
 | **Unit** | normalized composite score |
 | **Higher means** | Clearer layered structure under this metric; reduced search effort is an unvalidated design hypothesis |
 | **AIM source** | `m5_contour_density.py` (figure-ground part) |
-| **Reference** | Tuch, A. N. et al. (2009). "The Role of Visual Complexity and Prototypicality." *Interacting with Computers*. |
+| **Reference** | Custom project composite; broader visual-complexity context from Tuch, A. N. et al. (2009), "Visual Complexity of Websites: Effects on Users' Experience, Physiology, Performance, and Memory." *International Journal of Human-Computer Studies*, 67(9). |
 
 **Combines 2 sub-metrics:**
 
@@ -602,23 +602,32 @@ Image (BGR)
 
 ## 6. Saliency Pipeline (UMSI++)
 
-*Hinzugefügt: 06.05.2026*
+*Added: 06.05.2026*
 
-### 6.1 Hintergrund
+### 6.1 Background and source boundary
 
-**UMSI++** (Unified Model of Saliency and Importance, extended version) ist ein Deep-Learning-Modell zur Vorhersage visueller Salienz auf UIs. Es wurde im Rahmen des UEyes-Projekts (Jiang et al., CHI 2023) auf Eye-Tracking-Daten von 62 Probanden auf 1980 UI-Screenshots trainiert.
+**UMSI++** is the UEyes-adapted version of the Unified Model of Saliency and
+Importance. Jiang et al. (CHI 2023) evaluated it using the UEyes eye-tracking
+dataset: 62 participants viewing 1,980 screenshots across four interface types.
+The broader graphic-design and natural-image classes associated with the
+predecessor UMSI must not be described as UEyes categories.
 
-| Eigenschaft | Wert |
+| Property | Value |
 |---|---|
-| **Paper** | Jiang et al., "UEyes: Understanding Visual Saliency across User Interface Types", CHI 2023 |
-| **Training-Daten** | UEyes: 1980 Screenshots × 5 Blickdauer-Bedingungen (0.5s, 3s, 5s, …) |
-| **Probanden** | 62 Personen |
-| **UI-Typen** | Poster, Infografiken, Mobile UI, Desktop UI, Webseiten, Natural Images |
-| **Original-Framework** | TensorFlow 1.14 + Keras 2.3.1 + CUDA 9.0 + Python 3.7 |
-| **Unser Port** | TensorFlow 2.16.2 + Keras 3.10 + Apple Silicon M4 (CPU) |
-| **Gewichtsdatei** | `saliency/weights/model_weights/saliency_models/UMSI++/umsi++.hdf5` (29.9M Parameter) |
+| **Paper** | Jiang et al., "UEyes: Understanding Visual Saliency across User Interface Types", CHI 2023, doi:10.1145/3544548.3581096 |
+| **Source dataset** | UEyes: 1,980 screenshots with eye-tracking logs and multi-duration saliency/scanpath derivatives |
+| **Participants** | 62 |
+| **UEyes interface types** | Webpage, Desktop UI, Mobile UI, Poster |
+| **Model-history boundary** | Infographics, advertisements, and natural-image classes belong to predecessor-model context, not to the four UEyes categories |
+| **Original framework** | TensorFlow 1.14 + Keras 2.3.1 + CUDA 9.0 + Python 3.7 |
+| **Production port** | TensorFlow 2.16.2 + Keras 3.10 + Apple Silicon M4 (CPU) |
+| **Checkpoint** | `saliency/weights/model_weights/saliency_models/UMSI++/umsi++.hdf5` (29.9M parameters) |
 
-### 6.2 Architektur
+The checkpoint identity and port compatibility are engineering evidence. They
+do not establish a new human benchmark, guarantee generalization outside the
+source domain, or turn model activation into observed gaze.
+
+### 6.2 Architecture
 
 ```
 Input(256×256×3, BGR, VGG-mean-subtracted)
@@ -626,7 +635,7 @@ Input(256×256×3, BGR, VGG-mean-subtracted)
   ├── Custom Xception Backbone
   │   • Blocks 1-3: Standard (stride 2 → 32×32 spatial)
   │   • Block 4: stride MODIFIED (1,1) statt (2,2) → bleibt 32×32
-  │   • Middle Flow: 8 Blöcke (Blocks 5-12), Residual SepConvs
+  │   • Middle Flow: 8 blocks (Blocks 5-12), Residual SepConvs
   │   • Exit Flow: stride MODIFIED (1,1) → bleibt 32×32
   │   → Output: (batch, 32, 32, 2048)
   │
@@ -658,35 +667,36 @@ Input(256×256×3, BGR, VGG-mean-subtracted)
       • Conv 1×1(1) → out_heatmap
 ```
 
-### 6.3 TF2-Portierung (06.05.2026)
+### 6.3 TensorFlow 2 port (06.05.2026)
 
-| Aspekt | Original (TF1) | Port (TF2) |
+| Aspect | Original (TF1) | Production port (TF2) |
 |--------|----------------|-------------|
 | Imports | `from keras.layers import ...` | `from keras import layers` (Keras 3) |
-| Xception | `xception_custom.py` + `keras_applications` | Inline in `_build_custom_xception()` |
-| Lambda Tiling | `tf.concat` Loops | Identisch (TF2-kompatibel) |
-| Weight Format | HDF5 mit `layer_names` attr | Direkt kompatibel — alle 107 Layer matchen |
+| Xception | `xception_custom.py` + `keras_applications` | Inline implementation in `_build_custom_xception()` |
+| Lambda tiling | `tf.concat` loops | Equivalent TensorFlow 2-compatible operation |
+| Weight format | HDF5 with `layer_names` attribute | Directly compatible; all 107 weighted layers match |
 | GPU | CUDA 9.0 + TF-GPU 1.14 | Apple Silicon CPU (tf-macos 2.16.2) |
 
 **Engineering checks for the port (not construct validation):**
-- 107 gewichtete Layer im Modell ↔ 107 Layer in der HDF5-Datei
-- positionales Laden schlägt bei Architektur-/Shape-Mismatch fehl
-- Saliency- und numerischer Auxiliary-Head-Output werden gegen die
-  repository-pinned parity evidence geprüft
-- diese Checks belegen Reproduzierbarkeit/Kompatibilität, nicht unabhängige
-  Saliency-Benchmarkvalidierung oder semantische Klassenlabels
+- 107 weighted model layers correspond to 107 layers in the HDF5 checkpoint;
+- positional loading fails on architecture or tensor-shape mismatch;
+- saliency and numeric auxiliary-head outputs are checked against
+  repository-pinned parity evidence; and
+- these checks establish compatibility and reproducibility, not an independent
+  saliency benchmark or semantic auxiliary-head labels.
 
-### 6.4 Saliency-Features (s ∈ ℝ⁵)
+### 6.4 Saliency features (s ∈ ℝ⁵)
 
-Aus der normalisierten Saliency-Map $S(x,y) \in [0,1]$ werden folgende Features extrahiert:
+The following features are extracted from the normalized model-activation map
+$S(x,y) \in [0,1]$:
 
-| # | Feature | Formel | Wertebereich | Interpretation |
-|---|---------|--------|--------------|----------------|
-| s₁ | **Dispersion** | $\sigma_S = \sqrt{\text{Var}[x \cdot S] + \text{Var}[y \cdot S]}$ (normiert) | [0, 1] | Räumliche Streuung der Aufmerksamkeit |
-| s₂ | **Peak Count** | Anzahl lokaler Maxima nach Gauß-Glättung (σ=5) mit Wert ≥ 0.3·max | ℕ₀ | Anzahl distinkter Aufmerksamkeits-Hotspots |
-| s₃ | **Center Bias** | $\frac{\sum_{(x,y) \in C_{25\%}} S(x,y)}{\sum S}$ | [0, 1] | Konzentration im Bildzentrum |
-| s₄ | **Entropy** | $H = -\sum_b p_b \log_2 p_b$ (32 Bins, normiert) | [0, 1] | Gleichmäßigkeit der Salienz-Verteilung |
-| s₅ | **Coverage** | $\frac{|\{(x,y): S > 0.5 \cdot \max(S)\}|}{W \cdot H}$ | [0, 1] | Flächenanteil mit signifikanter Salienz |
+| # | Feature | Formula | Range | Bounded interpretation |
+|---|---------|---------|-------|------------------------|
+| s₁ | **Dispersion** | $\sigma_S = \sqrt{\text{Var}[x \cdot S] + \text{Var}[y \cdot S]}$ (normalized) | [0, 1] | Spatial spread of model-estimated saliency activation |
+| s₂ | **Peak Count** | Number of local maxima after Gaussian smoothing (σ=5) with value ≥ 0.3·max | ℕ₀ | Distinct model-activation peaks, not observed attention hotspots |
+| s₃ | **Center Bias** | $\frac{\sum_{(x,y) \in C_{25\%}} S(x,y)}{\sum S}$ | [0, 1] | Relative model activation in the central image region |
+| s₄ | **Entropy** | $H = -\sum_b p_b \log_2 p_b$ (32 bins, normalized) | [0, 1] | Evenness of the model-activation distribution |
+| s₅ | **Coverage** | $\frac{|\{(x,y): S > 0.5 \cdot \max(S)\}|}{W \cdot H}$ | [0, 1] | Image area above the declared relative-activation threshold |
 
 ### 6.5 Numeric Auxiliary Head (6 values)
 
@@ -698,20 +708,27 @@ to these values. The auxiliary head remains relevant only as a numeric internal
 model output and for architecture/parity evidence; downstream scoring consumes
 the saliency heatmap, not semantic class labels.
 
-### 6.6 API-Endpoints
+### 6.6 API endpoints
 
-| Endpoint | Methode | Input | Output | Seit |
+| Endpoint | Method | Input | Output | Available since |
 |----------|---------|-------|--------|------|
-| `/api/analyze` | POST | Image (multipart) | v∈ℝ⁸ + Metadaten | 04.05.2026 |
-| `/api/features` | GET | — | Feature-Metadaten (8 Features) | 04.05.2026 |
-| `/api/saliency` | POST | Image (multipart) | s∈ℝ⁵ + Heatmap (Base64); no semantic class labels | 06.05.2026 |
+| `/api/analyze` | POST | Image (multipart) | v∈ℝ⁸ plus metadata | 04.05.2026 |
+| `/api/features` | GET | — | Metadata for eight visual features | 04.05.2026 |
+| `/api/saliency` | POST | Image (multipart) | s∈ℝ⁵ plus heatmap (Base64); no semantic class labels | 06.05.2026 |
 
-### 6.7 Bezug zu UEyes-Datensatz
+### 6.7 Relationship to the UEyes dataset
 
-Das UMSI++ Modell wurde **auf dem UEyes-Datensatz trainiert**. D.h.:
-- Die Gewichte kodieren das aggregierte Blickverhalten von 62 Probanden
-- Ground-Truth Saliency Maps sind verfügbar in `ueyes/saliency_models/UMSI++/saliency_gt/`
-- Validierungsmetriken (KL-Divergenz, CC, NSS) können gegen diese Ground Truth berechnet werden
+The UMSI++ checkpoint originates from the UEyes model release. Therefore:
+- the source model was trained using aggregated eye-tracking data from 62
+  participants;
+- source saliency maps are available under
+  `ueyes/saliency_models/UMSI++/saliency_gt/`; and
+- saliency metrics such as KL divergence, CC, and NSS can be computed against
+  explicitly selected source ground truth.
+
+This provenance does not mean that every production screenshot belongs to the
+UEyes distribution or that the five project-specific summaries reproduce the
+paper's benchmark metrics.
 
 **Current evidence boundary:**
 - repository tests and frozen fixtures establish production behavior,
@@ -723,66 +740,80 @@ Das UMSI++ Modell wurde **auf dem UEyes-Datensatz trainiert**. D.h.:
 
 ---
 
-## 7. Cognitive Metrics: Jokinen 2020 Visual Search
+## 7. Optional Jokinen-Based Visual-Search Diagnostic
 
-### 7.1 Motivation & Thesis Gap
+### 7.1 Methodological role and claim boundary
 
-**Forschungsfrage:** *"Does the integration of cognitive predictive metrics into the AIM platform improve the computational evaluation of GUIs?"*
+The project implements a Python-native adaptation informed by the Adaptive
+Feature Guidance model of Jokinen et al. (2020). Its purpose is to expose a
+separate, optional computational diagnostic for declared target-search
+scenarios.
 
-**Gap:** AIM bietet visuelle/perzeptuelle Metriken (Farbe, Kanten, Clutter), aber **keine kognitiven** Vorhersagen wie:
-- Wie lange dauert es, ein UI-Element zu finden? (Search Time)
-- Wie viele Fixationen braucht ein Novize? (Fixation Count)
-- Welche Elemente sind besonders schwer aufzufinden? (Difficulty Rating)
+The diagnostic produces **model-simulated** search times, fixation counts, and
+paths. These values are not observed eye tracking, measured user performance,
+or validated predictions for a new user or screenshot. The diagnostic is off by
+default, non-score-bearing, and cannot change the Stage-1 x19 vector, the
+experimental layout-complexity index, or the Stage-2 scenario direction.
 
-**Lösung:** Implementation des Jokinen 2020 Adaptive Feature Guidance Modells als Python-nativer Ersatz für die Legacy-Binärdatei (`vg2-linux`/`vg2-macos`) im alten AIM.
+### 7.2 Model-informed simulation sequence
 
-### 7.2 Theoretisches Modell
+The implementation simulates target-directed visual search step by step:
 
-Das Modell simuliert visuelle Suche Fixierung für Fixierung:
+1. The controller starts at the screen centre.
+2. Each detected element receives a model activation from declared visual
+   features, optional UMSI++ activation, and simulation noise.
+3. A winner-take-all selection chooses the next candidate element.
+4. EMMA-informed encoding time uses the Salvucci (2001) formulation:
+   $T_e = K \cdot [-\ln(f)] \cdot e^{k \cdot \varepsilon}$.
+5. Saccade time is represented as
+   $T_s = t_{prep} + t_{exec} \cdot D + t_{sacc}$.
+6. Recently visited elements are inhibited through a visual short-term-memory
+   mechanism.
+7. A trial terminates when the declared target is found or `max_fixations` is
+   reached.
 
-1. **Controller** startet mit Eyes am Screen-Zentrum
-2. **Activation** pro Element = Bottom-Up Saliency + Noise
-3. **Winner-Take-All:** Element mit höchster Activation wird fixiert
-4. **EMMA Encoding Time** (Salvucci, 2001): $T_e = K \cdot [-\ln(f)] \cdot e^{k \cdot \varepsilon}$
-5. **Saccade Time** (Eq. 5): $T_s = t_{prep} + t_{exec} \cdot D + t_{sacc}$
-6. **VSTM Inhibition:** Bereits besuchte Elemente werden gehemmt (Inhibition of Return)
-7. **Terminierung:** Wenn Zielelement gefunden oder `max_fixations` erreicht
+This is a project implementation informed by the cited models, not a claim of
+source-code identity or parameter equivalence with the original study.
 
-### 7.3 Schlüsselgleichungen
+### 7.3 Key equations
 
-| Gleichung | Formel | Bedeutung |
-|-----------|--------|-----------|
-| Eq. 1 (Visual Threshold) | $\theta = a \cdot \varepsilon^2 + b \cdot \varepsilon$ | Feature sichtbar wenn $\theta < \alpha_{size}$ |
-| Eq. 2 (Bottom-Up Activation) | $BA_i = \sum_j \sum_k \frac{dissim(v_{ik}, v_{jk})}{\sqrt{d_{ij}}}$ | Saliency aus Feature-Dissimilarität |
-| Eq. 4 (EMMA Encoding) | $T_e = K \cdot [-\ln(f)] \cdot e^{k \cdot \varepsilon}$ | Encoding-Zeit steigt mit Exzentrizität |
-| Eq. 5 (Saccade) | $T_s = t_{prep} + t_{exec} \cdot D + t_{sacc}$ | Sakkaden-Dauer |
+| Equation | Formula | Model role |
+|----------|---------|------------|
+| Eq. 1 (Visual Threshold) | $\theta = a \cdot \varepsilon^2 + b \cdot \varepsilon$ | Declares feature visibility when $\theta < \alpha_{size}$ |
+| Eq. 2 (Bottom-Up Activation) | $BA_i = \sum_j \sum_k \frac{dissim(v_{ik}, v_{jk})}{\sqrt{d_{ij}}}$ | Computes activation from feature dissimilarity |
+| Eq. 4 (EMMA Encoding) | $T_e = K \cdot [-\ln(f)] \cdot e^{k \cdot \varepsilon}$ | Increases model encoding time with eccentricity |
+| Eq. 5 (Saccade) | $T_s = t_{prep} + t_{exec} \cdot D + t_{sacc}$ | Computes model saccade duration |
 
-### 7.4 Parameter (aus Paper Table 1)
+### 7.4 Parameter provenance
 
-| Parameter | Wert | Quelle |
-|-----------|------|--------|
+| Parameter | Value | Provenance status |
+|-----------|-------|-------------------|
 | K (EMMA encoding) | 0.006 | Salvucci (2001) |
 | k (EMMA exponent) | 0.4 | Salvucci (2001) |
-| t_prep (saccade prep) | 0.135 s | EMMA |
-| t_exec (saccade per deg) | 0.002 s/° | EMMA |
-| W_BA (bottom-up weight) | 1.1 | Nyamsuren & Taatgen (2013) |
-| σ_TA (activation noise) | 0.376 | Nyamsuren & Taatgen (2013) |
-| τ_VSTM (memory capacity) | 20 steps | Fitted (Jokinen 2020) |
-| W_saliency (UMSI++ weight) | 0.8 | **Eigener Beitrag** |
-| saliency_exponent | 2.0 | **Eigener Beitrag** |
+| t_prep (saccade preparation) | 0.135 s | EMMA-informed parameter |
+| t_exec (saccade per degree) | 0.002 s/° | EMMA-informed parameter |
+| W_BA (bottom-up weight) | 1.1 | Nyamsuren & Taatgen (2013), as used by Jokinen et al. (2020) |
+| σ_TA (activation noise) | 0.376 | Nyamsuren & Taatgen (2013), as used by Jokinen et al. (2020) |
+| τ_VSTM (memory capacity) | 20 steps | Project implementation choice informed by Jokinen et al. (2020) |
+| W_saliency (UMSI++ weight) | 0.8 | **Project-specific author choice; not source-paper calibrated** |
+| saliency_exponent | 2.0 | **Project-specific author choice; not source-paper calibrated** |
 
-### 7.5 Unsere Beiträge (vs. Legacy AIM)
+The parameter table provides provenance, not validation. The project-specific
+UMSI++ coupling and element detector would require a separate equation/parameter
+audit and human-data evaluation before any real-performance claim.
 
-| Aspekt | Legacy (vg2_visual_search.py) | Unsere Implementation |
-|--------|-------------------------------|----------------------|
-| Sprache | Compiled C++ binary | Python-nativ |
-| Saliency | Hand-crafted (3 Farben, 3 Größen) | UMSI++ Deep Saliency |
-| Element-Erkennung | Extern (Segmentierung nötig) | Automatisch (Canny + Contours) |
-| Simulation | Unbekannt (Black-Box) | Monte Carlo (N=50–500 Trials) |
-| Output | Heatmap-Bild | JSON: per-element time + statistics |
-| Plattform | Linux/macOS x86 only | Plattformunabhängig (pure Python) |
+### 7.5 Project adaptations relative to legacy AIM
 
-### 7.6 Architektur
+| Aspect | Legacy (`vg2_visual_search.py`) | Project implementation |
+|--------|----------------------------------|------------------------|
+| Runtime | Compiled binary | Python-native |
+| Saliency input | Hand-crafted categorical features | Continuous UMSI++ model activation with project-specific coupling |
+| Element detection | External segmentation required | Project-specific Canny/contour detector |
+| Simulation | Legacy binary behavior not inspectable here | Monte Carlo trials with declared parameters |
+| Output | Heatmap image | JSON model estimates per element plus aggregate statistics |
+| Platform | Legacy Linux/macOS x86 binaries | Cross-platform Python subject to the frozen runtime contract |
+
+### 7.6 Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -875,27 +906,27 @@ diagnostics use the same policy.
 }
 ```
 
-### 7.8 Validierung
+### 7.8 Engineering sanity check — not validation
 
-**Erwartete Ergebnisse (basierend auf Paper):**
-- BP Layout (einfach, ~10 Elemente): mean ~1.5–3.0s → Difficulty: "moderate"
-- WIN10 Desktop (~15 Elemente): mean ~2.0–3.5s → Difficulty: "moderate"/"difficult"
-- NYT Front Page (~30+ Elemente): mean ~5.0–8.0s → Difficulty: "very_hard"
+The recorded `bmw_route.png` example produced finite outputs (mean 6.07 s,
+maximum 8.28 s, minimum 2.48 s) and ranked a visually distinctive orange
+element first under the project implementation. This demonstrates executable,
+deterministic model behaviour for that fixture only.
 
-**Unser Ergebnis (bmw_route.png, 40 Elemente):**
-- Mean: 6.07s, Max: 8.28s, Min: 2.48s → Difficulty: "very_hard"
-- Konsistent mit Jokinen's NYT-Daten für komplexe Layouts
+It does **not** reproduce the original paper's experiment, establish parameter
+equivalence, validate the absolute time or fixation scale, or show agreement
+with human participants. Comparisons to example layouts from the source paper
+must not be reported as validation or cross-study consistency without a formal
+reproduction protocol.
 
-**Key Insight:** Element #0 (orange, einzige Farbe im Layout) wird am schnellsten gefunden (2.48s / 9.6 Fixationen) — exakt der Pop-Out-Effekt den das Modell vorhersagt.
+### 7.9 Files
 
-### 7.9 Dateien
-
-| Datei | Zweck |
-|-------|-------|
-| `cognitive/__init__.py` | Package-Definition |
-| `cognitive/jokinen_model.py` | Kernmodell: JokinenSearchModel, JokinenParams |
-| `cognitive/element_detector.py` | UI-Element-Erkennung (detect_elements) |
-| `cognitive/test_jokinen.py` | End-to-End Test (element detection + model + UMSI++) |
+| File | Purpose |
+|------|---------|
+| `cognitive/__init__.py` | Package definition |
+| `cognitive/jokinen_model.py` | Project simulation implementation and parameters |
+| `cognitive/element_detector.py` | Project-specific UI-element detector |
+| `cognitive/test_jokinen.py` | Engineering end-to-end test; not human validation |
 
 ---
 
@@ -955,7 +986,7 @@ for key in FEATURE_KEYS:
 from saliency.umsi_model import UMSIPlus
 from saliency.saliency_features import extract_saliency_features
 
-# Load model (einmalig — danach wiederholbar für viele Bilder)
+# Load the model once, then reuse it for multiple images
 model = UMSIPlus("saliency/weights/model_weights/saliency_models/UMSI++/umsi++.hdf5")
 
 # Predict saliency
@@ -976,7 +1007,7 @@ python stage1/app.py
 # Open http://localhost:5001
 ```
 
-### cURL (API testen)
+### cURL API test
 
 ```bash
 # Stage 1a: Visual Complexity
@@ -1034,11 +1065,15 @@ Numeric auxiliary head (semantic index order unverified):
 ```
 
 **Interpretation:**
-- Dispersion 0.49 → Aufmerksamkeit moderat gestreut (nicht nur ein Punkt)
-- 7 Peaks → mehrere distrinkte Aufmerksamkeits-Hotspots (Kartenelemente, Buttons, Text)
-- Center Bias 0.31 → Aufmerksamkeit nicht besonders zentrumslastig (Karte füllt Rand-zu-Rand)
-- Entropy 0.72 → relativ gleichmäßig verteilte Salienz
-- Coverage 0.06 → nur 6.4% der Fläche erhält >50% der maximalen Salienz (wenige dominante Punkte)
+- Dispersion 0.49 → model-estimated saliency activation is moderately spread.
+- 7 peaks → seven distinct model-activation peaks; these are not observed
+  attention hotspots.
+- Center bias 0.31 → 31% of the relative model activation falls within the
+  declared central region.
+- Entropy 0.72 → comparatively even model-activation distribution under the
+  project metric.
+- Coverage 0.06 → 6.4% of the image exceeds 50% of the within-image maximum
+  model activation.
 - The auxiliary values receive no semantic class interpretation.
 
 ---
@@ -1082,7 +1117,9 @@ For the web UI radar chart and bar display, features are normalized to [0, 1] us
 
 ### Stage 1b (Saliency — 06.05.2026)
 
-6. **UMSI++ auf CPU only** — TF 2.16 auf M4 Mac nutzt nur die CPU. Inference dauert ~3–5s pro Bild. Metal-Plugin (tensorflow-metal) könnte GPU-Beschleunigung bringen.
+6. **UMSI++ currently runs on CPU in the frozen environment.** TensorFlow 2.16
+   on the recorded M4 runtime uses the CPU; inference speed is an engineering
+   property, not a scientific-validity claim.
 
 7. **Auxiliary-head semantics unverified** — the six numeric values have no
    public class-label interpretation and do not drive downstream scoring.
@@ -1091,27 +1128,28 @@ For the web UI radar chart and bar display, features are normalized to [0, 1] us
    official external benchmark and does not validate cognitive load, observed
    gaze, or human performance.
 
-### Historische Ideen (nicht als aktueller Plan freigegeben)
+### Explicit scope exclusions
 
-The table below is retained as provenance from an earlier roadmap. It does not
-define current Stage-1 work, the final domain, the study design, or a post-study
-ML path. Those decisions remain open and require explicit thesis-level approval.
-
-| Priorität | Aufgabe | Relevanz |
-|-----------|---------|----------|
-| Hoch | DeepGaze++ / PathGAN++ portieren | Fixation-Verteilung für Stage 2 |
-| Hoch | Validierung gegen UEyes Ground Truth | Qualitätsnachweis |
-| Mittel | HCEye-Datensatz integrieren | Saliency unter kognitivem Load |
-| Mittel | Stage 2 Multi-Output Head aufsetzen | Historische Idee; aus Stage 2 v1 und der aktuellen technischen Thesis-Pipeline ausgeschlossen |
-| Niedrig | UMSI++ GPU-Beschleunigung (Metal) | Performance-Optimierung |
+Target-driven scanpath prediction, participant-level cognitive-load
+measurement, personality inputs, trained Stage-2 regressors, numeric contextual
+modifiers, user-study execution, and post-study analysis are not part of this
+technical pipeline release. They must not be inferred from dormant prototypes
+or historical project material.
 
 ---
 
 ## References
 
-1. Shannon, C. E. (1948). "A Mathematical Theory of Communication." *Bell System Technical Journal*, 27, 379–423.
-2. Rosenholtz, R., Li, Y., & Nakano, L. (2007). "Measuring Visual Clutter." *Journal of Vision*, 7(2):17, 1–22.
-3. Miniukovich, A., & De Angeli, A. (2015). "Computation of Interface Aesthetics." *CHI 2015*, pp. 1163–1172.
-4. Hasler, D., & Süsstrunk, S. E. (2003). "Measuring Colourfulness in Natural Images." *SPIE Human Vision and Electronic Imaging VIII*.
-5. Jiang, Y., et al. (2023). "UEyes: Understanding Visual Saliency across User Interface Types." *CHI 2023*.
-6. Das, S., et al. (2024). "Shifting Focus with HCEye: How Cognitive Load Shapes Gaze Behavior on Webpages." *PACM HCI / ETRA 2024*.
+1. Shannon, C. E. (1948). "A Mathematical Theory of Communication." *Bell System Technical Journal*, 27(3), 379–423. https://doi.org/10.1002/j.1538-7305.1948.tb01338.x
+2. Canny, J. (1986). "A Computational Approach to Edge Detection." *IEEE Transactions on Pattern Analysis and Machine Intelligence*, PAMI-8(6), 679–698. https://doi.org/10.1109/TPAMI.1986.4767851
+3. Rosenholtz, R., Li, Y., & Nakano, L. (2007). "Measuring Visual Clutter." *Journal of Vision*, 7(2):17, 1–22. https://doi.org/10.1167/7.2.17
+4. Miniukovich, A., & De Angeli, A. (2015). "Computation of Interface Aesthetics." *Proceedings of CHI 2015*, 1163–1172. https://doi.org/10.1145/2702123.2702575
+5. Hasler, D., & Süsstrunk, S. E. (2003). "Measuring Colourfulness in Natural Images." *Proceedings of SPIE 5007, Human Vision and Electronic Imaging VIII*. https://doi.org/10.1117/12.477378
+6. Tuch, A. N., Bargas-Avila, J. A., Opwis, K., & Wilhelm, F. H. (2009). "Visual Complexity of Websites: Effects on Users' Experience, Physiology, Performance, and Memory." *International Journal of Human-Computer Studies*, 67(9), 703–715. https://doi.org/10.1016/j.ijhcs.2009.04.002
+7. Jiang, Y., Leiva, L. A., Rezazadegan Tavakoli, H., Houssel, P. R. B., Kylmälä, J., & Oulasvirta, A. (2023). "UEyes: Understanding Visual Saliency across User Interface Types." *Proceedings of CHI 2023*, Article 285. https://doi.org/10.1145/3544548.3581096
+8. Das, A., Wu, Z., Škrjanec, I., & Feit, A. M. (2024). "Shifting Focus with HCEye: Exploring the Dynamics of Visual Highlighting and Cognitive Load on User Attention and Saliency Prediction." *Proceedings of the ACM on Human-Computer Interaction*, 8(ETRA), Article 236. https://doi.org/10.1145/3655610
+9. Jokinen, J. P. P., Wang, Z., Sarcar, S., Oulasvirta, A., & Ren, X. (2020). "Adaptive Feature Guidance: Modelling Visual Search with Graphical Layouts." *International Journal of Human-Computer Studies*, 136, 102376. https://doi.org/10.1016/j.ijhcs.2019.102376
+10. Salvucci, D. D. (2001). "An Integrated Model of Eye Movements and Visual Encoding." *Cognitive Systems Research*, 1(4), 201–220. https://doi.org/10.1016/S1389-0417(00)00015-2
+11. Nyamsuren, E., & Taatgen, N. A. (2013). "Pre-attentive and Attentive Vision Module." *Cognitive Systems Research*, 24, 62–71. https://doi.org/10.1016/j.cogsys.2012.12.010
+12. Liu, C., Liu, Y.-H., Gedeon, T., Zhao, Y., Wei, Y., & Yang, F. (2019). "The Effects of Perceived Chronic Pressure and Time Constraint on Information Search Behaviors and Experience." *Information Processing & Management*, 56(5), 1667–1679. https://doi.org/10.1016/j.ipm.2019.04.004
+13. Torralba, A., & Efros, A. A. (2011). "Unbiased Look at Dataset Bias." *Proceedings of CVPR 2011*, 1521–1528. https://doi.org/10.1109/CVPR.2011.5995347

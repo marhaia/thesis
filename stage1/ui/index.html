@@ -866,7 +866,7 @@
         .feature-signal.warn { background: rgba(245,158,11,.15); color: var(--warning); }
         .feature-signal.high { background: rgba(249,115,22,.15); color: #f97316; }
         .feature-signal.crit { background: rgba(239,68,68,.15);  color: var(--danger); }
-        /* Empirical reference comparison (z-score / percentile vs. typical GUI) */
+        /* Corpus-relative comparison against the authorized UEyes GUI subset. */
         .feature-ref {
             font-size: 11px;
             color: var(--text-dim);
@@ -2059,7 +2059,7 @@
                 </div>
                 <div class="pipeline-node">
                     <div class="pipeline-node-title">UEyes Sample Sanity Check</div>
-                    <div class="pipeline-node-desc">A local engineering sanity check on a UEyes sample: predicted saliency maps look qualitatively consistent with human-fixation ground truth. This is not official-code parity and not benchmark validation; architecture/checkpoint parity remains to be independently established.</div>
+                    <div class="pipeline-node-desc">A local engineering sanity check on a UEyes sample: model-estimated saliency maps show qualitative correspondence with the sample fixation maps. Repository checkpoint/architecture compatibility and frozen replay have been established separately; this sample check is not an official benchmark, independent human validation, or evidence that the final layout index measures cognitive load.</div>
                     <div class="pipeline-node-ref"><a href="https://doi.org/10.1145/3544548.3581096" target="_blank" rel="noopener">Jiang et al. CHI 2023</a> · <a href="https://doi.org/10.1109/TPAMI.2018.2815601" target="_blank" rel="noopener">Bylinskii et al. (2018)</a></div>
                 </div>
             </div>
@@ -2084,7 +2084,7 @@
             <div class="ref-list">
                 <div class="ref-item"><strong>Das et al. (2024)</strong> Shifting Focus with HCEye: Exploring the Dynamics of Visual Highlighting and Cognitive Load on User Attention and Saliency Prediction. Proc. ACM Hum.-Comput. Interact. (ETRA 2024). <a class="ref-doi" href="https://doi.org/10.1145/3655610" target="_blank" rel="noopener">doi:10.1145/3655610</a></div>
                 <div class="ref-item"><strong>Jiang, Leiva, Rezazadegan Tavakoli, Houssel, Kylmälä &amp; Oulasvirta (2023)</strong> UEyes: Understanding Visual Saliency across User Interface Types. CHI 2023. <a class="ref-doi" href="https://doi.org/10.1145/3544548.3581096" target="_blank" rel="noopener">doi:10.1145/3544548.3581096</a></div>
-                <div class="ref-item"><strong>Jokinen, Sarcar, Oulasvirta, Silpasuwanchai, Wang &amp; Ren (2020)</strong> Adaptive feature guidance: Modelling visual search with graphical layouts. International Journal of Human-Computer Studies, 136. <a class="ref-doi" href="https://doi.org/10.1016/j.ijhcs.2019.102376" target="_blank" rel="noopener">doi:10.1016/j.ijhcs.2019.102376</a></div>
+                <div class="ref-item"><strong>Jokinen, Wang, Sarcar, Oulasvirta &amp; Ren (2020)</strong> Adaptive feature guidance: Modelling visual search with graphical layouts. International Journal of Human-Computer Studies, 136. <a class="ref-doi" href="https://doi.org/10.1016/j.ijhcs.2019.102376" target="_blank" rel="noopener">doi:10.1016/j.ijhcs.2019.102376</a></div>
                 <div class="ref-item"><strong>Rosenholtz, Li &amp; Nakano (2007)</strong> Measuring visual clutter. Journal of Vision, 7(2):17. <a class="ref-doi" href="https://doi.org/10.1167/7.2.17" target="_blank" rel="noopener">doi:10.1167/7.2.17</a></div>
                 <div class="ref-item"><strong>Tuch et al. (2009)</strong> Visual complexity of websites: Effects on users’ experience, physiology, performance, and memory. International Journal of Human-Computer Studies, 67(9). <a class="ref-doi" href="https://doi.org/10.1016/j.ijhcs.2009.04.002" target="_blank" rel="noopener">doi:10.1016/j.ijhcs.2009.04.002</a></div>
                 <div class="ref-item"><strong>Brysbaert (2019)</strong> How many words do we read per minute? A review and meta-analysis of reading rate. Journal of Memory and Language, 109. <a class="ref-doi" href="https://doi.org/10.1016/j.jml.2019.104047" target="_blank" rel="noopener">doi:10.1016/j.jml.2019.104047</a></div>
@@ -2096,6 +2096,8 @@
                 <div class="ref-item"><strong>Breiman (2001)</strong> Random Forests. Machine Learning, 45(1). <a class="ref-doi" href="https://doi.org/10.1023/A:1010933404324" target="_blank" rel="noopener">doi:10.1023/A:1010933404324</a></div>
                 <div class="ref-item"><strong>Tatler (2007)</strong> The central fixation bias in scene viewing: Selecting an optimal viewing position independently of motor biases and image feature distributions. Journal of Vision, 7(14):4. <a class="ref-doi" href="https://doi.org/10.1167/7.14.4" target="_blank" rel="noopener">doi:10.1167/7.14.4</a></div>
                 <div class="ref-item"><strong>Salvucci (2001)</strong> An integrated model of eye movements and visual encoding. Cognitive Systems Research, 1(4). <a class="ref-doi" href="https://doi.org/10.1016/S1389-0417(00)00015-2" target="_blank" rel="noopener">doi:10.1016/S1389-0417(00)00015-2</a></div>
+                <div class="ref-item"><strong>Nyamsuren &amp; Taatgen (2013)</strong> Pre-attentive and attentive vision module. Cognitive Systems Research, 24. <a class="ref-doi" href="https://doi.org/10.1016/j.cogsys.2012.12.010" target="_blank" rel="noopener">doi:10.1016/j.cogsys.2012.12.010</a></div>
+                <div class="ref-item"><strong>Liu et al. (2019)</strong> The effects of perceived chronic pressure and time constraint on information search behaviors and experience. Information Processing &amp; Management, 56(5). <a class="ref-doi" href="https://doi.org/10.1016/j.ipm.2019.04.004" target="_blank" rel="noopener">doi:10.1016/j.ipm.2019.04.004</a> Literature motivation only; it does not calibrate the Stage-2 ordinal mapping.</div>
                 <div class="ref-item"><strong>Anderson, Bothell, Byrne, Douglass, Lebiere &amp; Qin (2004)</strong> An integrated theory of the mind. Psychological Review, 111(4). <a class="ref-doi" href="https://doi.org/10.1037/0033-295X.111.4.1036" target="_blank" rel="noopener">doi:10.1037/0033-295X.111.4.1036</a></div>
                 <div class="ref-item"><strong>Treisman &amp; Gelade (1980)</strong> A feature-integration theory of attention. Cognitive Psychology, 12(1). <a class="ref-doi" href="https://doi.org/10.1016/0010-0285(80)90005-5" target="_blank" rel="noopener">doi:10.1016/0010-0285(80)90005-5</a></div>
                 <div class="ref-item"><strong>Wickens (2008)</strong> Multiple resources and mental workload. Human Factors, 50(3). <a class="ref-doi" href="https://doi.org/10.1518/001872008X288394" target="_blank" rel="noopener">doi:10.1518/001872008X288394</a></div>
@@ -4045,7 +4047,7 @@
                 const infoIcon = `<span class="feature-i" tabindex="0" data-tip="${infoTip}" aria-label="${ariaTip}">i</span>`;
                 const refLine = referenceLine(ref);
                 // Headline number: signed change vs the reference baseline
-                // (the typical GUI) when we have an empirical reference, e.g.
+                // authorized UEyes GUI reference-subset baseline, e.g.
                 // "+19%" / "-12%". This keeps direction visible and is far
                 // easier to read than the raw measurement, which is kept as a
                 // small secondary detail. Falls back to the raw value when no
@@ -4070,7 +4072,7 @@
                             </div>
                             ${refLine}
                         </div>
-                        <div class="feature-value" style="color:${col};" title="${hasDelta ? 'Signed change vs the typical GUI in the reference set' : ''}">${headline}${rawLine}</div>
+                        <div class="feature-value" style="color:${col};" title="${hasDelta ? 'Signed change vs the authorized UEyes GUI reference-subset baseline' : ''}">${headline}${rawLine}</div>
                     </div>
                 `;
             }).join("");

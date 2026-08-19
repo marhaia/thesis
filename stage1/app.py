@@ -140,7 +140,9 @@ _visual_cache_max = 64            # max distinct images kept for visual features
 # Empirical GUI reference distribution (mean / std / percentiles per feature),
 # computed by build_feature_norms.py over 1,485 real GUI screenshots
 # (495 web + 495 mobile + 495 desktop). It lets the pipeline express each
-# feature value as a neutral z-score / percentile relative to the typical GUI.
+# feature value as a neutral z-score / percentile relative to the authorized
+# 1,485-image UEyes GUI reference subset. This is corpus-relative, not a claim
+# about a universal or population-level GUI norm.
 # Loaded lazily once and cached for the process lifetime.
 _FEATURE_NORMS_PATH = Path(__file__).parent / "data" / "results" / "feature_norms.json"
 _feature_norms = None
@@ -279,7 +281,8 @@ def compare_to_reference(feature_values):
         except (TypeError, ValueError):
             continue
         z = (v - stats["mean"]) / stats["std"]
-        # Signed change relative to the reference baseline (the typical GUI).
+        # Signed change relative to the authorized UEyes GUI reference-subset
+        # baseline; this is not a population-level GUI norm.
         # Positive = this screen is above the reference mean, negative = below.
         # This keeps direction/sign visible, unlike a 0-100 % range mapping.
         mean = stats["mean"]
@@ -927,7 +930,7 @@ def features_info():
             "name": "Edge Density",
             "description": "Proportion of pixels classified as edges. It is a structural-complexity proxy; a link to human parsing effort is an unvalidated project hypothesis.",
             "range": "[0, 1]",
-            "reference": "Canny edge detection (AIM m4)"
+            "reference": "Canny (1986); AIM m4 defaults"
         },
         {
             "key": "feature_congestion",
@@ -948,21 +951,21 @@ def features_info():
             "name": "Layout Symmetry",
             "description": "Degree of axial balance (vertical + horizontal). Higher values mean more symmetry under this metric; reduced visual search is only an unvalidated design hypothesis.",
             "range": "[0, 1]",
-            "reference": "Miniukovich & De Angeli (2015)"
+            "reference": "Custom project metric inspired by Miniukovich & De Angeli (2015)"
         },
         {
             "key": "chromatic_coherence",
             "name": "Chromatic Coherence",
             "description": "Color-palette fragmentation proxy combining luminance variance, colorfulness, and hue/saturation spread. Higher values mean more fragmentation under this metric.",
             "range": "[0, 1]",
-            "reference": "Hasler & Süsstrunk (2003)"
+            "reference": "Custom project composite; colorfulness submetric from Hasler & Süsstrunk (2003)"
         },
         {
             "key": "visual_hierarchy",
             "name": "Visual Hierarchy",
             "description": "Strength of layered visual structure from contrast gradients and size dominance. Higher values mean clearer hierarchy under this metric; reduced search effort is an unvalidated design hypothesis.",
             "range": "[0, 1]",
-            "reference": "Tuch et al. (2009)"
+            "reference": "Custom project composite; broader visual-complexity context from Tuch et al. (2009)"
         },
         {
             "key": "interactive_element_density",
@@ -2147,8 +2150,9 @@ def cognitive_load():
             layout_proxy_value=stage1_score,
         )
 
-        # Per-feature comparison against the empirical GUI reference distribution
-        # (z-score / percentile vs. the typical GUI over 1,485 screenshots).
+        # Per-feature comparison against the authorized 1,485-image UEyes GUI
+        # reference subset. The z-score/percentile is corpus-relative and does
+        # not define a universal or population-level GUI norm.
         reference_input = dict(vis_results)
         if saliency_dict:
             reference_input.update(saliency_dict)

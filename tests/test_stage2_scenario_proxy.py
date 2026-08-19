@@ -27,6 +27,9 @@ PIPELINE_FIGURE_SOURCE = (
 STAGE1_DOCUMENTATION = (ROOT / "stage1" / "DOCUMENTATION.md").read_text(
     encoding="utf-8"
 )
+STAGE2_DOCUMENTATION = (ROOT / "stage2" / "README.md").read_text(
+    encoding="utf-8"
+)
 ENDPOINT_SCALE_TOOL = (
     ROOT / "stage1" / "tools" / "endpoint_scale_matrix.py"
 ).read_text(encoding="utf-8")
@@ -79,6 +82,14 @@ def test_compatibility_matrix_is_explicit_and_uniform():
             "task_type_role": "scenario_label_only",
             "time_pressure_role": "ordinal_directional_hypothesis",
         }
+
+
+def test_time_pressure_literature_is_motivation_not_calibration():
+    compact = " ".join(STAGE2_DOCUMENTATION.split())
+    assert "pre-specified ordinal project hypothesis" in compact
+    assert "10.1016/j.ipm.2019.04.004" in compact
+    assert "does not calibrate" in compact
+    assert "not evidence for a universal" in compact
 
 
 @pytest.mark.parametrize(

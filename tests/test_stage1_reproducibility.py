@@ -53,7 +53,7 @@ def test_pinned_runtime_and_reference_manifests_validate_exact_artifact_bytes():
         "915cb746edf82da2e86840645815441e26cd590d5aae1e894e2dc9e729e72fde"
     )
     assert reference_sha == (
-        "834514117d85183a0ec9e48ce375e1c5c9b0d4d6803deb71e34b1d35ea5143dd"
+        "301e471f73c32995623c36abc0a7ca422177d87c11e6eab70ff955705f88b771"
     )
     assert runtime["platform"] == {
         "operating_system": "macOS 26.3",
@@ -71,7 +71,7 @@ def test_reference_pack_freezes_corpus_and_statistical_methods():
 
     assert manifest["ueyes_corpus_provenance"] == {
         "dataset": "UEyes",
-        "paper_doi": "https://doi.org/10.1145/3544548.3581113",
+        "paper_doi": "https://doi.org/10.1145/3544548.3581096",
         "dataset_record": "https://zenodo.org/records/8010312",
         "image_types_csv_sha256": (
             "fc22d679849862c0f0476b1d9c270a50383c62304c7635b87cb18a2559a25c68"

@@ -34,7 +34,7 @@
   },
   "ueyes_corpus_provenance": {
     "dataset": "UEyes",
-    "paper_doi": "https://doi.org/10.1145/3544548.3581113",
+    "paper_doi": "https://doi.org/10.1145/3544548.3581096",
     "dataset_record": "https://zenodo.org/records/8010312",
     "image_types_csv_sha256": "fc22d679849862c0f0476b1d9c270a50383c62304c7635b87cb18a2559a25c68",
     "authorized_corpus_aggregate_sha256": "785c4e37e95ecd36903c05a280f4db3733d378328a8deec8fa4258c3bb67e200",

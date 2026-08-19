@@ -13,6 +13,13 @@ Task categories (`navigation`, `search`, `monitoring`, `data_entry`,
 task process, empirical effect size, or measurement claim and cannot change
 the frozen Stage-1 x19 vector or layout index.
 
+The time-pressure field is a pre-specified ordinal project hypothesis. Evidence
+that time constraints can influence interactive-search behaviour, with
+person- and task-dependent responses, motivates retaining the context field
+(Liu et al., 2019, https://doi.org/10.1016/j.ipm.2019.04.004). That study does
+not calibrate this repository's `lower` / `baseline` / `higher` mapping and is
+not evidence for a universal, category-specific, or participant-level effect.
+
 The Jokinen model is an optional, methodologically separate diagnostic exposed
 through the main route only when explicitly requested. It is non-score-bearing
 and is not measured search, eye tracking, or a validated behavioral prediction.

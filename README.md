@@ -1,4 +1,4 @@
-# GUI Layout Analysis Pipeline — Frozen Stage 1 + Stage 2 v1
+# GUI Layout Analysis Pipeline — Stage 1 + Stage 2 v1
 
 > Task-independent screenshot analysis with an exploratory, project-specific
 > layout-complexity index and explicit claim boundaries.
@@ -8,10 +8,22 @@ project-specific layout-complexity index** together with visual, saliency, and
 model-based search diagnostics. It does **not** provide a validated
 cognitive-load measurement or observed user-performance data.
 
-The repository accompanies an evolving master's-thesis project. The final
-research domain, post-study machine-learning path, and final thesis claims are
-still open decisions; historical exposé drafts must not be treated as the
+This repository defines the technical pipeline used by the master's-thesis
+project. User-study execution, participant data, and any post-study analysis
+are deliberately outside this repository and outside the current technical
+release. Historical exposé, literature, and planning artifacts are not the
 current method specification.
+
+---
+
+## Release status
+
+Stage 1 is frozen at the annotated Git tag `stage1-technical-freeze-v1`.
+Stage 2 v1 remains a release candidate until the exact final repository tree
+has passed the complete regression suite and two independent clean-room
+technical audits. A Git tag and its bound commit/tree identity are authoritative
+for a released version; an untagged checkout must be treated as development
+state.
 
 ---
 
@@ -56,6 +68,14 @@ All 15 combinations are declared compatible. The response is
 `score_bearing=false`, `numeric_modifier=null`, `simulated_process=false`, and
 `validated_measurement=false`. Legacy profile, search-mode, target-specificity,
 and trained-model fields are rejected rather than silently interpreted.
+
+The time-pressure field is included as a pre-specified contextual hypothesis.
+Primary research shows that time constraints can affect interactive-search
+behaviour and that the response depends on the person and task (Liu et al.,
+2019, doi:10.1016/j.ipm.2019.04.004). This literature motivates retaining the
+context field; it does not calibrate the `lower` / `baseline` / `higher` mapping,
+establish a universal monotonic effect, or validate any category-specific
+prediction in this repository.
 
 ---
 
@@ -118,6 +138,8 @@ and trained-model fields are rejected rather than silently interpreted.
 ├── stage2/            # Stage-2 v1 scenario proxy and cross-signal review
 ├── scripts/           # Reproducible analysis and evidence utilities
 ├── tests/             # Pytest unit, regression, contract, and smoke tests
+├── REPRODUCIBILITY.md # Frozen runtime, artifacts, and replay procedure
+├── AUDIT_TRAIL.md     # Technical-audit scope and release evidence policy
 └── requirements.txt
 ```
 
@@ -279,11 +301,31 @@ python3 tests/test_pipeline.py
 
 ---
 
-## Citation and license
+## Core methodological references and license
 
-The final thesis citation is not yet frozen. The saliency component builds on
-Jiang et al. (2023), *UEyes: Understanding Visual Saliency across User Interface
-Types*, CHI 2023.
+The current technical and scientific claim boundary relies on these primary
+sources. Their results motivate individual components; they do not independently
+validate the repository's combined layout index or Stage-2 scenario proxy.
+
+- Jiang, Y., Leiva, L. A., Rezazadegan Tavakoli, H., Houssel, P. R. B.,
+  Kylmälä, J., & Oulasvirta, A. (2023). *UEyes: Understanding Visual Saliency
+  across User Interface Types*. CHI 2023.
+  https://doi.org/10.1145/3544548.3581096
+- Das, A., Wu, Z., Škrjanec, I., & Feit, A. M. (2024). *Shifting Focus with
+  HCEye: Exploring the Dynamics of Visual Highlighting and Cognitive Load on
+  User Attention and Saliency Prediction*. Proceedings of the ACM on
+  Human-Computer Interaction, 8(ETRA), Article 236.
+  https://doi.org/10.1145/3655610
+- Jokinen, J. P. P., Wang, Z., Sarcar, S., Oulasvirta, A., & Ren, X. (2020).
+  *Adaptive feature guidance: Modelling visual search with graphical layouts*.
+  International Journal of Human-Computer Studies, 136, 102376.
+  https://doi.org/10.1016/j.ijhcs.2019.102376
+- Liu, C., Liu, Y.-H., Gedeon, T., Zhao, Y., Wei, Y., & Yang, F. (2019). *The
+  effects of perceived chronic pressure and time constraint on information
+  search behaviors and experience*. Information Processing & Management,
+  56(5), 1667–1679. https://doi.org/10.1016/j.ipm.2019.04.004
+- Torralba, A., & Efros, A. A. (2011). *Unbiased look at dataset bias*. CVPR
+  2011, 1521–1528. https://doi.org/10.1109/CVPR.2011.5995347
 
 This is academic research code. A license will be added before a public
 open-source release; contact the author before reuse in the meantime.

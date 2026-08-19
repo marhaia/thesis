@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - "fix/**"
+      - "stage2/**"
+      - "release/**"
   pull_request:
     branches: [main]
   workflow_dispatch:
