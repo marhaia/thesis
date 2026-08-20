@@ -53,11 +53,16 @@ def test_release_architecture_excludes_local_workspace_and_upstream_checkouts():
 
 
 def test_reproducibility_policy_requires_exact_output_parity_after_cleanup():
+    compact = " ".join(REPRODUCIBILITY.split())
     assert "Any x19 or layout byte change rejects the cleanup." in REPRODUCIBILITY
     assert "all 15 Stage-2 combinations" in REPRODUCIBILITY
     assert "97 distributions" in REPRODUCIBILITY
     assert "A local skip is not a failure" in REPRODUCIBILITY
     assert "final release record" in REPRODUCIBILITY
+    assert "Candidate-bound successor evidence" in REPRODUCIBILITY
+    assert "cannot substitute for a fresh replay" in REPRODUCIBILITY
+    assert "source-to-release blob manifest" in REPRODUCIBILITY
+    assert "Commit/tree strings without resolvable objects" in compact
 
 
 def test_audit_trail_distinguishes_technical_evidence_from_validation():
@@ -66,6 +71,8 @@ def test_audit_trail_distinguishes_technical_evidence_from_validation():
     assert "Stage 2 v1:** release candidate" in AUDIT_TRAIL
     assert "two independent auditors" in AUDIT_TRAIL
     assert "do not validate" in AUDIT_TRAIL
+    assert "Technical v1.0.0-rc.2 (2026-08-19): rejected" in AUDIT_TRAIL
+    assert "this was not a release PASS" in AUDIT_TRAIL
 
 
 def test_ci_covers_active_stage2_and_release_branches():
@@ -118,6 +125,27 @@ def test_active_dispersion_specification_states_the_production_equation():
     assert "var_x=sum((x-mu_x)^2S)/T" in section
     assert "dispersion=min(sqrt(var_x+var_y)/0.707, 1)" in section
     assert "for T=0: dispersion=0" in section
+
+
+def test_active_h6_layout_specification_states_the_complete_production_formula():
+    section = STAGE1_DOCUMENTATION[
+        STAGE1_DOCUMENTATION.index("### 6.6 Project-specific h6"):
+        STAGE1_DOCUMENTATION.index("### 6.7 API endpoints")
+    ]
+    compact = " ".join(section.split())
+    for required in (
+        "min, p5, p25, p50, p75, p95, max",
+        "0.876-0.05(C-W)",
+        "1.081+0.1(T+N)/2",
+        "0.935-0.04[1-(S+G)/2]",
+        "0.30(1-h_1)+0.20(h_2-1)+0.20(1-h_3)+0.15h_4+0.15(1-h_5)",
+        "{0.3}",
+        "max(E,N,1-W)",
+        "h_6=L_0P_{content}",
+        "author-defined and uncalibrated",
+        "not a cognitive-load measurement",
+    ):
+        assert required in compact
 
 
 def test_dependency_and_csv_surfaces_do_not_reintroduce_retired_claims():

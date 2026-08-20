@@ -90,6 +90,13 @@ def postprocess_saliency(
 
     pred = _as_finite_2d(pred, "saliency prediction")
 
+    # Preserve the declared constant-map policy before interpolation. OpenCV's
+    # float64 resize path can introduce tiny numerical differences even when
+    # every source pixel is exactly equal; min-max normalization would then
+    # amplify that numerical noise into artificial saliency structure.
+    if float(np.min(pred)) == float(np.max(pred)):
+        return np.zeros((original_h, original_w), dtype=np.float32)
+
     pred_shape = pred.shape
     rows_rate = original_h / pred_shape[0]
     cols_rate = original_w / pred_shape[1]

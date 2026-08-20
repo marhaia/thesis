@@ -1,28 +1,35 @@
 {
   "contract_name": "umsi_production_postprocess_gate_contract",
-  "contract_version": "p2_ag05_current_v3_docs_only",
+  "contract_version": "p2_ag05_current_v4_rc3_constant_map_fix",
   "lifecycle": "CURRENT_SUCCESSOR",
-  "remediation_finding": "RC1_TC_02_TC_03",
+  "remediation_finding": "RC2_XR_03",
   "scope": "P2_AG_05_ONLY",
   "historical_artifacts_immutable": true,
-  "created_before_current_v3_candidate_replay": true,
+  "created_before_current_v4_candidate_replay": true,
   "source_state": {
-    "base_head": "3e0df2bc4339381a8b7b5f0a4ed1725ca394bd15",
-    "state": "rc2_documentation_alignment_before_candidate_commit",
-    "binding_policy": "Exact pinned source bytes below are authoritative. The immutable v2 report remains bound to the archived v2 contract. A fresh v3 candidate replay must be created outside the final candidate Git tree after the candidate commit exists."
+    "base_head": "8315ed4b175a48191b5d5c67653db4167e0cf87b",
+    "state": "rc3_constant_map_remediation_before_candidate_commit",
+    "binding_policy": "Exact pinned source bytes below are authoritative. The immutable v2 report remains bound to the archived v2 contract. The unexecuted v3 successor remains identifiable by its source commit and SHA-256 below. A fresh v4 candidate replay must be created outside the final candidate Git tree after the candidate commit exists."
   },
   "evidence_roles": {
-    "immutable_v2_report": "stage1/evidence/p2_ag05_current_report_v2.json remains byte-bound to umsi_production_postprocess_gate_current_contract_v2.json and is not relabelled as a v3 execution.",
-    "candidate_v3_replay": "A separate immutable handoff-package report must rerun this exact v3 contract after the RC2 candidate commit exists; its repository_head must equal that candidate commit and its overall_verdict must be PASS.",
+    "immutable_v2_report": "stage1/evidence/p2_ag05_current_report_v2.json remains byte-bound to umsi_production_postprocess_gate_current_contract_v2.json and is not relabelled as a v4 execution.",
+    "candidate_v4_replay": "A separate immutable handoff-package report must rerun this exact v4 contract after the RC3 candidate commit exists; its repository_head must equal that candidate commit and its overall_verdict must be PASS.",
     "non_circularity": "A file inside a Git commit cannot truthfully contain that commit's own identity. The final candidate-bound replay therefore lives outside the candidate Git tree and is hash-bound by the handoff manifest."
   },
-  "purpose": "Bind the documentation-only saliency_features.py successor without rewriting or relabelling the real-weight v2 execution. The executable AST with module/function/class docstrings removed is identical to v2. This v3 contract preserves every threshold and expected production output identity and requires a fresh final-candidate replay outside Git.",
+  "purpose": "Bind the RC3 constant-map postprocessing remediation together with the retained documentation-only saliency_features.py migration without rewriting or relabelling the real-weight v2 execution. The constant-map fix short-circuits exact finite constants before resize so interpolation noise cannot become artificial saliency structure. This v4 contract preserves every threshold and expected non-constant production output identity and requires a fresh final-candidate replay outside Git.",
   "supersedes_execution_contract": {
     "filename": "umsi_production_postprocess_gate_current_contract_v2.json",
     "sha256": "43cd688e10eac46d27963909e35ad1c10fadfd192636a0b89a844361ead65786",
     "report_filename": "p2_ag05_current_report_v2.json",
     "report_sha256": "99ee6c11105323d1390f9cd8310146bff5c750fec4f63945d5b86b2699029f6e",
     "mutation_policy": "immutable_historical_evidence"
+  },
+  "supersedes_successor_contract": {
+    "contract_version": "p2_ag05_current_v3_docs_only",
+    "source_commit": "8315ed4b175a48191b5d5c67653db4167e0cf87b",
+    "sha256": "e5f2adcc06fa0e117da7c46908b29fcf82ddde93e927e0eb4206fef3ff300215",
+    "execution_report_created": false,
+    "mutation_policy": "recoverable_from_git_history_and_rc2_handoff"
   },
   "documentation_only_source_migration": {
     "path": "saliency/saliency_features.py",
@@ -32,6 +39,14 @@
     "ast_without_docstrings_equal": true,
     "computation_changed": false,
     "scope": "Correct the active s5 order and weighted-dispersion specification only."
+  },
+  "constant_map_source_remediation": {
+    "path": "saliency/postprocessing.py",
+    "previous_sha256": "f6690bbff3bf2a74e8cdbe7a4e3d12041151394d19fbe5650b040356527698e4",
+    "current_sha256": "5380cd66cc2c41221255accd227bf1fe701a01c0b19b66da785c1b1703e499e2",
+    "computation_changed": true,
+    "scope": "Return the declared all-zero result for exact finite constant maps before any resize, independent of accepted floating dtype, source shape, target shape, or aspect ratio.",
+    "nonconstant_production_identity_policy": "All five real-weight fixture output SHA-256 identities remain mandatory and must be re-established by the v4 candidate replay."
   },
   "historical_reference_contract": {
     "filename": "umsi_five_fixture_gate_contract.json",
@@ -45,7 +60,7 @@
     },
     "production_postprocessing": {
       "path": "saliency/postprocessing.py",
-      "sha256": "f6690bbff3bf2a74e8cdbe7a4e3d12041151394d19fbe5650b040356527698e4"
+      "sha256": "5380cd66cc2c41221255accd227bf1fe701a01c0b19b66da785c1b1703e499e2"
     },
     "production_saliency_features": {
       "path": "saliency/saliency_features.py",
@@ -84,7 +99,7 @@
     "peak_positions_exact": true
   },
   "threshold_authority": {
-    "policy": "No threshold is newly defined, relaxed or tightened in current_v3.",
+    "policy": "No threshold is newly defined, relaxed or tightened in current_v4.",
     "source_contract": "umsi_production_postprocess_gate_current_contract_v2.json",
     "source_contract_sha256": "43cd688e10eac46d27963909e35ad1c10fadfd192636a0b89a844361ead65786"
   },
@@ -102,7 +117,7 @@
     "output_contract": "Production E2E must be float32, finite, correctly shaped and either span exactly [0,1] or be the defined constant all-zero map.",
     "feature_check": "Run the pinned production feature extractor on untouched production E2E and the one-time postprocessed legacy reference; compare all five named features.",
     "peak_check": "Use the production peak mask and require exact peak count and exact peak-mask positions.",
-    "expected_output_identity": "Each production E2E array SHA-256 must equal the immutable value verified by v2 and carried forward unchanged before the v3 candidate replay."
+    "expected_output_identity": "Each non-constant production E2E array SHA-256 must equal the immutable value verified by v2 and carried forward unchanged before the v4 candidate replay."
   },
   "required_feature_order": [
     "saliency_dispersion",
@@ -128,7 +143,7 @@
     ],
     "weights_sha256": "f4290c3f11f18befbb47de50d81e4555ec8e7a63066c71c343a32fe32799e9fe",
     "evidence_npz_sha256": "9e933c1071924f180c32cc6327363ca5760b5968d497414a9f7939919b630079",
-    "report_filename": "p2_ag05_current_report_v3_candidate_replay.json",
+    "report_filename": "p2_ag05_current_report_v4_candidate_replay.json",
     "overall_verdict_required": "PASS"
   },
   "execution": {
@@ -143,15 +158,15 @@
       "weights": "saliency/weights/model_weights/saliency_models/UMSI++/umsi++.hdf5",
       "evidence_npz": "external hash-pinned umsi_resize_causality_arrays_6a17288_consolidated.npz",
       "fixtures_root": "external directory containing the five hash-pinned fixture filenames",
-      "output": "external candidate-bound p2_ag05_current_report_v3_candidate_replay.json"
+      "output": "external candidate-bound p2_ag05_current_report_v4_candidate_replay.json"
     },
-    "tracked_report_requirement": "No tracked v3 report may be presented as a final-candidate execution because that would be self-referential.",
-    "candidate_replay_requirement": "After the final RC2 candidate commit is created, rerun this exact contract to a report outside the Git tree. That replay report must record the final candidate commit and be hash-bound by the handoff manifest."
+    "tracked_report_requirement": "No tracked v4 report may be presented as a final-candidate execution because that would be self-referential.",
+    "candidate_replay_requirement": "After the final RC3 candidate commit is created, rerun this exact contract to a report outside the Git tree. That replay report must record the final candidate commit and be hash-bound by the handoff manifest."
   },
   "out_of_scope": [
     "Any rewrite of historical P8, P9, P10 or P2 contracts, reports, thresholds or verdicts",
     "Stage-2 code or models",
-    "Changes to saliency computation or feature definitions",
+    "Changes to saliency computation beyond the exact finite constant-map remediation declared above, or changes to feature definitions",
     "XR-05 through XR-10 remediation"
   ]
 }

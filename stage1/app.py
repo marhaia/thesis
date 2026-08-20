@@ -544,6 +544,23 @@ def _resolve_target_index(elements, target_id, target_x, target_y):
     if target_x is None or target_y is None:
         return None
 
+    # Defense in depth for callers other than the public route. Non-finite or
+    # negative coordinates must never enter distance comparisons where NaN
+    # would otherwise make the first element win by default.
+    import math
+    try:
+        target_x = float(target_x)
+        target_y = float(target_y)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if (
+        not math.isfinite(target_x)
+        or not math.isfinite(target_y)
+        or target_x < 0
+        or target_y < 0
+    ):
+        return None
+
     # 2a. Point-in-bbox hit test.
     for idx, el in enumerate(elements):
         bbox = el.get("bbox")
@@ -1230,16 +1247,54 @@ def scanpath_to_target():
     # target_x, target_y = top-left in original-image pixels, target_w/target_h =
     # its size. A single click point (target_x, target_y only) and an explicit
     # target_id remain supported for backwards compatibility.
-    target_x = request.args.get("target_x", default=None, type=float)
-    target_y = request.args.get("target_y", default=None, type=float)
-    target_w = request.args.get("target_w", default=None, type=float)
-    target_h = request.args.get("target_h", default=None, type=float)
+    try:
+        target_x = _optional_finite_query_float(request, "target_x")
+        target_y = _optional_finite_query_float(request, "target_y")
+        target_w = _optional_finite_query_float(request, "target_w")
+        target_h = _optional_finite_query_float(request, "target_h")
+    except ValueError:
+        return jsonify({
+            "analysis_complete": False,
+            "error": {
+                "code": "invalid_target_geometry",
+                "message": (
+                    "Target coordinates and sizes must be unique finite "
+                    "numbers. Coordinates must be non-negative and region "
+                    "sizes must be positive."
+                ),
+            },
+        }), 400
     target_id = request.args.get("target_id", default=None, type=int)
-    has_region = (
-        target_x is not None and target_y is not None
-        and target_w is not None and target_w > 0
-        and target_h is not None and target_h > 0
+    coordinate_values = (target_x, target_y)
+    region_requested = target_w is not None or target_h is not None
+    invalid_target_geometry = (
+        any(value is not None and value < 0 for value in coordinate_values)
+        or (target_x is None) != (target_y is None)
+        or (
+            region_requested
+            and (
+                target_x is None
+                or target_y is None
+                or target_w is None
+                or target_h is None
+                or target_w <= 0
+                or target_h <= 0
+            )
+        )
     )
+    if invalid_target_geometry:
+        return jsonify({
+            "analysis_complete": False,
+            "error": {
+                "code": "invalid_target_geometry",
+                "message": (
+                    "Target coordinates and sizes must be unique finite "
+                    "numbers. Coordinates must be non-negative and region "
+                    "sizes must be positive."
+                ),
+            },
+        }), 400
+    has_region = region_requested
     has_point = target_x is not None and target_y is not None
     if target_id is None and not has_point:
         return jsonify({
@@ -1602,6 +1657,26 @@ def _finite_sequence(value, length, path):
     ]
 
 
+def _optional_finite_query_float(req, name):
+    """Parse one optional finite float query parameter without ambiguity."""
+    import math
+
+    values = list(req.args.getlist(name))
+    if not values:
+        return None
+    if len(values) != 1 or values[0].strip() == "":
+        raise ValueError(f"{name} must be supplied once as a finite number")
+    try:
+        value = float(values[0])
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            f"{name} must be supplied once as a finite number"
+        ) from exc
+    if not math.isfinite(value):
+        raise ValueError(f"{name} must be supplied once as a finite number")
+    return value
+
+
 def _validated_native_elements(elements):
     """Validate and sanitize non-score-bearing native detector output."""
     safe = _plain_finite_tree(elements, "native_elements")
@@ -1724,6 +1799,25 @@ def _validated_jokinen_result(result):
         element["center"] = _finite_sequence(
             element["center"], 2, f"{path}.center"
         )
+        bbox_x, bbox_y, bbox_width, bbox_height = element["bbox"]
+        center_x, center_y = element["center"]
+        if bbox_x < 0 or bbox_y < 0:
+            raise ValueError(f"{path}.bbox origin must be non-negative")
+        if bbox_width <= 0 or bbox_height <= 0:
+            raise ValueError(f"{path}.bbox width and height must be positive")
+        if center_x < 0 or center_y < 0:
+            raise ValueError(f"{path}.center must be non-negative")
+        expected_center = (
+            bbox_x + bbox_width / 2.0,
+            bbox_y + bbox_height / 2.0,
+        )
+        if not all(
+            math.isclose(observed, expected, rel_tol=0.0, abs_tol=1e-6)
+            for observed, expected in zip(element["center"], expected_center)
+        ):
+            raise ValueError(
+                f"{path}.center must match the bbox center within 1e-6 pixels"
+            )
         if not isinstance(element["color_category"], str) or not element[
             "color_category"
         ]:

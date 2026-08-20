@@ -72,6 +72,24 @@ unavailable or invalid.
 5. Repeat representative white, gray, simple-interface, complex-interface,
    malformed-input, missing-artifact, and optional-diagnostic fault probes.
 
+## Candidate-bound successor evidence
+
+Any active evidence contract with lifecycle `CURRENT_SUCCESSOR` and a declared
+candidate-replay requirement is release-blocking until that replay has been run
+against the exact final candidate commit. The out-of-tree replay report must:
+
+- record the exact final candidate commit;
+- finish with the contract-required PASS verdict;
+- identify every external input by filename, size, and cryptographic hash; and
+- be listed by filename, size, and SHA-256 in both the handoff manifest and
+  package checksum file.
+
+An immutable historical report remains valid evidence for its own historical
+contract, but it cannot substitute for a fresh replay explicitly required by
+the active successor contract. The replay must occur only after the final
+candidate commit exists so the report can bind that identity without creating
+a self-referential Git commit.
+
 ## Documentation-only changes
 
 A documentation cleanup is accepted only when the active score-bearing source
@@ -92,3 +110,13 @@ STAGE1_RUNTIME_VERIFICATION=metadata_only python -m pytest -q
 
 The final release archive must be reconstructed independently and its Git tree
 must equal the tagged tree before a clean-room verdict is accepted.
+
+When a curated release tree is derived from a separate development repository,
+the handoff must also make the declared relationship independently verifiable.
+It must include either the required development Git objects or an exact source
+archive plus an allowlisted source-to-release blob manifest. The manifest must
+record the development commit/tree, every mapped path, both blob identities,
+and whether the bytes are equal; the source artifact and mapping manifest must
+themselves be hash-bound by the handoff. Commit/tree strings without resolvable
+objects or a reconstructable source artifact are descriptive metadata only and
+must be labelled `UNVERIFIED`, not established provenance.

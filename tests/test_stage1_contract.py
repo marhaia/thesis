@@ -602,6 +602,46 @@ def test_optional_jokinen_contains_malformed_results(client, monkeypatch, result
     assert len(body["stage1_feature_vector"]) == 19
 
 
+@pytest.mark.parametrize(
+    "field,bad_value",
+    [
+        pytest.param("bbox", [-1.0, 12.0, 30.0, 20.0], id="bbox-negative-x"),
+        pytest.param("bbox", [10.0, -1.0, 30.0, 20.0], id="bbox-negative-y"),
+        pytest.param("bbox", [10.0, 12.0, -1.0, 20.0], id="bbox-negative-width"),
+        pytest.param("bbox", [10.0, 12.0, 30.0, -1.0], id="bbox-negative-height"),
+        pytest.param("bbox", [10.0, 12.0, 0.0, 20.0], id="bbox-zero-width"),
+        pytest.param("bbox", [10.0, 12.0, 30.0, 0.0], id="bbox-zero-height"),
+        pytest.param("center", [-1.0, 22.0], id="center-negative-x"),
+        pytest.param("center", [25.0, -1.0], id="center-negative-y"),
+        pytest.param("center", [25.0, 23.0], id="center-bbox-inconsistent"),
+    ],
+)
+def test_optional_jokinen_contains_invalid_geometry_without_changing_scores(
+    client, monkeypatch, field, bad_value
+):
+    import cognitive.jokinen_model
+
+    baseline = _post(client, include_jokinen_diagnostic="true")
+    assert baseline["jokinen_diagnostic"]["status"] == "complete"
+
+    result = _valid_jokinen_result()
+    result["per_element"][0][field] = bad_value
+    monkeypatch.setattr(
+        cognitive.jokinen_model.JokinenSearchModel,
+        "predict_search_times",
+        lambda self, **kwargs: result,
+    )
+
+    observed = _post(client, include_jokinen_diagnostic="true")
+
+    assert observed["jokinen_diagnostic"]["status"] == "unavailable"
+    assert observed["jokinen_diagnostic"]["result"] is None
+    assert observed["jokinen_diagnostic"]["score_bearing"] is False
+    assert _vector_bytes(observed) == _vector_bytes(baseline)
+    assert _score_bytes(observed) == _score_bytes(baseline)
+    assert observed["layout"] == baseline["layout"]
+
+
 def test_optional_jokinen_contains_nonfinite_derived_arithmetic(client, monkeypatch):
     import cognitive.jokinen_model
 

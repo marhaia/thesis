@@ -713,7 +713,91 @@ to these values. The auxiliary head remains relevant only as a numeric internal
 model output and for architecture/parity evidence; downstream scoring consumes
 the saliency heatmap, not semantic class labels.
 
-### 6.6 API endpoints
+### 6.6 Project-specific h6 and experimental layout proxy
+
+The public h6 block is a deterministic, project-specific heuristic. It is not
+a cognitive-load measurement, a calibrated effect estimate, or a prediction of
+human performance. Its exact public order is:
+
+1. `hceye_fixation_ratio_proxy`;
+2. `hceye_duration_ratio_proxy`;
+3. `hceye_exploration_ratio_proxy`;
+4. `hceye_aoi_sensitivity_proxy`;
+5. `hceye_highlight_effectiveness_proxy`; and
+6. `experimental_layout_complexity_index`.
+
+Let $P_f(z)$ denote piecewise-linear interpolation of raw feature $z$ against
+the seven anchors `min, p5, p25, p50, p75, p95, max` in
+`stage1/data/results/feature_norms.json`, mapped respectively to
+$0, 0.05, 0.25, 0.50, 0.75, 0.95, 1$. Repeated x-anchors are omitted and
+values outside the recorded minimum/maximum are clamped by interpolation.
+Missing or non-finite score-driving inputs fail closed.
+
+Define the normalized inputs:
+
+$$
+E=P_{edge\_density},\quad
+F=P_{feature\_congestion},\quad
+N=P_{interactive\_element\_density},\quad
+S=P_{layout\_symmetry},\quad
+G=P_{visual\_hierarchy}.
+$$
+
+$W$ is measured whitespace in $[0,1]$ (fallback $W=clip(1-N,0,1)$ only when
+the caller does not supply it), and $T$ is OCR text density in $[0,1]$
+(fallback $T=0.5$ only when it is absent). The retained proxy equations are:
+
+$$
+C=(E+N+F)/3
+$$
+
+$$
+h_1=clip(0.876-0.05(C-W),\ 0.6,\ 1.1)
+$$
+
+$$
+h_2=clip(1.081+0.1(T+N)/2,\ 0.8,\ 1.5)
+$$
+
+$$
+h_3=clip(0.935-0.04[1-(S+G)/2],\ 0.7,\ 1.0)
+$$
+
+$$
+h_4=clip\left(\frac{0.115-0.069}{0.115}[0.7+0.6(1-W)],\ 0,\ 1\right)
+$$
+
+With saliency present, let
+$Q=[P_{saliency\_dispersion}+1-P_{saliency\_coverage}]/2$; otherwise the
+explicit fallback is $Q=C$. Then:
+
+$$
+h_5=clip(0.5+0.4Q,\ 0,\ 1).
+$$
+
+The preliminary layout value is:
+
+$$
+L_0=clip\left(
+\frac{0.30(1-h_1)+0.20(h_2-1)+0.20(1-h_3)+0.15h_4+0.15(1-h_5)}{0.3},
+0,1\right).
+$$
+
+The final content-presence factor deliberately uses direct structural evidence
+only—edge density, detected-element density, and inverse whitespace—and excludes
+feature congestion:
+
+$$
+P_{content}=clip(max(E,N,1-W),0,1),\qquad h_6=L_0P_{content}.
+$$
+
+The six values are returned as `float32`. The HCEye aggregate coefficients
+provide directional provenance for this exploratory mapping; the mapping,
+weights, `/0.3` scaling and content-presence transformation are author-defined
+and uncalibrated. They must never be described as literature-derived effect
+sizes for a screenshot-level cognitive-load measure.
+
+### 6.7 API endpoints
 
 | Endpoint | Method | Input | Output | Available since |
 |----------|---------|-------|--------|------|
@@ -721,7 +805,7 @@ the saliency heatmap, not semantic class labels.
 | `/api/features` | GET | — | Metadata for eight visual features | 04.05.2026 |
 | `/api/saliency` | POST | Image (multipart) | s∈ℝ⁵ plus heatmap (Base64); no semantic class labels | 06.05.2026 |
 
-### 6.7 Relationship to the UEyes dataset
+### 6.8 Relationship to the UEyes dataset
 
 The UMSI++ checkpoint originates from the UEyes model release. Therefore:
 - the source model was trained using aggregated eye-tracking data from 62

@@ -62,15 +62,24 @@ def test_executed_current_v2_contract_and_report_remain_byte_identical():
 def test_current_contract_is_explicit_successor_with_unchanged_thresholds():
     contract = gate.load_and_validate_contract(CURRENT_CONTRACT)
 
-    assert contract["contract_version"] == "p2_ag05_current_v3_docs_only"
+    assert contract["contract_version"] == "p2_ag05_current_v4_rc3_constant_map_fix"
     assert contract["lifecycle"] == "CURRENT_SUCCESSOR"
-    assert contract["remediation_finding"] == "RC1_TC_02_TC_03"
+    assert contract["remediation_finding"] == "RC2_XR_03"
     assert contract["supersedes_execution_contract"] == {
         "filename": V2_CONTRACT.name,
         "sha256": V2_CONTRACT_SHA256,
         "report_filename": V2_REPORT.name,
         "report_sha256": V2_REPORT_SHA256,
         "mutation_policy": "immutable_historical_evidence",
+    }
+    assert contract["supersedes_successor_contract"] == {
+        "contract_version": "p2_ag05_current_v3_docs_only",
+        "source_commit": "8315ed4b175a48191b5d5c67653db4167e0cf87b",
+        "sha256": (
+            "e5f2adcc06fa0e117da7c46908b29fcf82ddde93e927e0eb4206fef3ff300215"
+        ),
+        "execution_report_created": False,
+        "mutation_policy": "recoverable_from_git_history_and_rc2_handoff",
     }
     assert contract["thresholds"] == {
         "endpoint_self_abs_max": 0.0,
@@ -91,6 +100,14 @@ def test_current_contract_is_explicit_successor_with_unchanged_thresholds():
     )
     assert migration["ast_without_docstrings_equal"] is True
     assert migration["computation_changed"] is False
+    remediation = contract["constant_map_source_remediation"]
+    assert remediation["previous_sha256"] == (
+        "f6690bbff3bf2a74e8cdbe7a4e3d12041151394d19fbe5650b040356527698e4"
+    )
+    assert remediation["current_sha256"] == (
+        "5380cd66cc2c41221255accd227bf1fe701a01c0b19b66da785c1b1703e499e2"
+    )
+    assert remediation["computation_changed"] is True
 
 
 def test_current_contract_pins_and_verifies_current_source_bytes():
@@ -114,6 +131,9 @@ def test_current_contract_pins_and_verifies_current_source_bytes():
     assert contract["pinned_sources"]["production_saliency_features"][
         "sha256"
     ] == "f899f6ecf32155d1da4b7c71b817e6f385f36f6051abfcef7638f99e7bb36d7f"
+    assert contract["pinned_sources"]["production_postprocessing"][
+        "sha256"
+    ] == "5380cd66cc2c41221255accd227bf1fe701a01c0b19b66da785c1b1703e499e2"
 
 
 def test_current_real_weight_report_passes_all_five_exact_value_gates():

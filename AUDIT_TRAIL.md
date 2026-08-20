@@ -43,6 +43,16 @@ unmeasured application domain.
   two independent auditors have assessed the same immutable release tree after
   repository finalization.
 
+### Candidate history
+
+- **Technical v1.0.0-rc.2 (2026-08-19): rejected.** The immutable candidate is
+  retained as evidence. Cross-audit confirmed three acceptance blockers: an
+  incomplete optional-Jokinen geometry boundary, dtype-dependent artificial
+  structure for a resized constant float64 saliency input, and the absence of
+  the active contract's candidate-bound production-postprocess replay. The real
+  UMSI++/EasyOCR baseline, x19, layout value, and all 15 deterministic Stage-2
+  combinations remained stable; this was not a release PASS.
+
 ## Thesis and supplementary material
 
 The thesis appendix should summarize each candidate by tag, commit/tree,

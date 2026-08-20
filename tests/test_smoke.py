@@ -41,6 +41,7 @@ cv2 = pytest.importorskip("cv2", reason="opencv is required for the smoke tests"
 from app import (  # noqa: E402  (import after sys.path setup)
     app,
     _clamp_simulations,
+    _resolve_target_index,
     MAX_SIMULATIONS,
     MIN_SIMULATIONS,
     MAX_SCHEDULE_LEN,
@@ -433,6 +434,95 @@ def _scanpath(client, img_bytes, target_id, n=30):
         data={"image": (io.BytesIO(img_bytes), "syn.png")},
         content_type="multipart/form-data",
     ).get_json()
+
+
+@pytest.mark.parametrize("bad_value", ["nan", "inf", "-inf"])
+@pytest.mark.parametrize("field", ["target_x", "target_y", "target_w", "target_h"])
+def test_scanpath_rejects_nonfinite_target_geometry(client, field, bad_value):
+    query = {
+        "target_x": "10",
+        "target_y": "12",
+        "target_w": "30",
+        "target_h": "20",
+        "use_saliency": "false",
+    }
+    query[field] = bad_value
+
+    response = client.post(
+        "/api/scanpath-to-target",
+        query_string=query,
+        data={"image": (_png_bytes(), "invalid-target.png")},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 400
+    body = response.get_json()
+    assert body["analysis_complete"] is False
+    assert body["error"]["code"] == "invalid_target_geometry"
+
+
+@pytest.mark.parametrize(
+    "field,bad_value",
+    [
+        ("target_x", "-1"),
+        ("target_y", "-1"),
+        ("target_w", "0"),
+        ("target_h", "0"),
+        ("target_w", "-1"),
+        ("target_h", "-1"),
+    ],
+)
+def test_scanpath_rejects_negative_coordinates_and_nonpositive_region_sizes(
+    client, field, bad_value
+):
+    query = {
+        "target_x": "10",
+        "target_y": "12",
+        "target_w": "30",
+        "target_h": "20",
+        "use_saliency": "false",
+    }
+    query[field] = bad_value
+
+    response = client.post(
+        "/api/scanpath-to-target",
+        query_string=query,
+        data={"image": (_png_bytes(), "invalid-target.png")},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 400
+    body = response.get_json()
+    assert body["analysis_complete"] is False
+    assert body["error"]["code"] == "invalid_target_geometry"
+
+
+def test_scanpath_rejects_incomplete_or_duplicate_target_geometry(client):
+    cases = [
+        [("target_x", "10")],
+        [("target_x", "10"), ("target_y", "12"), ("target_w", "30")],
+        [("target_x", "10"), ("target_x", "11"), ("target_y", "12")],
+    ]
+
+    for query in cases:
+        response = client.post(
+            "/api/scanpath-to-target",
+            query_string=query,
+            data={"image": (_png_bytes(), "invalid-target.png")},
+            content_type="multipart/form-data",
+        )
+        assert response.status_code == 400
+        body = response.get_json()
+        assert body["analysis_complete"] is False
+        assert body["error"]["code"] == "invalid_target_geometry"
+
+
+@pytest.mark.parametrize("value", [np.nan, np.inf, -np.inf, -1.0])
+def test_target_resolver_never_selects_an_element_for_invalid_coordinates(value):
+    elements = [{"id": 0, "bbox": [10, 12, 30, 20], "center": [25, 22]}]
+
+    assert _resolve_target_index(elements, None, value, 12.0) is None
+    assert _resolve_target_index(elements, None, 10.0, value) is None
 
 
 def test_layout_block_present_and_named(client):

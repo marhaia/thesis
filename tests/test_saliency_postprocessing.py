@@ -39,6 +39,30 @@ def test_constant_map_policy_is_deterministic_zero_map(value):
     assert np.array_equal(observed, np.zeros((3, 4), dtype=np.float32))
 
 
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+@pytest.mark.parametrize(
+    "source_shape,target_shape",
+    [
+        ((1, 1), (17, 23)),
+        ((3, 4), (9, 5)),
+        ((3, 4, 1), (6, 11)),
+    ],
+    ids=["single-pixel", "landscape-to-portrait", "singleton-channel"],
+)
+def test_constant_map_stays_zero_across_resize_dtype_and_shape(
+    dtype, source_shape, target_shape
+):
+    pred = np.full(source_shape, 7.5, dtype=dtype)
+
+    observed = postprocess_saliency(pred, *target_shape)
+
+    assert observed.dtype == np.float32
+    assert observed.shape == target_shape
+    np.testing.assert_array_equal(
+        observed, np.zeros(target_shape, dtype=np.float32)
+    )
+
+
 @pytest.mark.parametrize("invalid", [np.nan, np.inf, -np.inf])
 def test_non_finite_predictions_fail_closed(invalid):
     pred = np.full((2, 2), invalid, dtype=np.float32)
