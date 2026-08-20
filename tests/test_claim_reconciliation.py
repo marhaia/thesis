@@ -371,7 +371,7 @@ def test_design_diagnosis_describes_the_task_independent_heuristic_truthfully():
         "measured layout/OCR inputs",
         "not an eye-tracking or behavioral measurement",
         "does not use target-search simulation",
-        "is not changed by task or profile selections",
+        "is not changed by task-type or time-pressure selections",
     ):
         assert required in unconditional_scope
 
@@ -430,8 +430,42 @@ def test_stage2_v1_copy_is_qualitative_and_excludes_profile_and_ml():
         "Simulated adjusted score",
         "simulated adjusted score",
         "Applying task & profile modifiers",
+        "profile selections",
     ):
         assert forbidden not in UI
+
+
+def test_how_it_works_matches_the_active_pipeline_and_diagnostics():
+    pipeline = _ui_slice('<!-- View: Pipeline -->', '<!-- View: Contact -->')
+
+    for required in (
+        "Optional and Exploratory Diagnostics",
+        "Jokinen Visual-Search Diagnostic",
+        "Optional · off by default",
+        "Exploratory Cross-Signal Review",
+        "Exploratory · tri-state",
+        "score_bearing=false",
+        "not_evaluable",
+        "no_review_flag",
+        "review_recommended",
+        "Active Pipeline and Optional Diagnostic References",
+        "none independently validates the combined Experimental Layout-Complexity Index",
+    ):
+        assert required in pipeline
+
+    for retired in (
+        "Breiman (2001)",
+        "Random Forests",
+        "Borchani",
+        "multi-output regression",
+        "Taubman-Ben-Ari",
+        "driving style inventory",
+        "Treisman &amp; Gelade",
+        "Wickens (2008)",
+        "Kahneman (1973)",
+        "profile selections",
+    ):
+        assert retired not in pipeline
 
 
 def test_ocr_text_is_escaped_before_readability_inner_html_rendering():
