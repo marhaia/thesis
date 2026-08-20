@@ -1900,12 +1900,11 @@
                         <div id="scanpathLoadMeta" style="font-size:11px; color:var(--text-dim); margin-top:6px;"></div>
                     </div>
 
-                    <!-- Driver glance check (NHTSA 2013 / ISO 15008) removed from
-                         the core UI: the compliance-style pass/fail framing over-
-                         claimed validated automotive compliance from an unvalidated
-                         model estimate. The backend still computes glance_metrics;
-                         re-introducing a clearly-labelled exploratory view is left
-                         as Future Work. -->
+                    <!-- Driver glance check removed from the core UI: the former
+                         compliance-style pass/fail framing over-claimed validated
+                         automotive compliance from an unvalidated model estimate.
+                         The backend retains only bounded, non-score-bearing
+                         reference-limit diagnostics for possible Future Work. -->
                 </div>
 
                 <!-- 4c. Generative feedback: which elements are the search
@@ -2989,8 +2988,8 @@
         // removed from the core UI: the pass/fail compliance framing over-
         // claimed validated automotive compliance from an unvalidated model
         // estimate. These two functions are kept as no-ops so existing call
-        // sites stay valid; the backend still returns glance_metrics for any
-        // future, clearly-labelled exploratory view.
+        // sites stay valid; the backend exposes only explicitly bounded,
+        // non-score-bearing reference-limit diagnostics for possible Future Work.
         function showGlanceMetrics(_gm) { /* intentionally disabled (Future Work) */ }
 
         function hideGlanceMetrics() { /* intentionally disabled (Future Work) */ }

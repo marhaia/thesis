@@ -517,6 +517,58 @@ def test_scanpath_rejects_incomplete_or_duplicate_target_geometry(client):
         assert body["error"]["code"] == "invalid_target_geometry"
 
 
+def test_scanpath_accepts_repeated_identical_finite_target_geometry(client):
+    response = client.post(
+        "/api/scanpath-to-target",
+        query_string=[
+            ("target_x", "10"),
+            ("target_x", "10.0"),
+            ("target_y", "12"),
+            ("target_y", "12.0"),
+            ("target_w", "30"),
+            ("target_w", "30.0"),
+            ("target_h", "20"),
+            ("target_h", "20.0"),
+            ("use_saliency", "false"),
+            ("n_simulations", "1"),
+        ],
+        data={"image": (_png_bytes(), "repeated-target.png")},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["analysis_complete"] is True
+    assert body["target_bbox"] == pytest.approx([10.0, 12.0, 30.0, 20.0])
+
+
+def test_scanpath_glance_metrics_have_explicit_nonclaim_boundary(client):
+    response = client.post(
+        "/api/scanpath-to-target",
+        query_string={
+            "target_x": "10",
+            "target_y": "12",
+            "target_w": "30",
+            "target_h": "20",
+            "display_preset": "phone",
+            "use_saliency": "false",
+            "n_simulations": "1",
+        },
+        data={"image": (_png_bytes(), "bounded-glance.png")},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 200
+    metrics = response.get_json()["glance_metrics"]
+    assert metrics is not None
+    assert "compliant" not in metrics
+    assert metrics["score_bearing"] is False
+    assert metrics["validated_measurement"] is False
+    assert metrics["validated_behavioral_prediction"] is False
+    assert metrics["regulatory_compliance_assessment"] is False
+    assert "not measured eye tracking" in metrics["claim_boundary"]
+
+
 @pytest.mark.parametrize("value", [np.nan, np.inf, -np.inf, -1.0])
 def test_target_resolver_never_selects_an_element_for_invalid_coordinates(value):
     elements = [{"id": 0, "bbox": [10, 12, 30, 20], "center": [25, 22]}]

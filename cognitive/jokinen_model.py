@@ -1316,7 +1316,7 @@ def predict_search_time(
 
 
 # ===========================================================================
-# Glance-based metrics (automotive: NHTSA 2013 / ISO 15008)
+# Exploratory glance reference-limit metrics
 # ===========================================================================
 
 def compute_glance_metrics(
@@ -1326,8 +1326,8 @@ def compute_glance_metrics(
     cumulative_limit_s: float = 12.0,
 ) -> Dict:
     """
-    Break a predicted search scanpath into in-vehicle "glances" and check it
-    against automotive eyes-off-road guidelines.
+    Break a predicted search scanpath into model-estimated in-vehicle glances
+    and compare them with cited eyes-off-road reference limits.
 
     Rationale
     ---------
@@ -1336,15 +1336,15 @@ def compute_glance_metrics(
     returning their eyes to the road. We approximate this by packing the model's
     predicted fixations into glances of at most ``glance_budget_s`` seconds each
     (a driver ends a glance and looks back once the budget is used up). The
-    resulting glance profile is then compared to the accepted limits:
+    resulting glance profile is then compared to the cited reference limits:
 
       - single glance <= 2.0 s   (NHTSA Visual-Manual Guidelines, 2013;
                                    also AAM/ISO 15007 practice)
       - cumulative eyes-off-road time <= 12.0 s for the whole task (NHTSA, 2013)
 
-    These are DESIGN guidelines applied to a MODEL estimate of goal-directed
-    search, not measured eye-tracking; they flag layouts whose predicted search
-    would push a driver over the safe glance budget.
+    These are reference values applied to a MODEL estimate of goal-directed
+    search, not measured eye-tracking, a validated behavioral prediction, or a
+    regulatory-compliance determination.
 
     Parameters
     ----------
@@ -1374,7 +1374,6 @@ def compute_glance_metrics(
         'cumulative_limit_s'      : the applied cumulative limit
         'exceeds_single_glance'   : bool, any glance > single_glance_limit_s
         'exceeds_cumulative'      : bool, total > cumulative_limit_s
-        'compliant'               : bool, neither limit exceeded
     """
     # Keep only real fixations with a positive encoding/saccade time.
     steps = [
@@ -1395,7 +1394,6 @@ def compute_glance_metrics(
             "cumulative_limit_s": round(cumulative_limit_s, 3),
             "exceeds_single_glance": False,
             "exceeds_cumulative": False,
-            "compliant": True,
         }
 
     # Greedy packing: fill the current glance until adding the next fixation
@@ -1428,5 +1426,4 @@ def compute_glance_metrics(
         "cumulative_limit_s": round(cumulative_limit_s, 3),
         "exceeds_single_glance": bool(exceeds_single),
         "exceeds_cumulative": bool(exceeds_cumulative),
-        "compliant": bool(not exceeds_single and not exceeds_cumulative),
     }

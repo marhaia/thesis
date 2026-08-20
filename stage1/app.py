@@ -1377,16 +1377,26 @@ def scanpath_to_target():
             viewing_distance_cm=viewing_cm,
         )
 
-        # Glance-based automotive metrics (NHTSA 2013 / ISO 15008): split the
-        # predicted search scanpath into eyes-off-road glances and check it
-        # against the single-glance (<=2 s) and cumulative (<=12 s) limits. Only
-        # meaningful for in-vehicle displays, so we skip it for the desktop
-        # preset (where the guidelines do not apply).
+        # Exploratory reference-limit comparison for non-desktop presets. This
+        # remains methodologically separate from every score-bearing result and
+        # must never be presented as measured or certified driver behaviour.
         glance_metrics = None
         if display_preset_meta.get("key") != "desktop":
             fixations = (scanpath or {}).get("fixations", [])
             if fixations:
                 glance_metrics = compute_glance_metrics(fixations)
+                glance_metrics.update({
+                    "score_bearing": False,
+                    "validated_measurement": False,
+                    "validated_behavioral_prediction": False,
+                    "regulatory_compliance_assessment": False,
+                    "claim_boundary": (
+                        "Exploratory comparison of model-estimated scanpath "
+                        "timing with cited reference limits; not measured eye "
+                        "tracking, a validated behavioral prediction, or a "
+                        "regulatory-compliance determination."
+                    ),
+                })
 
 
         # already estimates a search cost PER element; until now those costs were
@@ -1658,23 +1668,40 @@ def _finite_sequence(value, length, path):
 
 
 def _optional_finite_query_float(req, name):
-    """Parse one optional finite float query parameter without ambiguity."""
+    """Parse one unique optional finite value without ambiguity.
+
+    Repeated lexically or numerically equivalent values are one unique value;
+    conflicting repetitions, blanks, non-numeric values, and nonfinite values
+    are rejected.
+    """
     import math
 
     values = list(req.args.getlist(name))
     if not values:
         return None
-    if len(values) != 1 or values[0].strip() == "":
-        raise ValueError(f"{name} must be supplied once as a finite number")
-    try:
-        value = float(values[0])
-    except (TypeError, ValueError) as exc:
-        raise ValueError(
-            f"{name} must be supplied once as a finite number"
-        ) from exc
-    if not math.isfinite(value):
-        raise ValueError(f"{name} must be supplied once as a finite number")
-    return value
+
+    parsed = []
+    for raw_value in values:
+        if not isinstance(raw_value, str) or raw_value.strip() == "":
+            raise ValueError(
+                f"{name} must contain one unique finite number"
+            )
+        try:
+            value = float(raw_value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"{name} must contain one unique finite number"
+            ) from exc
+        if not math.isfinite(value):
+            raise ValueError(
+                f"{name} must contain one unique finite number"
+            )
+        parsed.append(value)
+
+    first = parsed[0]
+    if any(value != first for value in parsed[1:]):
+        raise ValueError(f"{name} must contain one unique finite number")
+    return first
 
 
 def _validated_native_elements(elements):
