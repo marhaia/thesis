@@ -185,7 +185,8 @@ def test_active_v1_route_and_ui_exclude_legacy_personality_and_ml_paths():
         "data.cross_signal_review",
         "data.jokinen_diagnostic",
         "score_bearing=false",
-        "numeric_modifier=null",
+        "Recorded context:",
+        "context only — numerical score unchanged",
     ):
         assert required_ui_contract in UI_SOURCE
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pipeline</title>
+    <title>GUI Layout Complexity Analyzer</title>
     <style>
         :root {
             --bg: #0f1117;
@@ -170,6 +170,32 @@
             color: var(--text);
             background: var(--surface2);
             border-color: var(--border);
+        }
+        @media (max-width: 640px) {
+            .navbar-actions {
+                align-items: flex-start;
+                gap: 8px;
+            }
+            .navbar-links {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                flex: 1 1 auto;
+                width: auto;
+                min-width: 0;
+                gap: 4px;
+            }
+            .nav-btn {
+                width: 100%;
+                min-width: 0;
+                padding: 8px 5px;
+                font-size: 11px;
+                line-height: 1.25;
+                white-space: normal;
+            }
+            .nav-menu {
+                display: block;
+                flex: 0 0 auto;
+            }
         }
 
         /* Footer */
@@ -404,10 +430,10 @@
             grid-template-columns: 1fr;
             gap: 24px;
         }
-        /* Within results: saliency on top, radar below */
+        /* Main visual results: saliency and the existing radar profile. */
         .results-visual-row {
             display: grid;
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 24px;
             margin-top: 32px;
             padding-top: 18px;
@@ -1099,7 +1125,7 @@
 
         .summary-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: 1fr;
             gap: 12px;
             margin-bottom: 16px;
         }
@@ -1129,6 +1155,46 @@
             margin-top: 4px;
             font-size: 12px;
             color: var(--text-dim);
+        }
+
+        .summary-card.summary-hero {
+            position: relative;
+            overflow: hidden;
+            padding: 28px 30px;
+            border-color: rgba(59, 130, 246, .45);
+            background:
+                radial-gradient(circle at 88% 12%, rgba(59, 130, 246, .17), transparent 34%),
+                linear-gradient(145deg, rgba(59, 130, 246, .09), var(--surface2));
+        }
+        .summary-card.summary-hero::after {
+            content: "";
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: 4px;
+            background: var(--accent);
+        }
+        .summary-hero .summary-label {
+            color: #bfdbfe;
+            font-weight: 600;
+            letter-spacing: .08em;
+        }
+        .summary-hero .summary-value {
+            margin: 8px 0 4px;
+            font-size: clamp(52px, 8vw, 78px);
+            line-height: 1;
+            color: var(--text);
+            letter-spacing: -.04em;
+        }
+        .summary-hero-scale {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-dim);
+            letter-spacing: 0;
+        }
+        .summary-hero .summary-meta {
+            max-width: 720px;
+            margin-top: 12px;
+            line-height: 1.6;
         }
 
         .pill-row {
@@ -1344,8 +1410,7 @@
             padding: 8px 10px;
             background: var(--surface2);
         }
-        /* "Analyzed with" context summary shown above the interpretation, so the
-           declared task context stays visible alongside the results. */
+        /* Non-score-bearing context summary shown alongside the results. */
         .context-summary {
             display: flex;
             flex-wrap: wrap;
@@ -1369,7 +1434,7 @@
         .context-summary .cs-chip.cs-default {
             color: var(--text-dim);
         }
-        /* Full-width Analyze action bar (runs Step 1 + Step 2). */
+        /* Full-width Analyze action bar. */
         .analyze-bar {
             display: flex;
             align-items: center;
@@ -1620,6 +1685,203 @@
             color: var(--text-dim);
         }
         .interpretation-item span:first-child { flex-shrink: 0; }
+
+        /* Reusable collapsed sections for optional settings, diagnostics,
+           technical detail and references. */
+        .disclosure {
+            margin-top: 16px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--surface);
+            overflow: hidden;
+        }
+        .disclosure > summary {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 52px;
+            padding: 14px 16px;
+            cursor: pointer;
+            list-style: none;
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .disclosure > summary::-webkit-details-marker { display: none; }
+        .disclosure > summary::before {
+            content: "›";
+            color: var(--text-dim);
+            font-size: 20px;
+            line-height: 1;
+            transition: transform .15s;
+        }
+        .disclosure[open] > summary::before { transform: rotate(90deg); }
+        .disclosure-summary-note {
+            margin-left: auto;
+            color: var(--text-dim);
+            font-size: 11px;
+            font-weight: 400;
+            text-align: right;
+        }
+        .disclosure-body {
+            padding: 0 16px 16px;
+            border-top: 1px solid var(--border);
+        }
+        .diagnostic-settings {
+            margin: 0 0 24px;
+        }
+        .diagnostic-settings .disclosure-body {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+            padding-top: 16px;
+        }
+        .field label.diagnostic-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: normal;
+            text-transform: none;
+        }
+        .diagnostic-toggle-input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+            clip-path: inset(50%);
+            white-space: nowrap;
+        }
+        .diagnostic-toggle-track {
+            position: relative;
+            width: 42px;
+            height: 24px;
+            flex: 0 0 auto;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: var(--surface2);
+            transition: background-color .15s, border-color .15s;
+        }
+        .diagnostic-toggle-thumb {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--text-dim);
+            box-shadow: 0 1px 3px rgba(0,0,0,.35);
+            transition: transform .15s, background-color .15s;
+        }
+        .diagnostic-toggle-input:checked + .diagnostic-toggle-track {
+            border-color: var(--accent);
+            background: var(--accent);
+        }
+        .diagnostic-toggle-input:checked + .diagnostic-toggle-track .diagnostic-toggle-thumb {
+            background: #fff;
+            transform: translateX(18px);
+        }
+        .diagnostic-toggle-input:focus-visible + .diagnostic-toggle-track {
+            outline: 2px solid var(--accent);
+            outline-offset: 3px;
+        }
+        .optional-context-card {
+            border-style: dashed;
+            background: rgba(26, 29, 39, .72);
+        }
+        .context-only-mark {
+            margin-left: auto;
+            padding: 3px 8px;
+            border: 1px solid rgba(59,130,246,.28);
+            border-radius: 999px;
+            color: #93c5fd;
+            background: rgba(59,130,246,.08);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+        }
+        .diagnostics-intro {
+            margin: 12px 0 4px;
+            color: var(--text-dim);
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .roadmap-path {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            align-items: stretch;
+            margin-top: 28px;
+        }
+        .roadmap-step {
+            position: relative;
+            min-height: 230px;
+            padding: 22px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--surface);
+        }
+        .roadmap-step:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            right: -18px;
+            top: 50%;
+            z-index: 2;
+            width: 24px;
+            height: 24px;
+            transform: translateY(-50%);
+            background: var(--accent);
+            clip-path: polygon(0 42%, 58% 42%, 58% 14%, 100% 50%, 58% 86%, 58% 58%, 0 58%);
+        }
+        .roadmap-step.current { border-color: rgba(59,130,246,.5); }
+        .roadmap-kicker {
+            margin-bottom: 10px;
+            color: var(--accent);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+        .roadmap-step h3 {
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .roadmap-step p,
+        .roadmap-step li {
+            color: var(--text-dim);
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .roadmap-step ul { margin: 10px 0 0 18px; }
+        .scope-note {
+            margin-top: 24px;
+            padding: 16px 18px;
+            border-left: 3px solid var(--accent);
+            border-radius: 8px;
+            background: rgba(59,130,246,.07);
+            color: var(--text-dim);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        @media (max-width: 900px) {
+            .roadmap-path { grid-template-columns: 1fr; }
+            .roadmap-step { min-height: 0; }
+            .roadmap-step:not(:last-child)::after {
+                right: 50%;
+                top: auto;
+                bottom: -18px;
+                transform: translateX(50%) rotate(90deg);
+            }
+            .diagnostic-settings .disclosure-body { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -1627,11 +1889,12 @@
 
         <!-- Navigation -->
         <nav class="navbar">
-            <div class="navbar-brand">Pipeline <span>— GUI Complexity</span></div>
+            <div class="navbar-brand">GUI <span>Layout Complexity</span></div>
             <div class="navbar-actions">
                 <div class="navbar-links">
-                    <button class="nav-btn active" onclick="showView('analyzer')">Analyzer</button>
-                    <button class="nav-btn" onclick="showView('pipeline')">How it works</button>
+                    <button class="nav-btn active" onclick="showView('analyzer', this)">Analyzer</button>
+                    <button class="nav-btn" onclick="showView('pipeline', this)">How it works</button>
+                    <button class="nav-btn" onclick="showView('roadmap', this)">Research Roadmap</button>
                 </div>
                 <div class="nav-menu">
                     <button class="nav-burger" id="navBurger" aria-label="Settings" title="Settings" aria-expanded="false" aria-controls="navDropdown">
@@ -1656,8 +1919,9 @@
         <div class="view active" id="view-analyzer">
 
         <header style="text-align:left; margin-bottom:24px;">
-            <h1 style="font-size:26px; font-weight:600; line-height:1.25;">Interactional Complexity Analyzer</h1>
-            <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin-top:8px;">Computes an experimental layout-complexity index for a GUI screenshot from visual structure, relative model-estimated saliency, and an unvalidated HCEye-derived proxy block. Exploratory heuristic, not a validated cognitive-load measurement or observed eye-tracking result.</p>
+            <h1 style="font-size:26px; font-weight:600; line-height:1.25;">GUI Layout Complexity Analyzer</h1>
+            <p style="color:var(--text-dim); font-size:13px; line-height:1.6; margin-top:8px; max-width:820px;">Analyze the visual and structural complexity of a GUI screenshot. The result combines measured visual features, model-estimated saliency and project-specific screenshot proxies into an experimental layout-complexity index.</p>
+            <p style="color:var(--text-dim); font-size:12px; line-height:1.5; margin-top:6px;"><strong style="color:var(--text);">Scope:</strong> This is a screenshot-based computational proxy, not a validated measure of human cognitive load, workload, difficulty or performance.</p>
         </header>
 
         <!-- Steps 1 + 2 side by side -->
@@ -1695,61 +1959,71 @@
                 <div class="preview-container" id="previewContainer"></div>
             </div>
 
-            <!-- Step 2: Task Context -->
-            <div class="card">
+            <!-- Optional Context: intentionally outside the numbered score path. -->
+            <div class="card optional-context-card">
                 <div class="step-heading">
-                    <span class="step-badge">2</span>
-                    <h2>Task Context</h2>
+                    <h2>Optional Context</h2>
                     <span class="tag-optional">Optional</span>
-                    <span class="step-status" id="step2Status">Neutral baseline</span>
+                    <span class="context-only-mark">Context only</span>
                 </div>
-                <p class="field-hint" style="margin-bottom:14px;">Stage 2 v1 adds a deterministic scenario proxy to the frozen screenshot result. Task type is a label only; time pressure supplies only the qualitative direction <strong>lower / baseline / higher</strong>. There is no numeric modifier, task simulation, or validated measurement, and Stage-1 x19 never changes.</p>
+                <p class="field-hint" style="margin-bottom:14px;">Optionally record the intended task and time conditions alongside the screenshot. <strong>These selections do not change the numerical score, x19 or any score-bearing feature.</strong></p>
                 <div class="control-grid">
                     <div class="field">
                         <label for="taskType">Task Type <span class="feature-i" tabindex="0" aria-label="Explanation of Task Type options" data-tip="<div class='tip-title'>Task Type</div><div class='tip-body'><strong>Find a specific item</strong> &mdash; locating one known control or item<br><strong>Move between screens</strong> &mdash; stepping through menus or pages<br><strong>Watch for changes</strong> &mdash; keeping an eye on status or updates<br><strong>Enter or edit data</strong> &mdash; typing or filling in fields<br><strong>Compare &amp; choose</strong> &mdash; weighing several options to pick one</div>">i</span></label>
                         <select id="taskType">
-                            <option value="search" selected>Search &mdash; scenario label</option>
-                            <option value="navigation">Navigation &mdash; scenario label</option>
-                            <option value="monitoring">Monitoring &mdash; scenario label</option>
-                            <option value="data_entry">Data Entry &mdash; scenario label</option>
-                            <option value="decision">Decision &mdash; scenario label</option>
+                            <option value="search" selected>Search &mdash; find a specific target</option>
+                            <option value="navigation">Navigation &mdash; move between screens or sections</option>
+                            <option value="monitoring">Monitoring &mdash; watch for status or changes</option>
+                            <option value="data_entry">Data Entry &mdash; enter or edit information</option>
+                            <option value="decision">Decision &mdash; compare options and choose</option>
                         </select>
-                        <div class="field-hint">The category records the declared scenario only. It does not simulate a task or change any number.</div>
+                        <div class="field-hint">Recorded as contextual metadata only. It does not simulate the task or change any number.</div>
                     </div>
                     <div class="field">
-                        <label for="timePressure">Time Pressure <span class="feature-i" tabindex="0" aria-label="Explanation of Time Pressure options" data-tip="<div class='tip-title'>Time Pressure</div><div class='tip-body'><strong>Low</strong> &mdash; lower qualitative direction<br><strong>Medium</strong> &mdash; baseline direction<br><strong>High</strong> &mdash; higher qualitative direction<br>No numeric modifier or calibrated effect size is produced.</div>">i</span></label>
+                        <label for="timePressure">Time Pressure <span class="feature-i" tabindex="0" aria-label="Explanation of Time Pressure options" data-tip="<div class='tip-title'>Time Pressure</div><div class='tip-body'><strong>Low</strong> &mdash; ample time<br><strong>Medium</strong> &mdash; some time pressure<br><strong>High</strong> &mdash; strong time pressure<br>The selection is stored as context only and does not change the numerical score.</div>">i</span></label>
                         <select id="timePressure">
                             <option value="low">Low — ample time</option>
-                            <option value="medium" selected>Medium — neutral default</option>
-                            <option value="high">High — time-critical</option>
+                            <option value="medium" selected>Medium — some time pressure</option>
+                            <option value="high">High — strong time pressure</option>
                         </select>
-                        <div class="field-hint">Pre-specified ordinal hypothesis only: low = lower, medium = baseline, high = higher. No magnitude or empirical effect size is asserted.</div>
+                        <div class="field-hint">Recorded as contextual metadata only. It does not modify the numerical score.</div>
                     </div>
                 </div>
-                <div class="field" style="margin-top: 12px;">
-                    <label><input id="includeJokinenDiagnostic" type="checkbox"> Run optional Jokinen diagnostic</label>
-                    <div class="field-hint">Methodologically separate and off by default. It is not score-bearing, measured search, eye tracking, or a validated behavioral prediction.</div>
+                <div id="contextHint" class="context-hint">Context metadata only — the numerical score is unchanged.</div>
+            </div>
+
+        </div><!-- end grid-inputs -->
+
+        <details class="disclosure diagnostic-settings">
+            <summary>
+                Experimental Diagnostics Setup
+                <span class="disclosure-summary-note">Optional · off by default · never changes the layout-complexity index</span>
+            </summary>
+            <div class="disclosure-body">
+                <div class="field">
+                    <label class="diagnostic-toggle" for="includeJokinenDiagnostic">
+                        <input class="diagnostic-toggle-input" id="includeJokinenDiagnostic" type="checkbox" role="switch">
+                        <span class="diagnostic-toggle-track" aria-hidden="true"><span class="diagnostic-toggle-thumb"></span></span>
+                        <span>Enable visual-search simulation</span>
+                    </label>
+                    <div class="field-hint">Runs a separate Jokinen-based model diagnostic. Its search, bottleneck and contrast outputs are estimates, not measured eye tracking or validated behavioral predictions.</div>
                 </div>
-                <div class="field" id="displayPresetField" style="margin-top: 12px; display:none;">
-                    <label for="displayPreset">Display for optional diagnostic</label>
+                <div class="field" id="displayPresetField" style="display:none;">
+                    <label for="displayPreset">Display geometry for this diagnostic</label>
                     <select id="displayPreset">
                         <option value="phone">Phone &mdash; small screen</option>
                         <option value="laptop">Laptop &mdash; 14&Prime;</option>
                         <option value="desktop" selected>Desktop monitor &mdash; 17&Prime;</option>
                     </select>
-                    <div class="field-hint">Used only by the optional Jokinen diagnostic; it never changes the Stage-1 result or scenario direction.</div>
+                    <div class="field-hint">Used only by the optional visual-search diagnostic. It does not modify x19 or the numerical score.</div>
                 </div>
-                <div id="contextHint" class="context-hint">Medium time pressure gives the baseline qualitative scenario direction.</div>
             </div>
+        </details>
 
-        </div><!-- end grid-inputs -->
-
-        <!-- Analyze action: a lightweight right-aligned row sitting directly
-             under Step 2 (not its own numbered step), so the flow stays simple:
-             Upload -> Task Context -> Analyze -> Results. -->
+        <!-- Analyze action: upload is the only required input. -->
         <div class="analyze-bar">
             <div class="analyze-bar-text">
-                <span id="analyzeBarHint">Upload a screenshot in Step 1 to enable the analysis. The task context in Step 2 is optional — defaults give a neutral baseline.</span>
+                <span id="analyzeBarHint">Upload a screenshot to enable the analysis. Optional context is recorded separately and never changes the score.</span>
                 <div class="analyze-status" id="analyzeStatus"></div>
             </div>
             <div class="analyze-bar-action">
@@ -1759,58 +2033,49 @@
             </div>
         </div>
 
-        <!-- Step 3: Results — full width -->
+        <!-- Step 2: Results — full width -->
         <div class="card" style="margin-top:24px;">
             <div class="step-heading">
-                <span class="step-badge">3</span>
-                <h2>Pipeline Results</h2>
+                <span class="step-badge">2</span>
+                <h2>Main Results</h2>
             </div>
 
             <div class="loading" id="loading">
                 <div class="loading-header">
                     <div class="spinner"></div>
-                    <span class="loading-title" id="loadingTitle">Running pipeline…</span>
+                    <span class="loading-title" id="loadingTitle">Analyzing screenshot…</span>
                     <span class="loading-timer" id="loadingTimer">0s</span>
                 </div>
                 <div class="loading-stages">
                     <div class="loading-stage" id="lstage-1">
                         <div class="stage-dot"></div>
-                        <span>Extracting visual features (color, symmetry, entropy…)</span>
+                        <span>Analyzing visual structure</span>
                     </div>
                     <div class="loading-stage" id="lstage-2">
                         <div class="stage-dot"></div>
-                        <span>Computing saliency map with UMSI++ <em>(slowest step — TF inference)</em></span>
+                        <span>Computing model-estimated saliency</span>
                     </div>
                     <div class="loading-stage" id="lstage-3">
                         <div class="stage-dot"></div>
-                        <span>HCEye rule-based heuristic</span>
-                    </div>
-                    <div class="loading-stage" id="lstage-4">
-                        <div class="stage-dot"></div>
-                        <span>Attaching deterministic qualitative scenario proxy</span>
+                        <span>Finalizing x19 and Experimental Layout Complexity</span>
                     </div>
                 </div>
                 <div class="loading-note" id="loadingNote">
-                    UMSI++ runs on CPU (M4) — saliency alone takes 15–45 s. Longer is normal.
+                    The first analysis may take up to a minute while the saliency model loads.
                 </div>
             </div>
 
             <div class="results" id="results">
-                <!-- 1. Coherence warning (if any) -->
-                <div id="coherenceWarning" class="coherence-warning"></div>
-
-                <!-- 2. Score summary -->
+                <!-- Hero result -->
                 <div class="summary-grid" id="summaryGrid"></div>
 
-                <!-- 2a. Context summary: shows exactly which task context the
-                     score was computed with, so the declared mode stays visible
-                     after analysis (not hidden in the Step 2 dropdowns). -->
+                <!-- Context metadata remains visibly separate from the score. -->
                 <div id="contextSummary" class="context-summary"></div>
 
-                <!-- 3. Interpretation -->
+                <!-- Short interpretation -->
                 <div id="interpretationPanel"></div>
 
-                <!-- 4. Saliency + Radar side by side -->
+                <!-- Saliency + existing radar remain in Main Results. -->
                 <div class="results-visual-row">
                     <div id="saliencyPanel" style="display:none;">
                         <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px;">
@@ -1838,7 +2103,7 @@
                             <span style="font-size:13px; font-weight:600;">Visual Feature Profile</span>
                             <button id="downloadRadarBtn" class="btn btn-tertiary" style="font-size:11px; padding:3px 10px; width:auto; margin-top:0;">Download Profile</button>
                         </div>
-                        <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Radar chart of the 8 visual complexity features v∈ℝ⁸. Each axis is normalized to its empirical range. Hover a point for its value, or an outer label for what it means — a plain-language reading of this profile is shown below.</p>
+                        <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Shows the eight measured visual features on their predefined normalized display ranges. Center = lower measured feature value; outer edge = higher measured feature value within that feature's display range. This is distinct from the corpus-relative reference bars below and does not show percentiles, design quality or cognitive load.</p>
                         <div class="radar-container">
                             <canvas id="radarChart" width="900" height="900"></canvas>
                         </div>
@@ -1907,10 +2172,20 @@
                          reference-limit diagnostics for possible Future Work. -->
                 </div>
 
-                <!-- 4c. Generative feedback: which elements are the search
+                <details class="disclosure" id="experimentalDiagnosticResults">
+                    <summary>
+                        Experimental Diagnostic Results
+                        <span class="disclosure-summary-note">Separate model and heuristic outputs · non-score-bearing</span>
+                    </summary>
+                    <div class="disclosure-body">
+                        <p class="diagnostics-intro">Jokinen visual search, search bottlenecks, contrast, OCR reading estimates, cross-signal review and design diagnosis are exploratory diagnostics. They do not change x19 or Experimental Layout Complexity.</p>
+                        <div id="coherenceWarning" class="coherence-warning"></div>
+                        <div id="featureDiagnosis"></div>
+
+                <!-- Generative feedback: which elements are the search
                      bottlenecks (hardest to find), ranked by predicted search
-                     time. Turns the aggregate score into concrete design advice. -->
-                <div id="searchFeedbackPanel" class="result-section" style="display:none; margin-top:32px;">
+                     time. Kept inside collapsed Experimental Diagnostics. -->
+                <div id="searchFeedbackPanel" class="result-section" style="display:none; margin-top:24px;">
                     <div style="margin-bottom:8px;">
                         <span style="font-size:13px; font-weight:600;">Search Bottlenecks</span>
                     </div>
@@ -1945,18 +2220,26 @@
                     <p style="font-size:11px; color:var(--text-dim); margin:0 0 10px 0;">Text found in each element (OCR) and an estimated silent reading time at 238 words/min (<a class="cite-link" href="https://doi.org/10.1016/j.jml.2019.104047" target="_blank" rel="noopener">Brysbaert, 2019</a>). A labelled control costs reading time that a plain icon does not. Reading time is a <strong>first-order estimate</strong>, not measured.</p>
                     <div id="readabilityList"></div>
                 </div>
+                    </div>
+                </details>
 
-                <!-- 5. Feature Vector Table -->
+                <!-- Feature bars: empirical reference comparison. -->
                 <div class="result-section" id="featureSection" style="display:none;">
-                    <h3>Visual Feature Vector <span style="font-size:11px; font-weight:400; color:var(--text-dim);">v ∈ ℝ⁸ — companion view to the profile above</span></h3>
+                    <h3>Feature Breakdown — Reference Comparison <span style="font-size:11px; font-weight:400; color:var(--text-dim);">v ∈ ℝ⁸</span></h3>
                     <div id="featureRefProvenance" style="font-size:11px; color:var(--text-dim); margin:-4px 0 12px 0;"></div>
-                    <div id="featureDiagnosis"></div>
                     <div id="featureRows"></div>
                 </div>
 
-                <!-- 6. Context pills + Score Breakdown -->
-                <div class="pill-row" id="contextPills" style="display:none;"></div>
-                <div id="scoreBreakdown"></div>
+                <details class="disclosure" id="technicalDetails">
+                    <summary>
+                        Technical &amp; Reproducibility Details
+                        <span class="disclosure-summary-note">x19 schema, recorded metadata and export boundary</span>
+                    </summary>
+                    <div class="disclosure-body">
+                        <div class="pill-row" id="contextPills" style="display:none;"></div>
+                        <div id="scoreBreakdown"></div>
+                    </div>
+                </details>
 
                 <!-- 7. Export buttons -->
                 <div style="display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;">
@@ -1991,112 +2274,114 @@
 
         <!-- View: Pipeline -->
         <div class="view" id="view-pipeline">
-            <h2 style="font-size:26px; font-weight:600; line-height:1.25; margin-bottom:8px;">How the Pipeline Works</h2>
-            <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin-bottom:28px;">Frozen Stage-1 screenshot analysis plus a non-score-bearing deterministic Stage-2 v1 scenario proxy.</p>
+            <h2 style="font-size:26px; font-weight:600; line-height:1.25; margin-bottom:8px;">How it works</h2>
+            <p style="color:var(--text-dim); font-size:13px; line-height:1.6; margin-bottom:28px; max-width:840px;">The numerical result follows one screenshot-only path. Optional context is stored beside the analysis, while experimental diagnostics remain separate.</p>
 
-            <div class="pipeline-section-title">Stage 1 — Task-Independent Screenshot Analysis</div>
+            <div class="pipeline-section-title">Primary analysis — score-bearing</div>
+            <div class="pipeline-row" style="grid-template-columns: 1fr;">
+                <div class="pipeline-node" style="text-align:center;">
+                    <div class="pipeline-node-label">Input</div>
+                    <div class="pipeline-node-title">GUI Screenshot</div>
+                    <div class="pipeline-node-desc">One uploaded PNG, JPG, BMP or TIFF image.</div>
+                </div>
+            </div>
+            <div class="pipeline-arrow">↓</div>
+            <div class="pipeline-row" style="grid-template-columns: 1fr;">
+                <div class="pipeline-node" style="text-align:center;">
+                    <div class="pipeline-node-label">Canonical preprocessing</div>
+                    <div class="pipeline-node-title">Standardized screenshot analysis</div>
+                    <div class="pipeline-node-desc">Score-driving visual, layout and OCR measurements share the frozen canonical analysis path.</div>
+                </div>
+            </div>
+            <div class="pipeline-arrow">↓</div>
             <div class="pipeline-row">
                 <div class="pipeline-node">
-                    <div class="pipeline-node-label">Stage 1a</div>
-                    <div class="pipeline-node-title">Visual Complexity</div>
-                    <div class="pipeline-node-dim">v ∈ ℝ⁸</div>
+                    <div class="pipeline-node-label">Visual block</div>
+                    <div class="pipeline-node-title">Visual Features</div>
+                    <div class="pipeline-node-dim">v8</div>
                     <div class="pipeline-node-desc">8 image-derived features: Shannon entropy, edge density, feature congestion, subband entropy, layout symmetry, chromatic coherence, visual hierarchy, interactive element density.</div>
                     <div class="pipeline-node-ref"><a href="https://doi.org/10.1167/7.2.17" target="_blank" rel="noopener">Rosenholtz et al. (2007)</a> · <a href="https://doi.org/10.1002/j.1538-7305.1948.tb01338.x" target="_blank" rel="noopener">Shannon (1948)</a> · <a href="https://doi.org/10.1016/j.ijhcs.2009.04.002" target="_blank" rel="noopener">Tuch et al. (2009)</a></div>
                 </div>
                 <div class="pipeline-node">
-                    <div class="pipeline-node-label">Stage 1b</div>
+                    <div class="pipeline-node-label">Saliency block</div>
                     <div class="pipeline-node-title">Saliency Features</div>
-                    <div class="pipeline-node-dim">s ∈ ℝ⁵</div>
+                    <div class="pipeline-node-dim">s5</div>
                     <div class="pipeline-node-desc">UMSI++ produces a relative model-estimated saliency map. Its within-image normalized activations are not observed gaze, calibrated probabilities, or timing predictions. Five numeric summary statistics are retained: dispersion, entropy, coverage, peak count, and center bias. No semantic label is inferred from its auxiliary six-value head.</div>
                     <div class="pipeline-node-ref"><a href="https://doi.org/10.1145/3544548.3581096" target="_blank" rel="noopener">Jiang et al. CHI 2023</a> · <a href="https://doi.org/10.1038/35058500" target="_blank" rel="noopener">Itti &amp; Koch (2001)</a> · <a href="https://doi.org/10.1167/7.14.4" target="_blank" rel="noopener">Tatler (2007)</a></div>
                 </div>
                 <div class="pipeline-node">
-                    <div class="pipeline-node-label">Stage 1c</div>
-                    <div class="pipeline-node-title">HCEye-Derived Proxies</div>
-                    <div class="pipeline-node-dim">h ∈ ℝ⁶</div>
+                    <div class="pipeline-node-label">Proxy block</div>
+                    <div class="pipeline-node-title">HCEye-Informed Proxies</div>
+                    <div class="pipeline-node-dim">h6</div>
                     <div class="pipeline-node-desc">Six project-specific, rule-based screenshot proxies informed by aggregate HCEye observations. They are not empirically calibrated as a cognitive-load measurement.</div>
                     <div class="pipeline-node-ref"><a href="https://doi.org/10.1145/3655610" target="_blank" rel="noopener">Das et al. ETRA 2024</a></div>
                 </div>
             </div>
-
             <div class="pipeline-arrow">↓</div>
-
-            <div class="pipeline-section-title">Stage 2 v1 — Deterministic Scenario Proxy</div>
-            <div class="pipeline-row">
-                <div class="pipeline-node">
-                    <div class="pipeline-node-label">Scenario label</div>
-                    <div class="pipeline-node-title">Task Type</div>
-                    <div class="pipeline-node-dim">5 declared categories</div>
-                    <div class="pipeline-node-desc">Navigation, Search, Monitoring, Data Entry and Decision are labels only. They do not simulate processes and do not change the Stage-1 result or scenario direction.</div>
-                </div>
-                <div class="pipeline-node">
-                    <div class="pipeline-node-label">Ordinal hypothesis</div>
-                    <div class="pipeline-node-title">Time Pressure</div>
-                    <div class="pipeline-node-dim">lower · baseline · higher</div>
-                    <div class="pipeline-node-desc">Time pressure supplies only a pre-specified qualitative direction. There is no numeric modifier, calibrated effect size, new score, or validated measurement.</div>
-                </div>
-            </div>
-
-            <div class="pipeline-arrow">↓</div>
-
             <div class="pipeline-row" style="grid-template-columns: 1fr;">
                 <div class="pipeline-node" style="border-color: var(--accent);">
-                    <div class="pipeline-node-label">Authoritative Public Stage-1 Boundary</div>
-                    <div class="pipeline-node-title">Task-Independent x19</div>
+                    <div class="pipeline-node-label">Frozen Stage 1 boundary</div>
+                    <div class="pipeline-node-title">x19</div>
                     <div class="pipeline-node-dim">x = [v, s, h] ∈ ℝ¹⁹</div>
-                    <div class="pipeline-node-desc">The public Stage-1 vector and its Experimental Layout-Complexity Index are computed from the screenshot only. Stage 2 v1 only attaches a qualitative scenario proxy and never changes either value. Personality and machine learning are excluded from v1.</div>
-                    <div class="pipeline-node-ref">Schema: [v8 | s5 | h6], float32 · Canonical analysis: 1280 px long side</div>
+                    <div class="pipeline-node-desc">The public feature vector is assembled from the screenshot-only blocks. Optional context and experimental diagnostics never change this vector.</div>
+                    <div class="pipeline-node-ref">Schema: [v8 | s5 | h6], float32</div>
+                </div>
+            </div>
+            <div class="pipeline-arrow">↓</div>
+            <div class="pipeline-row" style="grid-template-columns: 1fr;">
+                <div class="pipeline-node" style="border-color: var(--accent); text-align:center; background:linear-gradient(145deg, rgba(59,130,246,.12), var(--surface));">
+                    <div class="pipeline-node-label">Hero result</div>
+                    <div class="pipeline-node-title" style="font-size:18px;">Experimental Layout Complexity</div>
+                    <div class="pipeline-node-dim">screenshot-based index · 0–100</div>
+                    <div class="pipeline-node-desc">An experimental project-specific proxy, not a validated measure of human cognitive load, workload or performance.</div>
                 </div>
             </div>
 
-            <div class="pipeline-section-title" style="margin-top:32px;">Internal Checks and Source-Study Correspondence</div>
-            <div class="pipeline-row">
+            <div class="pipeline-section-title" style="margin-top:36px;">Separate non-score-bearing areas</div>
+            <div class="pipeline-row" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
                 <div class="pipeline-node">
-                    <div class="pipeline-node-title">HCEye Aggregate-Ratio Reproduction</div>
-                    <div class="pipeline-node-desc"><strong>Source-study context only:</strong> the rule reproduces an aggregate HCEye ratio (fewer fixations under the study's high-load condition) that was used in its construction. This source-study correspondence is separate from the screenshot proxy values and is not independent validation of the screenshot-level index.<!-- legacy source-study statistic, hidden from UI: H1 (fewer fixations under high load): p = 2.55×10⁻²⁸, Cohen’s d = 1.47 (large effect). Model prediction deviation: 0.6% from observed ratio. --></div>
-                    <div class="pipeline-node-ref"><a href="https://doi.org/10.1145/3655610" target="_blank" rel="noopener">Das et al. ETRA 2024</a></div>
+                    <div class="pipeline-node-label">Optional context</div>
+                    <div class="pipeline-node-title">Task Type + Time Pressure</div>
+                    <div class="pipeline-node-dim">recorded metadata only</div>
+                    <div class="pipeline-node-desc"><strong>Does not modify x19 or the numerical score.</strong> Context is stored alongside an analysis so later human validation can examine its empirical contribution.</div>
                 </div>
                 <div class="pipeline-node">
-                    <div class="pipeline-node-title">UEyes Sample Sanity Check</div>
-                    <div class="pipeline-node-desc">A local engineering sanity check on a UEyes sample: model-estimated saliency maps show qualitative correspondence with the sample fixation maps. Repository checkpoint/architecture compatibility and frozen replay have been established separately; this sample check is not an official benchmark, independent human validation, or evidence that the final layout index measures cognitive load.</div>
-                    <div class="pipeline-node-ref"><a href="https://doi.org/10.1145/3544548.3581096" target="_blank" rel="noopener">Jiang et al. CHI 2023</a> · <a href="https://doi.org/10.1109/TPAMI.2018.2815601" target="_blank" rel="noopener">Bylinskii et al. (2018)</a></div>
-                </div>
-            </div>
-
-            <div class="pipeline-section-title" style="margin-top:32px;">Per-Element Diagnostics (applied to the detected elements)</div>
-            <div class="pipeline-row">
-                <div class="pipeline-node">
-                    <div class="pipeline-node-label">Contrast</div>
-                    <div class="pipeline-node-title">WCAG-informed contrast</div>
-                    <div class="pipeline-node-desc">Per-element foreground/background luminance contrast ratio (WCAG 2.1 formula with an Otsu ink/paper split). Pixel-based heuristic, not a WCAG conformance audit; elements below the 3:1 reference threshold are flagged as low-contrast.</div>
-                    <div class="pipeline-node-ref"><a href="https://www.w3.org/TR/WCAG21/" target="_blank" rel="noopener">WCAG 2.1 (W3C)</a></div>
-                </div>
-                <div class="pipeline-node">
-                    <div class="pipeline-node-label">Readability</div>
-                    <div class="pipeline-node-title">OCR Reading Time</div>
-                    <div class="pipeline-node-desc">Text is read per element (OCR) and a silent reading time is estimated at 238 words/min. A labelled control costs reading time that a plain icon does not.</div>
-                    <div class="pipeline-node-ref"><a href="https://doi.org/10.1016/j.jml.2019.104047" target="_blank" rel="noopener">Brysbaert (2019)</a></div>
+                    <div class="pipeline-node-label">Experimental diagnostics</div>
+                    <div class="pipeline-node-title">Separate exploratory outputs</div>
+                    <div class="pipeline-node-dim">non-score-bearing</div>
+                    <div class="pipeline-node-desc">Jokinen visual search, search bottlenecks, contrast, OCR reading estimates, cross-signal review and design diagnosis remain separate from Main Results and never change x19 or the index.</div>
                 </div>
             </div>
 
-            <div class="pipeline-section-title" style="margin-top:32px;">Optional and Exploratory Diagnostics</div>
-            <div class="pipeline-row">
-                <div class="pipeline-node">
-                    <div class="pipeline-node-label">Optional · off by default</div>
-                    <div class="pipeline-node-title">Jokinen Visual-Search Diagnostic</div>
-                    <div class="pipeline-node-desc">A methodologically separate simulation of visual search. Its outputs are model estimates, not observed eye tracking or validated behavioral predictions. It has <strong>score_bearing=false</strong> and never changes x19, the layout index, or the Stage-2 scenario direction.</div>
-                    <div class="pipeline-node-ref"><a href="https://doi.org/10.1016/j.ijhcs.2019.102376" target="_blank" rel="noopener">Jokinen et al. (2020)</a> · <a href="https://doi.org/10.1016/S1389-0417(00)00015-2" target="_blank" rel="noopener">Salvucci (2001)</a> · <a href="https://doi.org/10.1016/j.cogsys.2012.12.010" target="_blank" rel="noopener">Nyamsuren &amp; Taatgen (2013)</a></div>
+            <details class="disclosure" style="margin-top:28px;">
+                <summary>
+                    Internal Checks and Source-Study Correspondence
+                    <span class="disclosure-summary-note">Technical context · not independent validation</span>
+                </summary>
+                <div class="disclosure-body" style="padding-top:16px;">
+                    <div class="pipeline-row">
+                        <div class="pipeline-node">
+                            <div class="pipeline-node-title">HCEye Aggregate-Ratio Reproduction</div>
+                            <div class="pipeline-node-desc"><strong>Source-study context only:</strong> the rule reproduces an aggregate HCEye ratio used in its construction. This source-study correspondence is separate from the screenshot proxy values and is not independent validation of the screenshot-level index.<!-- legacy source-study statistic, hidden from UI: H1 (fewer fixations under high load): p = 2.55×10⁻²⁸, Cohen’s d = 1.47 (large effect). Model prediction deviation: 0.6% from observed ratio. --></div>
+                            <div class="pipeline-node-ref"><a href="https://doi.org/10.1145/3655610" target="_blank" rel="noopener">Das et al. ETRA 2024</a></div>
+                        </div>
+                        <div class="pipeline-node">
+                            <div class="pipeline-node-title">UEyes Sample Sanity Check</div>
+                            <div class="pipeline-node-desc">A local engineering sanity check on a UEyes sample. It is not an official benchmark, independent human validation, or evidence that the final layout index measures cognitive load.</div>
+                            <div class="pipeline-node-ref"><a href="https://doi.org/10.1145/3544548.3581096" target="_blank" rel="noopener">Jiang et al. CHI 2023</a></div>
+                        </div>
+                    </div>
                 </div>
-                <div class="pipeline-node">
-                    <div class="pipeline-node-label">Exploratory · tri-state</div>
-                    <div class="pipeline-node-title">Exploratory Cross-Signal Review</div>
-                    <div class="pipeline-node-desc">An uncalibrated review cue with the states <strong>not_evaluable</strong>, <strong>no_review_flag</strong>, and <strong>review_recommended</strong>. Its author-selected triggers are not calibrated validation, measurement, or cognitive-load evidence. It has <strong>score_bearing=false</strong> and never changes any pipeline value.</div>
-                </div>
-            </div>
+            </details>
 
-            <div class="pipeline-section-title" style="margin-top:32px;">Active Pipeline and Optional Diagnostic References</div>
-            <p style="color:var(--text-dim); font-size:12px; line-height:1.5; margin:0 0 12px 0;">These sources motivate individual active components; none independently validates the combined Experimental Layout-Complexity Index or the Stage-2 scenario proxy.</p>
-            <div class="ref-list">
+            <details class="disclosure" style="margin-top:16px;">
+                <summary>
+                    Method References
+                    <span class="disclosure-summary-note">Full list of sources used by the active method and separate diagnostics</span>
+                </summary>
+                <div class="disclosure-body" style="padding-top:16px;">
+                    <p style="color:var(--text-dim); font-size:12px; line-height:1.5; margin:0 0 12px 0;">These sources motivate individual components; none independently validates the combined Experimental Layout Complexity index.</p>
+                    <div class="ref-list">
                 <div class="ref-item"><strong>Das et al. (2024)</strong> Shifting Focus with HCEye: Exploring the Dynamics of Visual Highlighting and Cognitive Load on User Attention and Saliency Prediction. Proc. ACM Hum.-Comput. Interact. (ETRA 2024). <a class="ref-doi" href="https://doi.org/10.1145/3655610" target="_blank" rel="noopener">doi:10.1145/3655610</a></div>
                 <div class="ref-item"><strong>Jiang, Leiva, Rezazadegan Tavakoli, Houssel, Kylmälä &amp; Oulasvirta (2023)</strong> UEyes: Understanding Visual Saliency across User Interface Types. CHI 2023. <a class="ref-doi" href="https://doi.org/10.1145/3544548.3581096" target="_blank" rel="noopener">doi:10.1145/3544548.3581096</a></div>
                 <div class="ref-item"><strong>Jokinen, Wang, Sarcar, Oulasvirta &amp; Ren (2020)</strong> Adaptive feature guidance: Modelling visual search with graphical layouts. International Journal of Human-Computer Studies, 136. <a class="ref-doi" href="https://doi.org/10.1016/j.ijhcs.2019.102376" target="_blank" rel="noopener">doi:10.1016/j.ijhcs.2019.102376</a></div>
@@ -2115,14 +2400,68 @@
                 <div class="ref-item"><strong>Anderson, Bothell, Byrne, Douglass, Lebiere &amp; Qin (2004)</strong> An integrated theory of the mind. Psychological Review, 111(4). <a class="ref-doi" href="https://doi.org/10.1037/0033-295X.111.4.1036" target="_blank" rel="noopener">doi:10.1037/0033-295X.111.4.1036</a></div>
                 <div class="ref-item"><strong>Bylinskii, Judd, Oliva, Torralba &amp; Durand (2018)</strong> What do different evaluation metrics tell us about saliency models? IEEE Transactions on Pattern Analysis and Machine Intelligence, 41(3). <a class="ref-doi" href="https://doi.org/10.1109/TPAMI.2018.2815601" target="_blank" rel="noopener">doi:10.1109/TPAMI.2018.2815601</a></div>
                 <div class="ref-item"><strong>Torralba &amp; Efros (2011)</strong> Unbiased look at dataset bias. CVPR 2011. <a class="ref-doi" href="https://doi.org/10.1109/CVPR.2011.5995347" target="_blank" rel="noopener">doi:10.1109/CVPR.2011.5995347</a></div>
-            </div>
+                    </div>
+                </div>
+            </details>
         </div><!-- end view-pipeline -->
+
+        <!-- View: Research Roadmap -->
+        <div class="view" id="view-roadmap">
+            <h2 style="font-size:26px; font-weight:600; line-height:1.25; margin-bottom:8px;">Research Roadmap</h2>
+            <p style="color:var(--text-dim); font-size:13px; line-height:1.6; max-width:860px;">The current thesis freezes a bounded screenshot-based proxy first. Human evidence is the gate before context can become a calibrated numerical stage.</p>
+
+            <div class="roadmap-path">
+                <article class="roadmap-step current">
+                    <div class="roadmap-kicker">Current thesis scope · frozen</div>
+                    <h3>Screenshot-based Stage 1</h3>
+                    <p>x19 = [v8 | s5 | h6] produces Experimental Layout Complexity. Task and time conditions are recorded as non-score-bearing context.</p>
+                    <ul>
+                        <li>Reproducible screenshot analysis</li>
+                        <li>Saliency map and visual feature profile</li>
+                        <li>No claim of validated human cognitive load</li>
+                    </ul>
+                </article>
+                <article class="roadmap-step">
+                    <div class="roadmap-kicker">Next thesis step</div>
+                    <h3>Human Validation</h3>
+                    <p>Test how the frozen screenshot proxy relates to subjective, behavioral and gaze-based human outcomes without retuning the score after seeing the data.</p>
+                    <ul>
+                        <li>Predefined analysis plan</li>
+                        <li>Task held controlled where possible</li>
+                        <li>Context recorded for empirical analysis</li>
+                    </ul>
+                </article>
+                <article class="roadmap-step">
+                    <div class="roadmap-kicker">Evidence-dependent development</div>
+                    <h3>Empirically Calibrated Stage 2</h3>
+                    <p>Only human data can establish whether task type, time pressure or participant characteristics add predictive value beyond Stage 1.</p>
+                    <ul>
+                        <li>Estimate effects from human observations</li>
+                        <li>No fixed, author-chosen score modifiers</li>
+                        <li>Separate development and validation</li>
+                    </ul>
+                </article>
+                <article class="roadmap-step">
+                    <div class="roadmap-kicker">Longer-term work</div>
+                    <h3>Validated Task-Conditioned System</h3>
+                    <p>Extend the pipeline only after independent evidence supports the added constructs and intended use.</p>
+                    <ul>
+                        <li>Independent and cross-domain validation</li>
+                        <li>Task-conditioned prediction</li>
+                        <li>Semantic UI-element detection</li>
+                        <li>Validated search and attention outputs</li>
+                    </ul>
+                </article>
+            </div>
+
+            <div class="scope-note"><strong style="color:var(--text);">Scope principle:</strong> The broader vision is deferred, not discarded. Empirical calibration follows human evidence; it is not assumed inside the current score.</div>
+        </div><!-- end view-roadmap -->
 
         <!-- View: Contact -->
         <div class="view" id="view-contact">
             <div class="contact-card">
                 <h2>Contact</h2>
-                <p>This tool is part of a Master’s thesis project on computational estimation of GUI interactional complexity. For questions, feedback, or collaboration inquiries, please get in touch.</p>
+                <p>This tool is part of a Master’s thesis project on screenshot-based computational estimation of GUI layout complexity. For questions, feedback, or collaboration inquiries, please get in touch.</p>
                 <a class="contact-email" href="mailto:hannah.maria.m@web.de">hannah.maria.m@web.de</a>
             </div>
         </div><!-- end view-contact -->
@@ -2131,7 +2470,7 @@
 
     <footer class="site-footer">
         <div class="site-footer-inner">
-            <span>Computational Estimation of Interactional Complexity in Graphical User Interfaces</span>
+            <span>Computational Estimation of GUI Layout Complexity</span>
             <span class="site-footer-sep">·</span>
             <span>Master's thesis project</span>
             <span class="site-footer-sep">·</span>
@@ -2147,11 +2486,12 @@
 
     <script>
         // ─── Navigation ───
-        function showView(name) {
+        function showView(name, trigger) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('view-' + name).classList.add('active');
-            event.target.classList.add('active');
+            if (trigger) trigger.classList.add('active');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         // ─── Burger menu (Contact + Alerts settings) ───
@@ -2533,30 +2873,19 @@
 
         function updateContextHint() {
             if (!contextHint) return;
-            const time = document.getElementById("timePressure")?.value || "medium";
-            const direction = {low:"lower", medium:"baseline", high:"higher"}[time];
             const includeJokinen = !!document.getElementById("includeJokinenDiagnostic")?.checked;
             const displayField = document.getElementById("displayPresetField");
             if (displayField) displayField.style.display = includeJokinen ? "block" : "none";
-
-            if (!selectedFile) {
-                contextHint.textContent = `Scenario direction: ${direction}. This is a qualitative proxy, not a measurement or numeric effect.`;
-                return;
-            }
-            contextHint.textContent = `Scenario direction: ${direction}. Stage-1 x19 and the layout index remain unchanged.${includeJokinen ? " The separate Jokinen diagnostic will also run." : ""}`;
+            contextHint.textContent = `Context metadata only — these selections do not change x19 or the numerical score.${includeJokinen ? " A separate experimental diagnostic is enabled below." : ""}`;
         }
 
-        // Default (neutral baseline) values for the optional Task Context fields.
-        // Used to decide whether Step 2 is still on defaults or has been customised.
+        // Existing API-compatible values retained for recorded context metadata.
         const CONTEXT_DEFAULTS = {
             taskType: "search",
             timePressure: "medium",
         };
 
-        // Reflects Step 2's state without ever blocking it: a neutral grey pill
-        // while on defaults, an accent pill once the user customises the context.
-        // Also drives the speaking text in the analyze bar so the button
-        // guides instead of gates (context stays optional).
+        // Context never gates the analysis and never changes its score.
         function isContextCustom() {
             return Object.entries(CONTEXT_DEFAULTS).some(([id, def]) => {
                 const el = document.getElementById(id);
@@ -2566,19 +2895,14 @@
 
         function updateContextStatus() {
             const custom = isContextCustom();
-            const step2Status = document.getElementById("step2Status");
-            if (step2Status) {
-                step2Status.textContent = custom ? "Custom context" : "Neutral baseline";
-                step2Status.classList.toggle("custom", custom);
-            }
             const barHint = document.getElementById("analyzeBarHint");
             if (barHint) {
                 if (!selectedFile) {
-                    barHint.textContent = "Upload a screenshot in Step 1 to enable the analysis. The task context in Step 2 is optional — defaults give a neutral baseline.";
+                    barHint.textContent = "Upload a screenshot to enable the analysis. Optional context is recorded separately and never changes the score.";
                 } else if (custom) {
-                    barHint.textContent = "Ready with your custom task context. Click Analyze to compute the baseline.";
+                    barHint.textContent = "Ready to analyze. Your optional context will be recorded without changing the numerical score.";
                 } else {
-                    barHint.textContent = "Will run with the neutral default context. Adjust Step 2 above for a more realistic, task-specific result — or click Analyze for the neutral baseline.";
+                    barHint.textContent = "Ready to analyze the screenshot. Recorded context does not change the numerical score.";
                 }
             }
         }
@@ -2684,10 +3008,9 @@
             fileSize.textContent = formatSize(file.size);
             dropZone.classList.add("has-image");
             analyzeBtn.disabled = false;
-            analyzeStatus.textContent = "Image ready — click Analyze Screenshot to run the pipeline.";
+            analyzeStatus.textContent = "Image ready — click Analyze Screenshot.";
             analyzeStatus.className = "analyze-status";
-            // Step 1 is the only gate: mark it complete (green gate) so the
-            // "earned" state is visible, then refresh the speaking status/bar.
+            // Upload is the only gate; context remains optional metadata.
             document.getElementById("step1Card")?.classList.add("step-done");
             const step1Badge = document.getElementById("step1Badge");
             if (step1Badge) { step1Badge.classList.add("done"); }
@@ -2708,7 +3031,7 @@
 
         async function analyze() {
             if (!selectedFile) {
-                analyzeStatus.textContent = "Please upload a screenshot first (Step 1).";
+                analyzeStatus.textContent = "Please upload a screenshot first.";
                 analyzeStatus.className = "analyze-status error";
                 return;
             }
@@ -2718,10 +3041,9 @@
 
             // ── Live timer + stage progression ──
             const STAGES = [
-                { id: 'lstage-1', start:  0, label: 'Extracting visual features…' },
-                { id: 'lstage-2', start:  5, label: 'Running UMSI++ saliency — this is the slow step…' },
-                { id: 'lstage-3', start: 50, label: 'HCEye rule-based heuristic…' },
-                { id: 'lstage-4', start: 60, label: 'Attaching deterministic qualitative scenario proxy…' },
+                { id: 'lstage-1', start:  0 },
+                { id: 'lstage-2', start:  5 },
+                { id: 'lstage-3', start: 50 },
             ];
             const timerEl  = document.getElementById('loadingTimer');
             const titleEl  = document.getElementById('loadingTitle');
@@ -2734,15 +3056,14 @@
                 if (el) el.className = 'loading-stage';
             }
             timerEl.textContent = '0s';
-            titleEl.textContent = 'Running pipeline…';
-            noteEl.textContent  = 'UMSI++ runs on CPU (M4) — saliency alone takes 15–45 s. Longer is normal.';
+            titleEl.textContent = 'Analyzing screenshot…';
+            noteEl.textContent  = 'The first analysis may take up to a minute while the saliency model loads.';
 
             const stageInterval = setInterval(() => {
                 elapsed++;
                 timerEl.textContent = elapsed + 's';
                 let cur = STAGES[0];
                 for (const s of STAGES) { if (elapsed >= s.start) cur = s; }
-                titleEl.textContent = cur.label;
                 for (const s of STAGES) {
                     const el = document.getElementById(s.id);
                     if (!el) continue;
@@ -2750,9 +3071,8 @@
                     else if (elapsed >= s.start) el.className = 'loading-stage stage-done';
                     else                         el.className = 'loading-stage';
                 }
-                if (elapsed === 30) noteEl.textContent = 'Still running — UMSI++ saliency can take up to 60 s on CPU. Hang tight.';
-                if (elapsed === 75) noteEl.textContent = elapsed + ' s elapsed — almost there. First run is slowest (TF model load).';
-                if (elapsed >= 120) noteEl.textContent = elapsed + ' s elapsed — unusually long. Check the Flask terminal for errors.';
+                if (elapsed === 45) noteEl.textContent = 'Still analyzing — the first saliency-model run is usually the slowest.';
+                if (elapsed >= 90) noteEl.textContent = elapsed + ' s elapsed — analysis is still running.';
             }, 1000);
 
             // Show loading
@@ -2760,7 +3080,7 @@
             results.classList.remove("visible");
             emptyState.style.display = "none";
             analyzeBtn.disabled = true;
-            analyzeStatus.textContent = "Running pipeline…";
+            analyzeStatus.textContent = "Analyzing screenshot…";
             analyzeStatus.className = "analyze-status";
 
             const formData = new FormData();
@@ -2797,7 +3117,7 @@
 
                 clearInterval(stageInterval);
                 timerEl.textContent = elapsed + 's';
-                titleEl.textContent = 'Done — rendering results…';
+                titleEl.textContent = 'Analysis complete';
                 for (const s of STAGES) {
                     const el = document.getElementById(s.id);
                     if (el) el.className = 'loading-stage stage-done';
@@ -2845,10 +3165,7 @@
 
 
         // ─── Render Results ───
-        // Builds the "Analyzed with" context summary so the declared task
-        // context stays visible next to the results. Each factor becomes a chip;
-        // chips still on their neutral default are marked subtly so the user can
-        // see at a glance what was assumed vs. customised.
+        // Records optional context beside the result without implying score use.
         function renderContextSummary() {
             const el = document.getElementById("contextSummary");
             if (!el) return;
@@ -2858,15 +3175,14 @@
             const chips = fields.map((id) => {
                 const sel = document.getElementById(id);
                 if (!sel) return "";
-                // Use the visible option label, stripped of the "— … default" suffix.
+                // Use the concise category name from the visible option label.
                 const label = sel.options[sel.selectedIndex].text.split("—")[0].trim();
                 const isDefault = sel.value === CONTEXT_DEFAULTS[id];
                 return `<span class="cs-chip${isDefault ? " cs-default" : ""}">${label}</span>`;
             }).join("");
-            const allDefault = !isContextCustom();
             el.innerHTML =
-                `<span class="cs-label">Analyzed with:</span>${chips}` +
-                `<span>${allDefault ? "(neutral default context)" : "(custom context)"}</span>`;
+                `<span class="cs-label">Recorded context:</span>${chips}` +
+                `<span>(context only — numerical score unchanged)</span>`;
         }
 
         // Predicted search-path overlay (Jokinen task-driven scanpath).
@@ -3924,10 +4240,10 @@
                 ? layout.experimental_complexity_index
                 : 0;
             summaryGrid.innerHTML = `
-                <div class="summary-card">
+                <div class="summary-card summary-hero">
                     <div class="summary-label">Experimental Layout Complexity <span class="feature-i" tabindex="0" aria-label="What is Experimental Layout Complexity?" data-tip="<div class='tip-title'>Experimental Layout Complexity</div><div class='tip-body'>An exploratory, screenshot-only complexity value for the whole screen, on a 0&ndash;100 scale. It is computed from the task-independent Stage-1 vector [v8 | s5 | h6]. Task-type and time-pressure selections do not change this value. It is not a validated cognitive-load measurement.</div>">i</span></div>
-                    <div class="summary-value">${layout.experimental_complexity_index.toFixed(1)}</div>
-                    <div class="summary-meta"><strong>Exploratory, project-specific heuristic &mdash; not a validated cognitive-load measurement.</strong> Task-independent Stage 1 · x = [v8 | s5 | h6] · float32. The Stage-2 scenario proxy never changes this value.</div>
+                    <div class="summary-value">${layout.experimental_complexity_index.toFixed(1)} <span class="summary-hero-scale">/ 100</span></div>
+                    <div class="summary-meta"><strong>Screenshot-based experimental index.</strong> It describes measured layout structure under this project-specific method; it is not a validated measure of human cognitive load, workload, difficulty or performance.</div>
                 </div>
             `;
             renderContextSummary();
@@ -3994,7 +4310,7 @@
             // ── Feature Vector Table ──────────────────────────────────────
             document.getElementById('featureSection').style.display = 'block';
 
-            // Design diagnosis (3 bullets above feature table)
+            // Design diagnosis is rendered only inside collapsed diagnostics.
             const diagnosisEl = document.getElementById('featureDiagnosis');
             if (diagnosisEl) diagnosisEl.innerHTML = buildDesignDiagnosis(data.visual_features, data.reference, layout.experimental_complexity_index);
 
@@ -4004,7 +4320,7 @@
                 const meta = data.reference_meta || {};
                 if (data.reference && Object.keys(data.reference).length && meta.num_images) {
                     const cats = (meta.categories_included || []).join(' + ');
-                    provEl.innerHTML = `Each bar shows where this screen ranks among a reference set of <strong>${meta.num_images.toLocaleString()} GUI screenshots</strong>${cats ? ` (${cats})` : ''}. <span style="opacity:.8;"><em>Typical</em> = within the middle half of the reference set. The small "z" is the same distance measured in standard deviations.</span>`;
+                    provEl.innerHTML = `<strong>Reference Comparison — position relative to ${meta.num_images.toLocaleString()} GUI screenshots.</strong> Each bar shows where this measured feature falls within the reference set${cats ? ` (${cats})` : ''}. <span style="opacity:.8;"><em>Typical</em> = within the middle half of that set. This corpus-relative view uses a different reference from the predefined display ranges in the radar chart.</span>`;
                     provEl.style.display = '';
                 } else {
                     provEl.style.display = 'none';
@@ -4097,31 +4413,24 @@
                 featureRows.addEventListener('mouseleave', () => highlightRadarFeature(null));
             }
 
-            // ─── Stage 2 v1 Scenario Proxy ───
+            // Technical details keep context metadata separate from x19.
             const scenario = data.stage2_scenario_proxy || {};
-            const directionLabels = {
-                lower: "Lower directional hypothesis",
-                baseline: "Baseline directional hypothesis",
-                higher: "Higher directional hypothesis",
-            };
-            const direction = scenario.direction || "baseline";
             document.getElementById("scoreBreakdown").innerHTML = `
                 <div class="score-breakdown">
                     <div class="score-block" style="margin:12px 0 10px;">
                         <div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-dim); margin-bottom:8px;">
-                            Stage 2 v1 — Deterministic Scenario Proxy
+                            Analysis boundary
                         </div>
-                        <div style="font-size:24px; font-weight:700; color:var(--accent); margin-bottom:8px;">
-                            ${directionLabels[direction] || direction}
+                        <div style="font-size:18px; font-weight:600; color:var(--text); margin-bottom:8px;">
+                            x19 = [v8 | s5 | h6]
                         </div>
                         <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;">
-                            <span class="pill">Task label: ${scenario.task_label || scenario.task_type || "—"}</span>
-                            <span class="pill">Time pressure: ${scenario.time_pressure_label || scenario.time_pressure || "—"}</span>
-                            <span class="pill">score_bearing=false</span>
-                            <span class="pill">numeric_modifier=null</span>
+                            <span class="pill">Recorded task: ${scenario.task_label || scenario.task_type || "—"}</span>
+                            <span class="pill">Recorded time pressure: ${scenario.time_pressure_label || scenario.time_pressure || "—"}</span>
+                            <span class="pill">Context only</span>
                         </div>
                         <div style="font-size:12px; color:var(--text-dim); line-height:1.6;">
-                            This is a transparent qualitative scenario proxy only. Task type is a label, not a simulated process. Time pressure supplies only the pre-specified ordinal direction lower / baseline / higher. No magnitude, calibrated effect, measurement, or validated behavioral prediction is asserted, and the Stage-1 x19 vector and layout index remain unchanged.
+                            The numerical result is computed from the screenshot-only Stage 1 vector. Recorded context is metadata only and does not modify v8, s5, h6, x19 or Experimental Layout Complexity.
                         </div>
                     </div>
                 </div>
@@ -4198,7 +4507,7 @@
                     </div>
                     <div class="interpretation-body">${body}</div>
                     ${items.length ? `<div class="interpretation-items">${items.map(i => `<div class="interpretation-item"><span>→</span><span>${i}</span></div>`).join('')}</div>` : ''}
-                    <div style="margin-top:12px; font-size:11px; color: var(--text-dim);">Methods informed by: HCEye (Das et al., ETRA 2024) · Jokinen et al. (IJHCS 2020) · Rosenholtz et al. (JoV 2007). Screenshot proxy values are not source-study effect estimates.</div>
+                    <div style="margin-top:12px; font-size:11px; color: var(--text-dim);">See How it works and Method References for the component-level evidence boundary. Screenshot proxy values are not source-study effect estimates.</div>
                 </div>
             `;
         }
@@ -4247,10 +4556,10 @@
                 findings.push('High interactive-element density — many detected actionable regions occur per unit area.');
 
             if (chromatic < 0.3)
-                findings.push('Low chromatic coherence — high color variance may signal inconsistent visual design or high information density.');
+                findings.push('Low chromatic coherence — color values vary more across the image under this feature definition.');
 
             if (findings.length === 0)
-                findings.push('Feature profile is balanced — no single dimension is dominant or critically low.');
+                findings.push('No single measured feature dominates this predefined display-range profile.');
 
             el.innerHTML = `<div class="radar-interpretation-head">What this profile means</div><ul class="radar-interpretation-list">${findings.map(f => `<li>${f}</li>`).join('')}</ul>`;
         }
@@ -4470,11 +4779,9 @@
             let html = `<div style="overflow-x: auto;"><table class="history-table"><tr>
                 <th title="Include this analysis in the overall comparison"><input type="checkbox" id="historySelectAll"></th>
                 <th>File</th>
-                <th title="Task-independent Stage-1 Experimental Layout Complexity (0-100, screenshot characteristic)">Layout</th>
-                <th>Task label</th>
-                <th>Time pressure</th>
-                <th title="Non-score-bearing Stage-2 v1 direction">Scenario direction</th>
-                <th>Cross-signal review</th>
+                <th title="Screenshot-based Experimental Layout Complexity (0-100)">Layout</th>
+                <th>Recorded task</th>
+                <th>Recorded time pressure</th>
             </tr>`;
 
             history.forEach((row, i) => {
@@ -4482,10 +4789,6 @@
                 const fileName = escapeHtml(row.filename);
                 const taskType = escapeHtml(row.task_type);
                 const timePressure = escapeHtml(row.time_pressure);
-                const direction = escapeHtml(row.scenario_direction);
-                const reviewStatus = escapeHtml(
-                    row.cross_signal_review && row.cross_signal_review.status
-                );
                 html += `<tr>
                     <td><input type="checkbox" class="history-select" data-idx="${i}" ${checked}></td>
                     <td style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
@@ -4493,8 +4796,6 @@
                     <td>${row.experimental_layout_complexity.toFixed(1)}</td>
                     <td>${taskType}</td>
                     <td>${timePressure}</td>
-                    <td>${direction}</td>
-                    <td>${reviewStatus}</td>
                 </tr>`;
             });
 
@@ -4650,14 +4951,14 @@
             doc.setFont("helvetica", "bold");
             doc.setFontSize(18);
             doc.setTextColor(...ink);
-            doc.text("GUI Complexity Analysis Report", margin, y);
+            doc.text("GUI Layout Complexity Analysis Report", margin, y);
             y += 8;
             doc.setFont("helvetica", "normal");
             doc.setFontSize(9);
             doc.setTextColor(...dim);
             doc.text(`File: ${d.filename || "-"}  ·  Generated: ${new Date().toLocaleString()}`, margin, y);
             y += 4;
-            doc.text("Pipeline: Stage-1 x19 · project-specific HCEye-derived heuristic", margin, y);
+            doc.text("Screenshot analysis · x19 = [v8 | s5 | h6]", margin, y);
             y += 10;
             divider();
 
@@ -4685,12 +4986,11 @@
             doc.text(titleMap[level] || "", margin + 55, y + 17);
             y += 28;
 
-            // ── Context / Settings ───────────────────────────────────────
-            sectionTitle("Analysis Settings");
+            // ── Recorded, non-score-bearing context ─────────────────────
+            sectionTitle("Recorded Context (non-score-bearing)");
             row("Task Type",      d.task_type   || "-");
             row("Time Pressure",  d.time_pressure || "-");
-            row("Scenario Direction", d.scenario_direction || "-");
-            row("Scenario Score-Bearing", d.scenario_score_bearing ? "Yes" : "No");
+            row("Effect on Numerical Score", "None");
             row("Vector Dims",    d.vector_dimensions || "-");
             divider();
 
@@ -4705,7 +5005,7 @@
             row("Reference Pack SHA-256", repro.reference_pack_manifest_sha256 || "-");
             row("Runtime Manifest SHA-256", repro.runtime_environment_manifest_sha256 || "-");
             row("Study Export Schema", repro.schema_id || "-");
-            row("Stage-1 Vector Schema", repro.stage1_vector_schema || "-");
+            row("x19 Vector Schema", repro.stage1_vector_schema || "-");
             divider();
 
             // ── Visual Maps (saliency overlay + radar profile) ───────────
@@ -4729,10 +5029,7 @@
 
             // ── Scores ───────────────────────────────────────────────────
             sectionTitle("Experimental Outputs");
-            row("Stage-1 Experimental Layout-Complexity Index", score.toFixed(2), lvlColor);
-            row("Stage-2 v1 Qualitative Scenario Direction", d.scenario_direction || "-");
-            row("Stage-2 Numeric Modifier", "None");
-            row("Stage-2 Score-Bearing", "No");
+            row("Experimental Layout Complexity", score.toFixed(2), lvlColor);
             row("HCEye-derived Rule Index (unitless project-specific proxy)", (d.hceye_proxy_index || 0).toFixed(3));
             divider();
 
@@ -4795,7 +5092,7 @@
             doc.setFont("helvetica", "italic");
             doc.setFontSize(7.5);
             doc.setTextColor(...dim);
-            doc.text("Pipeline: Frozen Stage 1 screenshot analysis + deterministic Stage 2 v1 scenario proxy", margin, y);
+            doc.text("Screenshot analysis: v8 + s5 + h6 -> x19 -> Experimental Layout Complexity", margin, y);
             y += 5;
             doc.text("Output is an experimental layout-complexity index - not a direct measure of cognitive load.", margin, y);
 

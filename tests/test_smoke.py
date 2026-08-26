@@ -791,8 +791,8 @@ def test_standard_ui_has_no_overload_or_safety_verdicts():
 def test_standard_ui_keeps_exploratory_caveats():
     html = _standard_ui_html().lower()
     # Layout score must be flagged as project-specific and unvalidated.
-    assert "exploratory, project-specific heuristic" in html
-    assert "not a validated cognitive-load measurement" in html
+    assert "screenshot-based experimental index" in html
+    assert "not a validated measure of human cognitive load" in html
     # Contrast section must be WCAG-informed, not a conformance verdict.
     assert "wcag-informed contrast" in html
     assert "not a wcag conformance audit" in html

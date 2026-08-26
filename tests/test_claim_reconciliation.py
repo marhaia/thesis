@@ -228,14 +228,23 @@ def test_ui_headline_and_history_use_task_independent_stage1_layout_value():
 def test_ui_declares_exact_x19_and_keeps_context_outside_boundary():
     assert "x = [v, s, h] ∈ ℝ¹⁹" in UI
     assert "x = [v, s, h, t, p] ∈ ℝ³⁰" not in UI
-    assert "never changes either value" in UI
+    assert "Optional context and experimental diagnostics never change this vector" in UI
+    assert "does not modify v8, s5, h6, x19 or Experimental Layout Complexity" in UI
 
 
-def test_ui_and_csv_labels_expose_only_qualitative_stage2_v1_proxy():
+def test_ui_and_csv_keep_context_metadata_without_directional_main_ui():
     assert "stage1_experimental_layout_complexity_index" in UI
     assert "stage2_scenario_direction" in UI
     assert "stage2_score_bearing" in UI
-    assert "numeric_modifier=null" in UI
+    assert "Recorded context:" in UI
+    assert "context only — numerical score unchanged" in UI
+    for retired_main_label in (
+        "Lower directional hypothesis",
+        "Baseline directional hypothesis",
+        "Higher directional hypothesis",
+        "numeric_modifier=null",
+    ):
+        assert retired_main_label not in UI
     assert "context_adjusted_experimental_output" not in UI
     assert 'accept="image/png,image/jpeg,image/jpg,image/bmp,image/tiff"' in UI
     assert "image/webp" not in UI
@@ -261,10 +270,41 @@ def test_umsi_heatmap_is_presented_only_as_relative_normalized_activation():
 
     method_node = _ui_slice(
         '<div class="pipeline-node-title">Saliency Features</div>',
-        '<div class="pipeline-node-title">HCEye-Derived Proxies</div>',
+        '<div class="pipeline-node-title">HCEye-Informed Proxies</div>',
     )
     assert "relative model-estimated saliency map" in method_node
     assert "not observed gaze, calibrated probabilities, or timing predictions" in method_node
+
+
+def test_radar_keeps_predefined_display_ranges_distinct_from_reference_bars():
+    panel = _ui_slice('<div id="radarPanel"', '<!-- FUTURE WORK ONLY')
+    radar_code = _ui_slice("function drawRadar(data)", "// ─── History Table")
+
+    assert "predefined normalized display ranges" in panel
+    assert "distinct from the corpus-relative reference bars" in panel
+    assert "does not show percentiles, design quality or cognitive load" in panel
+    assert "(data[key] - norm.min) / (norm.max - norm.min)" in radar_code
+
+
+def test_main_result_hierarchy_keeps_diagnostics_collapsed():
+    analyzer = _ui_slice('<!-- View: Analyzer -->', '<!-- View: Pipeline -->')
+    diagnostic = _ui_slice(
+        '<details class="disclosure" id="experimentalDiagnosticResults">',
+        '<!-- Feature bars: empirical reference comparison. -->',
+    )
+
+    assert "summary-card summary-hero" in UI
+    assert "Relative Model-Estimated Saliency Map" in analyzer
+    assert "Visual Feature Profile" in analyzer
+    for required in (
+        "Experimental Diagnostic Results",
+        "coherenceWarning",
+        "featureDiagnosis",
+        "searchFeedbackPanel",
+        "contrastPanel",
+        "readabilityPanel",
+    ):
+        assert required in diagnostic
 
 
 def test_screenshot_hceye_proxies_are_never_converted_to_effect_percentages():
@@ -303,9 +343,36 @@ def test_hceye_source_study_effect_is_explicitly_separate_from_screen_proxies():
 def test_active_pdf_labels_keep_umsi_and_hceye_claim_boundaries():
     export = _ui_slice("async function exportPDF(d)", "// ─── CSV Export")
 
+    assert "GUI Layout Complexity Analysis Report" in export
+    assert "Recorded Context (non-score-bearing)" in export
     assert "within-image normalized; not gaze probability" in export
     assert "HCEye-derived Rule Index (unitless project-specific proxy)" in export
     assert "HCEye-Derived Unitless Proxies (h, 6 dims)" in export
+    for forbidden in (
+        "Scenario Direction",
+        "Scenario Score-Bearing",
+        "Stage-1 Experimental Layout-Complexity Index",
+        "Stage-2 v1 Qualitative Scenario Direction",
+        "deterministic Stage 2 v1 scenario proxy",
+    ):
+        assert forbidden not in export
+
+
+def test_mobile_navigation_keeps_views_and_settings_reachable():
+    mobile_nav = _ui_slice("@media (max-width: 640px)", "/* Footer */")
+
+    assert "grid-template-columns: repeat(3, minmax(0, 1fr))" in mobile_nav
+    assert "white-space: normal" in mobile_nav
+    assert ".nav-menu" in mobile_nav
+    assert "display: block" in mobile_nav
+    assert "display: none" not in mobile_nav
+
+
+def test_diagnostic_setup_and_results_have_distinct_labels():
+    analyzer = _ui_slice('<!-- View: Analyzer -->', '<!-- View: Pipeline -->')
+
+    assert "Experimental Diagnostics Setup" in analyzer
+    assert "Experimental Diagnostic Results" in analyzer
 
 
 def test_readme_uses_bounded_construct_and_current_test_contract():
@@ -397,21 +464,23 @@ def test_design_diagnosis_describes_the_task_independent_heuristic_truthfully():
         assert forbidden not in diagnosis
 
 
-def test_stage2_v1_copy_is_qualitative_and_excludes_profile_and_ml():
-    controls = _ui_slice("<!-- Step 2: Task Context -->", "<!-- Analyze action")
+def test_optional_context_copy_is_non_score_bearing_and_excludes_profile_and_ml():
+    controls = _ui_slice("<!-- Optional Context", '<details class="disclosure diagnostic-settings">')
     loading = _ui_slice('<div class="loading" id="loading">', '<div class="results"')
     interpretation = _ui_slice(
         "function renderInterpretation(data)",
         "function renderRadarInterpretation(vf)",
     )
 
-    assert "qualitative direction" in controls
-    assert "There is no numeric modifier" in controls
-    assert "Attaching deterministic qualitative scenario proxy" in loading
+    assert "These selections do not change the numerical score" in controls
+    assert "Recorded as contextual metadata only" in controls
+    assert "Context only" in controls
+    assert "Finalizing x19 and Experimental Layout Complexity" in loading
+    assert "Attaching deterministic qualitative scenario proxy" not in loading
     assert "data.stage2_scenario_proxy" in UI
     assert "score_bearing=false" in UI
-    assert "numeric_modifier=null" in UI
-    assert "Stage-1 x19 vector and layout index remain unchanged" in UI
+    assert "Recorded context:" in UI
+    assert "does not modify v8, s5, h6, x19 or Experimental Layout Complexity" in UI
 
     for forbidden in (
         "User Profile",
@@ -436,20 +505,23 @@ def test_stage2_v1_copy_is_qualitative_and_excludes_profile_and_ml():
 
 
 def test_how_it_works_matches_the_active_pipeline_and_diagnostics():
-    pipeline = _ui_slice('<!-- View: Pipeline -->', '<!-- View: Contact -->')
+    pipeline = _ui_slice('<!-- View: Pipeline -->', '<!-- View: Research Roadmap -->')
 
     for required in (
-        "Optional and Exploratory Diagnostics",
-        "Jokinen Visual-Search Diagnostic",
-        "Optional · off by default",
-        "Exploratory Cross-Signal Review",
-        "Exploratory · tri-state",
-        "score_bearing=false",
-        "not_evaluable",
-        "no_review_flag",
-        "review_recommended",
-        "Active Pipeline and Optional Diagnostic References",
-        "none independently validates the combined Experimental Layout-Complexity Index",
+        "Primary analysis — score-bearing",
+        "GUI Screenshot",
+        "Canonical preprocessing",
+        "v8",
+        "s5",
+        "h6",
+        "x19",
+        "Experimental Layout Complexity",
+        "Optional context",
+        "Does not modify x19 or the numerical score",
+        "Experimental diagnostics",
+        "Jokinen visual search",
+        "Method References",
+        "none independently validates the combined Experimental Layout Complexity index",
     ):
         assert required in pipeline
 
@@ -466,6 +538,20 @@ def test_how_it_works_matches_the_active_pipeline_and_diagnostics():
         "profile selections",
     ):
         assert retired not in pipeline
+
+
+def test_research_roadmap_defers_calibrated_stage2_until_human_evidence():
+    roadmap = _ui_slice('<!-- View: Research Roadmap -->', '<!-- View: Contact -->')
+
+    for required in (
+        "Current thesis scope · frozen",
+        "Human Validation",
+        "Empirically Calibrated Stage 2",
+        "Longer-term work",
+        "No fixed, author-chosen score modifiers",
+        "Empirical calibration follows human evidence",
+    ):
+        assert required in roadmap
 
 
 def test_ocr_text_is_escaped_before_readability_inner_html_rendering():
