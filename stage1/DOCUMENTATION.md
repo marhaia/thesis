@@ -15,7 +15,10 @@
 > Stage 2 v1 accepts only `task_type` and `time_pressure` and attaches a
 > deterministic qualitative direction (`lower` / `baseline` / `higher`). It is
 > non-score-bearing, has no numeric modifier, and never changes x19 or the
-> layout index. Personality inputs and trained regressors are excluded. UMSI++
+> layout index. Personality-derived inputs/effects and trained regressors are
+> excluded from the numerical route. The study UI may record optional
+> study-coded Big Five categories as browser-side export metadata only; they
+> never enter the API or score. UMSI++
 > provides a numeric saliency map
 > and an internal six-value auxiliary head whose semantic label order is not
 > verified. Search times, fixation counts, and paths are model simulations, not
@@ -95,9 +98,11 @@ project-specific heuristic, not a validated cognitive-load measurement. Stage
 2 v1 attaches only a deterministic qualitative scenario proxy from
 `task_type` and `time_pressure`. The proxy has `score_bearing=false` and
 `numeric_modifier=null`; it never enters x19 or alters
-`layout.experimental_complexity_index`. Personality/Big-Five inputs, trained
+`layout.experimental_complexity_index`. Personality-derived inputs, trained
 regressors, and numeric task/profile modifiers are excluded from the active
-pipeline.
+numerical pipeline. Optional study-coded Big Five categories can be retained by
+the browser export as non-score-bearing metadata; the API does not accept or
+interpret them.
 
 The Jokinen 2020 implementation supplies model-estimated per-element search
 times, fixation counts, and target-driven paths as separate diagnostics. These

@@ -162,7 +162,7 @@ def test_cross_signal_review_rejects_supplied_nonfinite_values(bad):
         )
 
 
-def test_active_v1_route_and_ui_exclude_legacy_personality_and_ml_paths():
+def test_active_v1_route_excludes_personality_effects_while_ui_records_metadata():
     for forbidden_import in (
         "from stage2.task_descriptor import",
         "from stage2.user_profile import",
@@ -182,13 +182,15 @@ def test_active_v1_route_and_ui_exclude_legacy_personality_and_ml_paths():
 
     for required_ui_contract in (
         "data.stage2_scenario_proxy",
-        "data.cross_signal_review",
-        "data.jokinen_diagnostic",
-        "score_bearing=false",
+        "readBigFiveContext",
+        "Browser-side metadata only",
         "Recorded context:",
         "context only — numerical score unchanged",
     ):
         assert required_ui_contract in UI_SOURCE
+    assert 'formData.append("big_five' not in UI_SOURCE
+    assert "data.cross_signal_review" not in UI_SOURCE
+    assert "data.jokinen_diagnostic" not in UI_SOURCE
 
 
 def test_pipeline_figure_generator_matches_the_active_stage2_v1_boundary():
@@ -239,7 +241,7 @@ def test_authoritative_stage1_documentation_matches_the_active_v1_contract():
         "deterministic qualitative direction",
         "non-score-bearing",
         "has no numeric modifier",
-        "Personality inputs and trained regressors are excluded",
+        "Personality-derived inputs/effects and trained regressors are",
         "score_bearing=false",
         "numeric_modifier=null",
     ):

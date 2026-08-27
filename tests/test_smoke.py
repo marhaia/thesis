@@ -773,19 +773,10 @@ def test_standard_ui_has_no_overload_or_safety_verdicts():
         "elevated cognitive demand",
         "notable attentional strain",
         "cognitive load estimation",  # visible pipeline heading must be renamed
-        "wcag conformance audit",  # only allowed negated ("not a WCAG conformance audit")
+        "wcag conformance audit",
     ]
     for phrase in forbidden:
-        if phrase == "wcag conformance audit":
-            # The only allowed occurrence is the explicit negation.
-            assert "not a wcag conformance audit" in html, (
-                "expected the 'not a WCAG conformance audit' caveat"
-            )
-            assert html.count("wcag conformance audit") == html.count(
-                "not a wcag conformance audit"
-            ), "found an un-negated 'WCAG conformance audit' claim"
-        else:
-            assert phrase not in html, f"forbidden framing phrase present: {phrase!r}"
+        assert phrase not in html, f"forbidden framing phrase present: {phrase!r}"
 
 
 def test_standard_ui_keeps_exploratory_caveats():
@@ -793,9 +784,8 @@ def test_standard_ui_keeps_exploratory_caveats():
     # Layout score must be flagged as project-specific and unvalidated.
     assert "screenshot-based experimental index" in html
     assert "not a validated measure of human cognitive load" in html
-    # Contrast section must be WCAG-informed, not a conformance verdict.
-    assert "wcag-informed contrast" in html
-    assert "not a wcag conformance audit" in html
+    assert "within-image normalized model activation" in html
+    assert "not gaze probability or viewing order" in html
 
 
 def test_standard_ui_has_no_rendered_load_or_performance_verdicts():
@@ -827,8 +817,7 @@ def test_standard_ui_has_no_rendered_load_or_performance_verdicts():
     )
     # The neutral replacements must be present.
     assert "experimental layout complexity" in html
-    assert "exploratory cross-signal review" in html
-    assert "not calibrated validation" in html
+    assert "exploratory cross-signal review" not in html
 
 
 def test_standard_ui_removes_legacy_context_adjusted_proxy_outputs():
@@ -840,21 +829,18 @@ def test_standard_ui_removes_legacy_context_adjusted_proxy_outputs():
 
 def test_standard_ui_has_no_visible_driver_glance_panel():
     html = _standard_ui_html()
-    # The glance helpers must be disabled no-ops (Future Work), not renderers.
-    assert "function showGlanceMetrics(_gm) { /* intentionally disabled" in html
-    assert "function hideGlanceMetrics() { /* intentionally disabled" in html
+    assert "function showGlanceMetrics" not in html
+    assert "function hideGlanceMetrics" not in html
     lower = html.lower()
     # No automotive compliance conclusions presented to the user.
     for phrase in ("nhtsa compliant", "iso 15008 compliant", "glance compliant"):
         assert phrase not in lower, f"automotive compliance verdict present: {phrase!r}"
 
 
-def test_standard_ui_keeps_selected_target_result_separate():
+def test_standard_ui_removes_selected_target_result():
     html = _standard_ui_html()
-    # Selected-target search difficulty is presented as its own card and kept
-    # methodologically separate from the layout value.
-    assert "Selected Target Search Difficulty" in html
-    assert "the Experimental Layout Complexity value above is unchanged" in html
+    assert "Selected Target Search Difficulty" not in html
+    assert "targetScanpathPanel" not in html
 
 
 def test_standard_ui_final_framing_acceptance():
@@ -884,9 +870,7 @@ def test_standard_ui_final_framing_acceptance():
     # Positive assertions: the neutral replacements must be present.
     assert "internal checks and source-study correspondence" in html
     assert "not independent validation" in html
-    assert (
-        "hceye-derived rule index (unitless project-specific proxy)" in html
-    )
+    assert "hceye-informed proxy vector" in html
 
 
 def test_standard_ui_removes_unverified_umsi_class_mapping():
@@ -908,14 +892,15 @@ def test_standard_ui_consumes_only_bounded_stage2_v1_schema():
     html = _standard_ui_html()
     for required in (
         "data.stage2_scenario_proxy",
-        "data.cross_signal_review",
-        "data.jokinen_diagnostic",
         "data.hceye_proxy_features",
+        "readBigFiveContext",
         "experimental_layout_complexity",
         "scenario_direction",
         "scenario_score_bearing",
     ):
         assert required in html
+    assert "data.cross_signal_review" not in html
+    assert "data.jokinen_diagnostic" not in html
     for forbidden in (
         "data.base_experimental_outputs",
         "data.context_adjusted_experimental_outputs",

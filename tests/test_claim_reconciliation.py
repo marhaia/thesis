@@ -228,8 +228,8 @@ def test_ui_headline_and_history_use_task_independent_stage1_layout_value():
 def test_ui_declares_exact_x19_and_keeps_context_outside_boundary():
     assert "x = [v, s, h] ∈ ℝ¹⁹" in UI
     assert "x = [v, s, h, t, p] ∈ ℝ³⁰" not in UI
-    assert "Optional context and experimental diagnostics never change this vector" in UI
-    assert "does not modify v8, s5, h6, x19 or Experimental Layout Complexity" in UI
+    assert "Optional study context never changes this vector" in UI
+    assert "do not modify v8, s5, h6, x19 or Experimental Layout Complexity" in UI
 
 
 def test_ui_and_csv_keep_context_metadata_without_directional_main_ui():
@@ -259,9 +259,9 @@ def test_umsi_heatmap_is_presented_only_as_relative_normalized_activation():
     assert "Low relative activation" in panel
     assert "High relative activation" in panel
     assert "not gaze probability or viewing order" in panel
+    assert "not a measured fixation probability or viewing order" in panel
     for forbidden in (
         "predicted probability",
-        "fixation probability",
         "first few seconds",
         "rarely looked at",
         "looked at first",
@@ -277,7 +277,7 @@ def test_umsi_heatmap_is_presented_only_as_relative_normalized_activation():
 
 
 def test_radar_keeps_predefined_display_ranges_distinct_from_reference_bars():
-    panel = _ui_slice('<div id="radarPanel"', '<!-- FUTURE WORK ONLY')
+    panel = _ui_slice('<div id="radarPanel"', '<!-- All 19 actual computed values')
     radar_code = _ui_slice("function drawRadar(data)", "// ─── History Table")
 
     assert "predefined normalized display ranges" in panel
@@ -286,25 +286,24 @@ def test_radar_keeps_predefined_display_ranges_distinct_from_reference_bars():
     assert "(data[key] - norm.min) / (norm.max - norm.min)" in radar_code
 
 
-def test_main_result_hierarchy_keeps_diagnostics_collapsed():
+def test_study_main_result_removes_diagnostics_and_exposes_vectors():
     analyzer = _ui_slice('<!-- View: Analyzer -->', '<!-- View: Pipeline -->')
-    diagnostic = _ui_slice(
-        '<details class="disclosure" id="experimentalDiagnosticResults">',
-        '<!-- Feature bars: empirical reference comparison. -->',
-    )
 
     assert "summary-card summary-hero" in UI
     assert "Relative Model-Estimated Saliency Map" in analyzer
     assert "Visual Feature Profile" in analyzer
-    for required in (
+    assert "Technical &amp; Reproducibility" in analyzer
+    assert "Visual vector" in analyzer
+    assert "Saliency vector" in analyzer
+    assert "HCEye-informed proxy vector" in analyzer
+    for removed in (
         "Experimental Diagnostic Results",
         "coherenceWarning",
-        "featureDiagnosis",
         "searchFeedbackPanel",
         "contrastPanel",
         "readabilityPanel",
     ):
-        assert required in diagnostic
+        assert removed not in analyzer
 
 
 def test_screenshot_hceye_proxies_are_never_converted_to_effect_percentages():
@@ -340,22 +339,21 @@ def test_hceye_source_study_effect_is_explicitly_separate_from_screen_proxies():
     assert "not independent validation of the screenshot-level index" in evidence
 
 
-def test_active_pdf_labels_keep_umsi_and_hceye_claim_boundaries():
-    export = _ui_slice("async function exportPDF(d)", "// ─── CSV Export")
+def test_csv_export_contains_all_vectors_and_study_context():
+    export = _ui_slice("function exportCSV(data, filename)", "// ─── Browser Notification Helpers")
 
-    assert "GUI Layout Complexity Analysis Report" in export
-    assert "Recorded Context (non-score-bearing)" in export
-    assert "within-image normalized; not gaze probability" in export
-    assert "HCEye-derived Rule Index (unitless project-specific proxy)" in export
-    assert "HCEye-Derived Unitless Proxies (h, 6 dims)" in export
-    for forbidden in (
-        "Scenario Direction",
-        "Scenario Score-Bearing",
-        "Stage-1 Experimental Layout-Complexity Index",
-        "Stage-2 v1 Qualitative Scenario Direction",
-        "deterministic Stage 2 v1 scenario proxy",
+    assert "...FEATURE_KEYS" in export
+    assert "...SALIENCY_VECTOR_META" in export
+    assert "...PROXY_VECTOR_META" in export
+    for field in (
+        "big_five_openness",
+        "big_five_conscientiousness",
+        "big_five_extraversion",
+        "big_five_agreeableness",
+        "big_five_neuroticism",
     ):
-        assert forbidden not in export
+        assert field in export
+    assert "cross_signal_review_status" not in export
 
 
 def test_mobile_navigation_keeps_views_and_settings_reachable():
@@ -368,11 +366,12 @@ def test_mobile_navigation_keeps_views_and_settings_reachable():
     assert "display: none" not in mobile_nav
 
 
-def test_diagnostic_setup_and_results_have_distinct_labels():
+def test_study_ui_contains_no_experimental_diagnostic_controls_or_results():
     analyzer = _ui_slice('<!-- View: Analyzer -->', '<!-- View: Pipeline -->')
 
-    assert "Experimental Diagnostics Setup" in analyzer
-    assert "Experimental Diagnostic Results" in analyzer
+    assert "Experimental Diagnostics Setup" not in analyzer
+    assert "Experimental Diagnostic Results" not in analyzer
+    assert "includeJokinenDiagnostic" not in analyzer
 
 
 def test_readme_uses_bounded_construct_and_current_test_contract():
@@ -413,59 +412,27 @@ def test_stage2_scaffold_never_describes_circular_targets_as_ground_truth():
         assert "ground truth" not in target_line
 
 
-def test_target_scanpath_prototype_is_outside_basic_stage1_ui_and_contract():
+def test_target_scanpath_prototype_is_absent_from_study_ui():
     compact_readme = " ".join(README.split())
-    assert (
-        'id="targetScanpathPanel" class="result-section" hidden '
-        'aria-hidden="true"'
-    ) in UI
+    assert 'id="targetScanpathPanel"' not in UI
     assert "renderTargetScanpath(data.detected_elements)" not in UI
-    assert "FUTURE WORK ONLY" in UI
+    assert "scanpath-to-target" not in UI
     assert "Stage-1 acceptance boundary" in README
     assert "are not rendered by the standard Stage-1 UI" in compact_readme
 
 
-def test_design_diagnosis_describes_the_task_independent_heuristic_truthfully():
-    diagnosis = _ui_slice("function buildDesignDiagnosis", "// Normalization ranges")
-    unconditional_scope = diagnosis[
-        diagnosis.index("const bullets = [];"):
-        diagnosis.index("// Reconciled summary")
-    ]
-    for required in (
-        "task-independent Design Diagnosis",
-        "hand-weighted project heuristic",
-        "selected normalized saliency descriptors",
-        "measured layout/OCR inputs",
-        "not an eye-tracking or behavioral measurement",
-        "does not use target-search simulation",
-        "is not changed by task-type or time-pressure selections",
-    ):
-        assert required in unconditional_scope
-
-    scope_push_index = unconditional_scope.index("bullets.push({")
-    scope_push_line_start = unconditional_scope.rfind(
-        "\n", 0, scope_push_index
-    ) + 1
-    scope_push_line_end = unconditional_scope.index("\n", scope_push_index)
-    scope_push_line = unconditional_scope[
-        scope_push_line_start:scope_push_line_end
-    ]
-    assert "if (" not in unconditional_scope[:scope_push_index]
-    assert scope_push_line.strip() == "bullets.push({"
-
-    assert "Combined feature signal:" in diagnosis
-    assert "uncalibrated design heuristic" in diagnosis
-    for forbidden in (
-        "increase scan path length",
-        "interaction patterns",
-        "predicted saliency + eye-movement model",
-        "shaped by the task context",
-    ):
-        assert forbidden not in diagnosis
+def test_transparent_vector_rows_replace_design_diagnosis():
+    assert "function buildDesignDiagnosis" not in UI
+    assert "Design Diagnosis" not in UI
+    assert "const VISUAL_VECTOR_META" in UI
+    assert "const SALIENCY_VECTOR_META" in UI
+    assert "const PROXY_VECTOR_META" in UI
+    assert "Formula:" in UI
+    assert "Source / lineage:" in UI
 
 
-def test_optional_context_copy_is_non_score_bearing_and_excludes_profile_and_ml():
-    controls = _ui_slice("<!-- Optional Context", '<details class="disclosure diagnostic-settings">')
+def test_optional_context_copy_is_non_score_bearing_and_big_five_is_metadata_only():
+    controls = _ui_slice("<!-- Optional Context", '<!-- end grid-inputs -->')
     loading = _ui_slice('<div class="loading" id="loading">', '<div class="results"')
     interpretation = _ui_slice(
         "function renderInterpretation(data)",
@@ -475,16 +442,19 @@ def test_optional_context_copy_is_non_score_bearing_and_excludes_profile_and_ml(
     assert "These selections do not change the numerical score" in controls
     assert "Recorded as contextual metadata only" in controls
     assert "Context only" in controls
+    assert "Big Five Study Context" in controls
+    assert "Browser-side metadata only" in controls
+    assert "never enter the API, v8, s5, h6, x19" in controls
     assert "Finalizing x19 and Experimental Layout Complexity" in loading
     assert "Attaching deterministic qualitative scenario proxy" not in loading
     assert "data.stage2_scenario_proxy" in UI
     assert "score_bearing=false" in UI
     assert "Recorded context:" in UI
-    assert "does not modify v8, s5, h6, x19 or Experimental Layout Complexity" in UI
+    assert "do not modify v8, s5, h6, x19 or Experimental Layout Complexity" in UI
 
+    assert 'formData.append("big_five' not in UI
     for forbidden in (
         "User Profile",
-        "Big Five",
         "use_trained_model",
         "context-adjusted simulation",
         "Original context-adjusted output",
@@ -504,7 +474,7 @@ def test_optional_context_copy_is_non_score_bearing_and_excludes_profile_and_ml(
         assert forbidden not in UI
 
 
-def test_how_it_works_matches_the_active_pipeline_and_diagnostics():
+def test_how_it_works_matches_the_study_pipeline_boundary():
     pipeline = _ui_slice('<!-- View: Pipeline -->', '<!-- View: Research Roadmap -->')
 
     for required in (
@@ -517,9 +487,11 @@ def test_how_it_works_matches_the_active_pipeline_and_diagnostics():
         "x19",
         "Experimental Layout Complexity",
         "Optional context",
-        "Does not modify x19 or the numerical score",
-        "Experimental diagnostics",
-        "Jokinen visual search",
+        "Does not modify v8, s5, h6, x19 or the numerical score",
+        "Task Type + Time Pressure + Big Five",
+        "browser-side",
+        "Why this pipeline",
+        "AIM implementation lineage",
         "Method References",
         "none independently validates the combined Experimental Layout Complexity index",
     ):
@@ -538,6 +510,8 @@ def test_how_it_works_matches_the_active_pipeline_and_diagnostics():
         "profile selections",
     ):
         assert retired not in pipeline
+    assert "Experimental diagnostics" not in pipeline
+    assert "Jokinen visual search" not in pipeline
 
 
 def test_research_roadmap_defers_calibrated_stage2_until_human_evidence():
@@ -554,16 +528,10 @@ def test_research_roadmap_defers_calibrated_stage2_until_human_evidence():
         assert required in roadmap
 
 
-def test_ocr_text_is_escaped_before_readability_inner_html_rendering():
-    readability = _ui_slice(
-        "function renderReadabilityReport(report)",
-        "function renderTargetScanpath",
-    )
+def test_study_ui_removes_ocr_diagnostic_renderer_and_keeps_html_escaping():
     escaping = _ui_slice("function escapeHtml(value)", "function renderHistory")
 
-    assert "const label = escapeHtml((e.text || '').slice(0, 40));" in readability
-    assert "const label = (e.text || '').slice(0, 40);" not in readability
-    assert "list.innerHTML = elOverviewBlock()" in readability
+    assert "function renderReadabilityReport" not in UI
     for required_replacement in (
         '.replace(/&/g, "&amp;")',
         '.replace(/</g, "&lt;")',
@@ -574,7 +542,7 @@ def test_ocr_text_is_escaped_before_readability_inner_html_rendering():
         assert required_replacement in escaping
 
 
-def test_visible_cross_signal_claims_are_bounded_tri_state_review_cues():
+def test_cross_signal_logic_remains_bounded_but_is_absent_from_study_ui():
     from stage2.coherence_check import run_cross_signal_review
 
     result = run_cross_signal_review(
@@ -590,8 +558,8 @@ def test_visible_cross_signal_claims_are_bounded_tri_state_review_cues():
     assert "not mutual validation" in joined
     assert "typically reduces cognitive load" not in joined
     assert "primary driver of cognitive load" not in joined
-    assert "exploratory cross-signal review" in UI.lower()
-    assert "not calibrated validation" in UI.lower()
+    assert "exploratory cross-signal review" not in UI.lower()
+    assert "data.cross_signal_review" not in UI
     assert "cognitive load should be reduced" not in COHERENCE.lower()
 
 
@@ -688,7 +656,8 @@ def test_active_reference_claims_are_complete_and_corpus_relative():
         assert doi in STAGE1_DOCUMENTATION
 
     assert "Das, A., Wu, Z., Škrjanec, I., & Feit, A. M. (2024)" in STAGE1_DOCUMENTATION
-    assert "Jokinen, Wang, Sarcar, Oulasvirta &amp; Ren (2020)" in UI
+    assert "Jokinen, Wang, Sarcar, Oulasvirta &amp; Ren (2020)" not in UI
+    assert "Aalto Interface Metrics (AIM)" in UI
     assert "Silpasuwanchai" not in UI
     assert "authorized 1,485-image UEyes GUI" in APP_SOURCE
     assert "typical GUI" not in APP_SOURCE

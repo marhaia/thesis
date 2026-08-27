@@ -5,8 +5,9 @@
 
 This research pipeline analyzes a GUI screenshot and returns an **exploratory,
 project-specific layout-complexity index** together with visual, saliency, and
-model-based search diagnostics. It does **not** provide a validated
-cognitive-load measurement or observed user-performance data.
+reproducibility evidence. The study UI deliberately excludes the repository's
+separate model-based experimental diagnostics. It does **not** provide a
+validated cognitive-load measurement or observed user-performance data.
 
 This repository defines the technical pipeline used by the master's-thesis
 project. User-study execution, participant data, and any post-study analysis
@@ -88,14 +89,17 @@ prediction in this repository.
   `lower`, `baseline`, or `higher`. It is explicitly non-score-bearing and has
   no numeric modifier, task-process simulation, calibrated effect size, or
   measurement claim.
+- **Study-only context metadata:** the browser UI can record task, time pressure,
+  and optional study-coded Big Five categories beside an export. Big Five is not
+  sent to the score API and cannot modify any numerical output.
 - **Model-estimated saliency:** a UMSI++ heatmap and five numeric descriptors.
   The auxiliary six-value head remains numeric because its semantic class order
   has not been verified.
-- **Optional Jokinen diagnostic:** off by default and methodologically separate
-  from the scenario proxy. When requested, its model-simulated search outputs
-  are not score-bearing, eye-tracking observations, or validated behavioral
-  predictions.
-- **Exploratory Cross-Signal Review:** visible tri-state review cue
+- **Technical API-only Jokinen diagnostic:** methodologically separate and not
+  exposed by the study UI. When directly requested through the technical API,
+  its model-simulated search outputs are not score-bearing, eye-tracking
+  observations, or validated behavioral predictions.
+- **Technical API-only Cross-Signal Review:** tri-state review cue
   (`not_evaluable`, `no_review_flag`, `review_recommended`) using
   author-selected, uncalibrated inspection triggers. It never changes a score
   and does not validate one signal against another.
@@ -121,9 +125,11 @@ prediction in this repository.
 - **No independent end-to-end human validation has been completed.** Internal
   correspondence, parity, invariance, and sanity checks establish engineering
   behavior and reproducibility, not construct validity.
-- **Personality and machine learning are excluded from Stage 2 v1.** No profile
-  input, trained-model selection, numeric profile effect, or ML prediction is
-  accepted or returned by the active v1 route.
+- **Personality-derived effects and machine learning are excluded from Stage 2
+  v1.** No profile input, trained-model selection, numeric profile effect, or ML
+  prediction is accepted or returned by the active v1 route. Optional Big Five
+  categories in the study UI are browser-side metadata only and require a
+  predeclared validated study instrument before substantive interpretation.
 
 ---
 

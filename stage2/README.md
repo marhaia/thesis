@@ -20,14 +20,17 @@ person- and task-dependent responses, motivates retaining the context field
 not calibrate this repository's `lower` / `baseline` / `higher` mapping and is
 not evidence for a universal, category-specific, or participant-level effect.
 
-The Jokinen model is an optional, methodologically separate diagnostic exposed
-through the main route only when explicitly requested. It is non-score-bearing
-and is not measured search, eye tracking, or a validated behavioral prediction.
+The Jokinen model is an optional, methodologically separate technical API
+diagnostic exposed through the main route only when explicitly requested. It is
+not exposed by the study UI, is non-score-bearing, and is not measured search,
+eye tracking, or a validated behavioral prediction.
 Public context fields are case-sensitive and may be supplied at most once
 across form and query data. Explicit blank values and ambiguous duplicate
 values fail with HTTP 400. `display_preset` accepts only `phone`, `laptop`, or
 `desktop`, and only when the Jokinen diagnostic is explicitly enabled.
 
 `task_descriptor.py`, `user_profile.py`, and `regression_model.py` are archived
-legacy research scaffolds. Personality and ML are excluded from Stage 2 v1;
-the production route and standard UI neither import nor expose them.
+legacy research scaffolds. Personality-derived effects and ML are excluded
+from Stage 2 v1. The study UI may record optional study-coded Big Five
+categories locally beside its export, but does not send them to the production
+route, score them, infer them, or use them to modify x19 or the layout index.

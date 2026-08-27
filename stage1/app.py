@@ -940,7 +940,7 @@ def features_info():
             "name": "Shannon Entropy",
             "description": "Global image-information density under this metric. Higher values indicate more varied pixel information; any attention interpretation is an unvalidated project hypothesis.",
             "range": "[0, 8]",
-            "reference": "Shannon (1948)"
+            "reference": "Shannon (1948); related AIM m21 lineage with a different direct-histogram implementation"
         },
         {
             "key": "edge_density",
@@ -975,14 +975,14 @@ def features_info():
             "name": "Chromatic Coherence",
             "description": "Color-palette fragmentation proxy combining luminance variance, colorfulness, and hue/saturation spread. Higher values mean more fragmentation under this metric.",
             "range": "[0, 1]",
-            "reference": "Custom project composite; colorfulness submetric from Hasler & Süsstrunk (2003)"
+            "reference": "Custom project composite using AIM m13/m15/m16 components; colorfulness submetric from Hasler & Süsstrunk (2003)"
         },
         {
             "key": "visual_hierarchy",
             "name": "Visual Hierarchy",
             "description": "Strength of layered visual structure from contrast gradients and size dominance. Higher values mean clearer hierarchy under this metric; reduced search effort is an unvalidated design hypothesis.",
             "range": "[0, 1]",
-            "reference": "Custom project composite; broader visual-complexity context from Tuch et al. (2009)"
+            "reference": "Custom project composite with an AIM m5-inspired figure-ground component; broader visual-complexity context from Tuch et al. (2009)"
         },
         {
             "key": "interactive_element_density",
