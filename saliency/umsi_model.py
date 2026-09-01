@@ -19,11 +19,12 @@ Input(256×256×3, BGR, VGG-mean-subtracted)
   → Custom Xception backbone (stride-modified blocks 4, 13, exit)
     Output: 32×32×2048
   → ASPP branch (dilation 6, 12, 18) + 1×1 conv  →  concat  → 32×32×1024
-  → Classification branch (Conv→GAP→Dense→Softmax 6-class)
+  → Numeric auxiliary branch (Conv→GAP→Dense→six-value softmax;
+    checkpoint layer names retain ``out_classif``)
     + tiled dense embedding fused via concatenation      → 32×32×1280
   → Decoder (Conv-Dropout-UpSample chain)
     → 512×512×1 heatmap
-Outputs: [heatmap_512×512, classification_6]
+Outputs: [heatmap_512×512, numeric_auxiliary_6]
 
 Weights
 -------
@@ -52,6 +53,8 @@ from typing import Optional, Tuple, Union
 import cv2
 import numpy as np
 
+from saliency.postprocessing import postprocess_saliency
+
 # ── TF / Keras 3 imports ──────────────────────────────────────────────────
 import tensorflow as tf
 import keras
@@ -71,6 +74,59 @@ SHAPE_C_OUT: int = 512      # model output width
 VGG_MEAN_B: float = 103.939
 VGG_MEAN_G: float = 116.779
 VGG_MEAN_R: float = 123.68
+
+
+# ============================================================================
+# Legacy-compatible bilinear upsampling (decoder resize)
+# ============================================================================
+
+@keras.saving.register_keras_serializable(package="umsi_plus_plus")
+class LegacyBilinearUpSampling2D(layers.Layer):
+    """Bilinear upsampling matching the original TF1.14/Keras2.3.1 decoder.
+
+    The authoritative UMSI++ checkpoint was trained with Keras 2.3.1, whose
+    ``UpSampling2D(interpolation='bilinear')`` lowers to
+    ``tf.image.resize_bilinear`` == ``tf.raw_ops.ResizeBilinear`` with
+    ``align_corners=False, half_pixel_centers=False``. TF2/Keras3 changed the
+    default bilinear resize to half-pixel-centre sampling, which shifts the
+    decoder output. That shift was the confirmed sole material cause of the
+    pre-registered TF1/Keras2 golden-threshold failures (resize causality
+    experiment, run 30034973775, commit a03c42a). This layer restores the
+    legacy sampling grid so the loaded weights produce the trained output.
+
+    It carries no trainable parameters and no weights, keeps the same layer
+    name and ``size`` factor as the ``UpSampling2D`` it replaces, and therefore
+    does not change model topology, parameter counts or checkpoint-loading
+    behaviour.
+    """
+
+    def __init__(self, size=(2, 2), **kwargs):
+        super().__init__(**kwargs)
+        if isinstance(size, int):
+            size = (size, size)
+        self.size = (int(size[0]), int(size[1]))
+
+    def call(self, inputs):
+        shp = tf.shape(inputs)
+        out_h = shp[1] * self.size[0]
+        out_w = shp[2] * self.size[1]
+        target = tf.stack([out_h, out_w])
+        return tf.raw_ops.ResizeBilinear(
+            images=inputs, size=target,
+            align_corners=False, half_pixel_centers=False)
+
+    def compute_output_shape(self, input_shape):
+        b, h, w, c = input_shape
+        return (b,
+                None if h is None else h * self.size[0],
+                None if w is None else w * self.size[1],
+                c)
+
+    def get_config(self):
+        cfg = super().get_config()
+        cfg["size"] = self.size
+        return cfg
+
 
 # ============================================================================
 # Custom Xception Backbone (stride-modified for saliency)
@@ -202,10 +258,10 @@ def _build_custom_xception(img_input: tf.Tensor) -> tf.Tensor:
 
 def build_umsi_model(input_shape: Tuple[int, int, int] = (SHAPE_R, SHAPE_C, 3),
                      verbose: bool = False) -> Model:
-    """Build the UMSI++ architecture (saliency + classification).
+    """Build the UMSI++ architecture (saliency + numeric auxiliary head).
 
     Architecture (Jiang et al., CHI 2023, Figure 2):
-      Xception(custom) →  ASPP(d=6,12,18) + Classification(6-class)
+      Xception(custom) → ASPP(d=6,12,18) + six-value auxiliary softmax
         → Concatenate → Decoder → 512×512 heatmap
 
     Key architectural references:
@@ -215,7 +271,7 @@ def build_umsi_model(input_shape: Tuple[int, int, int] = (SHAPE_R, SHAPE_C, 3),
         Kokkinos, I., Murphy, K., & Yuille, A.L. (2017). DeepLab: Semantic
         image segmentation with deep convolutional nets, atrous convolution,
         and fully connected CRFs. IEEE TPAMI, 40(4), 834–848.
-      UMSI++ training + design-class head: Jiang, Y. et al. (2023). UEyes:
+      UMSI++ training + paper-described auxiliary head: Jiang, Y. et al. (2023). UEyes:
         Understanding visual saliency across user interface types. CHI 2023.
         https://doi.org/10.1145/3544548.3581096
 
@@ -278,7 +334,7 @@ def build_umsi_model(input_shape: Tuple[int, int, int] = (SHAPE_R, SHAPE_C, 3),
     concat_aspp = layers.Concatenate(name='concatenate_1')([c0, c6, c12, c18])
     # → shape: (batch, 32, 32, 1024)
 
-    # ── Classification branch ─────────────────────────────────────────
+    # ── Numeric auxiliary branch (original checkpoint names retained) ─
     cl = layers.Conv2D(256, (3, 3), strides=(3, 3), padding='same',
                         use_bias=False, name='global_conv')(backbone_feat)
     cl = layers.BatchNormalization(name='global_BN')(cl)
@@ -291,7 +347,7 @@ def build_umsi_model(input_shape: Tuple[int, int, int] = (SHAPE_R, SHAPE_C, 3),
     out_classif = layers.Dense(6, activation='softmax',
                                 name='out_classif')(classif_feat)
 
-    # Fusion: tile the 256-d classification embedding to 32×32 spatial
+    # Fusion: tile the 256-d numeric auxiliary embedding to 32×32 spatial
     fusion = layers.Dense(256, name='dense_fusion')(classif_feat)
 
     def tile_to_spatial(x):
@@ -306,7 +362,7 @@ def build_umsi_model(input_shape: Tuple[int, int, int] = (SHAPE_R, SHAPE_C, 3),
     fusion_tiled = layers.Lambda(tile_to_spatial, name='lambda_1')(fusion)
     # → shape: (batch, 32, 32, 256)
 
-    # Merge ASPP and classification
+    # Merge ASPP and numeric auxiliary embedding
     concat_all = layers.Concatenate(name='concatenate_2')(
                                      [concat_aspp, fusion_tiled])
     # → shape: (batch, 32, 32, 1280)
@@ -323,8 +379,7 @@ def build_umsi_model(input_shape: Tuple[int, int, int] = (SHAPE_R, SHAPE_C, 3),
     x = layers.Conv2D(256, (3, 3), padding='same', use_bias=False,
                        name='dec_c2')(x)
     x = layers.Dropout(0.3, name='dec_dp1')(x)
-    x = layers.UpSampling2D(size=(2, 2), interpolation='bilinear',
-                              name='dec_ups1')(x)
+    x = LegacyBilinearUpSampling2D(size=(2, 2), name='dec_ups1')(x)
     # → (batch, 64, 64, 256)
 
     x = layers.Conv2D(128, (3, 3), padding='same', use_bias=False,
@@ -332,15 +387,13 @@ def build_umsi_model(input_shape: Tuple[int, int, int] = (SHAPE_R, SHAPE_C, 3),
     x = layers.Conv2D(128, (3, 3), padding='same', use_bias=False,
                        name='dec_c4')(x)
     x = layers.Dropout(0.3, name='dec_dp2')(x)
-    x = layers.UpSampling2D(size=(2, 2), interpolation='bilinear',
-                              name='dec_ups2')(x)
+    x = LegacyBilinearUpSampling2D(size=(2, 2), name='dec_ups2')(x)
     # → (batch, 128, 128, 128)
 
     x = layers.Conv2D(64, (3, 3), padding='same', use_bias=False,
                        name='dec_c5')(x)
     x = layers.Dropout(0.3, name='dec_dp3')(x)
-    x = layers.UpSampling2D(size=(4, 4), interpolation='bilinear',
-                              name='dec_ups3')(x)
+    x = LegacyBilinearUpSampling2D(size=(4, 4), name='dec_ups3')(x)
     # → (batch, 512, 512, 64)
 
     out_heatmap = layers.Conv2D(1, (1, 1), padding='same', use_bias=False,
@@ -387,13 +440,15 @@ def preprocess_image(image_path: str,
     # Aspect-ratio-preserving resize with zero-padding
     padded = _padding(img_bgr, shape_r, shape_c)
 
-    # To float32 and VGG mean subtraction
-    img = padded.astype(np.float32)
-    img[..., 0] -= VGG_MEAN_B   # Blue
-    img[..., 1] -= VGG_MEAN_G   # Green
-    img[..., 2] -= VGG_MEAN_R   # Red
+    # Preserve original UEyes precision order: subtract means in float64,
+    # then cast once to float32 for model input.
+    img_batch = np.zeros((1, shape_r, shape_c, 3), dtype=np.float64)
+    img_batch[0] = padded
+    img_batch[..., 0] -= VGG_MEAN_B   # Blue
+    img_batch[..., 1] -= VGG_MEAN_G   # Green
+    img_batch[..., 2] -= VGG_MEAN_R   # Red
 
-    return np.expand_dims(img, axis=0)   # add batch dimension
+    return img_batch.astype(np.float32)
 
 
 def _padding(img: np.ndarray, shape_r: int, shape_c: int,
@@ -425,49 +480,6 @@ def _padding(img: np.ndarray, shape_r: int, shape_c: int,
     return img_padded
 
 
-def postprocess_saliency(pred: np.ndarray,
-                         original_h: int,
-                         original_w: int) -> np.ndarray:
-    """Resize the 512×512 prediction back to the original image dimensions.
-
-    Reverses the padding that was applied during preprocessing, then resizes
-    the unpadded prediction to the original image size.
-
-    Args:
-        pred: Raw model output, shape (512, 512) or (512, 512, 1).
-        original_h: Original image height in pixels.
-        original_w: Original image width in pixels.
-
-    Returns:
-        Saliency heatmap of shape (original_h, original_w), float32,
-        normalized to [0, 1].
-    """
-    if pred.ndim == 3:
-        pred = pred[:, :, 0]
-
-    pred_shape = pred.shape
-    rows_rate = original_h / pred_shape[0]
-    cols_rate = original_w / pred_shape[1]
-
-    if rows_rate > cols_rate:
-        new_cols = (pred_shape[1] * original_h) // pred_shape[0]
-        pred = cv2.resize(pred, (new_cols, original_h))
-        offset = (pred.shape[1] - original_w) // 2
-        img = pred[:, offset:offset + original_w]
-    else:
-        new_rows = (pred_shape[0] * original_w) // pred_shape[1]
-        pred = cv2.resize(pred, (original_w, new_rows))
-        offset = (pred.shape[0] - original_h) // 2
-        img = pred[offset:offset + original_h, :]
-
-    # Normalize to [0, 1]
-    vmax = img.max()
-    if vmax > 0:
-        img = img / vmax
-
-    return img.astype(np.float32)
-
-
 # ============================================================================
 # High-Level Inference Wrapper
 # ============================================================================
@@ -480,27 +492,12 @@ class UMSIPlus:
         heatmap = model.predict_saliency("screenshot.png")
     """
 
-    # Design-type labels (6-class head from Jiang et al., CHI 2023, §3.2).
-    # The model was trained on UEyes (1,980 screenshots, 62 participants)
-    # across six UI/image categories.
-    #
-    # NOTE ON ORDERING: the exact index-to-label mapping of the softmax head
-    # is NOT recoverable from the published checkpoint alone (it depends on the
-    # training-time label encoder, which is not shipped with umsi++.hdf5). This
-    # list is therefore a best-effort guess and is used ONLY for the optional,
-    # informational class printout in predict_saliency(return_classif=True).
-    # It has NO effect on the saliency heatmap or on any downstream scoring in
-    # this project, which consume the heatmap exclusively. Do not rely on the
-    # specific label at a given index without cross-checking the UEyes training
-    # label map.
-    DESIGN_CLASSES = [
-        "poster",
-        "infographic",
-        "mobile_ui",
-        "desktop_ui",
-        "web_page",
-        "natural_image",
-    ]
+    # The checkpoint contains a six-value auxiliary softmax head. Its semantic
+    # index-to-label order is not verified from a shipped training-time label
+    # encoder, so production and CLI surfaces expose only numeric head values.
+    # The head remains part of the architecture and parity evidence but has no
+    # semantic role in the public API or downstream score.
+    AUXILIARY_HEAD_DIM = 6
 
     def __init__(self, weights_path: Union[str, Path],
                  verbose: bool = False):
@@ -519,10 +516,9 @@ class UMSIPlus:
                 "model_weights.zip"
             )
         # Load the pretrained weights.
-        # We load positionally (skip_mismatch=False) so that ANY architecture
-        # mismatch fails loudly. A silent skip_mismatch=True fallback is
-        # deliberately NOT used: it would leave mismatched layers randomly
-        # initialised while still serving predictions labelled "UMSI++", which
+        # Load positionally and fail loudly on any architecture mismatch. A
+        # mismatch-skipping partial load would leave layers randomly
+        # initialised while still serving predictions labelled "UMSI++" and
         # would invalidate every downstream saliency result without warning.
         try:
             self.model.load_weights(str(weights_path), skip_mismatch=False)
@@ -544,12 +540,14 @@ class UMSIPlus:
 
         Args:
             image_path: Path to input image (PNG, JPG, etc.).
-            return_classif: If True, also return the 6-class classification.
+            return_classif: Legacy parameter name. If True, also return the
+                numeric six-value auxiliary-head vector; no class labels are
+                attached because their index order is unverified.
 
         Returns:
             heatmap: Saliency map of shape (H, W), float32 in [0, 1],
                      at the original image resolution.
-            classif: (optional) 6-class probability vector, shape (6,).
+            classif: (optional) numeric auxiliary-head vector, shape (6,).
         """
         image_path = str(image_path)
 
@@ -613,9 +611,11 @@ if __name__ == "__main__":
     model = UMSIPlus(args.weights, verbose=args.verbose)
     heatmap, classif = model.predict_saliency(args.image, return_classif=True)
 
-    # Print classification
-    for i, (cls, prob) in enumerate(zip(UMSIPlus.DESIGN_CLASSES, classif)):
-        print(f"  {cls}: {prob:.4f}")
+    # Print numeric auxiliary-head values only. Semantic class order is not
+    # verified and must not be inferred from these indices.
+    print("Auxiliary head (semantic index order unverified):")
+    for i, prob in enumerate(classif):
+        print(f"  index_{i}: {prob:.4f}")
 
     print(f"\nHeatmap shape: {heatmap.shape}")
     print(f"Heatmap range: [{heatmap.min():.4f}, {heatmap.max():.4f}]")

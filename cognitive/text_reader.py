@@ -2,7 +2,7 @@
 # cognitive/text_reader.py
 # ===========================================================================
 # Purpose:
-#   Optional OCR layer that estimates the READING COST of textual UI elements.
+#   Stage-1 OCR layer that estimates the READING COST of textual UI elements.
 #   Without this, a labelled control such as a "Collision Warning" button is
 #   treated by the search model like a plain icon, ignoring the time a user
 #   needs to actually read the label.
@@ -25,9 +25,15 @@
 #   UI labels are read differently (often a single fixation). This is therefore
 #   a first-order engineering estimate, not a validated per-label reading model.
 #
-# This module is OPTIONAL. If EasyOCR (and its torch backend) is not installed,
-# every public function degrades gracefully and returns None, so the rest of
-# the pipeline keeps working (mirrors the optional saliency block).
+# The score-bearing Stage-1 route treats this layer as mandatory whenever
+# canonical UI elements exist. Reader construction is therefore strict: both
+# external model files must match the repository identity, the model directory
+# is fixed, and downloads are disabled. This module represents a load/read
+# failure with an explicit None sentinel; None is not a neutral OCR result and
+# does not authorize score-bearing analysis to continue. The canonical layout
+# boundary treats it as fatal, and the score-bearing route returns structured
+# HTTP 503 with no x19 or score. Non-score/offline callers may inspect the same
+# sentinel only when they explicitly expose that OCR was unavailable.
 #
 # References:
 #   Smith, R. (2007). An overview of the Tesseract OCR engine. ICDAR.
@@ -37,6 +43,8 @@
 from typing import Dict, List, Optional
 
 import numpy as np
+
+from cognitive.easyocr_identity import verify_easyocr_models
 
 # Empirical silent-reading rate (Brysbaert, 2019).
 WORDS_PER_MINUTE = 238.0
@@ -50,10 +58,12 @@ _READER_FAILED = False
 
 
 def _get_reader():
-    """Return a shared EasyOCR reader, or None if OCR is unavailable.
+    """Return a shared EasyOCR reader or an explicit unavailable sentinel.
 
     The reader is created on first use and cached for the process lifetime,
     because loading the detection/recognition models takes several seconds.
+    ``None`` is fatal on the score-bearing canonical-layout path; it must never
+    be interpreted there as optional OCR, zero text, or a neutral fallback.
     """
     global _READER, _READER_FAILED
     if _READER is not None:
@@ -61,15 +71,34 @@ def _get_reader():
     if _READER_FAILED:
         return None
     try:
+        # Verify both external artifacts and the package version before the
+        # EasyOCR package (or its Reader) is imported/constructed.
+        verified = verify_easyocr_models()
         import easyocr
 
-        # English only, CPU. gpu=False keeps it deterministic and dependency-light.
-        _READER = easyocr.Reader(["en"], gpu=False, verbose=False)
+        policy = verified["identity"]["reader"]
+        _READER = easyocr.Reader(
+            policy["languages"],
+            gpu=policy["gpu"],
+            model_storage_directory=str(verified["model_directory"]),
+            user_network_directory=str(verified["user_network_directory"]),
+            detect_network=policy["detect_network"],
+            recog_network=policy["recog_network"],
+            download_enabled=policy["download_enabled"],
+            verbose=policy["verbose"],
+            quantize=policy["quantize"],
+            cudnn_benchmark=policy["cudnn_benchmark"],
+        )
         return _READER
     except Exception as exc:
         # Remember the failure so we do not retry the slow import every call.
+        # Returning None communicates unavailability to the caller. The
+        # score-bearing canonical boundary must fail closed on this sentinel.
         _READER_FAILED = True
-        print(f"[text_reader] OCR unavailable, reading costs disabled: {exc!r}")
+        print(
+            "[text_reader] OCR unavailable; score-bearing analysis must "
+            f"fail closed: {exc!r}"
+        )
         return None
 
 
@@ -108,7 +137,14 @@ def compute_readability(image_bgr: np.ndarray, elements: List[Dict]) -> Optional
     Returns
     -------
     Optional[Dict]
-        A readability report, or None if OCR is unavailable. The report has:
+        A readability report, or the explicit ``None`` unavailable sentinel.
+        For canonical elements on the score-bearing Stage-1 route, ``None`` is
+        invalid: the canonical-layout boundary raises and the API returns a
+        structured non-success without x19 or a score. It is never substituted
+        with zero text or another neutral value. Non-score/offline callers may
+        handle ``None`` only while explicitly preserving the unavailable state.
+
+        A successful report has:
             words_per_minute, n_elements, n_text_elements, total_words,
             total_reading_time_s,
             text_elements: list of the most text-heavy elements (worst first),
@@ -122,7 +158,10 @@ def compute_readability(image_bgr: np.ndarray, elements: List[Dict]) -> Optional
     try:
         raw = reader.readtext(image_bgr)
     except Exception as exc:
-        print(f"[text_reader] OCR read failed: {exc!r}")
+        print(
+            "[text_reader] OCR read failed; score-bearing analysis must "
+            f"fail closed: {exc!r}"
+        )
         return None
 
     # Collect accepted (centre, text) pairs above the confidence threshold.

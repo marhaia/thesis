@@ -1,6 +1,12 @@
-# Projektplan: Two-Stage Multi-Output Pipeline
-**Typ:** Projektplan / Gemini-Guidedokument  
-**Status:** Aktiv — zentrale Architektur-Referenz
+# HISTORICAL / SUPERSEDED — Projektplan: Two-Stage Multi-Output Pipeline
+
+> **Historische Planungsnotiz, nicht aktuelle Architektur- oder Claim-Grundlage.**
+> Dieses Dokument beschreibt einen verworfenen Planungsstand. Für den aktuellen
+> akzeptierten Stage-1-Vertrag gelten ausschließlich `README.md` und
+> `stage1/DOCUMENTATION.md`. Stage 2 ist nicht akzeptiert oder validiert.
+
+**Typ:** Historischer Projektplan / ehemaliges Gemini-Guidedokument
+**Status:** Historisch / superseded — nicht aktiv und nicht autoritativ
 
 ---
 

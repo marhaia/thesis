@@ -74,7 +74,10 @@ try:
     print("Predicting saliency map...")
     sal_map, classif = umsi.predict_saliency(IMAGE_PATH, return_classif=True)
     print(f"Saliency map shape: {sal_map.shape}, range: [{sal_map.min():.4f}, {sal_map.max():.4f}]")
-    print(f"Predicted class: {umsi.DESIGN_CLASSES[np.argmax(classif)]}")
+    print(
+        "Auxiliary-head maximum (semantic index order unverified): "
+        f"index_{int(np.argmax(classif))}"
+    )
     
     # Run Jokinen with saliency
     results_sal = model.predict_search_times(

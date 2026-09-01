@@ -1,0 +1,124 @@
+{
+  "conclusion": "STEP_2B_FAIL_GATE_A_GATE_C",
+  "contract_thresholds": {
+    "cli_abs_max_step2b_classif_only__not_stage2": 0.01,
+    "pearson_min": 0.999,
+    "repeatability_abs_max": 0.0,
+    "spearman_min": 0.99,
+    "ssim_min": 0.99
+  },
+  "gate_results": [
+    {
+      "name": "gate_a",
+      "observed": {
+        "array_equal": false,
+        "max_abs_diff_float64": 22281.4091796875,
+        "prod_dtype": "float32",
+        "prod_sha256": "1dbf1fc0b20e1d3cccfd9080f6992abeeaaf0ac70cb1a2f41c7d4c739269a13a",
+        "prod_shape": [
+          512,
+          512
+        ],
+        "ref_dtype": "float32",
+        "ref_sha256": "00761515ddfe960c383e83c7840f3435b72f132f503d38c774651b1603702c63",
+        "ref_shape": [
+          512,
+          512
+        ]
+      },
+      "passed": false,
+      "reason": "GATE_A_NOT_ARRAY_EQUAL"
+    },
+    {
+      "name": "gate_b",
+      "observed": {
+        "pearson": 0.9999999999919089,
+        "prod_constant_map": false,
+        "prod_sha256_raw": "1dbf1fc0b20e1d3cccfd9080f6992abeeaaf0ac70cb1a2f41c7d4c739269a13a",
+        "prod_shape_before_postprocess": [
+          512,
+          512
+        ],
+        "raw_max_abs_diff_float64": 0.421875,
+        "ref_constant_map": false,
+        "ref_sha256_raw": "b9730f2e120d9e37ea7299656bbef64728eb4dac4fcd743e62b87bdb8d56af04",
+        "ref_shape_before_postprocess": [
+          512,
+          512
+        ],
+        "spearman": 0.9999999998882573,
+        "windowed_ssim": 0.9999999999595537
+      },
+      "passed": true,
+      "reason": null
+    },
+    {
+      "name": "gate_c",
+      "observed": {
+        "prod_dtype": "float32",
+        "prod_shape": [
+          6
+        ],
+        "ref_dtype": "float64",
+        "ref_shape": [
+          6
+        ]
+      },
+      "passed": false,
+      "reason": "GATE_C_DTYPE_MISMATCH: float32 != float64"
+    },
+    {
+      "name": "gate_d",
+      "observed": {
+        "cli_abs_max": 0.01,
+        "max_abs_diff_float64": 1.9371509552001953e-07,
+        "prod_dtype": "float32",
+        "prod_shape": [
+          6
+        ],
+        "ref_dtype": "float64",
+        "ref_shape": [
+          6
+        ],
+        "threshold_label": "cli_abs_max \u2014 Step 2B classification-output tolerance; NOT a Stage-2 score or downstream threshold"
+      },
+      "passed": true,
+      "reason": null
+    }
+  ],
+  "identities": {
+    "contract_sha256": "4a786d8d82570cef4787a9f8d350376a753cbf66e200ee94529225b9607c7542",
+    "expected_runner_sha256": "df356064b4d20f5ba652f16348cd3ef295c66528b2539afafd8309a8f77302fa",
+    "fixture_sha256": "4a467bdd72d41b9fd490573468db171a254e7cbf4aa8727ac8fb86bef05a3562",
+    "head": "7110a18c1ac915667bddd0cf7dae61af491caddb",
+    "npz_sha256": "9e933c1071924f180c32cc6327363ca5760b5968d497414a9f7939919b630079",
+    "observed_runner_sha256": "df356064b4d20f5ba652f16348cd3ef295c66528b2539afafd8309a8f77302fa",
+    "production_import_origin": "/Users/Q682780/Thesis_G_layout/saliency/umsi_model.py",
+    "runner_sha256_match": true,
+    "source_sha256": "38b7503626a0ec3c176d05aaed0ad6c9461085a7f771f96d3f9a62a0884ab554",
+    "weights_sha256": "f4290c3f11f18befbb47de50d81e4555ec8e7a63066c71c343a32fe32799e9fe"
+  },
+  "inference": {
+    "classif_dtype": "float32",
+    "classif_sha256": "8a0c85bc4250303a4bec5acf2fb89271abc9ff5175306fe70b9dba66e7c2abe8",
+    "classif_shape": [
+      6
+    ],
+    "proxy_restored": true,
+    "raw_saliency_dtype": "float32",
+    "raw_saliency_sha256": "1dbf1fc0b20e1d3cccfd9080f6992abeeaaf0ac70cb1a2f41c7d4c739269a13a",
+    "raw_saliency_shape": [
+      512,
+      512,
+      1
+    ],
+    "real_inference_call_count": 1
+  },
+  "utc_timestamp": "2026-08-03T13:04:15.700906Z",
+  "versions": {
+    "numpy": "1.26.4",
+    "platform": "macOS-26.3-arm64-arm-64bit",
+    "python": "3.9.6 (default, Apr 17 2026, 18:15:52) \n[Clang 21.0.0 (clang-2100.1.1.101)]",
+    "scipy": "1.13.1"
+  }
+}

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
-Feature Ablation + SHAP — Stage 2 Regression Model
+ARCHIVED LEGACY ANALYSIS — excluded from Stage 2 v1.
+
+Feature Ablation + SHAP — rejected circular regression prototype
 ===================================================
 Answers a critical question raised in supervision: does the UMSI++ saliency
 block (s in R^5) add anything to the cognitive-load prediction beyond the

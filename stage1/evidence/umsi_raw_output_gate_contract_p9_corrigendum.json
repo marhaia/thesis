@@ -1,0 +1,187 @@
+{
+  "contract_name": "umsi_raw_output_gate_contract_p9_corrigendum",
+  "contract_version": "p9_corrigendum",
+  "successor_of": {
+    "contract_name": "umsi_raw_output_gate_contract",
+    "contract_version": "p8",
+    "contract_sha256": "4a786d8d82570cef4787a9f8d350376a753cbf66e200ee94529225b9607c7542",
+    "p8_conclusion_on_record": "STEP_2B_FAIL_GATE_A_GATE_C"
+  },
+  "assessment_metadata": {
+    "assessment_type": "POST_HOC_ZERO_INFERENCE_PROTOCOL_CORRIGENDUM",
+    "independent_inference_performed": false,
+    "p8_historical_result_preserved": true,
+    "corrigendum_rationale": {
+      "gate_a_defect": "P8 Gate A targeted modern_raw/M_LC_lowcontrast_raw (the intentional negative-control / broken-resize condition produced by keras UpSampling2D with half-pixel-centre semantics) as a positive acceptance requirement. A source-faithful production implementation using legacy-compatible resize (tf.raw_ops.ResizeBilinear, align_corners=False, half_pixel_centers=False) is required to differ from M_LC. Gate A has been demoted to Diag-1 and the positive acceptance criterion is replaced with the pre-registered functional-parity thresholds against the legacy reference (identical to P8 Gate B).",
+      "gate_c_defect": "P8 Gate C enforced same_dtype between the native float32 production classification output and a float64 reference produced by an explicit cast in golden/modern_causality.py (lines 78 and 254). The float64 dtype is a serialization convention in the evidence-generation script, not a property of the model or a scientific requirement. Gate C has been demoted to Diag-2 with no dtype requirement. The classification acceptance criterion is replaced by the pre-registered cli_abs_max tolerance (identical to P8 Gate D).",
+      "gate_selection_basis": "The corrected acceptance gates (Gate 1 = P8 Gate B logic, Gate 2 = P8 Gate D logic) were selected because they test source-faithful parity with the legacy reference. They were not selected because their P8 outcomes were already known.",
+      "binding_invariant": "The production UMSI++ implementation must remain source-faithful. No architecture, weights, preprocessing, resize semantics or native outputs were modified to satisfy a validation gate."
+    }
+  },
+  "pinned_p9_evaluator": {
+    "evaluator_path": "stage1/tools/umsi_step2b_p9_corrigendum_reeval.py",
+    "evaluator_sha256": "6986e7921661dfe1d53b02c032841e47b465789d1164be979fe1bfb98bbc2900"
+  },
+  "pinned_p8_identities": {
+    "p8_gate_report_sha256": "f4940576deba6d8ff5a4517a9bf8bfe29faa3a1ff44d76305bc3bbc7d34b64c1",
+    "p8_production_outputs_npz_sha256": "8f6da0cb1083178149c94156f64739d3f98b2ffab8393a778465348f22372e4c",
+    "p8_contract_sha256": "4a786d8d82570cef4787a9f8d350376a753cbf66e200ee94529225b9607c7542",
+    "p8_runner_sha256": "df356064b4d20f5ba652f16348cd3ef295c66528b2539afafd8309a8f77302fa",
+    "p8_production_source_sha256": "38b7503626a0ec3c176d05aaed0ad6c9461085a7f771f96d3f9a62a0884ab554",
+    "evidence_npz_sha256": "9e933c1071924f180c32cc6327363ca5760b5968d497414a9f7939919b630079",
+    "weights_sha256": "f4290c3f11f18befbb47de50d81e4555ec8e7a63066c71c343a32fe32799e9fe",
+    "fixture_sha256_lowcontrast": "4a467bdd72d41b9fd490573468db171a254e7cbf4aa8727ac8fb86bef05a3562",
+    "prod_raw_saliency_sha256": "1dbf1fc0b20e1d3cccfd9080f6992abeeaaf0ac70cb1a2f41c7d4c739269a13a",
+    "prod_classif_sha256": "8a0c85bc4250303a4bec5acf2fb89271abc9ff5175306fe70b9dba66e7c2abe8"
+  },
+  "reference_members": {
+    "legacy_raw_saliency": "legacy_raw/lowcontrast_raw",
+    "legacy_classification": "legacy_raw/lowcontrast_classif",
+    "m_lc_raw_saliency_neg_control": "modern_raw/M_LC_lowcontrast_raw",
+    "m_lc_classification_diag": "modern_raw/M_LC_lowcontrast_classif"
+  },
+  "acceptance_gates": {
+    "gate_1": {
+      "name": "production_raw_saliency_vs_legacy_raw_saliency",
+      "corrigendum_note": "Replaces P8 Gate A as the saliency acceptance gate. Uses the same postprocess and pre-registered thresholds as P8 Gate B.",
+      "replaces_p8_gate": "gate_a (corrected) + gate_b (promoted)",
+      "reference_member": "legacy_raw_saliency",
+      "authoritative_shared_postprocess": {
+        "order": ["squeeze", "identical_resize", "identical_min_max_to_0_1"],
+        "resize_details": {
+          "legacy_native_operator": "tf.raw_ops.ResizeBilinear(align_corners=False, half_pixel_centers=False)",
+          "modern_operator": "keras UpSampling2D(interpolation='bilinear')",
+          "note": "Both production and reference are already 512x512; identical_resize is an identity operation"
+        },
+        "constant_map_policy": "prospective_new_rule_before_output_observation (inherited from P8 contract)",
+        "ssim_params": {
+          "K1": 0.01,
+          "K2": 0.03,
+          "win_size": 7,
+          "boundary": "reflect",
+          "data_range": 1.0,
+          "filter": "scipy.ndimage.uniform_filter"
+        }
+      },
+      "requirements": {
+        "pearson": {"operator": ">=", "value": 0.999, "bound_to_threshold": "pearson_min"},
+        "spearman": {"operator": ">=", "value": 0.99, "bound_to_threshold": "spearman_min"},
+        "windowed_ssim": {"operator": ">=", "value": 0.99, "bound_to_threshold": "ssim_min"}
+      },
+      "diagnostics_only": [
+        "raw_max_abs_diff_float64",
+        "raw_mean_abs_diff_float64",
+        "prod_sha256",
+        "ref_sha256"
+      ]
+    },
+    "gate_2": {
+      "name": "production_classification_vs_legacy_classification",
+      "corrigendum_note": "Replaces P8 Gate C as the classification acceptance gate. Identical calculation to P8 Gate D. No dtype requirement; both arrays compared in float64.",
+      "replaces_p8_gate": "gate_c (corrected) + gate_d (promoted)",
+      "reference_member": "legacy_classification",
+      "comparison": "cast_both_to_float64",
+      "dtype_note": "Native dtypes are recorded but not required to match. The production model natively outputs float32; the legacy reference was stored as float64 as a serialization convention in the evidence-generation script.",
+      "requirements": {
+        "same_shape": true,
+        "finite_values": true,
+        "max_abs_diff_float64": {
+          "operator": "<=",
+          "value": 0.01,
+          "bound_to_threshold": "cli_abs_max",
+          "threshold_label": "cli_abs_max — Step 2B classification-output tolerance; NOT a Stage-2 score or downstream threshold"
+        }
+      }
+    }
+  },
+  "diagnostic_gates": {
+    "diag_1": {
+      "name": "saliency_negative_control_m_lc",
+      "corrigendum_note": "Demoted from P8 Gate A. Records how production saliency compares to the M_LC reference (the intentional broken-resize condition). Expected outcome: production does NOT satisfy positive-parity thresholds against M_LC. An unexpected M_LC pass is BLOCKING and produces INCONCLUSIVE_NEGATIVE_CONTROL.",
+      "demoted_from_p8_gate": "gate_a",
+      "reference_member": "m_lc_raw_saliency_neg_control",
+      "positive_acceptance_gate": false,
+      "verdict_role": "BLOCKING_NEGATIVE_CONTROL",
+      "unexpected_pass_alarm": {
+        "condition": "pearson >= pearson_min AND spearman >= spearman_min AND windowed_ssim >= ssim_min",
+        "conclusion_if_triggered": "STEP_2B_P9_CORRIGENDUM_INCONCLUSIVE_NEGATIVE_CONTROL",
+        "is_blocking": true,
+        "rationale": "If production matches M_LC thresholds, it would indicate the production model may be using modern (broken) resize semantics despite the LegacyBilinearUpSampling2D implementation. This contradicts the source-faithful claim and requires investigation."
+      },
+      "unevaluable_state_handling": {
+        "condition": "diag_1 result is anything other than a successfully evaluated, discriminative negative control (passed=true, reason=null, observed.alarm=false) or the specific unexpected_pass_alarm state above. Includes: constant-map abort, compute error, evaluator exception, invalid evaluator return, or a missing/malformed alarm field.",
+        "conclusion_if_triggered": "STEP_2B_P9_CORRIGENDUM_INCONCLUSIVE_NEGATIVE_CONTROL",
+        "is_blocking": true,
+        "negative_control_status": "UNEVALUABLE",
+        "rationale": "A negative control that cannot be evaluated to a discriminative result provides no evidence that production differs from the M_LC broken-resize condition. It must never be treated as equivalent to a discriminative pass and must never permit a PASS conclusion."
+      },
+      "metrics_recorded": [
+        "pearson",
+        "spearman",
+        "windowed_ssim",
+        "raw_max_abs_diff_float64",
+        "raw_mean_abs_diff_float64",
+        "prod_sha256",
+        "ref_sha256"
+      ]
+    },
+    "diag_2": {
+      "name": "classification_m_lc_proximity_diagnostic",
+      "corrigendum_note": "Demoted from P8 Gate C. Records numerical proximity of production classification to M_LC classification. No dtype check. No pass/fail verdict. Records cross-environment float32-to-float64 drift.",
+      "demoted_from_p8_gate": "gate_c",
+      "reference_member": "m_lc_classification_diag",
+      "records_only": true,
+      "comparison": "cast_both_to_float64",
+      "no_dtype_requirement": true,
+      "metrics_recorded": [
+        "max_abs_diff_float64",
+        "prod_dtype",
+        "ref_dtype",
+        "prod_sha256",
+        "ref_sha256"
+      ]
+    }
+  },
+  "frozen_thresholds": {
+    "pearson_min": 0.999,
+    "spearman_min": 0.99,
+    "ssim_min": 0.99,
+    "cli_abs_max": 0.01,
+    "repeatability_abs_max": 0.0,
+    "note": "All numeric thresholds are inherited unchanged from the P8 contract and the historical resize-causality pre-registration. No threshold was modified as a result of observing P8 outcomes."
+  },
+  "verdict_logic": {
+    "pass_condition": "identity_check_passes (current production source SHA matches p8_production_source_sha256 AND current UMSI weights SHA matches weights_sha256) AND diag_1_successfully_evaluated_and_discriminative (passed=true, reason=null, observed.alarm=false) AND gate_1_passes AND gate_2_passes",
+    "pass_conclusion": "STEP_2B_P9_CORRIGENDUM_PASS",
+    "fail_conclusion": "STEP_2B_P9_CORRIGENDUM_FAIL_{failed_acceptance_gate_names}",
+    "inconclusive_conclusion": "STEP_2B_P9_CORRIGENDUM_INCONCLUSIVE_NEGATIVE_CONTROL",
+    "invalid_conclusion": "STEP_2B_P9_CORRIGENDUM_INVALID_INTEGRITY",
+    "priority_order": "INVALID > INCONCLUSIVE > FAIL > PASS",
+    "identity_check_priority_note": "The production source SHA and weights SHA identity check is evaluated FIRST, before any gate or negative-control outcome. A mismatch on either always yields INVALID_INTEGRITY + BLOCKED, regardless of gate results. This makes a PASS + BLOCKED combination structurally impossible: norms release is only ever considered once the identity check has already passed, so PASS implies UNBLOCKED and UNBLOCKED implies PASS.",
+    "p8_to_p9_provenance_map": {
+      "gate_1": "preserves P8 Gate B acceptance semantics (production raw saliency vs legacy/source-faithful raw saliency reference)",
+      "diag_1": "reclassified P8 Gate A comparison (production raw saliency vs M_LC/broken-resize reference; demoted to blocking negative-control diagnostic)",
+      "gate_2": "preserves P8 Gate D acceptance semantics (production classification vs legacy classification reference)",
+      "diag_2": "reclassified P8 Gate C comparison (production classification vs M_LC classification reference; demoted to record-only diagnostic, no dtype requirement)"
+    },
+    "saliency_norms_release": {
+      "UNBLOCKED_if": "conclusion == STEP_2B_P9_CORRIGENDUM_PASS (which, by construction, already requires current production source SHA to match p8_production_source_sha256 AND current UMSI weights SHA to match weights_sha256)",
+      "BLOCKED_if": "conclusion is FAIL, INCONCLUSIVE, or INVALID. A source or weights SHA mismatch always yields INVALID (never a mismatched PASS)."
+    },
+    "norm_release_is_not_independent_validation": true,
+    "p10_conditions": "A future P10 run (with inference and intermediate activation capture) becomes necessary only if: (1) production source changes since 38b75036..., (2) weights change, (3) a new fixture is added, or (4) runtime code-path proof is required for an external audit."
+  },
+  "not_proven_items": {
+    "direct_runtime_activation_capture": {
+      "status": "NOT_PROVEN",
+      "thesis_sufficiency_assessment": "The combination of (1) pinned and verified production source SHA, (2) static code-path trace confirming LegacyBilinearUpSampling2D uses tf.raw_ops.ResizeBilinear(align_corners=False, half_pixel_centers=False), (3) near-perfect functional parity with the legacy reference (Gate 1 Pearson > 0.999, Spearman > 0.999, SSIM > 0.999), and (4) M_LC negative-control discrimination (Diag-1 expected Pearson ~0.976), is sufficient for thesis-level source-faithful validation without direct activation capture. P10 with activation capture would upgrade this from NOT_PROVEN to PROVEN but is not required to unblock saliency norm computation."
+    }
+  },
+  "mutation_policy": {
+    "no_inference": true,
+    "no_production_code_change": true,
+    "no_p8_bundle_modification": true,
+    "p8_conclusion_immutable": true,
+    "no_threshold_change": true
+  }
+}

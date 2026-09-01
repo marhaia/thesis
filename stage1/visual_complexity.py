@@ -46,6 +46,167 @@ from skimage import transform
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# Canonical analysis resolution
+# ───────────────────────────────────────────────────────────────────────────
+# Several of the eight visual features are computed with fixed pixel-scale
+# operators (Canny at a fixed sigma, fixed-scale Gaussian/steerable pyramids,
+# area-normalised element counting). On the raw screenshot these operators make
+# the feature values depend on the native pixel resolution: the SAME layout
+# rendered at 1x / 2x / 3x produces materially different feature vectors, which
+# in turn makes the downstream headline score resolution-dependent (see the
+# scale-invariance diagnosis).
+#
+# To standardise the analysis scale we compute the eight features on a
+# deterministic, aspect-ratio-preserving CANONICAL analysis resolution: every
+# screenshot is resized so that its LONG side equals CANONICAL_LONG_SIDE before
+# any feature is computed. This is a pure analysis-time normalisation. The
+# score-driving LAYOUT measurements (whitespace_ratio and OCR text_density) run
+# on the same canonical image (see stage1/canonical_layout.py); the SEPARATE
+# native path for the Jokinen search model, target selection, overlays and
+# native contrast diagnostics keeps the original image and its coordinate space.
+#
+# Chosen value: 1280 px long side. Evidence-based selection over the candidate
+# set {1024, 1280, 1440}. Two distinct samples are used, and must not be
+# conflated:
+#   * Corpus-wide native-resolution statistics were computed over the full
+#     1,485-image UEyes GUI corpus (median native long side = 1188 px). These
+#     describe the corpus only; they are NOT the candidate feature comparison.
+#     The interactive GUI population is desktop + mobile + web (495 each); the
+#     non-interactive `poster` category is permanently excluded.
+#   * The candidate feature comparison used the three synthetic layouts (for the
+#     scale-gap objective) and the six declared authorized UEyes SELECTION
+#     images (for the native->candidate perturbation tie-breaker). It did NOT
+#     run over all 1,485 images.
+# Reproducible results (stage1/canonical_eval/candidate_comparison.json):
+#   * Scale gap (primary objective, synthetic re-render, score-driving features
+#     feature_congestion / edge_density / interactive_element_density): worst-
+#     case relative 1x/2x/3x gap 1024 = 4.43 %, 1280 = 4.38 % (tied), 1440 =
+#     6.66 % (clearly worse).
+#   * Native->candidate perturbation on the six authorized selection images
+#     (tie-breaker, poster excluded): mean / worst relative feature change
+#     1024 = 9.57 % / 111.42 %, 1280 = 6.41 % / 76.92 %, 1440 = 10.33 % /
+#     73.62 %. 1280 has the lowest MEAN perturbation; 1440 has the lowest worst.
+# Rule: pick the smallest candidate that (a) is tied for the best score-driving-
+# feature scale gap and (b) perturbs real screenshots least on the mean. 1024
+# loses on (b); 1440 loses on (a) (its lower worst-case perturbation does not
+# rescue the primary objective); 1280 satisfies both. Hence 1280. This is an
+# exploratory, evidence-based engineering choice, not a pre-registered or
+# provably optimal value.
+CANONICAL_LONG_SIDE = 1280
+
+# Inputs whose long side is below this are considered too small to analyse
+# meaningfully (upscaling by a very large factor would fabricate detail). This
+# is well below the smallest legitimate GUI crop the pipeline handles.
+MIN_CANONICAL_INPUT_LONG_SIDE = 16
+
+# Both image dimensions must clear this minimum. Validating the SHORT side too
+# rejects degenerate strip inputs (e.g. an 8x1280 sliver) whose long side would
+# otherwise pass the long-side check while the aspect ratio is unusable for the
+# fixed-scale feature operators.
+MIN_CANONICAL_INPUT_SHORT_SIDE = 16
+
+# Version tag for the canonicalisation contract. It is embedded in the runtime
+# feature-cache key (see app.py) so results produced by an earlier extractor /
+# a different canonical resolution can never be silently reused after this
+# preprocessing change. Bump the schema prefix whenever the canonicalisation
+# behaviour or the input-validation contract changes.
+#
+# The resolution segment (``long<N>``) is NOT hard-coded: it is derived from the
+# actual long side a run uses, so a non-default resolution can never masquerade
+# as ``long1280`` in provenance / cache keys (see ``canonical_analysis_version``).
+CANONICAL_ANALYSIS_SCHEMA = "canonical-analysis-v1.1"
+CANONICAL_ANALYSIS_CONTRACT = "both-dims-min16:area-down/linear-up"
+
+
+def canonical_analysis_version(long_side: int = CANONICAL_LONG_SIDE) -> str:
+    """Build the canonical-analysis version tag for a given long side.
+
+    The resolution component is derived from ``long_side`` (the value a run
+    actually uses), so provenance and cache keys always reflect the real
+    analysis resolution instead of a hard-coded ``long1280``.
+
+    Args:
+        long_side: the canonical long side the run is configured with.
+
+    Returns:
+        e.g. ``"canonical-analysis-v1.1:long1280:both-dims-min16:area-down/linear-up"``
+        for the production default, or ``"...:long1024:..."`` for a 1024 run.
+    """
+    return (f"{CANONICAL_ANALYSIS_SCHEMA}:long{int(long_side)}:"
+            f"{CANONICAL_ANALYSIS_CONTRACT}")
+
+
+# Production default tag (long side == CANONICAL_LONG_SIDE). Consumed by the
+# runtime feature-cache key in app.py.
+CANONICAL_ANALYSIS_VERSION = canonical_analysis_version(CANONICAL_LONG_SIDE)
+
+
+class ImageTooSmallError(ValueError):
+    """Raised when an input image is too small to analyse at canonical scale.
+
+    This is an EXPECTED, client-correctable input condition (the caller uploaded
+    a degenerate / sub-minimum image), so the HTTP layer maps it to a documented
+    400 response rather than a generic 500. It subclasses ``ValueError`` for
+    backward compatibility with callers that catch ``ValueError``.
+    """
+
+
+def canonicalize_for_analysis(
+    image: np.ndarray,
+    long_side: int = CANONICAL_LONG_SIDE,
+) -> np.ndarray:
+    """Resize ``image`` to the canonical analysis resolution, preserving aspect.
+
+    The image is scaled so that ``max(height, width) == long_side``. Aspect
+    ratio is preserved (no stretching) and the image is never cropped. Both
+    smaller and larger inputs are normalised to the same long side so that the
+    same layout at different native resolutions yields the same analysis input.
+
+    Interpolation is chosen deterministically: ``INTER_AREA`` when downscaling
+    (best anti-aliasing / detail preservation for shrink) and ``INTER_LINEAR``
+    when upscaling (a deterministic, artefact-light choice for enlargement).
+
+    Args:
+        image: Decoded image array (H x W, or H x W x C). Grayscale and
+            multi-channel inputs are both accepted and returned with their
+            channel layout unchanged; downstream feature functions perform
+            their own colour-space conversions.
+        long_side: Target size of the longer image dimension.
+
+    Returns:
+        The canonicalised image. If the input is already exactly at the
+        canonical long side, a copy is returned unchanged (no resampling).
+
+    Raises:
+        TypeError: If the input is not a 2D/3D numpy array (programming error).
+        ImageTooSmallError: If either image dimension is zero or below the
+            configured minimum (an expected, client-correctable input problem).
+    """
+    if not isinstance(image, np.ndarray) or image.ndim not in (2, 3):
+        raise TypeError("canonicalize_for_analysis expects a 2D or 3D image array")
+    h, w = image.shape[:2]
+    long_dim = max(h, w)
+    short_dim = min(h, w)
+    # Validate BOTH dimensions, not only the long side, so degenerate strips are
+    # rejected rather than silently analysed.
+    if short_dim < MIN_CANONICAL_INPUT_SHORT_SIDE or \
+            long_dim < MIN_CANONICAL_INPUT_LONG_SIDE:
+        raise ImageTooSmallError(
+            f"Image too small to analyse: dimensions {w}x{h} "
+            f"(min short side {MIN_CANONICAL_INPUT_SHORT_SIDE}px, "
+            f"min long side {MIN_CANONICAL_INPUT_LONG_SIDE}px)"
+        )
+    if long_dim == long_side:
+        # Already canonical: do not resample (avoids needless interpolation).
+        return image.copy()
+    scale = long_side / float(long_dim)
+    new_w = max(1, int(round(w * scale)))
+    new_h = max(1, int(round(h * scale)))
+    interp = cv2.INTER_AREA if scale < 1.0 else cv2.INTER_LINEAR
+    return cv2.resize(image, (new_w, new_h), interpolation=interp)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # Shared Utility Functions
 # ─────────────────────────────────────────────────────────────────────────
 # These helper functions are ported 1:1 from the AIM repository:
@@ -1167,17 +1328,56 @@ FEATURE_KEYS = [
 ]
 
 
-def compute_complexity_vector(image_path: str) -> Dict[str, float]:
+def compute_complexity_vector(
+    image_path: str,
+    long_side: int = CANONICAL_LONG_SIDE,
+) -> Dict[str, float]:
     """
     Compute the Stage 1 visual complexity vector v in R^8 for one image.
     Returns a dictionary with all 8 feature values.
+
+    Args:
+        image_path: Path to the image on disk.
+        long_side: Canonical analysis long side actually used for
+            preprocessing. Defaults to ``CANONICAL_LONG_SIDE`` (1280), the
+            production value, so existing callers that omit the argument retain
+            exactly the current behaviour. A caller that configures a different
+            canonical resolution (e.g. the canonical visual-norm generator) must
+            pass its actual value here so the COMPUTATION and any provenance it
+            records refer to the same resolution.
+
+    Raises:
+        ValueError: If ``long_side`` is not a positive integer.
+        FileNotFoundError: If the image cannot be loaded.
     """
+    # Fail fast on an invalid configured resolution so a non-positive / bogus
+    # long side can never silently fall through to the default 1280 path.
+    if not isinstance(long_side, (int, np.integer)) or int(long_side) <= 0:
+        raise ValueError(
+            f"long_side must be a positive integer, got {long_side!r}")
+    long_side = int(long_side)
+
     image = cv2.imread(image_path)
     if image is None:
         raise FileNotFoundError(f"Cannot load image: {image_path}")
 
+    # Normalise to the canonical analysis resolution ONCE, before any feature is
+    # computed, so the eight features share a standardised analysis scale and
+    # their measured resolution sensitivity is reduced (see
+    # canonicalize_for_analysis / CANONICAL_LONG_SIDE). The original file on disk
+    # is unaffected: the SEPARATE native path (element detection for the Jokinen
+    # search model, bounding boxes, overlays, target selection) re-reads the
+    # original image. The score-driving layout measurements run on the canonical
+    # image via stage1/canonical_layout.py.
+    #
+    # The actual configured ``long_side`` is threaded through so the computation
+    # matches whatever resolution the caller declares in provenance.
+    native_h, native_w = image.shape[:2]
+    image = canonicalize_for_analysis(image, long_side=long_side)
+
     print(f"  Processing: {os.path.basename(image_path)} "
-          f"({image.shape[1]}x{image.shape[0]} px)")
+          f"({native_w}x{native_h} px native -> "
+          f"{image.shape[1]}x{image.shape[0]} px canonical)")
 
     results = {}
     print("    [1/8] Shannon Entropy...")

@@ -4,27 +4,29 @@
 saliency_features.py — Saliency-Derived Feature Extraction
 ============================================================
 Extracts quantitative features from a predicted saliency heatmap.
-These features serve as the Stage 1 → Stage 2 bridge, adding
-perceptually-grounded metrics to the v∈ℝ⁸ feature vector.
+These features form the s∈ℝ⁵ block of the authoritative, task-independent
+Stage-1 vector x = [v8 | s5 | h6] ∈ ℝ¹⁹.
 
 Features extracted (s∈ℝ⁵):
   1. saliency_dispersion    — spatial spread of attention (σ of hotspots)
-  2. saliency_peak_count    — number of distinct attention peaks
-  3. saliency_center_bias   — how much attention concentrates at center
-  4. saliency_entropy        — Shannon entropy of the saliency distribution
-  5. saliency_coverage       — fraction of image area receiving >50% max attention
+  2. saliency_entropy       — Shannon entropy of the saliency distribution
+  3. saliency_coverage      — fraction of image area receiving >50% max attention
+  4. saliency_peak_count    — number of distinct attention peaks
+  5. saliency_center_bias   — how much attention concentrates at center
 
-Together with the 8 visual complexity features from Stage 1, this yields
-the extended feature vector v∈ℝ¹³ that Stage 2 can use for predicting
-cognitive load and interactional complexity.
+The five values are numeric screenshot descriptors. They do not by themselves
+measure cognitive load or observed human attention.
 
 Mathematical Definitions
 ------------------------
 Let S(x,y) be the normalized saliency map, S∈[0,1].
 
-1. **Dispersion** (spatial σ):
-   $\\sigma_S = \\sqrt{\\text{Var}[x \\cdot S] + \\text{Var}[y \\cdot S]}$
-   where x,y are normalized pixel coordinates ∈[0,1].
+1. **Dispersion** (saliency-weighted spatial σ):
+   Let T = sum(S), mu_x = sum(x*S)/T, and mu_y = sum(y*S)/T.
+   For T > 0, variance_x = sum((x-mu_x)^2*S)/T and
+   variance_y = sum((y-mu_y)^2*S)/T. The returned value is
+   min(sqrt(variance_x + variance_y) / 0.707, 1), where x and y are
+   normalized pixel coordinates in [0,1]. For T = 0, dispersion is 0.
 
 2. **Peak count**:
    Number of local maxima in S after Gaussian blur (σ=5) with value ≥ 0.3·max(S).
@@ -55,6 +57,8 @@ import cv2
 import numpy as np
 from scipy import ndimage
 
+from saliency.postprocessing import normalize_saliency_map
+
 
 def extract_saliency_features(saliency_map: np.ndarray) -> Dict[str, float]:
     """Extract all saliency-derived features from a heatmap.
@@ -70,15 +74,10 @@ def extract_saliency_features(saliency_map: np.ndarray) -> Dict[str, float]:
           - saliency_entropy
           - saliency_coverage
     """
-    # Ensure 2D
-    if saliency_map.ndim == 3:
-        saliency_map = saliency_map[:, :, 0]
-
-    # Normalize to [0, 1]
-    smap = saliency_map.astype(np.float64)
-    vmax = smap.max()
-    if vmax > 0:
-        smap = smap / vmax
+    # Use the same explicit policy as the UMSI production postprocessor. This
+    # is intentionally idempotent for its already-normalized model output and
+    # prevents feature extraction from introducing a divergent normalization.
+    smap = normalize_saliency_map(saliency_map).astype(np.float64, copy=False)
 
     return {
         "saliency_dispersion": _compute_dispersion(smap),
@@ -135,13 +134,25 @@ def _compute_dispersion(smap: np.ndarray) -> float:
     return float(min(sigma / 0.707, 1.0))
 
 
+def _detect_peak_mask(smap: np.ndarray, sigma: float = 5.0,
+                      threshold_ratio: float = 0.3) -> np.ndarray:
+    """Return the exact significant-peak mask used by peak counting."""
+    smoothed = ndimage.gaussian_filter(smap, sigma=sigma)
+    vmax = smoothed.max()
+    if vmax == 0:
+        return np.zeros(smap.shape, dtype=bool)
+
+    local_max = ndimage.maximum_filter(smoothed, size=int(sigma * 4 + 1))
+    return (smoothed == local_max) & (smoothed >= threshold_ratio * vmax)
+
+
 def _compute_peak_count(smap: np.ndarray, sigma: float = 5.0,
                          threshold_ratio: float = 0.3) -> int:
     """Count distinct attention peaks in the saliency map.
 
-    Multiple peaks indicate competing salient regions, which increases
-    attentional switching cost and cognitive load
-    (Itti & Koch, 2001; Lavie, 2005).
+    Multiple peaks record competing regions in the model-estimated saliency
+    map. The count is an exploratory image descriptor and is not a direct
+    measurement of attentional switching or cognitive load.
 
     Steps:
       1. Gaussian blur (sigma=5 px) to suppress sub-pixel noise
@@ -156,18 +167,10 @@ def _compute_peak_count(smap: np.ndarray, sigma: float = 5.0,
 
     Returns integer count of significant peaks.
     """
-    # Smooth
-    smoothed = ndimage.gaussian_filter(smap, sigma=sigma)
-    vmax = smoothed.max()
-    if vmax == 0:
-        return 0
-
-    # Local maximum detection (dilation-based)
-    local_max = ndimage.maximum_filter(smoothed, size=int(sigma * 4 + 1))
-    peaks = (smoothed == local_max) & (smoothed >= threshold_ratio * vmax)
+    peaks = _detect_peak_mask(smap, sigma=sigma, threshold_ratio=threshold_ratio)
 
     # Label connected components
-    labeled, num_features = ndimage.label(peaks)
+    _, num_features = ndimage.label(peaks)
     return int(num_features)
 
 
@@ -178,8 +181,9 @@ def _compute_center_bias(smap: np.ndarray,
     Human gaze has a well-documented center bias: fixations are
     disproportionately concentrated in the central region of a display,
     independent of image content (Tatler, 2007; Tseng et al., 2009).
-    Low center-bias in a predicted saliency map may indicate strongly
-    peripheral salient content, which is harder to process.
+    Low center-bias in a model-estimated saliency map indicates that more of
+    the predicted saliency mass lies outside the central region. No direct
+    human-performance conclusion is inferred from this feature alone.
 
     Center region: inner sqrt(center_fraction) strip per axis,
     i.e., the central 50×50% area for center_fraction=0.25.

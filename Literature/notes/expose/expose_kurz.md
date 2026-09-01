@@ -1,5 +1,10 @@
 # Exposé (Kurzversion) — ~2 Seiten
 
+> **HISTORISCHER ARBEITSENTWURF (Juni 2026) — ÜBERHOLT.** Dieses Dokument
+> bleibt als Entwicklungsstand erhalten und ist keine aktuelle Methoden- oder
+> Claim-Grundlage. Domäne, Studie, ML-Pfad und finale Forschungsclaims sind
+> offen; siehe `Literature/notes/expose/README.md`.
+
 **Arbeitstitel:** Integrating Cognitive Predictive Metrics into the AIM Platform for Automated GUI Evaluation  
 **Verfasserin:** Hannah  
 **Studiengang:** User Experience Design  

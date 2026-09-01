@@ -3,21 +3,20 @@ UEyes Saliency Validation — UMSI++ vs Human Fixation Maps.
 
 Purpose
 -------
-Validate the Stage 1b saliency component of the pipeline by comparing
+Run an engineering comparison of the Stage 1b saliency component by comparing
 UMSI++ model predictions against human fixation density maps from the
-UEyes dataset (Jiang et al., CHI 2023).
+UEyes dataset (Jiang et al., CHI 2023). This same-domain sample comparison is
+not an independent benchmark or validation of downstream Stage-1 constructs.
 
 Metrics
 -------
-  NSS  — Normalised Scanpath Saliency (Peters et al., 2005):
-          NSS = mean of normalised saliency map at fixation locations.
-          NSS = 1.0 means fixations land exactly at the model's mean prediction.
-          NSS > 1.0 means model over-predicts; NSS < 1.0 under-predicts.
-          State-of-the-art models typically achieve NSS ≈ 1.5–3.0 on images.
+  NSS  — Normalised Scanpath Saliency (Peters et al., 2005) requires binary
+          fixation locations. The bundled inputs are blurred density maps, so
+          this script's NSS-like value is reported as non-interpretable.
 
   CC   — Pearson Linear Correlation Coefficient between predicted saliency
           map and fixation density map (Judd et al., 2012).
-          CC = 1.0 means perfect linear correspondence; CC ≈ 0.3–0.7 typical.
+          CC = 1.0 means perfect linear correspondence.
 
   SIM  — Similarity (histogram intersection, Swain & Ballard 1991):
           SIM ∈ [0,1]; measures overlap after normalising both maps to sum=1.
@@ -264,22 +263,18 @@ def print_results(rows: list[dict]) -> None:
     print(f"  NSS = {nss_vals.mean():.3f}  "
           f"(NOTE: NSS requires binary fixation maps; GT maps here are blurred\n"
           f"         density maps → NSS score is not interpretable in this context)")
-    print(f"  CC  = {cc_vals.mean():.3f}  (typical SOTA: 0.40–0.70 — our value: "
-          f"{'✓ ABOVE SOTA' if cc_vals.mean() > 0.70 else '✗ below SOTA'})")
-    print(f"  SIM = {sim_vals.mean():.3f}  (typical SOTA: 0.35–0.55 — our value: "
-          f"{'✓ ABOVE SOTA' if sim_vals.mean() > 0.55 else '✗ below SOTA'})")
-    print(f"  KL  = {kl_vals.mean():.3f}  (lower is better; < 0.5 considered good)")
+    print(f"  CC  = {cc_vals.mean():.3f}  (descriptive sample correlation)")
+    print(f"  SIM = {sim_vals.mean():.3f}  (descriptive sample overlap)")
+    print(f"  KL  = {kl_vals.mean():.3f}  (descriptive sample divergence; lower is better)")
 
-    print("\nBenchmark context (Bylinskii et al., 2018; Judd et al., 2012):")
+    print("\nMetric context (Bylinskii et al., 2018; Judd et al., 2012):")
     print("  CC and SIM are the primary valid metrics for continuous GT saliency maps.")
     print("  NSS requires binary fixation point maps (not available in this sample).")
     print("  Full validation with binary fixation maps requires the complete UEyes")
     print("  dataset (Zenodo:8010312) — use paths_1s/ or paths_3s/ scanpath files.")
-    _cc = cc_vals.mean()
-    _verdict = ("exceeds" if _cc > 0.70 else "is within" if _cc >= 0.40
-                else "is below") + " the typical published CC range (0.40–0.70)"
-    print(f"  CC = {_cc:.3f} indicates the spatial correspondence between UMSI++")
-    print(f"  predictions and human fixation density {_verdict}.")
+    print("  These values are an engineering comparison on the supplied sample only;")
+    print("  they do not establish benchmark superiority, domain transfer, or")
+    print("  validation of the downstream Stage-1 layout index.")
 
 
 def main() -> None:

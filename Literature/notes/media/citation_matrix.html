@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Citation Matrix — Tier 1 Papers</title>
+<meta name="robots" content="noindex,nofollow">
+<title>HISTORICAL / SUPERSEDED — Citation Matrix</title>
 <style>
   :root {
     --bg: #0f1117;
@@ -28,6 +29,32 @@
     min-height: 100vh;
     padding: 32px 24px;
   }
+
+  /* ── Historical-artifact guard ───────────────────────────── */
+  .artifact-status {
+    max-width: 1180px;
+    margin: 0 auto 32px;
+    padding: 20px 22px;
+    border: 3px solid var(--orange);
+    border-radius: 10px;
+    background: rgba(255, 170, 94, 0.13);
+    box-shadow: 0 0 0 4px rgba(255, 170, 94, 0.08);
+  }
+  .artifact-status h1 {
+    color: var(--orange);
+    font-size: 1.25rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .artifact-status p {
+    margin-top: 10px;
+    max-width: 1000px;
+    color: var(--text);
+    font-size: 0.92rem;
+    line-height: 1.6;
+  }
+  .artifact-status strong { color: var(--yellow); }
+  .artifact-status a { color: var(--accent); }
 
   /* ── Header ─────────────────────────────────────────────── */
   header { margin-bottom: 32px; }
@@ -159,7 +186,32 @@
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 </style>
 </head>
-<body>
+<body data-artifact-status="historical-superseded">
+
+<aside class="artifact-status" id="artifactStatus" role="alert" aria-labelledby="artifactStatusTitle">
+  <h1 id="artifactStatusTitle">Historical / Superseded Research Note</h1>
+  <p>
+    This tracked citation matrix is a <strong>historical working artifact</strong>.
+    It is not the current Stage-1 methodology, validation evidence, claim basis,
+    production specification, or thesis conclusion. Statements below described
+    as “ready-to-use,” including Cognitive Load Index, UEyes validation, HCEye
+    calibration, automotive-domain, and post-study ML wording, are retained only
+    as a record of earlier planning and <strong>must not be cited as current claims</strong>.
+  </p>
+  <p>
+    <strong>Current bounded position:</strong> Stage 1 produces an exploratory,
+    project-specific layout-complexity index; it is not a validated cognitive-load
+    measurement. UMSI++ output is relative within-image normalized model activation,
+    not observed gaze or calibrated fixation probability. HCEye-derived values are
+    unitless screenshot proxies, not source-study effect estimates or independent
+    validation of the index.
+  </p>
+  <p>
+    Current authority: <a href="../../../README.md">repository README</a> and
+    <a href="../../../stage1/DOCUMENTATION.md">Stage-1 documentation</a>.
+    Any future citation matrix must be created as a new, separately reviewed artifact.
+  </p>
+</aside>
 
 <header>
   <h1>Citation Matrix — Tier 1 Papers</h1>

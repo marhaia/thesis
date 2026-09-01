@@ -1,0 +1,298 @@
+{
+  "contract_name": "umsi_five_fixture_gate_contract",
+  "contract_version": "p10_five_fixture_formalization",
+  "phase": "STAGE_1_STEP_2C_FIVE_FIXTURE_REPRODUCIBILITY_FORMALIZATION",
+  "created_before_current_execution": true,
+  "no_inference_performed_before_freeze": true,
+  "contract_scope": "Forward-looking, formalized five-fixture reproducibility contract for the real-weight UMSI++ parity gate. This contract does NOT alter, replace, or supersede the frozen single-fixture P8 contract or the P9 corrigendum; it only extends their already-frozen thresholds and gate logic (gate_b / gate_d evaluation functions, reused unmodified) to the four additional fixtures that were previously only present as historical reference arrays without an executable per-fixture harness binding.",
+  "predecessor_contracts": [
+    {
+      "name": "umsi_raw_output_gate_contract",
+      "version": "p8",
+      "sha256": "4a786d8d82570cef4787a9f8d350376a753cbf66e200ee94529225b9607c7542"
+    },
+    {
+      "name": "umsi_raw_output_gate_contract_p9_corrigendum",
+      "version": "p9_corrigendum",
+      "sha256": "fd9105e6e88bb85578c06a20026f98f8e886dd4f0f90ccc3699f1e90ece80b58"
+    }
+  ],
+  "identified_reproducibility_gap": {
+    "description": "The existing single-fixture harnesses (stage1/tools/umsi_step2b_gate_runner.py and stage1/tools/umsi_step2b_p9_corrigendum_reeval.py) read the fixture hash via the Python-source-hardcoded contract key name pinned_identities.fixture_sha256_lowcontrast (umsi_step2b_gate_runner.py line 1138; umsi_step2b_p9_corrigendum_reeval.py line 290). stage1/tools/umsi_boundary_input_probe.py additionally hardcodes the literal NPZ member names 'legacy_raw/lowcontrast_preproc' and 'modern_raw/legctrl_lowcontrast_input' directly in array indexing (lines 252-253), not read from any contract-driven mapping. None of the three existing tools can be re-pointed at ui1/ui2/ui3/uniform without either a source-code change to those exact lines, or a new contract file that (mis)reuses the same 'fixture_sha256_lowcontrast' key name for a different fixture's hash. This contract and its companion harness close that gap by defining a genuinely fixture-name-parameterized mapping and a harness that reads it generically.",
+    "reference_arrays_already_exist_for_all_five": true,
+    "executable_harness_existed_for": ["lowcontrast"],
+    "executable_harness_missing_for": ["ui1", "ui2", "ui3", "uniform"]
+  },
+  "fixtures": {
+    "lowcontrast": {
+      "filename": "lowcontrast.png",
+      "sha256": "4a467bdd72d41b9fd490573468db171a254e7cbf4aa8727ac8fb86bef05a3562"
+    },
+    "ui1": {
+      "filename": "ui1.png",
+      "sha256": "b0741b0660e3cede9a8f11db92c3973e4336e4c8c859315ba69c8677963ece3b"
+    },
+    "ui2": {
+      "filename": "ui2.png",
+      "sha256": "1e693f150402276b819aaa133c17ef5e9540e66789518a47856b17892d7266a6"
+    },
+    "ui3": {
+      "filename": "ui3.png",
+      "sha256": "38c4348cbf93da4e95f07d5e2bf7b7a315eec57b9841a8dfc174b8a3bab6cab0"
+    },
+    "uniform": {
+      "filename": "uniform.png",
+      "sha256": "2987ab872f4a798686ce3f975c7a8a3ad41bbf619fae113678b5afc53a634db6"
+    }
+  },
+  "fixture_root_note": "Fixture root directory is supplied at runtime via the harness --fixtures-root CLI argument; this contract stores only filenames, never an absolute user-specific path.",
+  "reference_members": {
+    "lowcontrast": {
+      "legacy_model_input": "legacy_raw/lowcontrast_preproc",
+      "legacy_raw_saliency": "legacy_raw/lowcontrast_raw",
+      "legacy_classification": "legacy_raw/lowcontrast_classif",
+      "legacy_e2e_saliency": "legacy_raw/lowcontrast_e2e"
+    },
+    "ui1": {
+      "legacy_model_input": "legacy_raw/ui1_preproc",
+      "legacy_raw_saliency": "legacy_raw/ui1_raw",
+      "legacy_classification": "legacy_raw/ui1_classif",
+      "legacy_e2e_saliency": "legacy_raw/ui1_e2e"
+    },
+    "ui2": {
+      "legacy_model_input": "legacy_raw/ui2_preproc",
+      "legacy_raw_saliency": "legacy_raw/ui2_raw",
+      "legacy_classification": "legacy_raw/ui2_classif",
+      "legacy_e2e_saliency": "legacy_raw/ui2_e2e"
+    },
+    "ui3": {
+      "legacy_model_input": "legacy_raw/ui3_preproc",
+      "legacy_raw_saliency": "legacy_raw/ui3_raw",
+      "legacy_classification": "legacy_raw/ui3_classif",
+      "legacy_e2e_saliency": "legacy_raw/ui3_e2e"
+    },
+    "uniform": {
+      "legacy_model_input": "legacy_raw/uniform_preproc",
+      "legacy_raw_saliency": "legacy_raw/uniform_raw",
+      "legacy_classification": "legacy_raw/uniform_classif",
+      "legacy_e2e_saliency": "legacy_raw/uniform_e2e"
+    }
+  },
+  "reference_members_note": "Verified present in the pinned evidence NPZ for all five fixtures (shapes: *_preproc=(1,256,256,3), *_raw=(512,512), *_classif=(6,), *_e2e=fixture-dependent) as of contract freeze; see evidence_npz_sha256 below for the exact frozen array file these keys must resolve against. Four reference layers are bound per fixture: legacy_model_input, legacy_raw_saliency, legacy_classification, legacy_e2e_saliency.",
+  "expected_reference_shapes": {
+    "legacy_model_input": {
+      "shape": [1, 256, 256, 3],
+      "dtype": "float32",
+      "note": "Matches model_boundaries.input_tensor_shape exactly; this is the real production model-input boundary captured directly at self.model.predict, not a separately recomputed preprocessing tensor."
+    },
+    "legacy_raw_saliency": {
+      "shape": [512, 512],
+      "dtype": "float32"
+    },
+    "legacy_classification": {
+      "shape": [6],
+      "dtype": "float64",
+      "note": "6 == len(saliency/umsi_model.py:UMSIPlus.DESIGN_CLASSES); not independently re-derived here, only pinned as the expected shape for fail-closed schema checks. No semantic class label is asserted anywhere in this contract or the harness."
+    },
+    "legacy_e2e_saliency": {
+      "dtype": "float32",
+      "per_fixture_shape": {
+        "lowcontrast": [800, 1280],
+        "ui1": [800, 1280],
+        "ui2": [768, 1024],
+        "ui3": [600, 800],
+        "uniform": [800, 1280]
+      },
+      "note": "Final predict_saliency() return value at original image resolution; shape varies per fixture because each source image has a different native resolution. No resize is applied between the actual production e2e output and this reference before comparison."
+    }
+  },
+  "evidence_npz_filename": "umsi_resize_causality_arrays_6a17288_consolidated.npz",
+  "evidence_npz_sha256": "9e933c1071924f180c32cc6327363ca5760b5968d497414a9f7939919b630079",
+  "evidence_npz_root_note": "Evidence NPZ absolute path is supplied at runtime via the harness --evidence-npz CLI argument; this contract stores only the expected basename and SHA-256, never an absolute user-specific path.",
+  "weights_filename": "umsi++.hdf5",
+  "weights_sha256": "f4290c3f11f18befbb47de50d81e4555ec8e7a63066c71c343a32fe32799e9fe",
+  "weights_size_bytes": 120093896,
+  "weights_root_note": "Weights absolute path is supplied at runtime via the harness --weights CLI argument; this contract stores only the expected basename, size and SHA-256, never an absolute user-specific path.",
+  "model_boundaries": {
+    "input_tensor_shape": [1, 256, 256, 3],
+    "raw_decoder_output_shape": [512, 512, 1],
+    "raw_reference_conversion_note": "The raw decoder output is (512, 512, 1) per sample; converting it to the (512, 512) reference shape used for comparison consists exclusively of removing the singleton channel dimension (squeeze). No resize, no additional normalization, and no other adjustment is applied before the raw-vs-legacy-raw comparison itself (normalization for the correlation/SSIM metrics happens only as the gate's own documented shared postprocess step, after the shape-equality check)."
+  },
+  "gate_definitions": {
+    "gate_0_model_input_identity": {
+      "name": "production_model_input_vs_legacy_model_input",
+      "description": "The actual tensor passed to self.model.predict (captured at the real model boundary, not a separately recomputed preprocessing tensor) must be exactly identical to the legacy reference preprocessing tensor.",
+      "reused_evaluator": "stage1/tools/umsi_five_fixture_gate_harness.py:evaluate_gate_0_model_input_identity (new comparison-only logic; reuses stage1/tools/umsi_step2b_gate_runner.py:sha256_array unmodified; no preprocessing/model/saliency computation is duplicated)",
+      "requirements": {
+        "same_shape": true,
+        "same_dtype": true,
+        "array_equal": true,
+        "sha256_equal": true,
+        "note": "No numerical tolerance of any kind. Any bitwise difference is a FAILED result, not a threshold comparison."
+      }
+    },
+    "gate_1_saliency": {
+      "name": "production_raw_saliency_vs_legacy_raw_saliency",
+      "reused_evaluator": "stage1/tools/umsi_step2b_gate_runner.py:evaluate_gate_b (unmodified; identical logic to the frozen P9 corrigendum gate_1)",
+      "authoritative_shared_postprocess": {
+        "order": ["squeeze", "identical_resize", "identical_min_max_to_0_1"],
+        "constant_map_policy_ref": "reused unmodified from stage1/tools/umsi_step2b_gate_runner.py:_apply_constant_map_policy"
+      },
+      "requirements": {
+        "pearson": {"operator": ">=", "value": 0.999},
+        "spearman": {"operator": ">=", "value": 0.99},
+        "windowed_ssim": {
+          "operator": ">=",
+          "value": 0.99,
+          "params": {
+            "K1": 0.01,
+            "K2": 0.03,
+            "boundary": "reflect",
+            "data_range": 1.0,
+            "filter": "scipy.ndimage.uniform_filter",
+            "win_size": 7
+          }
+        }
+      }
+    },
+    "gate_2_classification": {
+      "name": "production_classification_vs_legacy_classification",
+      "reused_evaluator": "stage1/tools/umsi_step2b_gate_runner.py:evaluate_gate_d (unmodified; identical logic and identical unmodified numerical bound to the frozen P9 corrigendum gate_2)",
+      "requirements": {
+        "same_shape": true,
+        "finite_values": true,
+        "max_abs_diff_float64": {
+          "operator": "<=",
+          "value": 0.01
+        }
+      },
+      "no_semantic_class_labels_used": true
+    },
+    "gate_3_e2e_saliency": {
+      "name": "production_e2e_saliency_vs_legacy_e2e_saliency",
+      "description": "The actual final return value of predict_saliency() (original-image-resolution heatmap) compared against the legacy e2e reference, using the same frozen saliency thresholds as gate_1.",
+      "reused_evaluator": "stage1/tools/umsi_step2b_gate_runner.py:evaluate_gate_b (unmodified; same function reused for both raw and e2e saliency comparison)",
+      "requirements": {
+        "shape_must_match_exactly_before_compare": true,
+        "no_resize_between_actual_and_reference": true,
+        "pearson": {"operator": ">=", "value": 0.999},
+        "spearman": {"operator": ">=", "value": 0.99},
+        "windowed_ssim": {
+          "operator": ">=",
+          "value": 0.99,
+          "params": {
+            "K1": 0.01,
+            "K2": 0.03,
+            "boundary": "reflect",
+            "data_range": 1.0,
+            "filter": "scipy.ndimage.uniform_filter",
+            "win_size": 7
+          }
+        }
+      }
+    },
+    "determinism_repeat": {
+      "name": "per_fixture_determinism_repeat",
+      "description": "Two independent, full inference calls (capturing all four layers each) on the same fixture must produce byte-identical model input, raw saliency, classification, and e2e saliency arrays. Shape and dtype must also remain identical between both repeats.",
+      "requirements": {
+        "layers_checked": [
+          "legacy_model_input",
+          "legacy_raw_saliency",
+          "legacy_classification",
+          "legacy_e2e_saliency"
+        ],
+        "shape_must_match_between_repeats": true,
+        "dtype_must_match_between_repeats": true,
+        "max_abs_diff_float64": {
+          "operator": "==",
+          "value": 0.0,
+          "bound_to_threshold": "repeatability_abs_max"
+        }
+      }
+    }
+  },
+  "frozen_thresholds": {
+    "pearson_min": 0.999,
+    "spearman_min": 0.99,
+    "ssim_min": 0.99,
+    "repeatability_abs_max": 0.0,
+    "note": "All four thresholds are reused unchanged from the frozen P8 contract / P9 corrigendum historical_reused_authority.frozen_thresholds. No threshold was newly defined, relaxed, or tightened by this contract. Gate 0 (model input identity) uses no threshold at all (exact array_equal/sha256 match); pearson_min/spearman_min/ssim_min are shared unchanged by both gate_1 (raw) and gate_3 (e2e); repeatability_abs_max is shared unchanged by all four determinism_repeat layers."
+  },
+  "expected_repository_head": "878e3e9fcfac7828913d67cf32c70920c80d3e1c",
+  "provenance_statement": {
+    "source_under_test_commit": "878e3e9fcfac7828913d67cf32c70920c80d3e1c",
+    "source_under_test_commit_note": "This is the exact commit under test. Ancestry (an older commit being an ancestor of this one) is never accepted as a substitute for exact HEAD equality.",
+    "candidate_files_status": "The candidate contract (this file), the candidate harness (stage1/tools/umsi_five_fixture_gate_harness.py), and its targeted test file (tests/test_umsi_five_fixture_gate_harness.py) are external, untracked freeze artifacts created strictly after the above commit. None of these three files is claimed to exist in the Git tree at expected_repository_head or at any prior commit."
+  },
+  "production_source_identity": {
+    "path": "saliency/umsi_model.py",
+    "sha256": "38b7503626a0ec3c176d05aaed0ad6c9461085a7f771f96d3f9a62a0884ab554",
+    "requirement": "Before the production model is imported, the worktree file at this path, the git blob for this path at expected_repository_head, and this pinned sha256 value must all be identical (worktree bytes == blob-at-HEAD bytes == this sha256)."
+  },
+  "reused_legacy_runner_identity": {
+    "path": "stage1/tools/umsi_step2b_gate_runner.py",
+    "sha256": "df356064b4d20f5ba652f16348cd3ef295c66528b2539afafd8309a8f77302fa",
+    "requirement": "Before this module is imported, the worktree file at this path must equal the git blob for this path at expected_repository_head, and both must equal this pinned sha256 value."
+  },
+  "candidate_harness_identity": {
+    "path": "stage1/tools/umsi_five_fixture_gate_harness.py",
+    "sha256": "e1d50e9debfbda47029adf0c5040cf799fa09a82f3aa3f3da4bdb154e761b0c7",
+    "requirement": "This harness file must not embed this sha256 value anywhere in its own Python source. The expected value is supplied independently through the required --expected-harness-sha CLI argument and must also match this contract field before any production import."
+  },
+  "allowed_untracked_paths": [
+    "stage1/evidence/umsi_five_fixture_gate_contract.json",
+    "stage1/tools/umsi_five_fixture_gate_harness.py",
+    "tests/test_umsi_five_fixture_gate_harness.py"
+  ],
+  "allowed_untracked_paths_note": "Real execution requires git status --porcelain to show no staged changes, no tracked worktree modifications, no renamed/copied/conflicted/malformed entries, and no untracked paths other than exactly these three.",
+  "runtime_identity": {
+    "python_implementation": "CPython",
+    "python_version": "3.9.6",
+    "python_executable": "/Users/Q682780/Thesis_G/venv/bin/python",
+    "package_versions": {
+      "numpy": "1.26.4",
+      "tensorflow": "2.16.2",
+      "keras": "3.10.0",
+      "opencv-python-headless": "4.10.0.84",
+      "scipy": "1.13.1"
+    },
+    "verification_method_note": "Verified at real-execution time via importlib.metadata.version() and platform.python_implementation()/python_version()/sys.executable only. TensorFlow/Keras are never imported merely to check a version. No automatic package-name fallback: a pinned package that cannot be found is a hard BLOCKED failure."
+  },
+  "execution": {
+    "run_directory_name": "five_fixture_run_20260806T140454Z_878e3e9f",
+    "run_directory_name_prefix_requirement": "five_fixture_run_",
+    "launcher": {
+      "mode": "module",
+      "python_executable": "/Users/Q682780/Thesis_G/venv/bin/python",
+      "interpreter_flags": ["-B"],
+      "module": "stage1.tools.umsi_five_fixture_gate_harness",
+      "working_directory": "/Users/Q682780/Thesis_G_layout",
+      "required_environment": {"PYTHONDONTWRITEBYTECODE": "1"},
+      "pythonpath_required_state": "unset",
+      "action": "execute_frozen_experiment",
+      "contract_path": "/Users/Q682780/Thesis_G_layout/stage1/evidence/umsi_five_fixture_gate_contract.json",
+      "output_root": "/Users/Q682780/Thesis_G_layout/stage1/evidence",
+      "weights_path": "/Users/Q682780/Thesis_G/saliency/weights/model_weights/saliency_models/UMSI++/umsi++.hdf5",
+      "evidence_npz_path": "/Users/Q682780/Thesis_G/golden_evidence/umsi_resize_causality_arrays_6a17288_consolidated.npz",
+      "fixtures_root": "/Users/Q682780/Thesis_G_umsi_golden/golden/fixtures"
+    },
+    "predecessor_incident": {
+      "consumed_run_directory_name": "five_fixture_run_20260806T120245Z_878e3e9f",
+      "failure_classification": "infrastructure_bootstrap_import_path_failure_before_production_model_import",
+      "execution_attempted": true,
+      "identity_permanently_consumed": true,
+      "run_directory_created": false,
+      "production_model_imported": false,
+      "weights_loaded": false,
+      "inference_executed": false,
+      "scientific_verdict_reached": false
+    }
+  },
+  "mutation_policy": {
+    "no_inference_at_freeze_time": true,
+    "no_npz_load_at_freeze_time": true,
+    "frozen_before_output_observation": true,
+    "does_not_modify_predecessor_contracts": true,
+    "does_not_modify_historical_evidence_bundles": true
+  }
+}

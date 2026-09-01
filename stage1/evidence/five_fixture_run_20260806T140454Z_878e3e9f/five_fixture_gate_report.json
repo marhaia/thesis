@@ -1,0 +1,929 @@
+{
+  "fixture_order": [
+    "lowcontrast",
+    "ui1",
+    "ui2",
+    "ui3",
+    "uniform"
+  ],
+  "frozen_thresholds": {
+    "note": "All four thresholds are reused unchanged from the frozen P8 contract / P9 corrigendum historical_reused_authority.frozen_thresholds. No threshold was newly defined, relaxed, or tightened by this contract. Gate 0 (model input identity) uses no threshold at all (exact array_equal/sha256 match); pearson_min/spearman_min/ssim_min are shared unchanged by both gate_1 (raw) and gate_3 (e2e); repeatability_abs_max is shared unchanged by all four determinism_repeat layers.",
+    "pearson_min": 0.999,
+    "repeatability_abs_max": 0.0,
+    "spearman_min": 0.99,
+    "ssim_min": 0.99
+  },
+  "overall_verdict": "PASS",
+  "per_fixture": {
+    "lowcontrast": {
+      "determinism_repeat": {
+        "observed": {
+          "fixture": "lowcontrast",
+          "legacy_classification_dtype_a": "float32",
+          "legacy_classification_dtype_b": "float32",
+          "legacy_classification_max_abs_diff_float64": 0.0,
+          "legacy_classification_shape_a": [
+            6
+          ],
+          "legacy_classification_shape_b": [
+            6
+          ],
+          "legacy_e2e_saliency_dtype_a": "float32",
+          "legacy_e2e_saliency_dtype_b": "float32",
+          "legacy_e2e_saliency_max_abs_diff_float64": 0.0,
+          "legacy_e2e_saliency_shape_a": [
+            800,
+            1280
+          ],
+          "legacy_e2e_saliency_shape_b": [
+            800,
+            1280
+          ],
+          "legacy_model_input_dtype_a": "float32",
+          "legacy_model_input_dtype_b": "float32",
+          "legacy_model_input_max_abs_diff_float64": 0.0,
+          "legacy_model_input_shape_a": [
+            1,
+            256,
+            256,
+            3
+          ],
+          "legacy_model_input_shape_b": [
+            1,
+            256,
+            256,
+            3
+          ],
+          "legacy_raw_saliency_dtype_a": "float32",
+          "legacy_raw_saliency_dtype_b": "float32",
+          "legacy_raw_saliency_max_abs_diff_float64": 0.0,
+          "legacy_raw_saliency_shape_a": [
+            512,
+            512,
+            1
+          ],
+          "legacy_raw_saliency_shape_b": [
+            512,
+            512,
+            1
+          ],
+          "repeatability_abs_max_threshold": 0.0
+        },
+        "passed": true,
+        "reason": null
+      },
+      "fixture": "lowcontrast",
+      "gate_0_model_input_identity": {
+        "observed": {
+          "array_equal": true,
+          "prod_dtype": "float32",
+          "prod_sha256": "6486898bc81a5666f407f0a277138ffe19358b82be942dfe0bf8c99546e3d393",
+          "prod_shape": [
+            1,
+            256,
+            256,
+            3
+          ],
+          "ref_dtype": "float32",
+          "ref_sha256": "6486898bc81a5666f407f0a277138ffe19358b82be942dfe0bf8c99546e3d393",
+          "ref_shape": [
+            1,
+            256,
+            256,
+            3
+          ]
+        },
+        "passed": true,
+        "reason": null
+      },
+      "gate_1_saliency": {
+        "observed": {
+          "pearson": 0.9999999999919089,
+          "prod_constant_map": false,
+          "prod_sha256_raw": "1dbf1fc0b20e1d3cccfd9080f6992abeeaaf0ac70cb1a2f41c7d4c739269a13a",
+          "prod_shape_before_postprocess": [
+            512,
+            512
+          ],
+          "raw_max_abs_diff_float64": 0.421875,
+          "ref_constant_map": false,
+          "ref_sha256_raw": "b9730f2e120d9e37ea7299656bbef64728eb4dac4fcd743e62b87bdb8d56af04",
+          "ref_shape_before_postprocess": [
+            512,
+            512
+          ],
+          "spearman": 0.9999999998882573,
+          "windowed_ssim": 0.9999999999595537
+        },
+        "passed": true,
+        "reason": null
+      },
+      "gate_2_classification": {
+        "observed": {
+          "cli_abs_max": 0.01,
+          "max_abs_diff_float64": 1.9371509552001953e-07,
+          "prod_dtype": "float32",
+          "prod_shape": [
+            6
+          ],
+          "ref_dtype": "float64",
+          "ref_shape": [
+            6
+          ],
+          "threshold_label": "cli_abs_max \u2014 Step 2B classification-output tolerance; NOT a Stage-2 score or downstream threshold"
+        },
+        "passed": true,
+        "reason": null
+      },
+      "gate_3_e2e_saliency": {
+        "observed": {
+          "pearson": 0.9999999999921654,
+          "prod_constant_map": false,
+          "prod_sha256_raw": "68371f71a38d991a8ac6341cb72c15720dac22847655768fad8290af816d914f",
+          "prod_shape_before_postprocess": [
+            800,
+            1280
+          ],
+          "raw_max_abs_diff_float64": 254.0,
+          "ref_constant_map": false,
+          "ref_sha256_raw": "2602290fb787396bec2c40104056422b0339e65942031ed8168c0df6b3168368",
+          "ref_shape_before_postprocess": [
+            800,
+            1280
+          ],
+          "spearman": 0.9999999999729572,
+          "windowed_ssim": 0.9999999999806234
+        },
+        "passed": true,
+        "reason": null
+      },
+      "preflight": {
+        "fixture_sha256": "4a467bdd72d41b9fd490573468db171a254e7cbf4aa8727ac8fb86bef05a3562",
+        "layers": {
+          "legacy_classification": {
+            "ref_dtype": "float64",
+            "ref_key": "legacy_raw/lowcontrast_classif",
+            "ref_shape": [
+              6
+            ]
+          },
+          "legacy_e2e_saliency": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/lowcontrast_e2e",
+            "ref_shape": [
+              800,
+              1280
+            ]
+          },
+          "legacy_model_input": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/lowcontrast_preproc",
+            "ref_shape": [
+              1,
+              256,
+              256,
+              3
+            ]
+          },
+          "legacy_raw_saliency": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/lowcontrast_raw",
+            "ref_shape": [
+              512,
+              512
+            ]
+          }
+        }
+      },
+      "status": "PASS"
+    },
+    "ui1": {
+      "determinism_repeat": {
+        "observed": {
+          "fixture": "ui1",
+          "legacy_classification_dtype_a": "float32",
+          "legacy_classification_dtype_b": "float32",
+          "legacy_classification_max_abs_diff_float64": 0.0,
+          "legacy_classification_shape_a": [
+            6
+          ],
+          "legacy_classification_shape_b": [
+            6
+          ],
+          "legacy_e2e_saliency_dtype_a": "float32",
+          "legacy_e2e_saliency_dtype_b": "float32",
+          "legacy_e2e_saliency_max_abs_diff_float64": 0.0,
+          "legacy_e2e_saliency_shape_a": [
+            800,
+            1280
+          ],
+          "legacy_e2e_saliency_shape_b": [
+            800,
+            1280
+          ],
+          "legacy_model_input_dtype_a": "float32",
+          "legacy_model_input_dtype_b": "float32",
+          "legacy_model_input_max_abs_diff_float64": 0.0,
+          "legacy_model_input_shape_a": [
+            1,
+            256,
+            256,
+            3
+          ],
+          "legacy_model_input_shape_b": [
+            1,
+            256,
+            256,
+            3
+          ],
+          "legacy_raw_saliency_dtype_a": "float32",
+          "legacy_raw_saliency_dtype_b": "float32",
+          "legacy_raw_saliency_max_abs_diff_float64": 0.0,
+          "legacy_raw_saliency_shape_a": [
+            512,
+            512,
+            1
+          ],
+          "legacy_raw_saliency_shape_b": [
+            512,
+            512,
+            1
+          ],
+          "repeatability_abs_max_threshold": 0.0
+        },
+        "passed": true,
+        "reason": null
+      },
+      "fixture": "ui1",
+      "gate_0_model_input_identity": {
+        "observed": {
+          "array_equal": true,
+          "prod_dtype": "float32",
+          "prod_sha256": "97abf3939e057b919260bbf29c125d8fc9a12b69aa929f373a67b9713c307fda",
+          "prod_shape": [
+            1,
+            256,
+            256,
+            3
+          ],
+          "ref_dtype": "float32",
+          "ref_sha256": "97abf3939e057b919260bbf29c125d8fc9a12b69aa929f373a67b9713c307fda",
+          "ref_shape": [
+            1,
+            256,
+            256,
+            3
+          ]
+        },
+        "passed": true,
+        "reason": null
+      },
+      "gate_1_saliency": {
+        "observed": {
+          "pearson": 0.9999999999947264,
+          "prod_constant_map": false,
+          "prod_sha256_raw": "8e9b54e73f2c13740bc07be72595b02e23e9f21960dfa53d21b13073da6c75da",
+          "prod_shape_before_postprocess": [
+            512,
+            512
+          ],
+          "raw_max_abs_diff_float64": 2.65625,
+          "ref_constant_map": false,
+          "ref_sha256_raw": "c259b2997da44380984719c6f978eb0b49883d66b0308955a67b8fb8da0ba30a",
+          "ref_shape_before_postprocess": [
+            512,
+            512
+          ],
+          "spearman": 0.9999999999261253,
+          "windowed_ssim": 0.9999999999840723
+        },
+        "passed": true,
+        "reason": null
+      },
+      "gate_2_classification": {
+        "observed": {
+          "cli_abs_max": 0.01,
+          "max_abs_diff_float64": 1.4901161193847656e-07,
+          "prod_dtype": "float32",
+          "prod_shape": [
+            6
+          ],
+          "ref_dtype": "float64",
+          "ref_shape": [
+            6
+          ],
+          "threshold_label": "cli_abs_max \u2014 Step 2B classification-output tolerance; NOT a Stage-2 score or downstream threshold"
+        },
+        "passed": true,
+        "reason": null
+      },
+      "gate_3_e2e_saliency": {
+        "observed": {
+          "pearson": 0.9999999999944529,
+          "prod_constant_map": false,
+          "prod_sha256_raw": "d68145d7806773c7f27de54dd0548246f318ebffee0270cbfdf6f62fa3b2ba20",
+          "prod_shape_before_postprocess": [
+            800,
+            1280
+          ],
+          "raw_max_abs_diff_float64": 254.0,
+          "ref_constant_map": false,
+          "ref_sha256_raw": "21359f2666f17c129934c242e7652e30e9d476afbef4f66aa3316f6c151a2948",
+          "ref_shape_before_postprocess": [
+            800,
+            1280
+          ],
+          "spearman": 0.9999999999764927,
+          "windowed_ssim": 0.9999999999771936
+        },
+        "passed": true,
+        "reason": null
+      },
+      "preflight": {
+        "fixture_sha256": "b0741b0660e3cede9a8f11db92c3973e4336e4c8c859315ba69c8677963ece3b",
+        "layers": {
+          "legacy_classification": {
+            "ref_dtype": "float64",
+            "ref_key": "legacy_raw/ui1_classif",
+            "ref_shape": [
+              6
+            ]
+          },
+          "legacy_e2e_saliency": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/ui1_e2e",
+            "ref_shape": [
+              800,
+              1280
+            ]
+          },
+          "legacy_model_input": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/ui1_preproc",
+            "ref_shape": [
+              1,
+              256,
+              256,
+              3
+            ]
+          },
+          "legacy_raw_saliency": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/ui1_raw",
+            "ref_shape": [
+              512,
+              512
+            ]
+          }
+        }
+      },
+      "status": "PASS"
+    },
+    "ui2": {
+      "determinism_repeat": {
+        "observed": {
+          "fixture": "ui2",
+          "legacy_classification_dtype_a": "float32",
+          "legacy_classification_dtype_b": "float32",
+          "legacy_classification_max_abs_diff_float64": 0.0,
+          "legacy_classification_shape_a": [
+            6
+          ],
+          "legacy_classification_shape_b": [
+            6
+          ],
+          "legacy_e2e_saliency_dtype_a": "float32",
+          "legacy_e2e_saliency_dtype_b": "float32",
+          "legacy_e2e_saliency_max_abs_diff_float64": 0.0,
+          "legacy_e2e_saliency_shape_a": [
+            768,
+            1024
+          ],
+          "legacy_e2e_saliency_shape_b": [
+            768,
+            1024
+          ],
+          "legacy_model_input_dtype_a": "float32",
+          "legacy_model_input_dtype_b": "float32",
+          "legacy_model_input_max_abs_diff_float64": 0.0,
+          "legacy_model_input_shape_a": [
+            1,
+            256,
+            256,
+            3
+          ],
+          "legacy_model_input_shape_b": [
+            1,
+            256,
+            256,
+            3
+          ],
+          "legacy_raw_saliency_dtype_a": "float32",
+          "legacy_raw_saliency_dtype_b": "float32",
+          "legacy_raw_saliency_max_abs_diff_float64": 0.0,
+          "legacy_raw_saliency_shape_a": [
+            512,
+            512,
+            1
+          ],
+          "legacy_raw_saliency_shape_b": [
+            512,
+            512,
+            1
+          ],
+          "repeatability_abs_max_threshold": 0.0
+        },
+        "passed": true,
+        "reason": null
+      },
+      "fixture": "ui2",
+      "gate_0_model_input_identity": {
+        "observed": {
+          "array_equal": true,
+          "prod_dtype": "float32",
+          "prod_sha256": "a703328c72947aa8094bd2a92788deb5da8be1be39b4a6147fc89c9d7d6a94dd",
+          "prod_shape": [
+            1,
+            256,
+            256,
+            3
+          ],
+          "ref_dtype": "float32",
+          "ref_sha256": "a703328c72947aa8094bd2a92788deb5da8be1be39b4a6147fc89c9d7d6a94dd",
+          "ref_shape": [
+            1,
+            256,
+            256,
+            3
+          ]
+        },
+        "passed": true,
+        "reason": null
+      },
+      "gate_1_saliency": {
+        "observed": {
+          "pearson": 0.9999999999946436,
+          "prod_constant_map": false,
+          "prod_sha256_raw": "c15568bcfc8e33aa46f2b7a377eab58e743fd6d2a20042809b40ba143efbea0c",
+          "prod_shape_before_postprocess": [
+            512,
+            512
+          ],
+          "raw_max_abs_diff_float64": 1.6640625,
+          "ref_constant_map": false,
+          "ref_sha256_raw": "1f28a9cb9ba6023a8f1193ef402cc0b571e25230dab14f1df1db3e620ee270d8",
+          "ref_shape_before_postprocess": [
+            512,
+            512
+          ],
+          "spearman": 0.9999999999253811,
+          "windowed_ssim": 0.9999999999669403
+        },
+        "passed": true,
+        "reason": null
+      },
+      "gate_2_classification": {
+        "observed": {
+          "cli_abs_max": 0.01,
+          "max_abs_diff_float64": 2.0116567611694336e-07,
+          "prod_dtype": "float32",
+          "prod_shape": [
+            6
+          ],
+          "ref_dtype": "float64",
+          "ref_shape": [
+            6
+          ],
+          "threshold_label": "cli_abs_max \u2014 Step 2B classification-output tolerance; NOT a Stage-2 score or downstream threshold"
+        },
+        "passed": true,
+        "reason": null
+      },
+      "gate_3_e2e_saliency": {
+        "observed": {
+          "pearson": 0.9999999999948842,
+          "prod_constant_map": false,
+          "prod_sha256_raw": "ea131bd574c0e80e0b8bce50908204bd3e30ac952393fabf80357ab0ab6fa52a",
+          "prod_shape_before_postprocess": [
+            768,
+            1024
+          ],
+          "raw_max_abs_diff_float64": 254.0,
+          "ref_constant_map": false,
+          "ref_sha256_raw": "9388398954506347fc941fd08ddb3ca5b9c56fb6c32ea26d97b6a769b949daf9",
+          "ref_shape_before_postprocess": [
+            768,
+            1024
+          ],
+          "spearman": 0.9999999999696713,
+          "windowed_ssim": 0.9999999999724515
+        },
+        "passed": true,
+        "reason": null
+      },
+      "preflight": {
+        "fixture_sha256": "1e693f150402276b819aaa133c17ef5e9540e66789518a47856b17892d7266a6",
+        "layers": {
+          "legacy_classification": {
+            "ref_dtype": "float64",
+            "ref_key": "legacy_raw/ui2_classif",
+            "ref_shape": [
+              6
+            ]
+          },
+          "legacy_e2e_saliency": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/ui2_e2e",
+            "ref_shape": [
+              768,
+              1024
+            ]
+          },
+          "legacy_model_input": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/ui2_preproc",
+            "ref_shape": [
+              1,
+              256,
+              256,
+              3
+            ]
+          },
+          "legacy_raw_saliency": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/ui2_raw",
+            "ref_shape": [
+              512,
+              512
+            ]
+          }
+        }
+      },
+      "status": "PASS"
+    },
+    "ui3": {
+      "determinism_repeat": {
+        "observed": {
+          "fixture": "ui3",
+          "legacy_classification_dtype_a": "float32",
+          "legacy_classification_dtype_b": "float32",
+          "legacy_classification_max_abs_diff_float64": 0.0,
+          "legacy_classification_shape_a": [
+            6
+          ],
+          "legacy_classification_shape_b": [
+            6
+          ],
+          "legacy_e2e_saliency_dtype_a": "float32",
+          "legacy_e2e_saliency_dtype_b": "float32",
+          "legacy_e2e_saliency_max_abs_diff_float64": 0.0,
+          "legacy_e2e_saliency_shape_a": [
+            600,
+            800
+          ],
+          "legacy_e2e_saliency_shape_b": [
+            600,
+            800
+          ],
+          "legacy_model_input_dtype_a": "float32",
+          "legacy_model_input_dtype_b": "float32",
+          "legacy_model_input_max_abs_diff_float64": 0.0,
+          "legacy_model_input_shape_a": [
+            1,
+            256,
+            256,
+            3
+          ],
+          "legacy_model_input_shape_b": [
+            1,
+            256,
+            256,
+            3
+          ],
+          "legacy_raw_saliency_dtype_a": "float32",
+          "legacy_raw_saliency_dtype_b": "float32",
+          "legacy_raw_saliency_max_abs_diff_float64": 0.0,
+          "legacy_raw_saliency_shape_a": [
+            512,
+            512,
+            1
+          ],
+          "legacy_raw_saliency_shape_b": [
+            512,
+            512,
+            1
+          ],
+          "repeatability_abs_max_threshold": 0.0
+        },
+        "passed": true,
+        "reason": null
+      },
+      "fixture": "ui3",
+      "gate_0_model_input_identity": {
+        "observed": {
+          "array_equal": true,
+          "prod_dtype": "float32",
+          "prod_sha256": "40893d34b8348aec7cef8db8646c8abd45193289644173feea94e1a2b7bc050a",
+          "prod_shape": [
+            1,
+            256,
+            256,
+            3
+          ],
+          "ref_dtype": "float32",
+          "ref_sha256": "40893d34b8348aec7cef8db8646c8abd45193289644173feea94e1a2b7bc050a",
+          "ref_shape": [
+            1,
+            256,
+            256,
+            3
+          ]
+        },
+        "passed": true,
+        "reason": null
+      },
+      "gate_1_saliency": {
+        "observed": {
+          "pearson": 0.9999999999940954,
+          "prod_constant_map": false,
+          "prod_sha256_raw": "2023b5a438eac5a5b7940fe6418c0fd357952d4de69b57f680f83a8a79e4c067",
+          "prod_shape_before_postprocess": [
+            512,
+            512
+          ],
+          "raw_max_abs_diff_float64": 1.640625,
+          "ref_constant_map": false,
+          "ref_sha256_raw": "d23f42fce01b5b08bb917518f83f3298b28b3ea398f038b8fe221b0a5f3ad73b",
+          "ref_shape_before_postprocess": [
+            512,
+            512
+          ],
+          "spearman": 0.999999999915109,
+          "windowed_ssim": 0.9999999999632558
+        },
+        "passed": true,
+        "reason": null
+      },
+      "gate_2_classification": {
+        "observed": {
+          "cli_abs_max": 0.01,
+          "max_abs_diff_float64": 2.086162567138672e-07,
+          "prod_dtype": "float32",
+          "prod_shape": [
+            6
+          ],
+          "ref_dtype": "float64",
+          "ref_shape": [
+            6
+          ],
+          "threshold_label": "cli_abs_max \u2014 Step 2B classification-output tolerance; NOT a Stage-2 score or downstream threshold"
+        },
+        "passed": true,
+        "reason": null
+      },
+      "gate_3_e2e_saliency": {
+        "observed": {
+          "pearson": 0.9999999999942718,
+          "prod_constant_map": false,
+          "prod_sha256_raw": "5168e261bac104e051fbb2b117edb2ab8d5510fb4ae976bd520a54490a2705dd",
+          "prod_shape_before_postprocess": [
+            600,
+            800
+          ],
+          "raw_max_abs_diff_float64": 254.0,
+          "ref_constant_map": false,
+          "ref_sha256_raw": "9fa9c0421bfda9ade2ff34b801b8b941d184fc376ab2e8c27ee8a738781e1c21",
+          "ref_shape_before_postprocess": [
+            600,
+            800
+          ],
+          "spearman": 0.9999999999550246,
+          "windowed_ssim": 0.9999999999665548
+        },
+        "passed": true,
+        "reason": null
+      },
+      "preflight": {
+        "fixture_sha256": "38c4348cbf93da4e95f07d5e2bf7b7a315eec57b9841a8dfc174b8a3bab6cab0",
+        "layers": {
+          "legacy_classification": {
+            "ref_dtype": "float64",
+            "ref_key": "legacy_raw/ui3_classif",
+            "ref_shape": [
+              6
+            ]
+          },
+          "legacy_e2e_saliency": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/ui3_e2e",
+            "ref_shape": [
+              600,
+              800
+            ]
+          },
+          "legacy_model_input": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/ui3_preproc",
+            "ref_shape": [
+              1,
+              256,
+              256,
+              3
+            ]
+          },
+          "legacy_raw_saliency": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/ui3_raw",
+            "ref_shape": [
+              512,
+              512
+            ]
+          }
+        }
+      },
+      "status": "PASS"
+    },
+    "uniform": {
+      "determinism_repeat": {
+        "observed": {
+          "fixture": "uniform",
+          "legacy_classification_dtype_a": "float32",
+          "legacy_classification_dtype_b": "float32",
+          "legacy_classification_max_abs_diff_float64": 0.0,
+          "legacy_classification_shape_a": [
+            6
+          ],
+          "legacy_classification_shape_b": [
+            6
+          ],
+          "legacy_e2e_saliency_dtype_a": "float32",
+          "legacy_e2e_saliency_dtype_b": "float32",
+          "legacy_e2e_saliency_max_abs_diff_float64": 0.0,
+          "legacy_e2e_saliency_shape_a": [
+            800,
+            1280
+          ],
+          "legacy_e2e_saliency_shape_b": [
+            800,
+            1280
+          ],
+          "legacy_model_input_dtype_a": "float32",
+          "legacy_model_input_dtype_b": "float32",
+          "legacy_model_input_max_abs_diff_float64": 0.0,
+          "legacy_model_input_shape_a": [
+            1,
+            256,
+            256,
+            3
+          ],
+          "legacy_model_input_shape_b": [
+            1,
+            256,
+            256,
+            3
+          ],
+          "legacy_raw_saliency_dtype_a": "float32",
+          "legacy_raw_saliency_dtype_b": "float32",
+          "legacy_raw_saliency_max_abs_diff_float64": 0.0,
+          "legacy_raw_saliency_shape_a": [
+            512,
+            512,
+            1
+          ],
+          "legacy_raw_saliency_shape_b": [
+            512,
+            512,
+            1
+          ],
+          "repeatability_abs_max_threshold": 0.0
+        },
+        "passed": true,
+        "reason": null
+      },
+      "fixture": "uniform",
+      "gate_0_model_input_identity": {
+        "observed": {
+          "array_equal": true,
+          "prod_dtype": "float32",
+          "prod_sha256": "37a0da52791ae28ee4fcf87fee148d2afbd3ac993b021d157394d605732ee4e6",
+          "prod_shape": [
+            1,
+            256,
+            256,
+            3
+          ],
+          "ref_dtype": "float32",
+          "ref_sha256": "37a0da52791ae28ee4fcf87fee148d2afbd3ac993b021d157394d605732ee4e6",
+          "ref_shape": [
+            1,
+            256,
+            256,
+            3
+          ]
+        },
+        "passed": true,
+        "reason": null
+      },
+      "gate_1_saliency": {
+        "observed": {
+          "pearson": 0.9999999999942366,
+          "prod_constant_map": false,
+          "prod_sha256_raw": "10486fcf005512a4354795fe7a1c1575efab073fca5dbae01f300795da80856b",
+          "prod_shape_before_postprocess": [
+            512,
+            512
+          ],
+          "raw_max_abs_diff_float64": 0.2109375,
+          "ref_constant_map": false,
+          "ref_sha256_raw": "deb626e5263a75fec248960bc7332e712a12fc2a67e2f3c7986359a756385ce2",
+          "ref_shape_before_postprocess": [
+            512,
+            512
+          ],
+          "spearman": 0.9999999998967262,
+          "windowed_ssim": 0.999999999940072
+        },
+        "passed": true,
+        "reason": null
+      },
+      "gate_2_classification": {
+        "observed": {
+          "cli_abs_max": 0.01,
+          "max_abs_diff_float64": 5.960464477539063e-08,
+          "prod_dtype": "float32",
+          "prod_shape": [
+            6
+          ],
+          "ref_dtype": "float64",
+          "ref_shape": [
+            6
+          ],
+          "threshold_label": "cli_abs_max \u2014 Step 2B classification-output tolerance; NOT a Stage-2 score or downstream threshold"
+        },
+        "passed": true,
+        "reason": null
+      },
+      "gate_3_e2e_saliency": {
+        "observed": {
+          "pearson": 0.9999999999951219,
+          "prod_constant_map": false,
+          "prod_sha256_raw": "063ba43f134c6fdf9c027fc03fef92fc3d6df58d232d670af3e9e15053ceef04",
+          "prod_shape_before_postprocess": [
+            800,
+            1280
+          ],
+          "raw_max_abs_diff_float64": 254.0,
+          "ref_constant_map": false,
+          "ref_sha256_raw": "b75ff2bf57352486daba83d15d0bee119d132f77d9fc74f7096161f8648e613d",
+          "ref_shape_before_postprocess": [
+            800,
+            1280
+          ],
+          "spearman": 0.9999999999737661,
+          "windowed_ssim": 0.9999999999738347
+        },
+        "passed": true,
+        "reason": null
+      },
+      "preflight": {
+        "fixture_sha256": "2987ab872f4a798686ce3f975c7a8a3ad41bbf619fae113678b5afc53a634db6",
+        "layers": {
+          "legacy_classification": {
+            "ref_dtype": "float64",
+            "ref_key": "legacy_raw/uniform_classif",
+            "ref_shape": [
+              6
+            ]
+          },
+          "legacy_e2e_saliency": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/uniform_e2e",
+            "ref_shape": [
+              800,
+              1280
+            ]
+          },
+          "legacy_model_input": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/uniform_preproc",
+            "ref_shape": [
+              1,
+              256,
+              256,
+              3
+            ]
+          },
+          "legacy_raw_saliency": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/uniform_raw",
+            "ref_shape": [
+              512,
+              512
+            ]
+          }
+        }
+      },
+      "status": "PASS"
+    }
+  }
+}

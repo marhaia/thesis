@@ -2,9 +2,14 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - "fix/**"
+      - "stage2/**"
+      - "release/**"
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   test:
@@ -25,7 +30,19 @@ jobs:
           pip install -r requirements-ci.txt
 
       - name: Run pytest
-        run: python -m pytest tests/test_smoke.py -q
+        env:
+          # This smoke job intentionally omits the frozen heavy production
+          # stack. Responses expose this bypass as not_verified; the production
+          # default remains strict full-lock verification.
+          STAGE1_RUNTIME_VERIFICATION: metadata_only
+        # The CI-light-safe collection is pinned once in pytest.ini (smoke +
+        # canonical-scale + canonical visual-norm generator + production
+        # saliency postprocessing + claim/cleanup contracts).
+        # These are NOT the entire repository test suite:
+        # cognitive/test_jokinen.py, tests/test_pipeline.py and
+        # saliency/test_full_pipeline.py exist too but need the heavy ML stack
+        # and are not run in this lightweight job.
+        run: python -m pytest -q
 
   deps-check:
     name: Full requirements resolve (dry run)

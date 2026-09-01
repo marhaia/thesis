@@ -1,7 +1,12 @@
-# Leseplan — Priorisierung nach RQ & Projektplan
+# HISTORICAL / SUPERSEDED — Leseplan nach ehemaligem Projektplan
+
+> **Historischer Arbeitsplan, nicht aktuelle Architektur- oder Claim-Grundlage.**
+> Die nachfolgende Pipeline war ein verworfener Planungsstand. Aktuell gelten
+> `README.md` und `stage1/DOCUMENTATION.md`; Stage 2 ist nicht akzeptiert oder
+> validiert.
 
 **RQ:** Does the integration of cognitive predictive metrics into the AIM platform improve the computational evaluation of GUIs?  
-**Pipeline:** Stage 1 (Visual Complexity Vector) → Stage 2 (Saliency + Fixation + Cognitive Load Index)
+**Historisch geplante Pipeline:** Stage 1 (Visual Complexity Vector) → Stage 2 (Saliency + Fixation + Cognitive Load Index)
 
 ---
 

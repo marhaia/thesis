@@ -1,4 +1,10 @@
-"""Optional Big Five profile presets for the pipeline concept.
+"""ARCHIVED LEGACY RESEARCH SCAFFOLD — excluded from Stage 2 v1.
+
+The active v1 contract has no personality input or personality-derived effect.
+This module is retained only for provenance of the superseded experiment.
+Production routes and the standard UI must not import or expose it.
+
+Optional Big Five profile presets for the earlier pipeline concept.
 
 The dropdown uses coarse presets rather than questionnaire-grade scores.
 This keeps the feature optional and avoids overclaiming psychometric validity.

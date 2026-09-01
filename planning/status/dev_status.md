@@ -1,4 +1,10 @@
 # Development Status — Two-Stage GUI Complexity Pipeline
+> **HISTORICAL SUPERVISOR SNAPSHOT (03.06.2026) — SUPERSEDED.** The architecture,
+> Cognitive Load terminology, validation claims, test coverage, and next steps
+> below predate the Stage-1 audit fixes. They are retained as project history
+> and must not be cited as the current implementation or evidence status. See
+> the repository README and `stage1/DOCUMENTATION.md` for the current contract.
+
 **Thesis:** *Two-Stage Multi-Output Pipeline: Computational Estimation of Interactional Complexity from GUI Screenshots*  
 **Stand:** 03.06.2026 · Version 3.0  
 **Für:** Supervisor-Meeting

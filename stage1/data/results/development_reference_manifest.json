@@ -1,0 +1,114 @@
+{
+  "schema_version": "ueyes-development-reference-v1",
+  "claim_boundary": "These are corpus-relative development references, not universal GUI norms or human cognitive-load measurements. The selected Test images are held-out UEyes candidates, not an external dataset.",
+  "official_split_csv_sha256": "fc22d679849862c0f0476b1d9c270a50383c62304c7635b87cb18a2559a25c68",
+  "reference_partition": "Train",
+  "evaluation_partition": "Test",
+  "reference_category_counts": {
+    "desktop": 468,
+    "mobile": 468,
+    "web": 468
+  },
+  "reference_total": 1404,
+  "evaluation_category_counts": {
+    "desktop": 27,
+    "mobile": 27,
+    "web": 27
+  },
+  "evaluation_total": 81,
+  "excluded_categories": [
+    "poster"
+  ],
+  "development_population_sha256": "4c90612e1d228d8ea8d0e2d6ad1dccb6db8a67ff9180569545e11584071b1801",
+  "heldout_test_population_sha256": "1d98dd2072f99e2bfbdcc5baa46517d5d1bb80fdd113956b30139dc86607f6a8",
+  "standard_deviation": {
+    "convention": "sample standard deviation",
+    "ddof": 1
+  },
+  "stored_quantiles": {
+    "implementation": "numpy.percentile",
+    "numpy_version": "1.26.4",
+    "method": "linear",
+    "probabilities_percent": [
+      5,
+      25,
+      50,
+      75,
+      95
+    ]
+  },
+  "selection": {
+    "schema_version": "ueyes-heldout-study-candidates-v1",
+    "seed": "ueyes-heldout-study-v1",
+    "policy": "SHA-256 rank within category and official Test block",
+    "block_quotas": {
+      "desktop": {
+        "53": 6,
+        "54": 7,
+        "55": 7
+      },
+      "mobile": {
+        "53": 7,
+        "54": 6,
+        "55": 7
+      },
+      "web": {
+        "53": 7,
+        "54": 7,
+        "55": 6
+      }
+    },
+    "selected_category_counts": {
+      "desktop": 20,
+      "mobile": 20,
+      "web": 20
+    },
+    "reserve_category_counts": {
+      "desktop": 7,
+      "mobile": 7,
+      "web": 7
+    },
+    "manual_eligibility_review": "pending"
+  },
+  "inputs": {
+    "official_split_csv": {
+      "sha256": "fc22d679849862c0f0476b1d9c270a50383c62304c7635b87cb18a2559a25c68",
+      "bytes": 54336
+    },
+    "visual_rows_csv": {
+      "sha256": "b9769935527a58cf7c9e158a6d3ed0bcd33edaa37aa3dcc40b3ed273c453804a",
+      "bytes": 568127
+    },
+    "saliency_rows_csv": {
+      "sha256": "1f576987fa080bbc7c34062ce1dde86c41c16eaa1fd17be9e00adac4e6a01638",
+      "bytes": 503338
+    },
+    "current_feature_norms": {
+      "sha256": "d17b3698c2e4b0016a091955e374203f3d6f2eb258c5de6a47a3dc0b6ba9736f",
+      "bytes": 8243
+    }
+  },
+  "outputs": {
+    "canonical_visual_feature_norms.json": {
+      "sha256": "39973bf1904891fae233b04daa138439c2f67194dddb9b970b40beb487fd88cb",
+      "bytes": 4432
+    },
+    "development_saliency_feature_norms.json": {
+      "sha256": "45e11883895b9351efd1a136a8610039533e14b07cfea15dfe54eceb43291374",
+      "bytes": 3125
+    },
+    "feature_norms.json": {
+      "sha256": "4aa326d920cbf936b57da2356dffff7a885d859ed1e8a1422377e0a7a98ed116",
+      "bytes": 7311
+    },
+    "ueyes_stimulus_selection_v1.csv": {
+      "sha256": "153d7ee010b70c5ff733ff88eb5d15d27c4142da5ab6da2ef8e3ea92af393514",
+      "bytes": 18379
+    },
+    "development_reference_norm_drift.json": {
+      "sha256": "8c896a207991e4ca55409d940346b760eabbce6796f767d15ee3f8ae3a030a1b",
+      "bytes": 22501
+    }
+  },
+  "manifest_payload_sha256": "c9b5b6e7951df9aca9823403c838b2876cf42d49f1f51a4ad210c045e299fba2"
+}

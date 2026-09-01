@@ -1,31 +1,37 @@
 """
-Stage 2 — Multi-Output Regression Model
-=========================================
-Predicts cognitive load indices from the combined feature vector produced
-by Stage 1. Uses classical ML (Ridge Regression, Random Forest, XGBoost)
-on pre-extracted feature vectors — no CNN/ViT.
+ARCHIVED LEGACY RESEARCH SCAFFOLD — excluded from Stage 2 v1
+========================================================
+The active Stage-2 v1 route has no ML input, model selection, prediction, or
+training path. This file is retained only to document the rejected circular
+prototype and must not be used as evidence or imported by production routes.
+
+Explores proxy-output regression from the combined feature vector produced by
+Stage 1. Uses classical ML (Ridge Regression, Random Forest, XGBoost) on
+pre-extracted feature vectors — no CNN/ViT. No trained or validated Stage-2
+model ships with the project.
 
 Input: Feature vector x ∈ ℝ¹⁹ (or ℝ¹⁴ without saliency)
     - v ∈ ℝ⁸: Visual complexity features
     - s ∈ ℝ⁵: Saliency features (optional)
-    - h ∈ ℝ⁶: HCEye cognitive load sensitivity features
+    - h ∈ ℝ⁶: project-specific HCEye-derived proxy features
 
-Output: y ∈ ℝ³ (multi-output)
-    - cognitive_load_score: Overall cognitive load index (0-100)
-    - search_efficiency: Expected visual search efficiency (0-1)
-    - attention_demand: Attentional demand level (0-1)
+Legacy scaffold output schema: y ∈ ℝ³ (multi-output)
+    - cognitive_load_score: circular layout-proxy target (0-100)
+    - search_efficiency: simulated search-efficiency proxy (0-1)
+    - attention_demand: simulated attention-demand proxy (0-1)
 
-Training Data:
-    Uses HCEye empirical data (150 webpages × 27 participants × 3 load conditions)
-    as ground truth for how cognitive load affects gaze behavior.
+Training-data scaffold:
+    Derives circular simulated targets from HCEye aggregate observations
+    (150 webpages × 27 participants × 3 load conditions). These targets are
+    not screenshot-level ground truth.
 
     NOTE: the current `build_training_data` helper is a SCAFFOLD only. Its (X, y)
     pairs are circular (the targets leak from the h block that is part of x) and
     its v/s features are fabricated from gaze statistics rather than extracted
     from images. See the warning in that function: no R^2/SHAP result from it may
     be reported as evidence. The trained path is off by default and no model file
-    is shipped; the deployed cognitive-load score comes from the HCEye rule block
-    (h[5]), not from this regressor.
+    is shipped; the standard Stage-1 UI value is the uncalibrated layout-
+    complexity heuristic in h[5], not an output of this regressor.
 
 Architecture Decision:
     Classical regression per pipeline_guide.md §4.2 (adapted from neural multi-head).
@@ -101,9 +107,11 @@ class Stage2Model:
     ]
     
     OUTPUT_NAMES = [
-        'cognitive_load_score',   # 0-100 composite score
-        'search_efficiency',      # 0-1 (how easy to find elements)
-        'attention_demand',       # 0-1 (how much attentional resource needed)
+        # Legacy internal schema names retained for scaffold compatibility;
+        # every value is an experimental/circular proxy, not ground truth.
+        'cognitive_load_score',   # 0-100 circular layout-proxy target
+        'search_efficiency',      # 0-1 simulated search-efficiency proxy
+        'attention_demand',       # 0-1 simulated attention-demand proxy
     ]
     
     def __init__(self, model_type: str = 'ridge', model_path: Optional[str] = None):
@@ -335,11 +343,11 @@ class Stage2Model:
 def build_training_data(hceye_csv_path: str, 
                         sensitivity_lookup_path: str) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Build training data from HCEye empirical measurements.
+    Build circular scaffold data from HCEye aggregate measurements.
 
     Creates (X, y) pairs where:
         X = simulated feature vectors based on HCEye image properties
-        y = ground-truth cognitive load effects from the study
+        y = circular/simulated proxy targets derived from the same inputs
 
     Returns:
         X: (n_samples, 19) feature matrix
@@ -446,9 +454,9 @@ def build_training_data(hceye_csv_path: str,
         # Full feature vector
         x = np.concatenate([v, s, h])
         
-        # Target: derive from empirical cognitive load effects
-        # y1: cognitive_load_score (0-100)
-        # Based on how much behavior degrades under load
+        # Circular scaffold targets derived from the same h block in x.
+        # y1 uses the legacy cognitive_load_score key for compatibility, but
+        # is only an unvalidated layout-proxy target (0-100).
         cog_score = sens['cognitive_load_index'] * 100.0
         
         # y2: search_efficiency (0-1) - how easy to find targets

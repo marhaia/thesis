@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "scope": "P5_AG-08_HCEye_source_coefficient_provenance",
+  "claim_boundary": "This matrix reproduces source-study aggregate coefficients only. It does not validate the project-specific screenshot-to-proxy mapping, weights, or combined layout index.",
+  "source": {
+    "dataset": "HCEye",
+    "artifact_filename": "fixation_AOI_metrics_final.csv",
+    "dataset_record_url": "https://osf.io/x8p9b/",
+    "paper_doi_url": "https://doi.org/10.1145/3655610",
+    "sha256": "e6251a354afd97cabce1253e5c345ae8d90c25acc8ee5062b4ffa11249003fee",
+    "bytes": 12475528,
+    "repository_policy": "external_hash_pinned_source_not_committed"
+  },
+  "dataset_identity": {
+    "rows": 4049,
+    "participants": 27,
+    "images": 150,
+    "cognitive_load_conditions": [
+      "Absent",
+      "High",
+      "Low"
+    ],
+    "highlight_conditions": [
+      "Absent",
+      "Dynamic",
+      "Static"
+    ]
+  },
+  "aggregation_policies": {
+    "per_image_condition_ratio": "Average the metric by Image_Name and CognitiveLoad across highlight conditions; divide High by Absent per image; report the arithmetic mean or sample standard deviation (ddof=1) over 150 images.",
+    "global_row_condition_ratio": "Compute the unweighted arithmetic mean over source rows for each CognitiveLoad condition across all highlight conditions; divide High by Absent.",
+    "aoi_condition_rate": "Compute the unweighted arithmetic mean of binary AOI_Hit source rows for each CognitiveLoad and Highlight condition.",
+    "baseline_image_distribution": "Filter CognitiveLoad=Absent and Highlight=Absent; average the metric per Image_Name; report the arithmetic mean or sample standard deviation (ddof=1) over 150 images."
+  },
+  "coefficients": {
+    "fixation_reduction_mean": {
+      "source_value": 0.8759216731138344,
+      "stored_value": 0.876,
+      "round_digits": 3,
+      "aggregation": "per_image_condition_ratio_mean",
+      "used_in_production": true
+    },
+    "fixation_reduction_std": {
+      "source_value": 0.10650095199855746,
+      "stored_value": 0.107,
+      "round_digits": 3,
+      "aggregation": "per_image_condition_ratio_sample_std",
+      "used_in_production": false
+    },
+    "duration_increase_mean": {
+      "source_value": 1.0806271660660645,
+      "stored_value": 1.081,
+      "round_digits": 3,
+      "aggregation": "per_image_condition_ratio_mean",
+      "used_in_production": true
+    },
+    "duration_increase_std": {
+      "source_value": 0.25157446098816033,
+      "stored_value": 0.252,
+      "round_digits": 3,
+      "aggregation": "per_image_condition_ratio_sample_std",
+      "used_in_production": false
+    },
+    "frequency_reduction_mean": {
+      "source_value": 0.9349931407163928,
+      "stored_value": 0.935,
+      "round_digits": 3,
+      "aggregation": "global_row_condition_ratio",
+      "used_in_production": true
+    },
+    "aoi_hit_absent_no_hl": {
+      "source_value": 0.11486486486486487,
+      "stored_value": 0.115,
+      "round_digits": 3,
+      "aggregation": "aoi_condition_rate:Absent:Absent",
+      "used_in_production": true
+    },
+    "aoi_hit_high_no_hl": {
+      "source_value": 0.06873614190687362,
+      "stored_value": 0.069,
+      "round_digits": 3,
+      "aggregation": "aoi_condition_rate:High:Absent",
+      "used_in_production": true
+    },
+    "aoi_hit_absent_dynamic": {
+      "source_value": 0.7682119205298014,
+      "stored_value": 0.768,
+      "round_digits": 3,
+      "aggregation": "aoi_condition_rate:Absent:Dynamic",
+      "used_in_production": false
+    },
+    "aoi_hit_high_dynamic": {
+      "source_value": 0.6897321428571429,
+      "stored_value": 0.69,
+      "round_digits": 3,
+      "aggregation": "aoi_condition_rate:High:Dynamic",
+      "used_in_production": false
+    },
+    "aoi_hit_absent_static": {
+      "source_value": 0.6792873051224945,
+      "stored_value": 0.679,
+      "round_digits": 3,
+      "aggregation": "aoi_condition_rate:Absent:Static",
+      "used_in_production": false
+    },
+    "aoi_hit_high_static": {
+      "source_value": 0.5881057268722467,
+      "stored_value": 0.588,
+      "round_digits": 3,
+      "aggregation": "aoi_condition_rate:High:Static",
+      "used_in_production": false
+    },
+    "baseline_fixations_mean": {
+      "source_value": 14.385555555555554,
+      "stored_value": 14.39,
+      "round_digits": 2,
+      "aggregation": "baseline_image_distribution_mean",
+      "used_in_production": false
+    },
+    "baseline_fixations_std": {
+      "source_value": 2.074568737396869,
+      "stored_value": 2.07,
+      "round_digits": 2,
+      "aggregation": "baseline_image_distribution_sample_std",
+      "used_in_production": false
+    },
+    "baseline_duration_mean": {
+      "source_value": 359.83862370193947,
+      "stored_value": 359.84,
+      "round_digits": 2,
+      "aggregation": "baseline_image_distribution_mean",
+      "used_in_production": false
+    },
+    "baseline_duration_std": {
+      "source_value": 146.2267401394381,
+      "stored_value": 146.23,
+      "round_digits": 2,
+      "aggregation": "baseline_image_distribution_sample_std",
+      "used_in_production": false
+    },
+    "baseline_frequency_mean": {
+      "source_value": 3.260558190265263,
+      "stored_value": 3.26,
+      "round_digits": 2,
+      "aggregation": "baseline_image_distribution_mean",
+      "used_in_production": false
+    },
+    "baseline_frequency_std": {
+      "source_value": 0.511960940576557,
+      "stored_value": 0.51,
+      "round_digits": 2,
+      "aggregation": "baseline_image_distribution_sample_std",
+      "used_in_production": false
+    }
+  },
+  "removed_legacy_metadata": {
+    "frequency_reduction_std": {
+      "legacy_value": 0.12,
+      "reason": "Unused by production and not reproducible under the documented source aggregations.",
+      "per_image_ratio_sample_std": 0.12655052552042195
+    }
+  }
+}

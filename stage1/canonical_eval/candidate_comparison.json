@@ -1,0 +1,56 @@
+{
+  "seed": 20240607,
+  "environment": {
+    "python_version": "3.9.6",
+    "numpy_version": "1.26.4",
+    "opencv_version": "4.10.0",
+    "platform": "macOS-26.3-arm64-arm-64bit",
+    "machine": "arm64",
+    "processor": "arm",
+    "runtime_note": "Elapsed times are environment-specific observed measurements on the platform above, not a universal benchmark."
+  },
+  "selection_ids": [
+    "003eb9",
+    "7f066d",
+    "006450",
+    "78666b",
+    "009085",
+    "81627a"
+  ],
+  "scale_objective_source": "synthetic re-rendered fixtures",
+  "perturbation_method": "one direct native-to-candidate resampling per image; no artificial 2x/3x screenshot variants are created. Note that canonicalisation DOES upscale originals whose long side is below the candidate.",
+  "scale_gap": [
+    {
+      "candidate": 1024,
+      "mean_rel_gap": 0.007213281479894505,
+      "worst_rel_gap": 0.04433624230165536
+    },
+    {
+      "candidate": 1280,
+      "mean_rel_gap": 0.007254965341228017,
+      "worst_rel_gap": 0.04378827455866422
+    },
+    {
+      "candidate": 1440,
+      "mean_rel_gap": 0.013177926111630914,
+      "worst_rel_gap": 0.06663627391392996
+    }
+  ],
+  "ueyes_native_to_candidate_perturbation": [
+    {
+      "candidate": 1024,
+      "mean_rel_perturbation": 0.09566031678556312,
+      "worst_rel_perturbation": 1.1141868512110729
+    },
+    {
+      "candidate": 1280,
+      "mean_rel_perturbation": 0.06413291625473584,
+      "worst_rel_perturbation": 0.7692307692307694
+    },
+    {
+      "candidate": 1440,
+      "mean_rel_perturbation": 0.10327463849853306,
+      "worst_rel_perturbation": 0.736214605067064
+    }
+  ]
+}

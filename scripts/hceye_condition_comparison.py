@@ -247,13 +247,11 @@ def pipeline_correlation(images_dir: Path, agg: pd.DataFrame) -> None:
         try:
             with open(img_path, "rb") as f:
                 resp = requests.post(API_URL, files={"image": f}, data={
-                    "task_type": "search", "target_specificity": "medium",
-                    "time_pressure": "medium", "search_mode": "exploratory",
-                    "profile_preset": "neutral", "use_trained_model": "false",
+                    "task_type": "search", "time_pressure": "medium",
                 }, timeout=120)
             data = resp.json()
             if "error" not in data:
-                pipeline_scores[stem] = data["base_prediction"]["cognitive_load_score"]
+                pipeline_scores[stem] = data["layout"]["experimental_complexity_index"]
                 print(f"  {stem}: score={pipeline_scores[stem]:.1f}")
         except Exception as e:
             print(f"  {stem}: ERROR — {e}")

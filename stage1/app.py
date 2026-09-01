@@ -9,8 +9,9 @@ Performance notes:
     The two most expensive pipeline steps are the visual complexity feature
     extraction (``compute_complexity_vector``) and the UMSI++ saliency model
     inference. To keep repeated analyses of the *same* image fast, both results
-    are cached in-memory keyed by the SHA256 hash of the uploaded image bytes
-    (see ``_visual_cache`` / ``_saliency_cache``). The caches are pure runtime
+    are cached in-memory using the uploaded-image SHA256 plus the applicable P6
+    model/postprocessing/norm/runtime identity (see ``_visual_cache`` /
+    ``_saliency_cache``). The caches are pure runtime
     optimizations — they never change the computed values, only avoid redundant
     recomputation. The UMSI++ model is additionally warmed up once at startup
     (``_warmup_saliency_model``) so the first real request does not pay the
@@ -30,45 +31,201 @@ from collections import OrderedDict
 from pathlib import Path
 
 from flask import Flask, jsonify, request, send_from_directory
+from flask.json.provider import DefaultJSONProvider
 
 # Add stage1 and project root to path
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from visual_complexity import compute_complexity_vector
-from stage2.coherence_check import run_coherence_check
+from visual_complexity import (
+    compute_complexity_vector,
+    CANONICAL_ANALYSIS_VERSION,
+    FEATURE_KEYS,
+    ImageTooSmallError,
+    MIN_CANONICAL_INPUT_LONG_SIDE,
+    MIN_CANONICAL_INPUT_SHORT_SIDE,
+)
+from stage2.coherence_check import run_cross_signal_review
+from stage2.scenario_proxy import ScenarioProxyInputError, build_scenario_proxy
+from hceye.hceye_features import FeatureNormsError
+from saliency.checkpoint_identity import verify_umsi_checkpoint
+from reproducibility import (
+    saliency_cache_identity,
+    study_reproducibility_metadata,
+    visual_cache_identity,
+)
+
+
+class SaliencyUnavailableError(Exception):
+    """Raised when the mandatory saliency stage (model init, weights load,
+    inference, postprocessing, or saliency-feature extraction) could not be
+    completed for a request that requires a full score-bearing analysis.
+
+    Carries a stable, machine-readable ``code`` and a client-safe ``message``.
+    A route that requires a complete analysis must let this propagate into a
+    structured, non-200 failure response instead of degrading to a partial
+    result.
+    """
+
+    def __init__(self, code: str, message: str):
+        super().__init__(message)
+        self.code = code
+        self.message = message
+
+
+class ScoreInputUnavailableError(Exception):
+    """Raised when mandatory score-driving layout/OCR inputs are unavailable.
+
+    The underlying exception is retained only in the server-side exception
+    chain.  ``message`` is fixed and client-safe so local paths, dependency
+    details, and stack traces can never cross the API boundary.
+    """
+
+    def __init__(self, code: str, message: str):
+        super().__init__(message)
+        self.code = code
+        self.message = message
+
+
+class Stage1VectorUnavailableError(Exception):
+    """Raised when a mandatory Stage-1 block or x19 is non-finite.
+
+    The public response uses only the fixed client-safe ``message``.  Invalid
+    numerical data must never cross the API boundary as JSON NaN/Infinity or
+    appear alongside a valid-looking Stage-1 score.
+    """
+
+    def __init__(self, code: str, message: str):
+        super().__init__(message)
+        self.code = code
+        self.message = message
+
+
+class InvalidImageUploadError(Exception):
+    """Raised when supported-extension upload bytes cannot decode as an image.
+
+    This is a client-correctable input failure, not a pipeline/model failure.
+    The public response is fixed and must not expose decoder details.
+    """
+
+    def __init__(self, code: str, message: str):
+        super().__init__(message)
+        self.code = code
+        self.message = message
+
+
+class UploadStorageUnavailableError(Exception):
+    """Raised when a validated upload cannot be persisted for analysis."""
+
+    def __init__(self, code: str, message: str):
+        super().__init__(message)
+        self.code = code
+        self.message = message
+
 
 # Lazy-load saliency model (heavy TF import — only when needed)
 _saliency_model = None
 
-# In-memory caches keyed by the SHA256 hash of the uploaded image bytes.
+# In-memory caches keyed by the upload SHA256 plus the complete P6 analysis
+# identity. A checkpoint, postprocessor, extractor, runtime, or norm change
+# therefore cannot reuse a result produced under the previous identity.
 # OrderedDict is used as a simple LRU: on a cache hit the entry is moved to the
 # end, and once the cache exceeds its max size the oldest (front) entry is
 # evicted. These caches only avoid recomputation; identical inputs always yield
 # identical results.
-_saliency_cache = OrderedDict()   # image_hash -> {"heatmap", "classif"}
+_saliency_cache = OrderedDict()   # versioned key -> {"heatmap", "classif"}
 _saliency_cache_max = 32          # max distinct images kept for saliency
-_visual_cache = OrderedDict()     # image_hash -> visual complexity results dict
+_visual_cache = OrderedDict()     # versioned key -> visual results dict
 _visual_cache_max = 64            # max distinct images kept for visual features
 
 # Empirical GUI reference distribution (mean / std / percentiles per feature),
-# computed by build_feature_norms.py over 1,485 real GUI screenshots
-# (495 web + 495 mobile + 495 desktop). It lets the pipeline express each
-# feature value as a neutral z-score / percentile relative to the typical GUI.
+# computed over the official UEyes Train partition: 1,404 real GUI screenshots
+# (468 web + 468 mobile + 468 desktop). The complete official Test partition is
+# excluded from reference estimation and reserved for evaluation. The reference
+# is corpus-relative, not a universal or population-level GUI norm.
 # Loaded lazily once and cached for the process lifetime.
 _FEATURE_NORMS_PATH = Path(__file__).parent / "data" / "results" / "feature_norms.json"
 _feature_norms = None
 
+# Stable public Stage-1 boundary contract.  The saliency order deliberately
+# follows the production API assembly order audited for x19; it is not inferred
+# from dictionary iteration or from the different prose order in the saliency
+# module documentation.
+STAGE1_SALIENCY_FEATURE_NAMES = (
+    "saliency_dispersion",
+    "saliency_entropy",
+    "saliency_coverage",
+    "saliency_peak_count",
+    "saliency_center_bias",
+)
+STAGE1_VECTOR_DIMENSIONS = 19
+STAGE1_VECTOR_DTYPE = "float32"
+LAYOUT_OCR_ERROR_CODE = "layout_ocr_unavailable"
+LAYOUT_OCR_ERROR_MESSAGE = (
+    "Required layout/OCR analysis is unavailable; no score was produced. "
+    "Check the server's layout/OCR setup and retry."
+)
+STAGE1_VECTOR_ERROR_CODE = "stage1_vector_invalid"
+STAGE1_VECTOR_ERROR_MESSAGE = (
+    "A required Stage-1 feature was non-finite; no vector or score was produced."
+)
+INVALID_IMAGE_ERROR_CODE = "invalid_image"
+INVALID_IMAGE_ERROR_MESSAGE = (
+    "Uploaded file could not be decoded as a supported image; "
+    "no analysis was performed."
+)
+IMAGE_RESOURCE_LIMIT_ERROR_CODE = "image_resource_limit"
+IMAGE_RESOURCE_LIMIT_ERROR_MESSAGE = (
+    "Uploaded image dimensions or decoded size exceed the supported analysis "
+    "limits; no analysis was performed."
+)
+UPLOAD_STORAGE_ERROR_CODE = "upload_storage_unavailable"
+UPLOAD_STORAGE_ERROR_MESSAGE = (
+    "Uploaded image could not be stored for analysis; no analysis was performed."
+)
+AUXILIARY_SALIENCY_ERROR_CODE = "saliency_unavailable"
+AUXILIARY_SALIENCY_ERROR_MESSAGE = (
+    "Requested saliency analysis is unavailable; no diagnostic result was produced. "
+    "Retry when the saliency stage is available or explicitly request "
+    "use_saliency=false for the separate feature-only contract."
+)
+# P5 / AG-07..09 production semantics policy.  This metadata is returned with
+# every successful score-bearing response so API consumers cannot mistake the
+# project-specific HCEye adaptation for a validated cognitive-load measure or
+# infer semantic labels from the unverified UMSI classification-head order.
+SCIENTIFIC_SEMANTICS = {
+    "construct": "exploratory_project_specific_layout_proxy",
+    "validated_cognitive_load_measurement": False,
+    "hceye_derivation_reproducible_from_repository": False,
+    "hceye_coefficient_provenance": (
+        "hash_pinned_external_csv_with_repository_verifier"
+    ),
+    "umsi_class_label_mapping_verified": False,
+}
+
+# One production format policy for every single-image endpoint. Screen-set
+# analysis intentionally adds animated GIF because it can decode multiple
+# frames; WebP is not part of either public upload contract.
+SINGLE_IMAGE_EXTENSIONS = frozenset({".png", ".jpg", ".jpeg", ".bmp", ".tiff"})
+SCREEN_SET_EXTENSIONS = SINGLE_IMAGE_EXTENSIONS | frozenset({".gif"})
+
 
 def _load_feature_norms():
-    """Load the GUI reference distribution from disk (cached). Returns a dict
-    with ``meta`` and ``features`` keys; an empty structure if unavailable."""
+    """Load the production GUI reference distribution from disk (cached).
+
+    Fail-closed: raises FeatureNormsError if the file is missing, unreadable,
+    or not valid JSON. A full score-bearing analysis must never silently
+    substitute an empty reference structure for the production norms file.
+    """
     global _feature_norms
     if _feature_norms is None:
         try:
             with open(_FEATURE_NORMS_PATH) as f:
                 _feature_norms = json.load(f)
-        except (OSError, ValueError):
-            _feature_norms = {"meta": {}, "features": {}}
+        except (OSError, ValueError) as e:
+            raise FeatureNormsError(
+                f"Production feature norms file unavailable or invalid: "
+                f"{_FEATURE_NORMS_PATH}"
+            ) from e
     return _feature_norms
 
 
@@ -123,7 +280,8 @@ def compare_to_reference(feature_values):
         except (TypeError, ValueError):
             continue
         z = (v - stats["mean"]) / stats["std"]
-        # Signed change relative to the reference baseline (the typical GUI).
+        # Signed change relative to the official-Train UEyes GUI development
+        # reference baseline; this is not a population-level GUI norm.
         # Positive = this screen is above the reference mean, negative = below.
         # This keeps direction/sign visible, unlike a 0-100 % range mapping.
         mean = stats["mean"]
@@ -148,12 +306,86 @@ def _as_bool(value, default=False):
         return value
     return str(value).strip().lower() in {"1", "true", "yes", "on"}
 
+
+def _assemble_stage1_vector(v, s, h, hceye_feature_names):
+    """Return the authoritative ``[v8 | s5 | h6]`` Stage-1 boundary."""
+    import numpy as np
+
+    dtype = np.dtype(STAGE1_VECTOR_DTYPE)
+    visual = np.asarray(v, dtype=dtype).reshape(-1)
+    saliency = np.asarray(s, dtype=dtype).reshape(-1)
+    hceye = np.asarray(h, dtype=dtype).reshape(-1)
+    names = (
+        list(FEATURE_KEYS)
+        + list(STAGE1_SALIENCY_FEATURE_NAMES)
+        + list(hceye_feature_names)
+    )
+
+    if visual.shape != (8,) or saliency.shape != (5,) or hceye.shape != (6,):
+        raise ValueError(
+            "Stage-1 vector blocks must have exact dimensions v8, s5, and h6"
+        )
+    if len(names) != STAGE1_VECTOR_DIMENSIONS:
+        raise ValueError("Stage-1 feature-name contract must contain 19 names")
+    if not all(np.isfinite(block).all() for block in (visual, saliency, hceye)):
+        raise Stage1VectorUnavailableError(
+            STAGE1_VECTOR_ERROR_CODE, STAGE1_VECTOR_ERROR_MESSAGE
+        )
+
+    vector = np.concatenate([visual, saliency, hceye]).astype(dtype, copy=False)
+    if vector.shape != (STAGE1_VECTOR_DIMENSIONS,):
+        raise ValueError("Stage-1 feature vector must contain exactly 19 values")
+    if not np.isfinite(vector).all():
+        raise Stage1VectorUnavailableError(
+            STAGE1_VECTOR_ERROR_CODE, STAGE1_VECTOR_ERROR_MESSAGE
+        )
+    return vector, names
+
+
+def _validated_layout_score_inputs(measurement):
+    """Return finite measured layout inputs or fail before score assembly."""
+    import math
+
+    if measurement is None:
+        raise _layout_ocr_unavailable()
+
+    source = getattr(measurement, "text_density_source", None)
+    if source in (None, "", "fallback_neutral", "disabled"):
+        raise _layout_ocr_unavailable()
+
+    values = (
+        ("whitespace_ratio", getattr(measurement, "whitespace_ratio", None)),
+        ("text_density", getattr(measurement, "text_density", None)),
+    )
+    validated = []
+    for _name, value in values:
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError) as exc:
+            raise _layout_ocr_unavailable() from exc
+        if not math.isfinite(numeric) or not 0.0 <= numeric <= 1.0:
+            raise _layout_ocr_unavailable()
+        validated.append(numeric)
+    return validated[0], validated[1], source
+
+
+def _layout_ocr_unavailable():
+    """Build the one client-safe P4 failure used by every layout/OCR guard."""
+    return ScoreInputUnavailableError(
+        LAYOUT_OCR_ERROR_CODE, LAYOUT_OCR_ERROR_MESSAGE
+    )
+
+
 def _get_saliency_model():
     """Lazy-load the UMSI++ saliency model (avoids TF startup penalty on every request)."""
     global _saliency_model
     if _saliency_model is None:
-        from saliency.umsi_model import UMSIPlus
         weights = Path(__file__).parent.parent / "saliency" / "weights" / "model_weights" / "saliency_models" / "UMSI++" / "umsi++.hdf5"
+        # P6 fail-closed checkpoint gate: production must never load arbitrary
+        # same-shaped HDF5 bytes from the expected path. TensorFlow/Keras is
+        # imported only after exact filename, byte-size and SHA-256 identity.
+        verify_umsi_checkpoint(weights)
+        from saliency.umsi_model import UMSIPlus
         _saliency_model = UMSIPlus(str(weights))
     return _saliency_model
 
@@ -167,6 +399,127 @@ def _hash_upload(file_storage):
     data = file_storage.read()
     file_storage.stream.seek(0)  # rewind so the bytes can be written to disk later
     return hashlib.sha256(data).hexdigest(), data
+
+
+def _validate_uploaded_image_bytes(image_bytes: bytes):
+    """Decode one upload before persistence or any score-bearing analysis.
+
+    Extension checks alone cannot establish that the payload is an image.
+    OpenCV may either return ``None`` or raise for corrupt/truncated inputs; both
+    cases map to the same fixed client-safe error contract. The decoded array is
+    returned for direct unit verification, while production stages continue to
+    consume the persisted file exactly as before.
+    """
+    import cv2
+    import numpy as np
+
+    # Inspect header dimensions before OpenCV allocates the full decoded array.
+    # This is the first resource guard; the decoded shape is checked again
+    # below so a malformed header cannot bypass the production limit.
+    _inspect_encoded_image_dimensions(image_bytes)
+
+    try:
+        encoded = np.frombuffer(image_bytes, dtype=np.uint8)
+        decoded = (
+            cv2.imdecode(encoded, cv2.IMREAD_COLOR)
+            if encoded.size
+            else None
+        )
+    except Exception as exc:
+        raise InvalidImageUploadError(
+            INVALID_IMAGE_ERROR_CODE, INVALID_IMAGE_ERROR_MESSAGE
+        ) from exc
+
+    if (
+        decoded is None
+        or decoded.size == 0
+        or decoded.ndim != 3
+        or decoded.shape[2] != 3
+    ):
+        raise InvalidImageUploadError(
+            INVALID_IMAGE_ERROR_CODE, INVALID_IMAGE_ERROR_MESSAGE
+        )
+    _validate_image_dimensions(decoded.shape[1], decoded.shape[0])
+    return decoded
+
+
+def _validate_image_dimensions(width: int, height: int) -> int:
+    """Return pixel count or reject an image outside the analysis envelope."""
+    try:
+        width = int(width)
+        height = int(height)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise InvalidImageUploadError(
+            INVALID_IMAGE_ERROR_CODE, INVALID_IMAGE_ERROR_MESSAGE
+        ) from exc
+
+    if width < 1 or height < 1:
+        raise InvalidImageUploadError(
+            INVALID_IMAGE_ERROR_CODE, INVALID_IMAGE_ERROR_MESSAGE
+        )
+
+    pixels = width * height
+    short_side = min(width, height)
+    long_side = max(width, height)
+    aspect_ratio = long_side / short_side
+    if (
+        short_side < MIN_CANONICAL_INPUT_SHORT_SIDE
+        or long_side < MIN_CANONICAL_INPUT_LONG_SIDE
+        or width > MAX_IMAGE_WIDTH
+        or height > MAX_IMAGE_HEIGHT
+        or pixels > MAX_IMAGE_PIXELS
+        or pixels * 3 > MAX_DECODED_BYTES_PER_IMAGE
+        or aspect_ratio > MAX_IMAGE_ASPECT_RATIO
+    ):
+        raise InvalidImageUploadError(
+            IMAGE_RESOURCE_LIMIT_ERROR_CODE,
+            IMAGE_RESOURCE_LIMIT_ERROR_MESSAGE,
+        )
+    return pixels
+
+
+def _inspect_encoded_image_dimensions(image_bytes: bytes) -> tuple:
+    """Read image header dimensions without decoding full pixel storage."""
+    import io
+    from PIL import Image
+
+    try:
+        with Image.open(io.BytesIO(image_bytes)) as probe:
+            width, height = probe.size
+    except Image.DecompressionBombError as exc:
+        raise InvalidImageUploadError(
+            IMAGE_RESOURCE_LIMIT_ERROR_CODE,
+            IMAGE_RESOURCE_LIMIT_ERROR_MESSAGE,
+        ) from exc
+    except Exception as exc:
+        raise InvalidImageUploadError(
+            INVALID_IMAGE_ERROR_CODE, INVALID_IMAGE_ERROR_MESSAGE
+        ) from exc
+
+    _validate_image_dimensions(width, height)
+    return int(width), int(height)
+
+
+def _persist_uploaded_image_bytes(extension: str, image_bytes: bytes) -> Path:
+    """Persist an upload under a generated name with fail-safe cleanup.
+
+    The original client filename is deliberately not accepted by this helper.
+    Every caller has already allowlisted ``extension``; UUID-only storage makes
+    traversal, absolute-path and nested-directory filename syntax irrelevant.
+    """
+    filepath = UPLOAD_DIR / f"{uuid.uuid4().hex}{extension}"
+    try:
+        filepath.write_bytes(image_bytes)
+    except OSError as exc:
+        try:
+            filepath.unlink(missing_ok=True)
+        except OSError:
+            # The fixed public error remains safe even if cleanup itself fails.
+            pass
+        raise UploadStorageUnavailableError(
+            UPLOAD_STORAGE_ERROR_CODE, UPLOAD_STORAGE_ERROR_MESSAGE
+        ) from exc
+    return filepath
 
 
 def _resolve_target_index(elements, target_id, target_x, target_y):
@@ -188,6 +541,23 @@ def _resolve_target_index(elements, target_id, target_x, target_y):
         return None
 
     if target_x is None or target_y is None:
+        return None
+
+    # Defense in depth for callers other than the public route. Non-finite or
+    # negative coordinates must never enter distance comparisons where NaN
+    # would otherwise make the first element win by default.
+    import math
+    try:
+        target_x = float(target_x)
+        target_y = float(target_y)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if (
+        not math.isfinite(target_x)
+        or not math.isfinite(target_y)
+        or target_x < 0
+        or target_y < 0
+    ):
         return None
 
     # 2a. Point-in-bbox hit test.
@@ -305,14 +675,15 @@ def _predict_saliency_cached(image_hash, image_path):
     the result was served from cache. Caching avoids repeated (expensive)
     TensorFlow inference for identical images.
     """
-    cached = _saliency_cache.get(image_hash)
+    cache_key = f"{image_hash}:{saliency_cache_identity()}"
+    cached = _saliency_cache.get(cache_key)
     if cached is not None:
-        _saliency_cache.move_to_end(image_hash)  # mark as most-recently-used
+        _saliency_cache.move_to_end(cache_key)  # mark as most-recently-used
         return cached["heatmap"], cached["classif"], True
 
     model = _get_saliency_model()
     heatmap, classif = model.predict_saliency(str(image_path), return_classif=True)
-    _saliency_cache[image_hash] = {"heatmap": heatmap, "classif": classif}
+    _saliency_cache[cache_key] = {"heatmap": heatmap, "classif": classif}
     # Evict the oldest entries once the cache grows beyond its size limit.
     while len(_saliency_cache) > _saliency_cache_max:
         _saliency_cache.popitem(last=False)
@@ -326,13 +697,19 @@ def _compute_visual_cached(image_hash, image_path):
     single most expensive step in the pipeline, so caching it by image hash
     gives the largest speedup for repeated analyses of the same screenshot.
     """
-    cached = _visual_cache.get(image_hash)
+    # The identity digest includes the extractor bytes, canonical contract,
+    # runtime freeze and reference-pack/norm identity. A changed analysis
+    # implementation can therefore never reuse an earlier cached result.
+    cache_key = (
+        f"{image_hash}:{CANONICAL_ANALYSIS_VERSION}:{visual_cache_identity()}"
+    )
+    cached = _visual_cache.get(cache_key)
     if cached is not None:
-        _visual_cache.move_to_end(image_hash)  # mark as most-recently-used
+        _visual_cache.move_to_end(cache_key)  # mark as most-recently-used
         return cached, True
 
     results = compute_complexity_vector(str(image_path))
-    _visual_cache[image_hash] = results
+    _visual_cache[cache_key] = results
     # Evict the oldest entries once the cache grows beyond its size limit.
     while len(_visual_cache) > _visual_cache_max:
         _visual_cache.popitem(last=False)
@@ -368,7 +745,16 @@ def _warmup_saliency_model():
         if warmup_path.exists():
             warmup_path.unlink()
 
+class _StrictJSONProvider(DefaultJSONProvider):
+    """Reject non-standard JSON NaN/Infinity tokens on every API surface."""
+
+    def dumps(self, obj, **kwargs):
+        kwargs["allow_nan"] = False
+        return super().dumps(obj, **kwargs)
+
+
 app = Flask(__name__, static_folder="ui", static_url_path="")
+app.json = _StrictJSONProvider(app)
 
 # --- Resource limits (guard against accidental or malicious exhaustion) ------
 # Maximum accepted request body size. Flask rejects larger uploads with 413
@@ -376,9 +762,26 @@ app = Flask(__name__, static_folder="ui", static_url_path="")
 MAX_UPLOAD_MB = int(os.environ.get("MAX_UPLOAD_MB", "50"))
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
 
+# Decoded-image envelope. The request-body limit alone is insufficient because
+# a small compressed PNG can expand into tens or hundreds of megabytes. The
+# defaults accept ordinary 4K/5K screenshots and the thesis fixtures while
+# rejecting disproportionate dimensions before full OpenCV decoding.
+MAX_IMAGE_WIDTH = int(os.environ.get("MAX_IMAGE_WIDTH", "8192"))
+MAX_IMAGE_HEIGHT = int(os.environ.get("MAX_IMAGE_HEIGHT", "8192"))
+MAX_IMAGE_PIXELS = int(os.environ.get("MAX_IMAGE_PIXELS", "16000000"))
+MAX_DECODED_BYTES_PER_IMAGE = int(
+    os.environ.get("MAX_DECODED_BYTES_PER_IMAGE", "48000000")
+)
+MAX_IMAGE_ASPECT_RATIO = float(os.environ.get("MAX_IMAGE_ASPECT_RATIO", "20"))
 # Maximum number of screens accepted in one screen-set request (several files
 # or animated-GIF frames). Larger sets are rejected rather than processed.
 MAX_SCREENS = int(os.environ.get("MAX_SCREENS", "60"))
+MAX_SCREEN_SET_PIXELS = int(
+    os.environ.get("MAX_SCREEN_SET_PIXELS", "32000000")
+)
+MAX_SCREEN_SET_DECODED_BYTES = int(
+    os.environ.get("MAX_SCREEN_SET_DECODED_BYTES", "96000000")
+)
 
 # Maximum length of an exposure / total-uses schedule list.
 MAX_SCHEDULE_LEN = 50
@@ -397,6 +800,19 @@ def _too_large(_err):
     return jsonify({
         "error": f"Upload too large (limit {MAX_UPLOAD_MB} MB)."
     }), 413
+
+
+@app.errorhandler(UploadStorageUnavailableError)
+def _upload_storage_unavailable(err):
+    """Return stable JSON when a validated upload cannot be persisted."""
+    app.logger.exception("Validated upload could not be persisted")
+    return _fail_closed_error(err.code, err.message, status=500)
+
+
+@app.errorhandler(InvalidImageUploadError)
+def _invalid_image_upload(err):
+    """Return one structured 400 contract for invalid or excessive images."""
+    return _fail_closed_error(err.code, err.message, status=400)
 
 
 def _clamp_simulations(req):
@@ -427,6 +843,46 @@ def _server_error(exc):
     return jsonify({"error": "Internal server error"}), 500
 
 
+def _too_small_error(exc):
+    """Return a documented JSON 400 for an image that is too small to analyse.
+
+    Unlike ``_server_error`` this is an EXPECTED, client-correctable condition
+    (the upload is degenerate / below the minimum analysable size), so the
+    message is safe to surface to the client and the status code is 400.
+    """
+    return jsonify({"error": str(exc)}), 400
+
+
+def _fail_closed_error(code: str, message: str, status: int = 503):
+    """Structured, visible failure for a request that could not produce a
+    complete, score-bearing analysis (e.g. saliency model/weights/inference
+    unavailable, or the production feature-norms reference invalid).
+
+    The response never carries a ``cognitive_load_score`` or other field that
+    could be mistaken for a successfully computed result — ``analysis_complete``
+    is explicitly false and the failure is identified by a stable machine
+    -readable ``error.code`` rather than only free-text.
+    """
+    return jsonify({
+        "analysis_complete": False,
+        "error": {"code": code, "message": message},
+    }), status
+
+
+def _requested_saliency_failure(route_name: str):
+    """Fail closed when an auxiliary diagnostic explicitly requested saliency.
+
+    Feature-only execution is a separate, caller-selected contract. A failed
+    requested saliency stage must never be converted into an HTTP 200 result.
+    """
+    app.logger.exception("Requested saliency failed on %s", route_name)
+    return _fail_closed_error(
+        AUXILIARY_SALIENCY_ERROR_CODE,
+        AUXILIARY_SALIENCY_ERROR_MESSAGE,
+        status=503,
+    )
+
+
 @app.route("/")
 def index():
     from flask import make_response
@@ -449,14 +905,13 @@ def analyze():
 
     # Save uploaded file
     ext = Path(file.filename).suffix.lower()
-    if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
+    if ext not in SINGLE_IMAGE_EXTENSIONS:
         return jsonify({"error": f"Unsupported format: {ext}"}), 400
 
     # Hash the upload first so identical images reuse cached feature results.
     image_hash, image_bytes = _hash_upload(file)
-    filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
-    filepath = UPLOAD_DIR / filename
-    filepath.write_bytes(image_bytes)
+    _validate_uploaded_image_bytes(image_bytes)
+    filepath = _persist_uploaded_image_bytes(ext, image_bytes)
 
     try:
         # Copy the cached dict before mutating it so the cache stays pristine.
@@ -465,6 +920,8 @@ def analyze():
         results["filename"] = file.filename
         results["visual_cache_hit"] = cache_hit
         return jsonify(results)
+    except ImageTooSmallError as e:
+        return _too_small_error(e)
     except Exception as e:
         return _server_error(e)
     finally:
@@ -475,71 +932,84 @@ def analyze():
 
 @app.route("/api/features", methods=["GET"])
 def features_info():
-    """Return metadata about the 8 features."""
+    """Return bounded metadata about the eight visual feature proxies."""
     features = [
         {
             "key": "shannon_entropy",
             "name": "Shannon Entropy",
-            "description": "Global information density of the image. Higher = more visual information competing for attention.",
+            "description": "Global image-information density under this metric. Higher values indicate more varied pixel information; any attention interpretation is an unvalidated project hypothesis.",
             "range": "[0, 8]",
-            "reference": "Shannon (1948)"
+            "reference": "Shannon (1948); related AIM m21 lineage with a different direct-histogram implementation"
         },
         {
             "key": "edge_density",
             "name": "Edge Density",
-            "description": "Proportion of pixels classified as edges. A proxy for structural complexity — more boundaries = more parsing effort.",
+            "description": "Proportion of pixels classified as edges. It is a structural-complexity proxy; a link to human parsing effort is an unvalidated project hypothesis.",
             "range": "[0, 1]",
-            "reference": "Canny edge detection (AIM m4)"
+            "reference": "Canny (1986); AIM m4 defaults"
         },
         {
             "key": "feature_congestion",
             "name": "Feature Congestion",
-            "description": "Multi-scale clutter combining color covariance, contrast variance, and orientation energy. Higher = more visual noise.",
+            "description": "Multi-scale clutter proxy combining color covariance, contrast variance, and orientation energy. Higher values mean more congestion under this metric, not validated human difficulty.",
             "range": "[0, ∞)",
             "reference": "Rosenholtz et al. (2007) — AIM m8"
         },
         {
             "key": "subband_entropy",
             "name": "Subband Entropy",
-            "description": "Redundancy-based clutter via steerable pyramid decomposition. Higher = more unpredictable spatial frequency content.",
+            "description": "Redundancy-based clutter proxy via steerable-pyramid decomposition. Higher values indicate less predictable spatial-frequency content under this metric.",
             "range": "[0, ∞)",
             "reference": "Rosenholtz et al. (2007) — AIM m7"
         },
         {
             "key": "layout_symmetry",
             "name": "Layout Symmetry",
-            "description": "Degree of axial balance (vertical + horizontal). Higher = more symmetric = less visual search needed.",
+            "description": "Degree of axial balance (vertical + horizontal). Higher values mean more symmetry under this metric; reduced visual search is only an unvalidated design hypothesis.",
             "range": "[0, 1]",
-            "reference": "Miniukovich & De Angeli (2015)"
+            "reference": "Custom project metric inspired by Miniukovich & De Angeli (2015)"
         },
         {
             "key": "chromatic_coherence",
             "name": "Chromatic Coherence",
-            "description": "Color palette fragmentation combining luminance variance, colorfulness, and hue/saturation spread. Higher = more fragmented.",
+            "description": "Color-palette fragmentation proxy combining luminance variance, colorfulness, and hue/saturation spread. Higher values mean more fragmentation under this metric.",
             "range": "[0, 1]",
-            "reference": "Hasler & Süsstrunk (2003)"
+            "reference": "Custom project composite using AIM m13/m15/m16 components; colorfulness submetric from Hasler & Süsstrunk (2003)"
         },
         {
             "key": "visual_hierarchy",
             "name": "Visual Hierarchy",
-            "description": "Strength of layered visual structure (contrast gradients + size dominance). Higher = clearer hierarchy = less search effort.",
+            "description": "Strength of layered visual structure from contrast gradients and size dominance. Higher values mean clearer hierarchy under this metric; reduced search effort is an unvalidated design hypothesis.",
             "range": "[0, 1]",
-            "reference": "Tuch et al. (2009)"
+            "reference": "Custom project composite with an AIM m5-inspired figure-ground component; broader visual-complexity context from Tuch et al. (2009)"
         },
         {
             "key": "interactive_element_density",
             "name": "Interactive Element Density",
-            "description": "Estimated count of UI controls per area. Higher = more action possibilities = higher decisional load.",
+            "description": "Estimated count of control-like contours per area. Higher values mean more detected candidates under this custom proxy; decisional-load implications are unvalidated.",
             "range": "[0, ∞)",
             "reference": "Custom (contour-based)"
         },
     ]
-    return jsonify(features)
+    return jsonify({
+        "validated_behavioral_prediction": False,
+        "claim_boundary": (
+            "These are project-specific image-feature measurements and proxy "
+            "interpretations, not validated predictions of attention, visual "
+            "search, decisional load, or other human behavior."
+        ),
+        "features": features,
+    })
 
 
 @app.route("/api/saliency", methods=["POST"])
 def saliency():
-    """Predict saliency heatmap and extract saliency features for an uploaded image."""
+    """Predict a saliency heatmap and numeric features for an uploaded image.
+
+    The model's six-value auxiliary head remains an internal numeric output:
+    its index-to-label order is not verified, so this public route must not
+    attach class names, a predicted design type, or domain judgments to it.
+    """
     if "image" not in request.files:
         return jsonify({"error": "No image uploaded"}), 400
 
@@ -548,13 +1018,12 @@ def saliency():
         return jsonify({"error": "Empty filename"}), 400
 
     ext = Path(file.filename).suffix.lower()
-    if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
+    if ext not in SINGLE_IMAGE_EXTENSIONS:
         return jsonify({"error": f"Unsupported format: {ext}"}), 400
 
     image_hash, image_bytes = _hash_upload(file)
-    filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
-    filepath = UPLOAD_DIR / filename
-    filepath.write_bytes(image_bytes)
+    _validate_uploaded_image_bytes(image_bytes)
+    filepath = _persist_uploaded_image_bytes(ext, image_bytes)
 
     try:
         import base64
@@ -562,8 +1031,7 @@ def saliency():
         import numpy as np
         from saliency.saliency_features import extract_saliency_features
 
-        heatmap, classif, cache_hit = _predict_saliency_cached(image_hash, filepath)
-        model = _get_saliency_model()
+        heatmap, _classif, cache_hit = _predict_saliency_cached(image_hash, filepath)
 
         # Extract saliency features
         features = extract_saliency_features(heatmap)
@@ -575,17 +1043,9 @@ def saliency():
         _, buf = cv2.imencode(".png", heatmap_colored)
         heatmap_b64 = base64.b64encode(buf).decode("utf-8")
 
-        # Classification results
-        classif_dict = {
-            cls: float(prob)
-            for cls, prob in zip(model.DESIGN_CLASSES, classif)
-        }
-
         return jsonify({
             "filename": file.filename,
             "features": features,
-            "classification": classif_dict,
-            "predicted_class": model.DESIGN_CLASSES[int(np.argmax(classif))],
             "heatmap_png_base64": heatmap_b64,
             "saliency_cache_hit": cache_hit,
         })
@@ -599,20 +1059,21 @@ def saliency():
 @app.route("/api/search-time", methods=["POST"])
 def search_time():
     """
-    Predict visual search time per UI element using the Jokinen 2020 model.
+    Simulate visual search time per UI element using the Jokinen 2020 model.
 
-    This is the CENTRAL cognitive metric of the thesis:
+    This is a model-based diagnostic, not observed fixation or timing data:
       - Detects UI elements from the uploaded screenshot
       - Computes UMSI++ saliency per element (deep bottom-up signal)
       - Runs Monte Carlo simulation of novice visual search (EMMA + feature guidance)
-      - Returns predicted search time per element + aggregate statistics
+      - Returns model-estimated search time and fixation count per element
 
     Reference:
         Jokinen, J.P.P. et al. (2020). Adaptive feature guidance: Modelling
         visual search with graphical layouts. IJHCS, 136, 102376.
 
     Request:
-        POST multipart/form-data with field "image" (PNG/JPG screenshot)
+        POST multipart/form-data with field "image"
+        (PNG/JPG/JPEG/BMP/TIFF screenshot)
         Optional query params:
             n_simulations (int): Monte Carlo trials per element (default: 100)
             use_saliency (bool): Use UMSI++ saliency (default: true)
@@ -641,7 +1102,7 @@ def search_time():
         return jsonify({"error": "Empty filename"}), 400
 
     ext = Path(file.filename).suffix.lower()
-    if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
+    if ext not in SINGLE_IMAGE_EXTENSIONS:
         return jsonify({"error": f"Unsupported format: {ext}"}), 400
 
     # Parse optional query parameters
@@ -649,9 +1110,8 @@ def search_time():
     use_saliency = request.args.get("use_saliency", "true").lower() != "false"
 
     image_hash, image_bytes = _hash_upload(file)
-    filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
-    filepath = UPLOAD_DIR / filename
-    filepath.write_bytes(image_bytes)
+    _validate_uploaded_image_bytes(image_bytes)
+    filepath = _persist_uploaded_image_bytes(ext, image_bytes)
 
     try:
         import cv2
@@ -678,11 +1138,8 @@ def search_time():
         if use_saliency:
             try:
                 saliency_map, _, _ = _predict_saliency_cached(image_hash, filepath)
-            except Exception as e:
-                # Degrade to feature-only mode, but do NOT fail silently: log
-                # loudly so a broken saliency stage is visible instead of a
-                # partial result that still looks valid.
-                print(f"[Saliency] Saliency map unavailable, using feature-only mode: {e!r}")
+            except Exception:
+                return _requested_saliency_failure("/api/search-time")
 
         # Step 3: Run Jokinen model
         params = JokinenParams(
@@ -699,6 +1156,11 @@ def search_time():
         # Add metadata
         results["filename"] = file.filename
         results["model_info"] = jokinen.get_model_info()
+        results["analysis_complete"] = True
+        results["analysis_mode"] = (
+            "saliency_augmented" if use_saliency else "feature_only_explicit"
+        )
+        results["saliency_requested"] = use_saliency
         results["saliency_used"] = saliency_map is not None
 
         return jsonify(results)
@@ -713,7 +1175,7 @@ def search_time():
 @app.route("/api/scanpath-to-target", methods=["POST"])
 def scanpath_to_target():
     """
-    Predict the visual-search scanpath toward a user-selected target element.
+    Simulate a visual-search path toward a user-selected target element.
 
     The user selects the area they are searching for on the screenshot. The
     primary (VAS-style) mode is a DRAWN REGION box: the drawn rectangle becomes
@@ -723,17 +1185,18 @@ def scanpath_to_target():
     distractors. A single click position or an explicit element id are also
     accepted (they select an existing detected element).
 
-    This endpoint returns the fixation sequence the Jokinen 2020 Adaptive Feature
-    Guidance model traverses while a novice searches for that target, starting
-    from the screen center. This is a TASK-DRIVEN scanpath (goal-directed search),
-    not a free-viewing scanpath.
+    This endpoint returns the model-generated sequence produced by the Jokinen
+    2020 Adaptive Feature Guidance implementation, starting from the screen
+    center. It is a task-driven simulation, not an observed eye-tracking
+    sequence, a free-viewing scanpath, or validated user-performance evidence.
 
     Reference:
         Jokinen, J.P.P. et al. (2020). Adaptive feature guidance: Modelling
         visual search with graphical layouts. IJHCS, 136, 102376.
 
     Request:
-        POST multipart/form-data with field "image" (PNG/JPG screenshot).
+        POST multipart/form-data with field "image"
+        (PNG/JPG/JPEG/BMP/TIFF screenshot).
         Target selection (one of):
             - target_x, target_y, target_w, target_h (float, query params):
               VAS-style drawn region in ORIGINAL-image pixels (top-left x/y and
@@ -776,23 +1239,61 @@ def scanpath_to_target():
         return jsonify({"error": "Empty filename"}), 400
 
     ext = Path(file.filename).suffix.lower()
-    if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
+    if ext not in SINGLE_IMAGE_EXTENSIONS:
         return jsonify({"error": f"Unsupported format: {ext}"}), 400
 
     # Target selection params. Primary (VAS-style) mode is a drawn region box:
     # target_x, target_y = top-left in original-image pixels, target_w/target_h =
     # its size. A single click point (target_x, target_y only) and an explicit
     # target_id remain supported for backwards compatibility.
-    target_x = request.args.get("target_x", default=None, type=float)
-    target_y = request.args.get("target_y", default=None, type=float)
-    target_w = request.args.get("target_w", default=None, type=float)
-    target_h = request.args.get("target_h", default=None, type=float)
+    try:
+        target_x = _optional_finite_query_float(request, "target_x")
+        target_y = _optional_finite_query_float(request, "target_y")
+        target_w = _optional_finite_query_float(request, "target_w")
+        target_h = _optional_finite_query_float(request, "target_h")
+    except ValueError:
+        return jsonify({
+            "analysis_complete": False,
+            "error": {
+                "code": "invalid_target_geometry",
+                "message": (
+                    "Target coordinates and sizes must be unique finite "
+                    "numbers. Coordinates must be non-negative and region "
+                    "sizes must be positive."
+                ),
+            },
+        }), 400
     target_id = request.args.get("target_id", default=None, type=int)
-    has_region = (
-        target_x is not None and target_y is not None
-        and target_w is not None and target_w > 0
-        and target_h is not None and target_h > 0
+    coordinate_values = (target_x, target_y)
+    region_requested = target_w is not None or target_h is not None
+    invalid_target_geometry = (
+        any(value is not None and value < 0 for value in coordinate_values)
+        or (target_x is None) != (target_y is None)
+        or (
+            region_requested
+            and (
+                target_x is None
+                or target_y is None
+                or target_w is None
+                or target_h is None
+                or target_w <= 0
+                or target_h <= 0
+            )
+        )
     )
+    if invalid_target_geometry:
+        return jsonify({
+            "analysis_complete": False,
+            "error": {
+                "code": "invalid_target_geometry",
+                "message": (
+                    "Target coordinates and sizes must be unique finite "
+                    "numbers. Coordinates must be non-negative and region "
+                    "sizes must be positive."
+                ),
+            },
+        }), 400
+    has_region = region_requested
     has_point = target_x is not None and target_y is not None
     if target_id is None and not has_point:
         return jsonify({
@@ -808,9 +1309,8 @@ def scanpath_to_target():
      viewing_cm, display_preset_meta) = _resolve_display_preset(request)
 
     image_hash, image_bytes = _hash_upload(file)
-    filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
-    filepath = UPLOAD_DIR / filename
-    filepath.write_bytes(image_bytes)
+    _validate_uploaded_image_bytes(image_bytes)
+    filepath = _persist_uploaded_image_bytes(ext, image_bytes)
 
     try:
         import cv2
@@ -858,8 +1358,8 @@ def scanpath_to_target():
         if use_saliency:
             try:
                 saliency_map, _, _ = _predict_saliency_cached(image_hash, filepath)
-            except Exception as e:
-                print(f"[Scanpath] Saliency unavailable, feature-only mode: {e!r}")
+            except Exception:
+                return _requested_saliency_failure("/api/scanpath-to-target")
 
         params = JokinenParams(
             n_simulations=min(n_simulations, 500),
@@ -876,16 +1376,26 @@ def scanpath_to_target():
             viewing_distance_cm=viewing_cm,
         )
 
-        # Glance-based automotive metrics (NHTSA 2013 / ISO 15008): split the
-        # predicted search scanpath into eyes-off-road glances and check it
-        # against the single-glance (<=2 s) and cumulative (<=12 s) limits. Only
-        # meaningful for in-vehicle displays, so we skip it for the desktop
-        # preset (where the guidelines do not apply).
+        # Exploratory reference-limit comparison for non-desktop presets. This
+        # remains methodologically separate from every score-bearing result and
+        # must never be presented as measured or certified driver behaviour.
         glance_metrics = None
         if display_preset_meta.get("key") != "desktop":
             fixations = (scanpath or {}).get("fixations", [])
             if fixations:
                 glance_metrics = compute_glance_metrics(fixations)
+                glance_metrics.update({
+                    "score_bearing": False,
+                    "validated_measurement": False,
+                    "validated_behavioral_prediction": False,
+                    "regulatory_compliance_assessment": False,
+                    "claim_boundary": (
+                        "Exploratory comparison of model-estimated scanpath "
+                        "timing with cited reference limits; not measured eye "
+                        "tracking, a validated behavioral prediction, or a "
+                        "regulatory-compliance determination."
+                    ),
+                })
 
 
         # already estimates a search cost PER element; until now those costs were
@@ -972,11 +1482,16 @@ def scanpath_to_target():
 
         target_elem = elements[target_idx]
         return jsonify({
+            "analysis_complete": True,
+            "analysis_mode": (
+                "saliency_augmented" if use_saliency else "feature_only_explicit"
+            ),
             "filename": file.filename,
             "n_elements": len(elements),
             "target_id": target_elem.get("id"),
             "target_center": list(target_elem.get("center", [])),
             "target_bbox": list(target_elem.get("bbox", [])),
+            "saliency_requested": use_saliency,
             "saliency_used": saliency_map is not None,
             "scanpath": scanpath,
             # Canonical, methodologically-separate search-difficulty result.
@@ -1019,6 +1534,462 @@ DISPLAY_PRESETS = {
     "hud":       {"label": "Head-up display",            "width_cm": 30.0, "height_cm": 12.0, "viewing_distance_cm": 220.0},
 }
 
+STAGE2_V1_UNSUPPORTED_FIELDS = (
+    "target_specificity",
+    "search_mode",
+    "profile_preset",
+    "use_trained_model",
+)
+STAGE2_V1_ALLOWED_FORM_FIELDS = {
+    "task_type",
+    "time_pressure",
+    "include_jokinen_diagnostic",
+    "display_preset",
+}
+STAGE2_V1_DISPLAY_PRESETS = {"phone", "laptop", "desktop"}
+JOKINEN_RESULT_FIELDS = frozenset({
+    "per_element",
+    "mean_search_time_s",
+    "max_search_time_s",
+    "min_search_time_s",
+    "search_time_std_s",
+    "predicted_difficulty",
+    "n_elements",
+    "n_simulations",
+})
+JOKINEN_ELEMENT_FIELDS = frozenset({
+    "id",
+    "search_time_s",
+    "search_time_std_s",
+    "fixation_count",
+    "bbox",
+    "center",
+    "color_category",
+})
+JOKINEN_DIFFICULTY_LABELS = frozenset({
+    "trivial",
+    "easy",
+    "moderate",
+    "difficult",
+    "very_hard",
+})
+
+
+def _request_value(req, name):
+    """Return one unambiguous form/query value, preserving explicit blanks."""
+    values = list(req.form.getlist(name)) + list(req.args.getlist(name))
+    if len(values) > 1:
+        raise ScenarioProxyInputError(
+            f"{name} must be supplied at most once across form and query data"
+        )
+    return values[0] if values else None
+
+
+def _plain_finite_tree(value, path="value"):
+    """Return a JSON-safe copy while rejecting non-finite/unsupported leaves."""
+    import math
+    import numbers
+
+    if value is None or isinstance(value, (bool, str)):
+        return value
+    if isinstance(value, numbers.Real):
+        if not math.isfinite(float(value)):
+            raise ValueError(f"{path} must contain only finite numeric values")
+        if isinstance(value, numbers.Integral):
+            return int(value)
+        return float(value)
+    if isinstance(value, dict):
+        if not all(isinstance(key, str) for key in value):
+            raise TypeError(f"{path} must use string object keys")
+        return {
+            key: _plain_finite_tree(child, f"{path}.{key}")
+            for key, child in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return [
+            _plain_finite_tree(child, f"{path}[{index}]")
+            for index, child in enumerate(value)
+        ]
+    # Array-like containers are not part of the optional public contract.
+    # Reject them instead of silently normalizing a malformed model result into
+    # a diagnostic labelled complete. NumPy scalar numbers were already
+    # handled by numbers.Real above.
+    raise TypeError(f"{path} contains unsupported value type {type(value).__name__}")
+
+
+def _finite_number(value, path):
+    """Require a real finite number (booleans and numeric strings are invalid)."""
+    import math
+    import numbers
+
+    if isinstance(value, bool) or not isinstance(value, numbers.Real):
+        raise TypeError(f"{path} must be a finite real number")
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"{path} must be a finite real number")
+    return number
+
+
+def _finite_integer(value, path):
+    """Require a finite integral value without silently truncating decimals."""
+    number = _finite_number(value, path)
+    if not number.is_integer():
+        raise ValueError(f"{path} must be an integer")
+    return int(number)
+
+
+def _nonnegative_number(value, path):
+    """Require a finite real number greater than or equal to zero."""
+    number = _finite_number(value, path)
+    if number < 0:
+        raise ValueError(f"{path} must be non-negative")
+    return number
+
+
+def _nonnegative_integer(value, path):
+    """Require a finite integral value greater than or equal to zero."""
+    number = _finite_integer(value, path)
+    if number < 0:
+        raise ValueError(f"{path} must be non-negative")
+    return number
+
+
+def _finite_sequence(value, length, path):
+    """Require an exact-length finite numeric sequence and return plain floats."""
+    if isinstance(value, (str, bytes, dict)):
+        raise TypeError(f"{path} must be a numeric sequence of length {length}")
+    if not isinstance(value, (list, tuple)) or len(value) != length:
+        raise TypeError(f"{path} must be a numeric sequence of length {length}")
+    return [
+        _finite_number(child, f"{path}[{index}]")
+        for index, child in enumerate(value)
+    ]
+
+
+def _optional_finite_query_float(req, name):
+    """Parse one unique optional finite value without ambiguity.
+
+    Repeated lexically or numerically equivalent values are one unique value;
+    conflicting repetitions, blanks, non-numeric values, and nonfinite values
+    are rejected.
+    """
+    import math
+
+    values = list(req.args.getlist(name))
+    if not values:
+        return None
+
+    parsed = []
+    for raw_value in values:
+        if not isinstance(raw_value, str) or raw_value.strip() == "":
+            raise ValueError(
+                f"{name} must contain one unique finite number"
+            )
+        try:
+            value = float(raw_value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"{name} must contain one unique finite number"
+            ) from exc
+        if not math.isfinite(value):
+            raise ValueError(
+                f"{name} must contain one unique finite number"
+            )
+        parsed.append(value)
+
+    first = parsed[0]
+    if any(value != first for value in parsed[1:]):
+        raise ValueError(f"{name} must contain one unique finite number")
+    return first
+
+
+def _validated_native_elements(elements):
+    """Validate and sanitize non-score-bearing native detector output."""
+    safe = _plain_finite_tree(elements, "native_elements")
+    if not isinstance(safe, list):
+        raise TypeError("native_elements must be a list")
+    for index, element in enumerate(safe):
+        path = f"native_elements[{index}]"
+        if not isinstance(element, dict):
+            raise TypeError(f"{path} must be an object")
+        for required in ("id", "bbox", "center"):
+            if required not in element:
+                raise ValueError(f"{path}.{required} is required")
+        element["id"] = _finite_integer(element["id"], f"{path}.id")
+        element["bbox"] = _finite_sequence(element["bbox"], 4, f"{path}.bbox")
+        element["center"] = _finite_sequence(
+            element["center"], 2, f"{path}.center"
+        )
+        for optional in ("area", "angular_size", "contrast_ratio"):
+            if optional in element:
+                element[optional] = _finite_number(
+                    element[optional], f"{path}.{optional}"
+                )
+        if "dominant_color_hsv" in element:
+            element["dominant_color_hsv"] = _finite_sequence(
+                element["dominant_color_hsv"],
+                3,
+                f"{path}.dominant_color_hsv",
+            )
+        if "color_category" in element and not isinstance(
+            element["color_category"], str
+        ):
+            raise TypeError(f"{path}.color_category must be text")
+        if "wcag_aa_pass" in element and not isinstance(
+            element["wcag_aa_pass"], bool
+        ):
+            raise TypeError(f"{path}.wcag_aa_pass must be boolean")
+    return safe
+
+
+def _validated_jokinen_result(result):
+    """Validate the complete optional Jokinen result schema before use."""
+    import math
+
+    safe = _plain_finite_tree(result, "jokinen_result")
+    if not isinstance(safe, dict):
+        raise TypeError("jokinen_result must be an object")
+    actual_fields = set(safe)
+    if actual_fields != JOKINEN_RESULT_FIELDS:
+        missing = sorted(JOKINEN_RESULT_FIELDS - actual_fields)
+        unexpected = sorted(actual_fields - JOKINEN_RESULT_FIELDS)
+        raise ValueError(
+            "jokinen_result must match the declared schema exactly; "
+            f"missing={missing}, unexpected={unexpected}"
+        )
+    for numeric in (
+        "mean_search_time_s",
+        "max_search_time_s",
+        "min_search_time_s",
+        "search_time_std_s",
+    ):
+        safe[numeric] = _nonnegative_number(
+            safe[numeric], f"jokinen_result.{numeric}"
+        )
+    if safe["min_search_time_s"] > safe["max_search_time_s"]:
+        raise ValueError(
+            "jokinen_result.min_search_time_s must not exceed "
+            "max_search_time_s"
+        )
+    if not (
+        safe["min_search_time_s"]
+        <= safe["mean_search_time_s"]
+        <= safe["max_search_time_s"]
+    ):
+        raise ValueError(
+            "jokinen_result.mean_search_time_s must lie between the declared "
+            "minimum and maximum"
+        )
+    difficulty = safe["predicted_difficulty"]
+    if not isinstance(difficulty, str) or difficulty not in JOKINEN_DIFFICULTY_LABELS:
+        raise ValueError(
+            "jokinen_result.predicted_difficulty must be a declared text label"
+        )
+    safe["n_elements"] = _nonnegative_integer(
+        safe["n_elements"], "jokinen_result.n_elements"
+    )
+    safe["n_simulations"] = _nonnegative_integer(
+        safe["n_simulations"], "jokinen_result.n_simulations"
+    )
+    if safe["n_simulations"] < 1:
+        raise ValueError("jokinen_result.n_simulations must be at least 1")
+    per_element = safe["per_element"]
+    if not isinstance(per_element, list):
+        raise TypeError("jokinen_result.per_element must be a list")
+    if safe["n_elements"] != len(per_element):
+        raise ValueError(
+            "jokinen_result.n_elements must equal len(per_element)"
+        )
+    for index, element in enumerate(per_element):
+        path = f"jokinen_result.per_element[{index}]"
+        if not isinstance(element, dict):
+            raise TypeError(f"{path} must be an object")
+        actual_element_fields = set(element)
+        if actual_element_fields != JOKINEN_ELEMENT_FIELDS:
+            missing = sorted(JOKINEN_ELEMENT_FIELDS - actual_element_fields)
+            unexpected = sorted(actual_element_fields - JOKINEN_ELEMENT_FIELDS)
+            raise ValueError(
+                f"{path} must match the declared schema exactly; "
+                f"missing={missing}, unexpected={unexpected}"
+            )
+        element["id"] = _nonnegative_integer(element["id"], f"{path}.id")
+        for numeric in (
+            "search_time_s",
+            "search_time_std_s",
+            "fixation_count",
+        ):
+            element[numeric] = _nonnegative_number(
+                element[numeric], f"{path}.{numeric}"
+            )
+        element["bbox"] = _finite_sequence(element["bbox"], 4, f"{path}.bbox")
+        element["center"] = _finite_sequence(
+            element["center"], 2, f"{path}.center"
+        )
+        bbox_x, bbox_y, bbox_width, bbox_height = element["bbox"]
+        center_x, center_y = element["center"]
+        if bbox_x < 0 or bbox_y < 0:
+            raise ValueError(f"{path}.bbox origin must be non-negative")
+        if bbox_width <= 0 or bbox_height <= 0:
+            raise ValueError(f"{path}.bbox width and height must be positive")
+        if center_x < 0 or center_y < 0:
+            raise ValueError(f"{path}.center must be non-negative")
+        expected_center = (
+            bbox_x + bbox_width / 2.0,
+            bbox_y + bbox_height / 2.0,
+        )
+        if not all(
+            math.isclose(observed, expected, rel_tol=0.0, abs_tol=1e-6)
+            for observed, expected in zip(element["center"], expected_center)
+        ):
+            raise ValueError(
+                f"{path}.center must match the bbox center within 1e-6 pixels"
+            )
+        if not isinstance(element["color_category"], str) or not element[
+            "color_category"
+        ]:
+            raise TypeError(f"{path}.color_category must be non-empty text")
+    if not per_element:
+        if any(
+            safe[field] != 0.0
+            for field in (
+                "mean_search_time_s",
+                "max_search_time_s",
+                "min_search_time_s",
+                "search_time_std_s",
+            )
+        ) or safe["predicted_difficulty"] != "trivial":
+            raise ValueError(
+                "an empty Jokinen result must use zero aggregates and the "
+                "trivial difficulty label"
+            )
+    else:
+        times = [element["search_time_s"] for element in per_element]
+        expected_mean = sum(times) / len(times)
+        expected_min = min(times)
+        expected_max = max(times)
+        expected_std = math.sqrt(
+            sum((value - expected_mean) ** 2 for value in times) / len(times)
+        )
+        expected_aggregates = {
+            "mean_search_time_s": expected_mean,
+            "min_search_time_s": expected_min,
+            "max_search_time_s": expected_max,
+            "search_time_std_s": expected_std,
+        }
+        for field, expected in expected_aggregates.items():
+            if not math.isclose(
+                safe[field], expected, rel_tol=0.0, abs_tol=1e-4
+            ):
+                raise ValueError(
+                    f"jokinen_result.{field} is inconsistent with per_element"
+                )
+        mean_time = safe["mean_search_time_s"]
+        expected_difficulty = (
+            "easy"
+            if mean_time < 1.0
+            else "moderate"
+            if mean_time < 2.5
+            else "difficult"
+            if mean_time < 5.0
+            else "very_hard"
+        )
+        if safe["predicted_difficulty"] != expected_difficulty:
+            raise ValueError(
+                "jokinen_result.predicted_difficulty is inconsistent with "
+                "mean_search_time_s"
+            )
+    return safe
+
+
+def _stage2_v1_context(req):
+    """Validate the exact public Stage-2 v1 context boundary."""
+    unknown = sorted(
+        (set(req.form) | set(req.args)) - STAGE2_V1_ALLOWED_FORM_FIELDS
+    )
+    # Keep an explicit legacy list so the error remains stable and auditable,
+    # while also rejecting any future undeclared field rather than ignoring it.
+    unsupported = [
+        name
+        for name in STAGE2_V1_UNSUPPORTED_FIELDS
+        if _request_value(req, name) not in (None, "")
+    ]
+    rejected = sorted(set(unknown) | set(unsupported))
+    if rejected:
+        raise ScenarioProxyInputError(
+            "Stage-2 v1 accepts only task_type and time_pressure plus the "
+            "explicit optional Jokinen controls; unsupported fields were "
+            f"supplied: {', '.join(rejected)}"
+        )
+
+    raw_task_type = _request_value(req, "task_type")
+    raw_time_pressure = _request_value(req, "time_pressure")
+    proxy = build_scenario_proxy(
+        task_type=(
+            "search" if raw_task_type is None else str(raw_task_type).strip()
+        ),
+        time_pressure=(
+            "medium"
+            if raw_time_pressure is None
+            else str(raw_time_pressure).strip()
+        ),
+    )
+
+    raw_jokinen = _request_value(req, "include_jokinen_diagnostic")
+    if raw_jokinen is None:
+        include_jokinen = False
+    elif isinstance(raw_jokinen, bool):
+        include_jokinen = raw_jokinen
+    else:
+        normalized = str(raw_jokinen).strip()
+        if normalized in {"1", "true", "yes", "on"}:
+            include_jokinen = True
+        elif normalized in {"0", "false", "no", "off"}:
+            include_jokinen = False
+        else:
+            raise ScenarioProxyInputError(
+                "include_jokinen_diagnostic must be true or false"
+            )
+
+    raw_display = _request_value(req, "display_preset")
+    if raw_display is None:
+        display_key = "desktop"
+    else:
+        display_key = str(raw_display).strip()
+        if not display_key:
+            raise ScenarioProxyInputError(
+                "display_preset must be one of phone, laptop, desktop"
+            )
+        if not include_jokinen:
+            raise ScenarioProxyInputError(
+                "display_preset is accepted only when the optional Jokinen "
+                "diagnostic is requested"
+            )
+        if display_key not in STAGE2_V1_DISPLAY_PRESETS:
+            raise ScenarioProxyInputError(
+                "display_preset must be one of phone, laptop, desktop"
+            )
+    return proxy, include_jokinen, display_key
+
+
+def _display_preset_geometry(key):
+    """Return physical geometry for an already validated preset key."""
+    if key not in DISPLAY_PRESETS:
+        raise ValueError(f"Unknown display preset: {key}")
+    preset = DISPLAY_PRESETS[key]
+    meta = {
+        "key": key,
+        "label": preset["label"],
+        "width_cm": preset["width_cm"],
+        "height_cm": preset["height_cm"],
+        "viewing_distance_cm": preset["viewing_distance_cm"],
+    }
+    return (
+        preset["width_cm"],
+        preset["height_cm"],
+        preset["viewing_distance_cm"],
+        meta,
+    )
+
 
 def _resolve_display_preset(req):
     """Resolve the physical display geometry from the request.
@@ -1033,34 +2004,39 @@ def _resolve_display_preset(req):
            or "desktop").strip().lower()
     if key not in DISPLAY_PRESETS:
         key = "desktop"
-    preset = DISPLAY_PRESETS[key]
-    meta = {
-        "key": key,
-        "label": preset["label"],
-        "width_cm": preset["width_cm"],
-        "height_cm": preset["height_cm"],
-        "viewing_distance_cm": preset["viewing_distance_cm"],
-    }
-    return (preset["width_cm"], preset["height_cm"],
-            preset["viewing_distance_cm"], meta)
+    return _display_preset_geometry(key)
 
 
 @app.route("/api/cognitive-load", methods=["POST"])
 def cognitive_load():
     """
-    Compute cognitive load features using HCEye-derived sensitivity model.
+    Compute the exploratory project-specific layout proxy.
 
-    Combines visual complexity (v∈ℝ⁸) + saliency (s∈ℝ⁵) + HCEye cognitive
-    load sensitivity (h∈ℝ⁶) into a full feature vector for Stage 2.
+    ``/api/cognitive-load`` is retained as the legacy route name.  The returned
+    construct is not a validated cognitive-load measurement.  HCEye-derived
+    values are exposed only as explicitly named proxies, and the unverified
+    UMSI classification-head label mapping is never exposed.
+
+    Combines visual complexity (v∈ℝ⁸) + saliency (s∈ℝ⁵) + HCEye-derived
+    proxy features (h∈ℝ⁶) into the task/profile-independent Stage-1 x19
+    boundary. Stage 2 v1 attaches a deterministic, non-score-bearing scenario
+    proxy from ``task_type`` and ``time_pressure`` only. Personality and ML
+    inputs are rejected. The Jokinen diagnostic is separate and opt-in.
 
     Response JSON:
         {
             "filename": str,
             "visual_features": {...},         # v∈ℝ⁸
             "saliency_features": {...},       # s∈ℝ⁵  
-            "cognitive_load_features": {...},  # h∈ℝ⁶
-            "cognitive_load_index": float,    # Combined CLI (0-1)
-            "full_feature_vector": [...]      # ℝ¹⁹ for Stage 2
+            "hceye_proxy_features": {...},     # h∈ℝ⁶
+            "stage2_scenario_proxy": {...},    # qualitative; no number
+            "cross_signal_review": {...},      # non-score-bearing tri-state
+            "jokinen_diagnostic": {...},       # separate, off by default
+            "scientific_semantics": {...},
+            "stage1_feature_vector": [...],   # [v8 | s5 | h6]
+            "stage1_feature_names": [...],
+            "stage1_vector_dtype": "float32",
+            "vector_dimensions": 19
         }
     """
     if "image" not in request.files:
@@ -1071,108 +2047,85 @@ def cognitive_load():
         return jsonify({"error": "Empty filename"}), 400
 
     ext = Path(file.filename).suffix.lower()
-    if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
+    if ext not in SINGLE_IMAGE_EXTENSIONS:
         return jsonify({"error": f"Unsupported format: {ext}"}), 400
+
+    try:
+        (
+            scenario_proxy,
+            include_jokinen_diagnostic,
+            display_preset_key,
+        ) = _stage2_v1_context(request)
+    except ScenarioProxyInputError as exc:
+        return _fail_closed_error(
+            "stage2_scenario_invalid",
+            str(exc),
+            status=400,
+        )
 
     # Hash once and reuse the same key for both the visual and saliency caches.
     image_hash, image_bytes = _hash_upload(file)
-    filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
-    filepath = UPLOAD_DIR / filename
-    filepath.write_bytes(image_bytes)
+    try:
+        _validate_uploaded_image_bytes(image_bytes)
+    except InvalidImageUploadError as e:
+        return _fail_closed_error(e.code, e.message, status=400)
+
+    # The user-controlled filename remains response metadata only.
+    filepath = _persist_uploaded_image_bytes(ext, image_bytes)
 
     try:
         import numpy as np
         from hceye.hceye_features import HCEyeFeatureExtractor
-        from stage2.task_descriptor import TaskDescriptor
-        from stage2.user_profile import get_profile
-        from stage2.regression_model import Stage2Model
 
-        use_trained_model = _as_bool(
-            request.form.get("use_trained_model", request.args.get("use_trained_model")),
-            default=False,
-        )
-
-        task_descriptor = TaskDescriptor(
-            task_type=request.form.get("task_type", "search"),
-            target_specificity=request.form.get("target_specificity", "medium"),
-            time_pressure=request.form.get("time_pressure", "medium"),
-            search_mode=request.form.get("search_mode", "known_item"),
-        )
-        profile = get_profile(request.form.get("profile_preset", "neutral"))
-
-        # Physical display geometry for the Jokinen search model (affects the
-        # coherence check's search-time estimate; pixel features are unaffected).
+        # Physical display geometry is used only when the optional, separate
+        # Jokinen diagnostic is requested; pixel features are unaffected.
         (screen_w_cm, screen_h_cm,
-         viewing_cm, display_preset_meta) = _resolve_display_preset(request)
+         viewing_cm, display_preset_meta) = _display_preset_geometry(
+            display_preset_key
+        )
 
         # Step 1: Visual complexity (v∈ℝ⁸)
         vis_results, visual_cache_hit = _compute_visual_cached(image_hash, filepath)
         vis_results = dict(vis_results)
-        v = np.array([
-            vis_results["shannon_entropy"],
-            vis_results["edge_density"],
-            vis_results["feature_congestion"],
-            vis_results["subband_entropy"],
-            vis_results["layout_symmetry"],
-            vis_results["chromatic_coherence"],
-            vis_results["visual_hierarchy"],
-            vis_results["interactive_element_density"],
-        ], dtype=np.float32)
+        try:
+            v = np.asarray(
+                [vis_results.get(name) for name in FEATURE_KEYS],
+                dtype=np.float32,
+            )
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise Stage1VectorUnavailableError(
+                STAGE1_VECTOR_ERROR_CODE, STAGE1_VECTOR_ERROR_MESSAGE
+            ) from exc
+        if v.shape != (8,) or not np.isfinite(v).all():
+            raise Stage1VectorUnavailableError(
+                STAGE1_VECTOR_ERROR_CODE, STAGE1_VECTOR_ERROR_MESSAGE
+            )
 
-        # Step 2: Saliency features (s∈ℝ⁵) — optional
+        # Step 2: Saliency features (s∈ℝ⁵) — mandatory for x19
         s = None
         saliency_dict = {}
         saliency_overlay_b64 = None
-        design_classification = None
         try:
             import base64, cv2
             from saliency.saliency_features import extract_saliency_features
-            heatmap, classif, cache_hit = _predict_saliency_cached(image_hash, filepath)
+            heatmap, _classif, cache_hit = _predict_saliency_cached(image_hash, filepath)
             saliency_dict = extract_saliency_features(heatmap)
-            s = np.array([
-                saliency_dict["saliency_dispersion"],
-                saliency_dict["saliency_entropy"],
-                saliency_dict["saliency_coverage"],
-                saliency_dict["saliency_peak_count"],
-                saliency_dict["saliency_center_bias"],
-            ], dtype=np.float32)
-            # UMSI++ 6-class design-type head (Jiang et al., CHI 2023). The model
-            # was trained on UEyes; if it classifies the screenshot as something
-            # other than a desktop/automotive-style UI (e.g. "mobile_ui" or
-            # "web_page"), the saliency prediction is out of its training domain
-            # and the downstream load estimate should be read with caution.
-            try:
-                sal_model = _get_saliency_model()
-                classif_probs = [float(p) for p in classif]
-                top_idx = int(np.argmax(classif_probs))
-                predicted_class = sal_model.DESIGN_CLASSES[top_idx]
-                # Classes that indicate the screenshot is outside the
-                # automotive/desktop-style domain this thesis targets.
-                OUT_OF_DOMAIN = {"mobile_ui", "web_page", "poster",
-                                 "infographic", "natural_image"}
-                design_classification = {
-                    "predicted_class": predicted_class,
-                    "confidence": round(classif_probs[top_idx], 4),
-                    "probabilities": {
-                        cls: round(prob, 4)
-                        for cls, prob in zip(sal_model.DESIGN_CLASSES,
-                                             classif_probs)
-                    },
-                    "out_of_domain": predicted_class in OUT_OF_DOMAIN,
-                }
-            except Exception as ce:
-                # Classification is a non-critical add-on; never fail the
-                # analysis because of it.
-                print(f"[Saliency] Design classification unavailable: {ce!r}")
+            s = np.array(
+                [saliency_dict[name] for name in STAGE1_SALIENCY_FEATURE_NAMES],
+                dtype=np.float32,
+            )
         except Exception as e:
-            # Do NOT fail silently: the cognitive-load model degrades to image-only
-            # features (s=None) when saliency is missing. Log loudly so a broken
-            # saliency stage is visible during the study instead of silently
-            # producing a partial result that still looks "green".
-            cache_hit = False
-            s = None
-            saliency_dict = {}
+            # Saliency is MANDATORY for a complete, score-bearing analysis.
+            # Do not degrade to image-only features (s=None): that would let
+            # the request still return HTTP 200 with a full-looking score
+            # whose scientific meaning silently changed. Log the real cause
+            # server-side, then surface a structured, visible failure instead.
             print(f"[Saliency] Saliency features unavailable: {e!r}")
+            raise SaliencyUnavailableError(
+                "saliency_unavailable",
+                "Saliency computation failed; a complete analysis could not "
+                "be produced.",
+            ) from e
 
         # Build colored overlay: original image blended with JET-colormap heatmap.
         # This is purely cosmetic (visualization only) and is kept in a SEPARATE
@@ -1203,147 +2156,147 @@ def cognitive_load():
                 # Cosmetic only: real features are unaffected. Log, don't crash.
                 print(f"[Saliency] Overlay rendering failed (features unaffected): {e!r}")
 
-        # Step 2.5: Element-derived measurements for the HCEye stage.
-        # Detect UI elements ONCE here (reused later by the Jokinen block) and
-        # derive two real measurements the HCEye rules need:
-        #   - whitespace_ratio: 1 - (union area of element bboxes / image area).
-        #     A binary mask is used so overlapping boxes are not double-counted
-        #     (a plain area sum could saturate whitespace to 0).
-        #   - text_density: share of detected elements that carry text (OCR).
-        #     OCR is optional (EasyOCR/torch); if unavailable, text_density stays
-        #     None (a neutral value is used downstream) and the source is flagged.
+        # Step 2.5: Layout measurements for the HCEye stage — TWO explicit paths.
+        #
+        # ANALYSIS PATH (canonical, score-driving): whitespace_ratio and OCR-
+        # derived text_density are computed on a single canonical analysis image
+        # (long side 1280 px) with canonical element detection, so they share the
+        # SAME analysis scale as the eight visual features, which standardises
+        # their analysis scale and reduces measured resolution sensitivity. These
+        # are the ONLY element-derived values that feed the layout
+        # experimental_complexity_index.
+        #
+        # NATIVE PATH (interaction only): the Jokinen search model, target
+        # selection, native overlays, native contrast diagnostics and the
+        # detected_elements returned to the target selector use a SEPARATE native
+        # element detection on the original image. Analysis elements are never
+        # reused as native elements.
         import cv2
-        jokinen_img = cv2.imread(str(filepath))
-        elements = None
-        whitespace_ratio = None
-        text_density = None
-        text_density_source = "fallback_neutral"
-        readability_report = None
-        if jokinen_img is not None:
+        native_img = cv2.imread(str(filepath))
+
+        # --- Analysis path (canonical) -----------------------------------
+        if native_img is None:
+            raise _layout_ocr_unavailable()
+        try:
+            from canonical_layout import measure_canonical_layout
+            analysis_measurement = measure_canonical_layout(native_img)
+            whitespace_ratio, text_density, text_density_source = (
+                _validated_layout_score_inputs(analysis_measurement)
+            )
+            # Readability boxes are on the canonical image; map ONLY their
+            # display coordinates back to native for the UI. This mapped
+            # report is display-only and never feeds the layout score.
+            readability_report = analysis_measurement.readability_report_native()
+        except ScoreInputUnavailableError:
+            raise
+        except Exception as exc:
+            raise _layout_ocr_unavailable() from exc
+
+        # --- Native path (Jokinen / interaction) -------------------------
+        native_elements = []
+        native_elements_available = False
+        if native_img is not None:
             try:
                 from cognitive.element_detector import detect_elements
-                elements = detect_elements(jokinen_img)
-                h_img, w_img = jokinen_img.shape[:2]
-                img_area = float(h_img * w_img) or 1.0
-                mask = np.zeros((h_img, w_img), dtype=np.uint8)
-                for e in elements:
-                    x, y, bw, bh = e["bbox"]
-                    mask[int(y):int(y + bh), int(x):int(x + bw)] = 1
-                whitespace_ratio = float(
-                    np.clip(1.0 - float(mask.sum()) / img_area, 0.0, 1.0)
+                native_elements = _validated_native_elements(
+                    detect_elements(native_img)
                 )
+                native_elements_available = True
             except Exception as e:
-                print(f"[HCEye] Whitespace/element measurement unavailable: {e!r}")
-            try:
-                # OCR runs ONCE here; the full report is reused for the
-                # readability_report below (no second, expensive OCR pass).
-                from cognitive.text_reader import compute_readability
-                if elements:
-                    readability_report = compute_readability(jokinen_img, elements)
-                    rr = readability_report
-                    if rr and rr.get("n_elements"):
-                        text_density = float(rr["n_text_elements"]) / float(
-                            max(rr["n_elements"], 1)
-                        )
-                        text_density_source = "ocr"
-            except Exception as e:
-                print(f"[HCEye] OCR text density unavailable (neutral fallback): {e!r}")
+                print(f"[HCEye] Native element detection unavailable: {e!r}")
 
-        # Step 3: HCEye cognitive load features (h∈ℝ⁶)
-        lookup_path = Path(__file__).parent.parent / "hceye" / "sensitivity_lookup.json"
-        extractor = HCEyeFeatureExtractor(str(lookup_path))
+        # Step 3: project-specific HCEye-derived proxy features (h∈ℝ⁶).
+        # Their interpretation is deliberately bounded by SCIENTIFIC_SEMANTICS;
+        # these values are not validated screenshot-level cognitive load.
+        # Live uploads are novel screenshots, so the source-study image lookup
+        # is intentionally not loaded here. Offline HCEye reproduction scripts
+        # can still opt into that lookup by passing both lookup_path and
+        # image_name directly to HCEyeFeatureExtractor.
+        extractor = HCEyeFeatureExtractor(
+            feature_norms_path=str(_FEATURE_NORMS_PATH)
+        )
         h = extractor.extract_features(
             vis_results,
             saliency_features=(saliency_dict or None),
             whitespace_ratio=whitespace_ratio,
             text_density=text_density,
         )
-        cog_names = extractor.get_feature_names()
-        cog_dict = dict(zip(cog_names, h.tolist()))
+        proxy_names = extractor.get_feature_names()
+        hceye_proxy_dict = dict(zip(proxy_names, h.tolist()))
 
-        # Step 4: Optional task/profile vectors
-        t = task_descriptor.to_vector()
-        t_dict = task_descriptor.as_dict()
-        p = np.array(profile["vector"], dtype=np.float32)
+        # Build the sole public Stage-1 boundary (v⁸ + s⁵ + h⁶ = ℝ¹⁹).
+        # Saliency is mandatory on this score-bearing route. The preceding
+        # stage either produced a complete s5 block or raised
+        # SaliencyUnavailableError; retaining a zero-substitution branch here
+        # would be a latent fail-open hazard if that earlier guard changed.
+        if s is None:
+            raise Stage1VectorUnavailableError(
+                STAGE1_VECTOR_ERROR_CODE, STAGE1_VECTOR_ERROR_MESSAGE
+            )
+        base_vector, stage1_feature_names = _assemble_stage1_vector(
+            v, s, h, proxy_names
+        )
 
-        # Build full feature vector for Stage 2 base model (v⁸ + s⁵ + h⁶ = ℝ¹⁹)
-        parts = [v]
-        if s is not None:
-            parts.append(s)
-        else:
-            parts.append(np.zeros(5, dtype=np.float32))
-        parts.append(h)
-        base_vector = np.concatenate(parts)
+        stage1_score = float(h[5] * 100.0)
+        if not np.isfinite(stage1_score):
+            raise Stage1VectorUnavailableError(
+                STAGE1_VECTOR_ERROR_CODE, STAGE1_VECTOR_ERROR_MESSAGE
+            )
 
-        # Extended vector for downstream experiments (base + descriptor + profile)
-        extended_vector = np.concatenate([base_vector, t, p]).tolist()
-
-        model_path = Path(__file__).parent.parent / "stage2" / "models" / "stage2_model.pkl"
-        predictions = {
-            "cognitive_load_score": float(h[5] * 100.0),
-            "search_efficiency": float(np.clip(1.0 - h[3], 0.0, 1.0)),
-            "attention_demand": float(np.clip(h[5] + 0.15, 0.0, 1.0)),
-        }
-        prediction_source = "hceye_rule_based"
-        if use_trained_model and model_path.exists():
-            stage2_model = Stage2Model(model_path=str(model_path))
-            predictions = stage2_model.predict(base_vector)
-            prediction_source = "stage2_trained_model"
-
-        base_score = float(predictions["cognitive_load_score"])
-        descriptor_modifier = float(t_dict["modifier"])
-        profile_modifier = float(profile["modifier"])
-        adjusted_score = float(np.clip(base_score + descriptor_modifier + profile_modifier, 0.0, 100.0))
-        search_efficiency = float(np.clip(
-            predictions["search_efficiency"] - 0.0025 * descriptor_modifier - 0.0030 * profile_modifier,
-            0.0,
-            1.0,
-        ))
-        attention_demand = float(np.clip(
-            predictions["attention_demand"] + 0.0040 * descriptor_modifier + 0.0040 * profile_modifier,
-            0.0,
-            1.0,
-        ))
-
-        # Coherence check — validate internal consistency of pipeline outputs
-        # Extract Jokinen search metrics if available (computed on-demand here).
-        mean_search_time_s: float | None = None
-        estimated_fixation_count: float | None = None
+        # Optional, methodologically separate Jokinen diagnostic. It never
+        # changes x19, the Stage-1 layout index or the Stage-2 scenario proxy.
+        mean_search_time_s = None
+        estimated_fixation_count = None
         search_feedback = None
         contrast_report = None
-        try:
-            import cv2
-            from cognitive.jokinen_model import JokinenSearchModel, JokinenParams
-            from cognitive.element_detector import detect_elements
-            # Reuse the image and element boxes already loaded in Step 2.5.
-            # Only re-read/re-detect if that earlier step failed for any reason.
-            if jokinen_img is None:
-                jokinen_img = cv2.imread(str(filepath))
-            if jokinen_img is None:
-                raise ValueError(f"Cannot read image for Jokinen search model: {filepath}")
-            if elements is None:
-                elements = detect_elements(jokinen_img)
-            # Reuse the already-computed UMSI++ heatmap when saliency succeeded
-            # (avoids re-running the slow saliency step). s is not None implies
-            # the saliency block ran past the heatmap assignment above.
-            jokinen_saliency = heatmap if s is not None else None
-            jokinen_model = JokinenSearchModel(JokinenParams())
-            jresult = jokinen_model.predict_search_times(
-                elements=elements,
-                saliency_map=jokinen_saliency,
-                image_shape=jokinen_img.shape[:2],
-                screen_width_cm=screen_w_cm,
-                screen_height_cm=screen_h_cm,
-                viewing_distance_cm=viewing_cm,
-            )
-            mean_search_time_s = float(jresult["mean_search_time_s"])
-            # The model returns per-element fixation counts; aggregate to a
-            # layout-wide mean for the coherence check (no aggregate key exists).
-            per_elem = jresult.get("per_element", [])
-            if per_elem:
-                estimated_fixation_count = float(
-                    sum(e["fixation_count"] for e in per_elem) / len(per_elem)
+        jokinen_diagnostic = {
+            "requested": include_jokinen_diagnostic,
+            "status": "not_requested",
+            "score_bearing": False,
+            "methodologically_separate": True,
+            "validated_behavioral_prediction": False,
+            "claim_boundary": (
+                "Optional Jokinen model diagnostic only; not measured search, "
+                "eye tracking, or a validated behavioral prediction."
+            ),
+            "display_preset": display_preset_meta,
+            "result": None,
+        }
+        if include_jokinen_diagnostic:
+            try:
+                import cv2
+                from cognitive.jokinen_model import JokinenSearchModel, JokinenParams
+
+                # Reuse the native image and native element boxes from Step 2.5.
+                # Only re-read/re-detect if that earlier step failed.
+                if native_img is None:
+                    native_img = cv2.imread(str(filepath))
+                if native_img is None:
+                    raise ValueError(
+                        f"Cannot read image for Jokinen search model: {filepath}"
+                    )
+                if not native_elements_available:
+                    raise ValueError("Native element data is unavailable")
+
+                jokinen_model = JokinenSearchModel(JokinenParams())
+                jresult = jokinen_model.predict_search_times(
+                    elements=native_elements,
+                    saliency_map=heatmap,
+                    image_shape=native_img.shape[:2],
+                    screen_width_cm=screen_w_cm,
+                    screen_height_cm=screen_h_cm,
+                    viewing_distance_cm=viewing_cm,
                 )
+                # The diagnostic is optional, so numerically invalid model
+                # output must be contained here before it can reach either the
+                # Cross-Signal Review or strict JSON serialization.
+                jresult = _validated_jokinen_result(jresult)
+                mean_search_time_s = float(jresult["mean_search_time_s"])
+                per_elem = jresult.get("per_element", [])
+                if per_elem:
+                    estimated_fixation_count = float(
+                        sum(e["fixation_count"] for e in per_elem) / len(per_elem)
+                    )
 
                 # Generative feedback (diagnosis -> design): turn the per-element
                 # search costs into a ranked list of "bottleneck" elements so the
@@ -1381,54 +2334,80 @@ def cognitive_load():
                     "bottlenecks": bottlenecks,
                 }
 
-            # Accessibility / legibility report (WCAG 2.1, ISO 15008): the
-            # element detector already measures a per-element contrast ratio.
-            # Here we summarise it and list the worst offenders so the designer
-            # sees WHICH elements are hard to read, not just an average. We use
-            # the 3:1 threshold (WCAG AA for large text / non-text UI elements,
-            # also the common ISO 15008 in-vehicle minimum).
-            if elements:
-                wcag_threshold = 3.0
-                ratios = [float(e.get("contrast_ratio", 1.0)) for e in elements]
-                failing = sorted(
-                    (e for e in elements
-                     if float(e.get("contrast_ratio", 1.0)) < wcag_threshold),
-                    key=lambda e: float(e.get("contrast_ratio", 1.0)),
-                )
-                low_contrast = [{
-                    "id": e["id"],
-                    "contrast_ratio": round(float(e.get("contrast_ratio", 1.0)), 2),
-                    "bbox": e["bbox"],
-                    "center": e["center"],
-                    "color_category": e.get("color_category", "unknown"),
-                } for e in failing[:5]]
-                n_pass = sum(1 for r in ratios if r >= wcag_threshold)
-                contrast_report = {
-                    "wcag_threshold": wcag_threshold,
-                    "n_elements": len(elements),
-                    "n_pass": n_pass,
-                    "n_fail": len(elements) - n_pass,
-                    "min_contrast_ratio": round(min(ratios), 2),
-                    "mean_contrast_ratio": round(float(sum(ratios) / len(ratios)), 2),
-                    # Lowest-contrast (hardest to read) elements first (top 5).
-                    "low_contrast_elements": low_contrast,
-                }
+                # Display-only contrast summary attached to this optional
+                # diagnostic; it is not part of the scenario proxy.
+                if native_elements:
+                    wcag_threshold = 3.0
+                    ratios = [
+                        float(e.get("contrast_ratio", 1.0))
+                        for e in native_elements
+                    ]
+                    failing = sorted(
+                        (
+                            e for e in native_elements
+                            if float(e.get("contrast_ratio", 1.0))
+                            < wcag_threshold
+                        ),
+                        key=lambda e: float(e.get("contrast_ratio", 1.0)),
+                    )
+                    contrast_report = {
+                        "wcag_threshold": wcag_threshold,
+                        "n_elements": len(native_elements),
+                        "n_pass": sum(1 for ratio in ratios if ratio >= wcag_threshold),
+                        "n_fail": sum(1 for ratio in ratios if ratio < wcag_threshold),
+                        "min_contrast_ratio": round(min(ratios), 2),
+                        "mean_contrast_ratio": round(
+                            float(sum(ratios) / len(ratios)), 2
+                        ),
+                        "low_contrast_elements": [
+                            {
+                                "id": e["id"],
+                                "contrast_ratio": round(
+                                    float(e.get("contrast_ratio", 1.0)), 2
+                                ),
+                                "bbox": e["bbox"],
+                                "center": e["center"],
+                                "color_category": e.get(
+                                    "color_category", "unknown"
+                                ),
+                            }
+                            for e in failing[:5]
+                        ],
+                    }
 
-        except Exception as e:
-            # Do NOT fail silently: the coherence check depends on these values.
-            # Log loudly so a broken search model is visible during the study.
-            print(f"[Jokinen] Search model unavailable for coherence check: {e!r}")
+                diagnostic_result = {
+                    "mean_search_time_s": mean_search_time_s,
+                    "estimated_fixation_count": estimated_fixation_count,
+                    "search_feedback": search_feedback,
+                    "contrast_report": contrast_report,
+                }
+                # Validate derived arithmetic as well as raw model output so
+                # overflow or conversion in feedback assembly cannot escape
+                # the optional containment boundary.
+                jokinen_diagnostic["result"] = _plain_finite_tree(
+                    diagnostic_result, "jokinen_diagnostic.result"
+                )
+                jokinen_diagnostic["status"] = "complete"
+            except Exception as e:
+                print(f"[Jokinen] Optional diagnostic unavailable: {e!r}")
+                jokinen_diagnostic["status"] = "unavailable"
+                jokinen_diagnostic["result"] = None
+                mean_search_time_s = None
+                estimated_fixation_count = None
+                search_feedback = None
+                contrast_report = None
 
         saliency_spread = saliency_dict.get("saliency_dispersion") if saliency_dict else None
-        coherence = run_coherence_check(
+        cross_signal_review = run_cross_signal_review(
             saliency_spread=saliency_spread,
             estimated_fixation_count=estimated_fixation_count,
             mean_search_time_s=mean_search_time_s,
-            cognitive_load_score=adjusted_score,
+            layout_proxy_value=stage1_score,
         )
 
-        # Per-feature comparison against the empirical GUI reference distribution
-        # (z-score / percentile vs. the typical GUI over 1,485 screenshots).
+        # Per-feature comparison against the 1,404-image official-Train UEyes GUI
+        # development reference. The z-score/percentile is corpus-relative and does
+        # not define a universal or population-level GUI norm.
         reference_input = dict(vis_results)
         if saliency_dict:
             reference_input.update(saliency_dict)
@@ -1442,55 +2421,78 @@ def cognitive_load():
             "saliency_features": saliency_dict,
             "saliency_overlay_b64": saliency_overlay_b64,
             "saliency_cache_hit": cache_hit,
-            "design_classification": design_classification,
-            "cognitive_load_features": cog_dict,
+            "hceye_proxy_features": hceye_proxy_dict,
             "hceye_inputs": {
                 # Real element-derived measurements fed into the HCEye rules.
-                # text_density_source flags whether OCR ran or a neutral fallback
-                # was used (mirrors the saliency "missing weights" transparency).
+                # These come from the CANONICAL analysis path (long side 1280),
+                # so they share the analysis scale of the eight visual features.
+                # text_density_source distinguishes a real OCR measurement from
+                # the defined no-elements zero case. Neutral fallbacks are not
+                # allowed on this score-bearing route.
                 "whitespace_ratio": whitespace_ratio,
                 "text_density": text_density,
                 "text_density_source": text_density_source,
+                "analysis_provenance": (
+                    analysis_measurement.as_dict() if analysis_measurement else None
+                ),
             },
-            "task_descriptor": t_dict,
-            "big_five_profile": profile,
-            "base_prediction": predictions,
-            "adjusted_prediction": {
-                "cognitive_load_score": adjusted_score,
-                "search_efficiency": search_efficiency,
-                "attention_demand": attention_demand,
-            },
+            "stage2_scenario_proxy": scenario_proxy,
+            "cross_signal_review": cross_signal_review,
+            "jokinen_diagnostic": jokinen_diagnostic,
             # Methodologically-separate LAYOUT construct. This is the stable,
             # image-based value that must NOT change when a target is selected.
             # Named "experimental_complexity_index" to keep it distinct from the
             # per-target search-difficulty result (see /api/scanpath-to-target ->
             # selected_target) and to signal it is an exploratory heuristic.
             "layout": {
-                "experimental_complexity_index": adjusted_score,
-                "task_modifier": descriptor_modifier,
-                "profile_modifier": profile_modifier,
+                "experimental_complexity_index": stage1_score,
             },
-            "prediction_source": prediction_source,
-            "trained_model_requested": use_trained_model,
-            "trained_model_available": model_path.exists(),
-            "cognitive_load_index": float(h[5]),
-            "full_feature_vector": extended_vector,
-            "vector_dimensions": f"v({len(v)}) + s(5) + h({len(h)}) + t({len(t)}) + p({len(p)}) = {len(extended_vector)}",
-            "coherence": coherence,
+            "scientific_semantics": dict(SCIENTIFIC_SEMANTICS),
+            # P6 study-export identity: this binds every exported score to the
+            # source commit/tree state, exact UMSI and EasyOCR artifacts,
+            # reference norms, schema contracts, runtime freeze and versioned
+            # cache identities.
+            "reproducibility": study_reproducibility_metadata(),
+            "stage1_feature_vector": base_vector.tolist(),
+            "stage1_feature_names": stage1_feature_names,
+            "stage1_vector_dtype": STAGE1_VECTOR_DTYPE,
+            "vector_dimensions": int(base_vector.size),
             "reference": reference,
             "reference_meta": reference_meta,
-            "display_preset": display_preset_meta,
-            "search_feedback": search_feedback,
-            "contrast_report": contrast_report,
             "readability_report": readability_report,
             # Lightweight list of every detected element's box, so the target
             # selector in the UI can offer the detected elements as one-tap
-            # suggestions (in addition to free drag-box selection).
+            # suggestions (in addition to free drag-box selection). These are
+            # NATIVE-coordinate elements (target selection is the native path).
             "detected_elements": [
                 {"id": e["id"], "bbox": list(e["bbox"]), "center": list(e["center"])}
-                for e in (elements or [])
+                for e in (native_elements or [])
             ],
         })
+    except ImageTooSmallError as e:
+        return _too_small_error(e)
+    except SaliencyUnavailableError as e:
+        return _fail_closed_error(e.code, e.message)
+    except ScoreInputUnavailableError as e:
+        app.logger.exception("Score-driving layout/OCR analysis failed")
+        return _fail_closed_error(e.code, e.message)
+    except Stage1VectorUnavailableError as e:
+        app.logger.exception("Stage-1 vector validation failed")
+        return _fail_closed_error(e.code, e.message)
+    except FeatureNormsError as e:
+        # Client-safe boundary: the underlying exception message may contain
+        # a local absolute file path (e.g. the feature-norms file location)
+        # and must never be forwarded to the API response. Always use a
+        # fixed, generic message here regardless of str(e) -- this also
+        # protects against any future, more detailed FeatureNormsError text.
+        # The full cause is preserved server-side via exception chaining and
+        # the log below (never sent to the client).
+        app.logger.exception("Feature norms validation failed (fail-closed)")
+        return _fail_closed_error(
+            "saliency_norms_invalid",
+            "Production feature norms reference is unavailable or invalid; "
+            "a complete analysis could not be produced.",
+        )
     except Exception as e:
         return _server_error(e)
     finally:
@@ -1527,9 +2529,28 @@ def _read_screen_set(req):
     import numpy as np
     from PIL import Image
 
-    allowed = {".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".gif"}
+    allowed = SCREEN_SET_EXTENSIONS
     frames = []
     names = []
+    total_pixels = 0
+    total_decoded_bytes = 0
+
+    def reserve_frame(width, height, decoded_bytes):
+        """Apply per-frame and cumulative decoded screen-set budgets."""
+        nonlocal total_pixels, total_decoded_bytes
+        pixels = _validate_image_dimensions(width, height)
+        next_pixels = total_pixels + pixels
+        next_bytes = total_decoded_bytes + int(decoded_bytes)
+        if (
+            next_pixels > MAX_SCREEN_SET_PIXELS
+            or next_bytes > MAX_SCREEN_SET_DECODED_BYTES
+        ):
+            raise InvalidImageUploadError(
+                IMAGE_RESOURCE_LIMIT_ERROR_CODE,
+                IMAGE_RESOURCE_LIMIT_ERROR_MESSAGE,
+            )
+        total_pixels = next_pixels
+        total_decoded_bytes = next_bytes
 
     # --- Format 1: multiple image files ---
     files = req.files.getlist("images")
@@ -1544,10 +2565,9 @@ def _read_screen_set(req):
             if ext not in allowed:
                 raise ValueError(f"Unsupported format: {ext}")
             data = f.read()
-            arr = np.frombuffer(data, dtype=np.uint8)
-            img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-            if img is None:
-                raise ValueError(f"Cannot read image: {f.filename}")
+            width, height = _inspect_encoded_image_dimensions(data)
+            reserve_frame(width, height, width * height * 3)
+            img = _validate_uploaded_image_bytes(data)
             frames.append(img)
             names.append(f.filename)
         return frames, names
@@ -1563,21 +2583,41 @@ def _read_screen_set(req):
         raise ValueError(f"Unsupported format: {ext}")
 
     data = single.read()
-    pil = Image.open(io.BytesIO(data))
+    try:
+        pil = Image.open(io.BytesIO(data))
+    except (OSError, ValueError) as exc:
+        raise ValueError(f"Cannot read image: {single.filename}") from exc
+
     frame_index = 0
-    while True:
-        try:
-            pil.seek(frame_index)
-        except EOFError:
-            break
-        if frame_index >= MAX_SCREENS:
+    try:
+        if int(getattr(pil, "n_frames", 1)) > MAX_SCREENS:
             raise ValueError(
                 f"Too many frames: GIF exceeds the {MAX_SCREENS}-screen limit"
             )
-        rgb = np.array(pil.convert("RGB"))
-        frames.append(cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
-        names.append(f"{single.filename}#frame{frame_index}")
-        frame_index += 1
+        while True:
+            try:
+                pil.seek(frame_index)
+            except EOFError:
+                break
+            if frame_index >= MAX_SCREENS:
+                raise ValueError(
+                    f"Too many frames: GIF exceeds the {MAX_SCREENS}-screen limit"
+                )
+
+            # Reserve capacity before conversion allocates a full RGB frame.
+            width, height = pil.size
+            reserve_frame(width, height, width * height * 3)
+            try:
+                rgb = np.array(pil.convert("RGB"))
+            except (OSError, ValueError) as exc:
+                raise ValueError(
+                    f"Cannot read image: {single.filename}"
+                ) from exc
+            frames.append(cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
+            names.append(f"{single.filename}#frame{frame_index}")
+            frame_index += 1
+    finally:
+        pil.close()
 
     if not frames:
         raise ValueError(f"Cannot read image: {single.filename}")
@@ -1647,7 +2687,7 @@ def learning_curve():
         return jsonify({"error": "Empty filename"}), 400
 
     ext = Path(file.filename).suffix.lower()
-    if ext not in {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}:
+    if ext not in SINGLE_IMAGE_EXTENSIONS:
         return jsonify({"error": f"Unsupported format: {ext}"}), 400
 
     # Optional exposures list, e.g. ?exposures=1,5,20,100
@@ -1672,9 +2712,8 @@ def learning_curve():
      viewing_cm, display_preset_meta) = _resolve_display_preset(request)
 
     image_hash, image_bytes = _hash_upload(file)
-    filename = f"{uuid.uuid4().hex[:8]}_{file.filename}"
-    filepath = UPLOAD_DIR / filename
-    filepath.write_bytes(image_bytes)
+    _validate_uploaded_image_bytes(image_bytes)
+    filepath = _persist_uploaded_image_bytes(ext, image_bytes)
 
     try:
         import cv2
@@ -1697,8 +2736,8 @@ def learning_curve():
         if use_saliency:
             try:
                 saliency_map, _, _ = _predict_saliency_cached(image_hash, filepath)
-            except Exception as e:
-                print(f"[LearningCurve] Saliency unavailable, feature-only mode: {e!r}")
+            except Exception:
+                return _requested_saliency_failure("/api/learning-curve")
 
         params = JokinenParams(
             n_simulations=min(n_simulations, 500),
@@ -1717,6 +2756,12 @@ def learning_curve():
         result["filename"] = file.filename
         result["n_elements"] = len(elements)
         result["display_preset"] = display_preset_meta
+        result["analysis_complete"] = True
+        result["analysis_mode"] = (
+            "saliency_augmented" if use_saliency else "feature_only_explicit"
+        )
+        result["saliency_requested"] = use_saliency
+        result["saliency_used"] = saliency_map is not None
         return jsonify(result)
     except Exception as e:
         return _server_error(e)

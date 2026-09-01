@@ -1,174 +1,136 @@
-"""
-Mutual Coherence Check for the Two-Stage Pipeline
-==================================================
-Verifies that the three primary pipeline outputs are internally consistent.
-Incoherent output combinations are flagged as warnings — they do not invalidate
-the prediction but indicate that the inputs are at the boundary of the model's
-calibration range.
+"""Exploratory Cross-Signal Review for Stage 2 v1.
 
-Scientific basis for each rule:
-
-Rule 1 — Saliency spread vs. fixation count:
-    High feature congestion (many competing saliency peaks) forces the visual
-    system to perform more fixations to resolve attentional competition.
-    Rosenholtz et al. (2007, J. Vision 7:2:17) show that clutter directly
-    increases the number of fixations needed to locate a target. Jokinen et al.
-    (2020, IJHCS 136:102376) model this as increased visual search steps under
-    high element density. A high spread with a low fixation estimate is therefore
-    internally inconsistent.
-
-Rule 2 — Concentrated saliency vs. high cognitive load:
-    When saliency is concentrated (clear attentional guidance), cognitive load
-    should be reduced because the visual system is efficiently directed to the
-    relevant region. Das et al. (2024, ETRA, doi:10.1145/3655610) show
-    empirically that dynamic highlighting — which concentrates saliency —
-    maintains AOI hit rate at ~69% even under high cognitive load (vs. 6.9%
-    without highlighting). Tuch et al. (2009, IJHCS 67:703-715) document the
-    same effect via visual hierarchy: a well-defined hierarchy reduces perceived
-    visual complexity and cognitive load.
-
-Rule 3 — Visual search time vs. cognitive load:
-    Predicted visual search time (Jokinen et al., 2020) is a direct
-    operationalization of the effort required to locate interface elements. High
-    search time implies high attentional demand, which is a primary component of
-    cognitive load (Hart & Staveland, 1988, NASA-TLX). A high search time
-    coexisting with a low load index is therefore logically inconsistent.
-
-References:
-    Das, A., Wu, Z., Skrjanec, I., & Feit, A. M. (2024). Shifting Focus with
-        HCEye. Proc. ACM ETRA. https://doi.org/10.1145/3655610
-    Hart, S. G., & Staveland, L. E. (1988). Development of NASA-TLX. In
-        Human Mental Workload (pp. 139-183). North-Holland.
-    Jokinen, J. P. P., et al. (2020). Adaptive feature guidance. IJHCS, 136,
-        102376. https://doi.org/10.1016/j.ijhcs.2019.102376
-    Rosenholtz, R., Li, Y., & Nakano, L. (2007). Measuring visual clutter.
-        Journal of Vision, 7(2), 17. https://doi.org/10.1167/7.2.17
-    Tuch, A. N., et al. (2009). Visual complexity of websites. IJHCS, 67(9),
-        703-715. https://doi.org/10.1016/j.ijhcs.2009.04.002
+The review compares outputs produced by separate heuristics and models. Its
+author-selected thresholds are inspection triggers only. A result never changes
+the Stage-1 index, never contributes to another score and does not validate the
+signals against each other or against human behaviour.
 """
 
 from __future__ import annotations
 
+import math
 from typing import Dict, List, Optional
 
 
-# ── Thresholds ────────────────────────────────────────────────────────────────
-# Rule 1: saliency spread vs. fixation estimate
-# "High spread" threshold derived from the s₃ (saliency_spread) feature range
-# observed across 150 HCEye webpages. Values > 0.55 place a screen in the upper
-# quartile of attentional dispersion — Rosenholtz et al. (2007) associate this
-# range with measurable clutter effects.
+# Author-selected review triggers retained for deterministic diagnostics. They
+# are not calibrated cut-offs, source-study effect sizes or validation limits.
 SPREAD_HIGH_THRESHOLD = 0.55
-
-# "Low fixation count" threshold: Jokinen et al. (2020) show that visual search
-# on typical web GUIs requires 8–20 fixations; below 6 implies implausibly
-# efficient search given high attentional competition.
 FIXATION_COUNT_LOW_THRESHOLD = 6.0
-
-# Rule 2: concentrated saliency vs. high load
-# "Concentrated" = spread below the 25th percentile of HCEye distribution.
 SPREAD_LOW_THRESHOLD = 0.25
+LAYOUT_PROXY_HIGH_THRESHOLD = 60.0
+SEARCH_TIME_HIGH_THRESHOLD = 4.0
+LAYOUT_PROXY_LOW_THRESHOLD = 35.0
 
-# "High load" cutoff: score ≥ 60/100 places the screen in the high-load
-# category, consistent with the interpretation thresholds in the UI.
-LOAD_HIGH_THRESHOLD = 60.0
-
-# Rule 3: search time vs. load
-# Jokinen et al. (2020) report mean search times of 1.2–3.5 s for standard GUIs.
-# Times > 4.0 s indicate a difficult layout; combined with a low load score
-# (< 35) this is inconsistent.
-SEARCH_TIME_HIGH_THRESHOLD = 4.0  # seconds
-LOAD_LOW_THRESHOLD = 35.0
+TRI_STATE_STATUSES = (
+    "not_evaluable",
+    "no_review_flag",
+    "review_recommended",
+)
 
 
-def run_coherence_check(
+def _optional_finite(value: Optional[float], label: str) -> Optional[float]:
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{label} must be a finite real number or None")
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"{label} must be finite")
+    return number
+
+
+def run_cross_signal_review(
     saliency_spread: Optional[float],
     estimated_fixation_count: Optional[float],
     mean_search_time_s: Optional[float],
-    cognitive_load_score: float,
-) -> Dict:
-    """
-    Run all three coherence rules and return a structured result.
+    layout_proxy_value: Optional[float],
+) -> Dict[str, object]:
+    """Return a non-score-bearing tri-state review of available signals.
 
-    Args:
-        saliency_spread:         s₃ from saliency feature vector (0–1).
-                                 None if saliency was not computed.
-        estimated_fixation_count: Mean fixation count from Jokinen model.
-                                 None if search-time endpoint was not called.
-        mean_search_time_s:      Mean predicted search time in seconds.
-                                 None if search-time endpoint was not called.
-        cognitive_load_score:    Final adjusted cognitive load score (0–100).
-
-    Returns:
-        Dict with keys:
-            is_coherent (bool)
-            flags       (list of str  — machine-readable flag names)
-            warnings    (list of str  — human-readable explanations)
-            rules_checked (int        — how many rules could be evaluated)
+    ``not_evaluable`` means no rule had all of its required inputs.
+    ``no_review_flag`` means at least one rule ran and no trigger fired.
+    ``review_recommended`` means one or more author-selected triggers fired.
+    None of the states means valid/invalid, coherent/incoherent or measured.
     """
+    spread = _optional_finite(saliency_spread, "saliency_spread")
+    fixation_count = _optional_finite(
+        estimated_fixation_count, "estimated_fixation_count"
+    )
+    search_time = _optional_finite(mean_search_time_s, "mean_search_time_s")
+    layout_value = _optional_finite(layout_proxy_value, "layout_proxy_value")
+
     flags: List[str] = []
-    warnings: List[str] = []
+    notes: List[str] = []
     rules_checked = 0
 
-    # ── Rule 1: Saliency spread vs. fixation count ───────────────────────────
-    # Basis: Rosenholtz et al. (2007); Jokinen et al. (2020)
-    if saliency_spread is not None and estimated_fixation_count is not None:
+    if spread is not None and fixation_count is not None:
         rules_checked += 1
-        if (saliency_spread > SPREAD_HIGH_THRESHOLD
-                and estimated_fixation_count < FIXATION_COUNT_LOW_THRESHOLD):
-            flags.append("saliency_fixation_mismatch")
-            warnings.append(
-                f"Saliency spread is high ({saliency_spread:.2f} > {SPREAD_HIGH_THRESHOLD}) "
-                f"but estimated fixation count is low ({estimated_fixation_count:.1f} < "
-                f"{FIXATION_COUNT_LOW_THRESHOLD}). High attentional dispersion should "
-                f"require more fixations to resolve competing regions "
-                f"(Rosenholtz et al., 2007; Jokinen et al., 2020)."
+        if (
+            spread > SPREAD_HIGH_THRESHOLD
+            and fixation_count < FIXATION_COUNT_LOW_THRESHOLD
+        ):
+            flags.append("saliency_fixation_review")
+            notes.append(
+                "High model-estimated saliency spread and a low model-simulated "
+                "fixation count crossed an author-selected review trigger. Inspect "
+                "the two diagnostics separately; this is not measured gaze or a "
+                "validated relation."
             )
 
-    # ── Rule 2: Concentrated saliency vs. high load ──────────────────────────
-    # Basis: Das et al. (2024, HCEye); Tuch et al. (2009)
-    if saliency_spread is not None:
+    if spread is not None and layout_value is not None:
         rules_checked += 1
-        if (saliency_spread < SPREAD_LOW_THRESHOLD
-                and cognitive_load_score >= LOAD_HIGH_THRESHOLD):
-            flags.append("concentrated_saliency_high_load")
-            warnings.append(
-                f"Saliency is highly concentrated (spread {saliency_spread:.2f} < "
-                f"{SPREAD_LOW_THRESHOLD}) yet the cognitive load score is high "
-                f"({cognitive_load_score:.1f} ≥ {LOAD_HIGH_THRESHOLD}). Clear "
-                f"attentional guidance typically reduces cognitive load — HCEye data "
-                f"show dynamic highlighting maintains ~69% AOI hit rate even under "
-                f"load (Das et al., 2024). Visual features may be driving the load "
-                f"estimate independently of the saliency signal."
+        if (
+            spread < SPREAD_LOW_THRESHOLD
+            and layout_value >= LAYOUT_PROXY_HIGH_THRESHOLD
+        ):
+            flags.append("saliency_layout_review")
+            notes.append(
+                "Concentrated model-estimated saliency and a high experimental "
+                "layout-proxy value crossed an author-selected review trigger. "
+                "The signals are separate heuristics, not mutual validation or "
+                "cognitive-load evidence."
             )
 
-    # ── Rule 3: Search time vs. load ─────────────────────────────────────────
-    # Basis: Jokinen et al. (2020); Hart & Staveland (1988, NASA-TLX)
-    if mean_search_time_s is not None:
+    if search_time is not None and layout_value is not None:
         rules_checked += 1
-        if (mean_search_time_s > SEARCH_TIME_HIGH_THRESHOLD
-                and cognitive_load_score < LOAD_LOW_THRESHOLD):
-            flags.append("search_time_load_mismatch")
-            warnings.append(
-                f"Mean predicted search time is high ({mean_search_time_s:.1f} s > "
-                f"{SEARCH_TIME_HIGH_THRESHOLD} s) but cognitive load score is low "
-                f"({cognitive_load_score:.1f} < {LOAD_LOW_THRESHOLD}). High visual "
-                f"search effort is a primary driver of cognitive load "
-                f"(Jokinen et al., 2020; Hart & Staveland, 1988). These outputs "
-                f"are inconsistent."
+        if (
+            search_time > SEARCH_TIME_HIGH_THRESHOLD
+            and layout_value < LAYOUT_PROXY_LOW_THRESHOLD
+        ):
+            flags.append("search_layout_review")
+            notes.append(
+                "High model-simulated search time and a low experimental layout-"
+                "proxy value crossed an author-selected review trigger. Inspect "
+                "the outputs separately; no behavioral or causal relation is "
+                "asserted."
             )
+
+    if rules_checked == 0:
+        status = "not_evaluable"
+    elif flags:
+        status = "review_recommended"
+    else:
+        status = "no_review_flag"
 
     return {
-        "is_coherent": len(flags) == 0,
-        "flags": flags,
-        "warnings": warnings,
+        "status": status,
+        "review_flags": flags,
+        "review_notes": notes,
         "rules_checked": rules_checked,
+        "score_bearing": False,
+        "validated_behavioral_prediction": False,
+        "threshold_status": "author_selected_review_triggers_not_calibrated",
+        "claim_boundary": (
+            "Exploratory Cross-Signal Review only. Tri-state output is an "
+            "inspection cue, not validation, measurement, or evidence of "
+            "cognitive load or human behavior."
+        ),
         "thresholds": {
-            "spread_high": SPREAD_HIGH_THRESHOLD,
-            "spread_low": SPREAD_LOW_THRESHOLD,
+            "saliency_spread_high": SPREAD_HIGH_THRESHOLD,
+            "saliency_spread_low": SPREAD_LOW_THRESHOLD,
             "fixation_count_low": FIXATION_COUNT_LOW_THRESHOLD,
-            "load_high": LOAD_HIGH_THRESHOLD,
-            "load_low": LOAD_LOW_THRESHOLD,
+            "layout_proxy_high": LAYOUT_PROXY_HIGH_THRESHOLD,
+            "layout_proxy_low": LAYOUT_PROXY_LOW_THRESHOLD,
             "search_time_high_s": SEARCH_TIME_HIGH_THRESHOLD,
         },
     }

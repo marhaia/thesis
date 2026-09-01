@@ -1,4 +1,10 @@
-# Literature Overview
+# HISTORICAL / SUPERSEDED — Literature Overview
+
+> **ARCHIVED RESEARCH SNAPSHOT — NOT CURRENT THESIS AUTHORITY.** This file
+> preserves an earlier research question, domain split, and reading status. It
+> is not the current Stage-1 methodology, validation, or claim basis and does
+> not establish Stage 2 or a validated cognitive-load measure. Current
+> authority: repository `README.md` and `stage1/DOCUMENTATION.md`.
 
 **Research Question:** Does the integration of cognitive predictive metrics into the AIM platform improve the computational evaluation of GUIs?
 

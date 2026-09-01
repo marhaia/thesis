@@ -1,0 +1,610 @@
+{
+  "current_contract_checks": {
+    "exact_production_e2e_sha256": {
+      "lowcontrast": "65d9dfbb7cf2fc83958b72da041e3ec8e3bc84f18b886ad120d985aaeb03e8d8",
+      "ui1": "d3df5b6a8c8231f30afaa37bdb31bb4da77dc0f456184b60599bc53cb79bb6e4",
+      "ui2": "3314504f002d73aaf016cece1cd3c37e0c985d04fe9bb5b447bfe80bda83bca6",
+      "ui3": "4bb9f15ba8887d0d4daa741925d80d8d5f532cd2b9928467a44238577e46654b",
+      "uniform": "0dc22d79e05cf6ef63242602c165f4f45b10e7566d2254b70cce55ff64c71779"
+    },
+    "historical_artifacts_mutated": false,
+    "lifecycle": "CURRENT_SUCCESSOR",
+    "passed": true,
+    "remediation_finding": "XR-04"
+  },
+  "fixture_order": [
+    "lowcontrast",
+    "ui1",
+    "ui2",
+    "ui3",
+    "uniform"
+  ],
+  "identities": {
+    "checkpoint_identity": "cd5acb981e6851de937583658a2d48f8f618d0df3a33737516e02fb06d92cd4b",
+    "checkpoint_verifier": "5ac6e764ca7e22d14d6e20ce85eb0a753271cc0dfd86ed8d7d8b672a8498972a",
+    "current_gate_harness": "5d0343d9fe27351dd1121028d19adef6e261c8975e128e62c167bb18540749b4",
+    "current_gate_tests": "365308e08e90fe0d3650dd03e15959f32cbe3c30cfcff5fc5d47e8344dedf580",
+    "five_fixture_capture_harness": "e1d50e9debfbda47029adf0c5040cf799fa09a82f3aa3f3da4bdb154e761b0c7",
+    "historical_reference_contract": "da9c968b5ee0fdc95b0f8d2d7dfbf4462e8513836e8b658ed0b1838c8619e1fc",
+    "legacy_comparison_runner": "5495e6b3068e53df6c5185980226d2317e32e686f408887939a4f9383cb10059",
+    "production_gate_library": "5f9b0565cde46a6b1bec0164540fd7c85804e50cb92c3a98cd54c90871f2ef43",
+    "production_postprocessing": "f6690bbff3bf2a74e8cdbe7a4e3d12041151394d19fbe5650b040356527698e4",
+    "production_saliency_features": "f425375767739c5a668e810d14b25bdb85f523b038aea3d38f1475479f678f45",
+    "production_umsi_model": "c8d0c85454c95732e44be91caab1c083bd870e160c67f76cd1b04e3d737ca228",
+    "umsi++.hdf5": "f4290c3f11f18befbb47de50d81e4555ec8e7a63066c71c343a32fe32799e9fe",
+    "umsi_resize_causality_arrays_6a17288_consolidated.npz": "9e933c1071924f180c32cc6327363ca5760b5968d497414a9f7939919b630079"
+  },
+  "overall_verdict": "PASS",
+  "p2_contract_sha256": "43cd688e10eac46d27963909e35ad1c10fadfd192636a0b89a844361ead65786",
+  "per_fixture": {
+    "lowcontrast": {
+      "fixture": "lowcontrast",
+      "observed": {
+        "feature_check": {
+          "absolute_deviations": {
+            "saliency_center_bias": 1.0003648365231044e-07,
+            "saliency_coverage": 0.0,
+            "saliency_dispersion": 2.665196626727706e-07,
+            "saliency_entropy": 9.464739403330924e-08,
+            "saliency_peak_count": 0.0
+          },
+          "max_abs_deviation": 2.665196626727706e-07,
+          "passed": true,
+          "peak_count_exact": true,
+          "production": {
+            "saliency_center_bias": 0.5373424837766174,
+            "saliency_coverage": 0.05275390625,
+            "saliency_dispersion": 0.37780134971905927,
+            "saliency_entropy": 0.5711188207948338,
+            "saliency_peak_count": 4.0
+          },
+          "reference": {
+            "saliency_center_bias": 0.5373423837401338,
+            "saliency_coverage": 0.05275390625,
+            "saliency_dispersion": 0.37780161623872194,
+            "saliency_entropy": 0.5711189154422278,
+            "saliency_peak_count": 4.0
+          },
+          "threshold": 0.02,
+          "threshold_passed": true
+        },
+        "output_contract": {
+          "constant": false,
+          "dtype": "float32",
+          "endpoint_passed": true,
+          "expected_shape": [
+            800,
+            1280
+          ],
+          "finite": true,
+          "max": 1.0,
+          "min": 0.0,
+          "passed": true,
+          "range_passed": true,
+          "shape": [
+            800,
+            1280
+          ]
+        },
+        "peak_position_check": {
+          "mismatch_pixels": 0,
+          "passed": true,
+          "positions_exact": true,
+          "production_peak_mask_sha256": "a71eaa69b968ffeabf7583d1fd499076133cef67580e02b28dc6ae16be2a8a7a",
+          "reference_peak_mask_sha256": "a71eaa69b968ffeabf7583d1fd499076133cef67580e02b28dc6ae16be2a8a7a"
+        },
+        "production_e2e_sha256": "65d9dfbb7cf2fc83958b72da041e3ec8e3bc84f18b886ad120d985aaeb03e8d8",
+        "production_endpoint_self_check": {
+          "max_abs_diff_float64": 0.0,
+          "passed": true,
+          "threshold": 0.0
+        },
+        "recomputed_production_sha256": "65d9dfbb7cf2fc83958b72da041e3ec8e3bc84f18b886ad120d985aaeb03e8d8",
+        "reference_e2e_sha256": "1f22927d33b446e8fd2e4247054c8800c8d7744efa76ed008f3475ca8928c921",
+        "reference_value_check": {
+          "max_abs_diff_float64": 9.000301361083984e-06,
+          "passed": true,
+          "threshold": 0.02
+        }
+      },
+      "passed": true,
+      "preflight": {
+        "fixture_sha256": "4a467bdd72d41b9fd490573468db171a254e7cbf4aa8727ac8fb86bef05a3562",
+        "layers": {
+          "legacy_classification": {
+            "ref_dtype": "float64",
+            "ref_key": "legacy_raw/lowcontrast_classif",
+            "ref_shape": [
+              6
+            ]
+          },
+          "legacy_e2e_saliency": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/lowcontrast_e2e",
+            "ref_shape": [
+              800,
+              1280
+            ]
+          },
+          "legacy_model_input": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/lowcontrast_preproc",
+            "ref_shape": [
+              1,
+              256,
+              256,
+              3
+            ]
+          },
+          "legacy_raw_saliency": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/lowcontrast_raw",
+            "ref_shape": [
+              512,
+              512
+            ]
+          }
+        }
+      },
+      "reason": null,
+      "status": "PASS"
+    },
+    "ui1": {
+      "fixture": "ui1",
+      "observed": {
+        "feature_check": {
+          "absolute_deviations": {
+            "saliency_center_bias": 4.3775195707196346e-07,
+            "saliency_coverage": 0.0,
+            "saliency_dispersion": 3.3793286996486316e-07,
+            "saliency_entropy": 4.3877171068684717e-07,
+            "saliency_peak_count": 0.0
+          },
+          "max_abs_deviation": 4.3877171068684717e-07,
+          "passed": true,
+          "peak_count_exact": true,
+          "production": {
+            "saliency_center_bias": 0.36269923818047556,
+            "saliency_coverage": 0.0140146484375,
+            "saliency_dispersion": 0.4262663386429336,
+            "saliency_entropy": 0.34608423903538793,
+            "saliency_peak_count": 2.0
+          },
+          "reference": {
+            "saliency_center_bias": 0.36269967593243263,
+            "saliency_coverage": 0.0140146484375,
+            "saliency_dispersion": 0.42626600071006365,
+            "saliency_entropy": 0.3460846778070986,
+            "saliency_peak_count": 2.0
+          },
+          "threshold": 0.02,
+          "threshold_passed": true
+        },
+        "output_contract": {
+          "constant": false,
+          "dtype": "float32",
+          "endpoint_passed": true,
+          "expected_shape": [
+            800,
+            1280
+          ],
+          "finite": true,
+          "max": 1.0,
+          "min": 0.0,
+          "passed": true,
+          "range_passed": true,
+          "shape": [
+            800,
+            1280
+          ]
+        },
+        "peak_position_check": {
+          "mismatch_pixels": 0,
+          "passed": true,
+          "positions_exact": true,
+          "production_peak_mask_sha256": "65d9de5621f3cd12ad6e4228c83ffc5b8240e89b35a936439f7060b791b0c516",
+          "reference_peak_mask_sha256": "65d9de5621f3cd12ad6e4228c83ffc5b8240e89b35a936439f7060b791b0c516"
+        },
+        "production_e2e_sha256": "d3df5b6a8c8231f30afaa37bdb31bb4da77dc0f456184b60599bc53cb79bb6e4",
+        "production_endpoint_self_check": {
+          "max_abs_diff_float64": 0.0,
+          "passed": true,
+          "threshold": 0.0
+        },
+        "recomputed_production_sha256": "d3df5b6a8c8231f30afaa37bdb31bb4da77dc0f456184b60599bc53cb79bb6e4",
+        "reference_e2e_sha256": "29ab8927d2b96ea14b8dedf01f9776fc7d701cfc1baaf8205208c908443289a8",
+        "reference_value_check": {
+          "max_abs_diff_float64": 3.084540367126465e-06,
+          "passed": true,
+          "threshold": 0.02
+        }
+      },
+      "passed": true,
+      "preflight": {
+        "fixture_sha256": "b0741b0660e3cede9a8f11db92c3973e4336e4c8c859315ba69c8677963ece3b",
+        "layers": {
+          "legacy_classification": {
+            "ref_dtype": "float64",
+            "ref_key": "legacy_raw/ui1_classif",
+            "ref_shape": [
+              6
+            ]
+          },
+          "legacy_e2e_saliency": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/ui1_e2e",
+            "ref_shape": [
+              800,
+              1280
+            ]
+          },
+          "legacy_model_input": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/ui1_preproc",
+            "ref_shape": [
+              1,
+              256,
+              256,
+              3
+            ]
+          },
+          "legacy_raw_saliency": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/ui1_raw",
+            "ref_shape": [
+              512,
+              512
+            ]
+          }
+        }
+      },
+      "reason": null,
+      "status": "PASS"
+    },
+    "ui2": {
+      "fixture": "ui2",
+      "observed": {
+        "feature_check": {
+          "absolute_deviations": {
+            "saliency_center_bias": 3.4656037084523916e-07,
+            "saliency_coverage": 0.0,
+            "saliency_dispersion": 5.328911940605252e-07,
+            "saliency_entropy": 2.975745068134472e-07,
+            "saliency_peak_count": 0.0
+          },
+          "max_abs_deviation": 5.328911940605252e-07,
+          "passed": true,
+          "peak_count_exact": true,
+          "production": {
+            "saliency_center_bias": 0.37204890518635486,
+            "saliency_coverage": 0.0149993896484375,
+            "saliency_dispersion": 0.4591213516651147,
+            "saliency_entropy": 0.4083830525834203,
+            "saliency_peak_count": 2.0
+          },
+          "reference": {
+            "saliency_center_bias": 0.3720492517467257,
+            "saliency_coverage": 0.0149993896484375,
+            "saliency_dispersion": 0.45912081877392064,
+            "saliency_entropy": 0.4083833501579271,
+            "saliency_peak_count": 2.0
+          },
+          "threshold": 0.02,
+          "threshold_passed": true
+        },
+        "output_contract": {
+          "constant": false,
+          "dtype": "float32",
+          "endpoint_passed": true,
+          "expected_shape": [
+            768,
+            1024
+          ],
+          "finite": true,
+          "max": 1.0,
+          "min": 0.0,
+          "passed": true,
+          "range_passed": true,
+          "shape": [
+            768,
+            1024
+          ]
+        },
+        "peak_position_check": {
+          "mismatch_pixels": 0,
+          "passed": true,
+          "positions_exact": true,
+          "production_peak_mask_sha256": "722dabcad258e7bc6b9aac5e9dc990dc857e45ee88add71b144719fdb491e31f",
+          "reference_peak_mask_sha256": "722dabcad258e7bc6b9aac5e9dc990dc857e45ee88add71b144719fdb491e31f"
+        },
+        "production_e2e_sha256": "3314504f002d73aaf016cece1cd3c37e0c985d04fe9bb5b447bfe80bda83bca6",
+        "production_endpoint_self_check": {
+          "max_abs_diff_float64": 0.0,
+          "passed": true,
+          "threshold": 0.0
+        },
+        "recomputed_production_sha256": "3314504f002d73aaf016cece1cd3c37e0c985d04fe9bb5b447bfe80bda83bca6",
+        "reference_e2e_sha256": "ba9e309cca194c6ce2356ada149b472dd9491a0b050365227a73e34e0d5c5e30",
+        "reference_value_check": {
+          "max_abs_diff_float64": 2.1457672119140625e-06,
+          "passed": true,
+          "threshold": 0.02
+        }
+      },
+      "passed": true,
+      "preflight": {
+        "fixture_sha256": "1e693f150402276b819aaa133c17ef5e9540e66789518a47856b17892d7266a6",
+        "layers": {
+          "legacy_classification": {
+            "ref_dtype": "float64",
+            "ref_key": "legacy_raw/ui2_classif",
+            "ref_shape": [
+              6
+            ]
+          },
+          "legacy_e2e_saliency": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/ui2_e2e",
+            "ref_shape": [
+              768,
+              1024
+            ]
+          },
+          "legacy_model_input": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/ui2_preproc",
+            "ref_shape": [
+              1,
+              256,
+              256,
+              3
+            ]
+          },
+          "legacy_raw_saliency": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/ui2_raw",
+            "ref_shape": [
+              512,
+              512
+            ]
+          }
+        }
+      },
+      "reason": null,
+      "status": "PASS"
+    },
+    "ui3": {
+      "fixture": "ui3",
+      "observed": {
+        "feature_check": {
+          "absolute_deviations": {
+            "saliency_center_bias": 1.5128031466415948e-07,
+            "saliency_coverage": 0.0,
+            "saliency_dispersion": 5.582544819193735e-07,
+            "saliency_entropy": 0.0,
+            "saliency_peak_count": 0.0
+          },
+          "max_abs_deviation": 5.582544819193735e-07,
+          "passed": true,
+          "peak_count_exact": true,
+          "production": {
+            "saliency_center_bias": 0.3598739209000615,
+            "saliency_coverage": 0.014179166666666666,
+            "saliency_dispersion": 0.4588808526823082,
+            "saliency_entropy": 0.40946648541031855,
+            "saliency_peak_count": 2.0
+          },
+          "reference": {
+            "saliency_center_bias": 0.35987407218037615,
+            "saliency_coverage": 0.014179166666666666,
+            "saliency_dispersion": 0.4588802944278263,
+            "saliency_entropy": 0.40946648541031855,
+            "saliency_peak_count": 2.0
+          },
+          "threshold": 0.02,
+          "threshold_passed": true
+        },
+        "output_contract": {
+          "constant": false,
+          "dtype": "float32",
+          "endpoint_passed": true,
+          "expected_shape": [
+            600,
+            800
+          ],
+          "finite": true,
+          "max": 1.0,
+          "min": 0.0,
+          "passed": true,
+          "range_passed": true,
+          "shape": [
+            600,
+            800
+          ]
+        },
+        "peak_position_check": {
+          "mismatch_pixels": 0,
+          "passed": true,
+          "positions_exact": true,
+          "production_peak_mask_sha256": "f10cafb686b7aa1f7a8b3762ea22525040e3ba61583c67bdb639117d5bf9e3d5",
+          "reference_peak_mask_sha256": "f10cafb686b7aa1f7a8b3762ea22525040e3ba61583c67bdb639117d5bf9e3d5"
+        },
+        "production_e2e_sha256": "4bb9f15ba8887d0d4daa741925d80d8d5f532cd2b9928467a44238577e46654b",
+        "production_endpoint_self_check": {
+          "max_abs_diff_float64": 0.0,
+          "passed": true,
+          "threshold": 0.0
+        },
+        "recomputed_production_sha256": "4bb9f15ba8887d0d4daa741925d80d8d5f532cd2b9928467a44238577e46654b",
+        "reference_e2e_sha256": "4885b11ee1738dcd2a34016c958a3c036f5470a7bede8635b52246e538bc754b",
+        "reference_value_check": {
+          "max_abs_diff_float64": 1.989305019378662e-06,
+          "passed": true,
+          "threshold": 0.02
+        }
+      },
+      "passed": true,
+      "preflight": {
+        "fixture_sha256": "38c4348cbf93da4e95f07d5e2bf7b7a315eec57b9841a8dfc174b8a3bab6cab0",
+        "layers": {
+          "legacy_classification": {
+            "ref_dtype": "float64",
+            "ref_key": "legacy_raw/ui3_classif",
+            "ref_shape": [
+              6
+            ]
+          },
+          "legacy_e2e_saliency": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/ui3_e2e",
+            "ref_shape": [
+              600,
+              800
+            ]
+          },
+          "legacy_model_input": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/ui3_preproc",
+            "ref_shape": [
+              1,
+              256,
+              256,
+              3
+            ]
+          },
+          "legacy_raw_saliency": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/ui3_raw",
+            "ref_shape": [
+              512,
+              512
+            ]
+          }
+        }
+      },
+      "reason": null,
+      "status": "PASS"
+    },
+    "uniform": {
+      "fixture": "uniform",
+      "observed": {
+        "feature_check": {
+          "absolute_deviations": {
+            "saliency_center_bias": 6.29145894548433e-07,
+            "saliency_coverage": 9.76562500004663e-07,
+            "saliency_dispersion": 2.6112980777703854e-07,
+            "saliency_entropy": 1.6746142990076152e-06,
+            "saliency_peak_count": 0.0
+          },
+          "max_abs_deviation": 1.6746142990076152e-06,
+          "passed": true,
+          "peak_count_exact": true,
+          "production": {
+            "saliency_center_bias": 0.4981607744980167,
+            "saliency_coverage": 0.0818916015625,
+            "saliency_dispersion": 0.38207381767980514,
+            "saliency_entropy": 0.6357071947582551,
+            "saliency_peak_count": 5.0
+          },
+          "reference": {
+            "saliency_center_bias": 0.49816014535212216,
+            "saliency_coverage": 0.081890625,
+            "saliency_dispersion": 0.3820740788096129,
+            "saliency_entropy": 0.6357055201439561,
+            "saliency_peak_count": 5.0
+          },
+          "threshold": 0.02,
+          "threshold_passed": true
+        },
+        "output_contract": {
+          "constant": false,
+          "dtype": "float32",
+          "endpoint_passed": true,
+          "expected_shape": [
+            800,
+            1280
+          ],
+          "finite": true,
+          "max": 1.0,
+          "min": 0.0,
+          "passed": true,
+          "range_passed": true,
+          "shape": [
+            800,
+            1280
+          ]
+        },
+        "peak_position_check": {
+          "mismatch_pixels": 0,
+          "passed": true,
+          "positions_exact": true,
+          "production_peak_mask_sha256": "0a3a88d85c813cea1ad1995787879e2e77b8a09e77f2a6558eb7f0ac33040cfd",
+          "reference_peak_mask_sha256": "0a3a88d85c813cea1ad1995787879e2e77b8a09e77f2a6558eb7f0ac33040cfd"
+        },
+        "production_e2e_sha256": "0dc22d79e05cf6ef63242602c165f4f45b10e7566d2254b70cce55ff64c71779",
+        "production_endpoint_self_check": {
+          "max_abs_diff_float64": 0.0,
+          "passed": true,
+          "threshold": 0.0
+        },
+        "recomputed_production_sha256": "0dc22d79e05cf6ef63242602c165f4f45b10e7566d2254b70cce55ff64c71779",
+        "reference_e2e_sha256": "c61b0c854d011844e84b094e779e21faabffeff307b537296bb5c0d5057e059d",
+        "reference_value_check": {
+          "max_abs_diff_float64": 7.62939453125e-06,
+          "passed": true,
+          "threshold": 0.02
+        }
+      },
+      "passed": true,
+      "preflight": {
+        "fixture_sha256": "2987ab872f4a798686ce3f975c7a8a3ad41bbf619fae113678b5afc53a634db6",
+        "layers": {
+          "legacy_classification": {
+            "ref_dtype": "float64",
+            "ref_key": "legacy_raw/uniform_classif",
+            "ref_shape": [
+              6
+            ]
+          },
+          "legacy_e2e_saliency": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/uniform_e2e",
+            "ref_shape": [
+              800,
+              1280
+            ]
+          },
+          "legacy_model_input": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/uniform_preproc",
+            "ref_shape": [
+              1,
+              256,
+              256,
+              3
+            ]
+          },
+          "legacy_raw_saliency": {
+            "ref_dtype": "float32",
+            "ref_key": "legacy_raw/uniform_raw",
+            "ref_shape": [
+              512,
+              512
+            ]
+          }
+        }
+      },
+      "reason": null,
+      "status": "PASS"
+    }
+  },
+  "repository_head": "7370f08cce9cac603a9891295f7d2509254966b6",
+  "scope": "P2_AG_05_ONLY",
+  "thresholds": {
+    "e2e_abs_max": 0.02,
+    "endpoint_self_abs_max": 0.0,
+    "feature_abs_max": 0.02,
+    "peak_count_exact": true,
+    "peak_positions_exact": true
+  }
+}

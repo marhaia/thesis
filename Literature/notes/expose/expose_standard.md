@@ -1,5 +1,12 @@
 # Exposé (Standard Version) — ~4 Pages
 
+> **HISTORICAL WORKING DRAFT (June 2026) — SUPERSEDED.** This document is
+> retained for provenance and is not the current methodology or claim basis.
+> Its automotive-domain, post-study ML, Cognitive Load Index, HCEye-calibration,
+> and screening-tool assumptions remain open or have been superseded by the
+> Stage-1 audit. See `Literature/notes/expose/README.md` for the authoritative
+> status and open decisions.
+
 **Working Title:** Integrating Cognitive Predictive Metrics into the AIM Platform for Automated GUI Evaluation  
 **Author:** Hannah  
 **Programme:** User Experience Design  

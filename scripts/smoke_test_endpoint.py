@@ -1,4 +1,4 @@
-"""Smoke test for /api/cognitive-load — verifies default is rule-based."""
+"""Smoke test for the active Stage-2 v1 route contract."""
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -15,37 +15,26 @@ def make_test_image():
 
 client = app.test_client()
 
-print("=== Test 1: Default (rule-based, no opt-in) ===")
+print("=== Test 1: Default qualitative scenario proxy ===")
 resp = client.post("/api/cognitive-load", data={
     "image": (make_test_image(), "smoke.png"),
     "task_type": "search",
-    "target_specificity": "medium",
     "time_pressure": "medium",
-    "search_mode": "known_item",
-    "profile_preset": "neutral",
-    # use_trained_model NOT sent → defaults to False
 })
 data = resp.get_json()
 print(f"  HTTP status:         {resp.status_code}")
-print(f"  prediction_source:   {data.get('prediction_source')}")
-print(f"  trained_requested:   {data.get('trained_model_requested')}")
-print(f"  trained_available:   {data.get('trained_model_available')}")
-print(f"  cognitive_load_score:{data.get('adjusted_prediction', {}).get('cognitive_load_score'):.1f}")
+print(f"  scenario_proxy:      {data.get('stage2_scenario_proxy')}")
+print(f"  cross_signal_review: {data.get('cross_signal_review')}")
+print(f"  jokinen_diagnostic:  {data.get('jokinen_diagnostic')}")
 print()
 
-print("=== Test 2: Explicit opt-in for trained model ===")
+print("=== Test 2: Legacy ML field is rejected ===")
 resp2 = client.post("/api/cognitive-load", data={
     "image": (make_test_image(), "smoke2.png"),
     "task_type": "search",
-    "target_specificity": "medium",
     "time_pressure": "medium",
-    "search_mode": "known_item",
-    "profile_preset": "neutral",
     "use_trained_model": "true",
 })
 data2 = resp2.get_json()
 print(f"  HTTP status:         {resp2.status_code}")
-print(f"  prediction_source:   {data2.get('prediction_source')}")
-print(f"  trained_requested:   {data2.get('trained_model_requested')}")
-print(f"  trained_available:   {data2.get('trained_model_available')}")
-print(f"  cognitive_load_score:{data2.get('adjusted_prediction', {}).get('cognitive_load_score'):.1f}")
+print(f"  error:               {data2.get('error')}")

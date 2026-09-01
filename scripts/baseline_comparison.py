@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
-Baseline Comparison — Two-Stage Pipeline
+ARCHIVED LEGACY ANALYSIS — excluded from Stage 2 v1.
+
+Baseline Comparison — superseded pipeline concept
 ==========================================
 Computes cognitive load estimates for a set of test screenshots under three
 pipeline configurations and reports the difference in score and feature richness.
@@ -62,8 +64,8 @@ sys.path.insert(0, str(ROOT / "stage1"))
 
 from visual_complexity import compute_complexity_vector
 from hceye.hceye_features import HCEyeFeatureExtractor
-from stage2.task_descriptor import TaskDescriptor
-from stage2.user_profile import get_profile
+from stage2.task_descriptor import TaskDescriptor  # archived legacy scaffold
+from stage2.user_profile import get_profile  # archived legacy scaffold
 
 
 # ── Default test images ───────────────────────────────────────────────────────

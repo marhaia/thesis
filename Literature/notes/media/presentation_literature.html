@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Literature Review — Cognitive Predictive Metrics for GUI Evaluation</title>
+<meta name="robots" content="noindex,nofollow">
+<title>HISTORICAL / SUPERSEDED — Literature Review</title>
 <style>
   :root {
     --bg: #0f1117;
@@ -258,7 +259,10 @@
   }
 </style>
 </head>
-<body>
+<body data-artifact-status="historical-superseded">
+<aside class="artifact-status" id="artifactStatus" role="alert" style="position:fixed;z-index:9999;top:12px;left:50%;transform:translateX(-50%);max-width:920px;width:calc(100% - 48px);padding:10px 16px;border:2px solid #f5a623;border-radius:8px;background:#251d0d;color:#fff;text-align:center;font:700 13px/1.35 system-ui,sans-serif;box-shadow:0 4px 18px #0008;">
+  HISTORICAL / SUPERSEDED — June 2026 planning presentation. Not the current Stage-1 methodology or claim basis. Stage 2 is not accepted or validated. Current authority: README.md and stage1/DOCUMENTATION.md.
+</aside>
 <div class="slideshow" id="slideshow">
 
   <!-- ========== SLIDE 1: TITLE ========== -->
@@ -307,8 +311,8 @@
       <div class="card card-green">
         <h3>Ansatz</h3>
         <p>Zweistufige Erweiterungspipeline:<br>
-        <span class="highlight">Stage 1</span> → Visueller Komplexitätsvektor v ∈ ℝ⁸<br>
-        <span class="highlight">Stage 2</span> → Saliency + Fixation + Cognitive Load Index (0–100)</p>
+        <span class="highlight">Historischer Plan — Stage 1</span> → Visueller Komplexitätsvektor v ∈ ℝ⁸<br>
+        <span class="highlight">Historischer Plan — Stage 2</span> → Saliency + Fixation + Cognitive Load Index (0–100); nicht akzeptiert oder validiert</p>
       </div>
     </div>
     <div class="mt-sm">
@@ -551,7 +555,7 @@
             <span class="muted" style="font-size:0.78rem">koppelt alle 3 Heads | MIA26</span>
           </div>
         </div>
-        <p style="margin-top: 8px; font-size:0.8rem; color: var(--tier1)">✅ Vollständig implementiert</p>
+        <p style="margin-top: 8px; font-size:0.8rem; color: var(--tier3)">Historischer Entwurf — nicht als aktuelle Implementierung oder Validierung akzeptiert</p>
       </div>
     </div>
   </div>
@@ -583,15 +587,15 @@
       <div>
         <div class="finding" style="border-color: var(--tier1); margin-bottom: 8px">
           <div class="label" style="color: var(--tier1)">Stage 2 — Multi-Output Regression</div>
-          <span class="impl-badge">✅ fertig</span> Ridge/RF/XGBoost · Input x ∈ ℝ¹⁹ · Output y ∈ ℝ³
+          <span class="impl-badge">Historischer Scaffold</span> Ridge/RF/XGBoost · nicht als Stage 2 akzeptiert oder validiert
         </div>
         <div class="finding" style="border-color: var(--tier1); margin-bottom: 8px">
           <div class="label" style="color: var(--tier1)">Coherence Check (3 Regeln)</div>
-          <span class="impl-badge">✅ fertig</span> Konsistenzprüfung zwischen allen Outputs
+          <span class="impl-badge">Historischer Scaffold</span> Explorative Proxy-Konsistenzprüfung · nicht validiert
         </div>
         <div class="finding" style="border-color: var(--tier1); margin-bottom: 8px">
           <div class="label" style="color: var(--tier1)">User Profile (Big Five)</div>
-          <span class="impl-badge">✅ fertig</span> 5 Presets · Modifier-Skalar für CL-Anpassung
+          <span class="impl-badge">Historischer Scaffold</span> Unvalidierte Presets · kein gemessener Cognitive-Load-Effekt
         </div>
         <div class="finding" style="border-color: var(--tier3)">
           <div class="label" style="color: var(--tier3)">Was noch fehlt</div>
@@ -613,7 +617,7 @@
       </div>
       <div class="finding" style="border-color: var(--accent3)">
         <div class="label" style="color:var(--accent3)">Befund 2 — Empirische Evidenz vorhanden</div>
-        DAS24 (HCEye) liefert den direkten empirischen Beleg: Cognitive Load verändert Saliency-Verteilung messbar. Die Kopplung dieser Outputs ist nicht nur theoretisch sinnvoll — sie ist empirisch belegt.
+        DAS24 (HCEye) berichtet Effekte innerhalb seiner eigenen Studie. Das validiert weder die screenshot-spezifischen Projekt-Proxies noch deren Kopplung oder die Stage-2-Pipeline unabhängig.
       </div>
       <div class="finding" style="border-color: var(--accent4)">
         <div class="label" style="color:var(--accent4)">Befund 3 — SOTA-Vergleich identifiziert</div>
@@ -733,7 +737,7 @@
     <div class="final-statement">
       <p>Die Literaturanalyse zeigt: <strong>Das Forschungsfeld ist bereit.</strong><br><br>
       Die theoretische Grundlage (Computational Rationality, Jokinen 2020) ist ausgereift. Der empirische Beleg für die Notwendigkeit (DAS24: Cognitive Load verändert Saliency) ist vorhanden. Die Lücke — kein System integriert alle drei Outputs mit Coherence-Constraint in eine bestehende Evaluierungsplattform — ist klar identifiziert und durch <strong>~50 Paper in 9 Clustern</strong> belegt.<br><br>
-      Der Implementierungsstand ist entscheidend: <strong>Stage 1, Stage 2, UMSI++, Jokinen AFG, HCEye-Features, Flask API</strong> — alles läuft. Die Thesis ist keine Implementierungsarbeit mehr, sondern <strong>empirische Validierung + wissenschaftliches Schreiben</strong>.<br><br>
+      Historischer Stand: Mehrere Prototyp-Komponenten existierten. <strong>Nur der aktuelle, separat dokumentierte Stage-1-Vertrag ist akzeptiert; Stage 2 ist weder akzeptiert noch validiert.</strong><br><br>
       Was bleibt: <strong>Die Nutzerstudie (N≈30–35, Aug 2026)</strong> ist der kritische Pfad. Wenn Rekrutierung klappt → Dezember 2026 ist realistisch.</p>
     </div>
     <div class="grid3 mt" style="gap:16px;">

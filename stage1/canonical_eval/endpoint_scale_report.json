@@ -1,0 +1,10 @@
+{
+  "status": "historical_superseded_do_not_use",
+  "active_pipeline_evidence": false,
+  "claim_boundary": "This legacy endpoint-scale export depended on retired fail-open saliency, neutral OCR fallbacks, task/profile modifiers, and response fields that are not part of the frozen Stage-1 plus Stage-2-v1 contract.",
+  "replacement_evidence": [
+    "maintained canonical-scale regression tests",
+    "real-weight Stage-1 and Stage-2-v1 acceptance replay"
+  ],
+  "legacy_measurements_removed": true
+}

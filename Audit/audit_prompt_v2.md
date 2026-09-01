@@ -1,3 +1,7 @@
+> **HISTORICAL / SUPERSEDED AUDIT ARTIFACT — NOT A CURRENT VERDICT.** Retained
+> for provenance only; the requirements and candidate context below apply only
+> to the historical audit snapshot represented by this file.
+
 # Reusable Repository Audit Prompt (v2)
 
 > Purpose: a **standing, repeatable** audit prompt for an *external* AI model

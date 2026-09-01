@@ -1,0 +1,27 @@
+{
+  "environment": {
+    "python_version": "3.9.6",
+    "numpy_version": "1.26.4",
+    "opencv_version": "4.10.0",
+    "platform": "macOS-26.3-arm64-arm-64bit",
+    "machine": "arm64",
+    "processor": "arm",
+    "runtime_note": "Elapsed times are environment-specific observed measurements on the platform above, not a universal benchmark."
+  },
+  "phase_times_s": {
+    "fixture_scale_report_s": 106.208137792,
+    "corpus_stats_s": 0.725747541000004,
+    "candidate_scale_gap_s": 310.60109008300003,
+    "ueyes_perturbation_s": 382.95141508300003,
+    "heldout_ueyes_s": 210.200220875
+  },
+  "seed": 20240607,
+  "authorized_categories": [
+    "desktop",
+    "mobile",
+    "web"
+  ],
+  "excluded_categories": [
+    "poster"
+  ]
+}

@@ -1,0 +1,157 @@
+{
+  "schema_version": "canonical-visual-feature-norms-v2",
+  "analysis_domain": "canonical",
+  "canonical_long_side": 1280,
+  "canonical_analysis_version": "canonical-analysis-v1.1:long1280:both-dims-min16:area-down/linear-up",
+  "feature_list": [
+    "shannon_entropy",
+    "edge_density",
+    "feature_congestion",
+    "subband_entropy",
+    "layout_symmetry",
+    "chromatic_coherence",
+    "visual_hierarchy",
+    "interactive_element_density"
+  ],
+  "includes_saliency": false,
+  "num_images": 1404,
+  "official_split_csv_sha256": "fc22d679849862c0f0476b1d9c270a50383c62304c7635b87cb18a2559a25c68",
+  "reference_partition": "Train",
+  "evaluation_partition": "Test",
+  "reference_category_counts": {
+    "desktop": 468,
+    "mobile": 468,
+    "web": 468
+  },
+  "reference_total": 1404,
+  "evaluation_category_counts": {
+    "desktop": 27,
+    "mobile": 27,
+    "web": 27
+  },
+  "evaluation_total": 81,
+  "excluded_categories": [
+    "poster"
+  ],
+  "development_population_sha256": "4c90612e1d228d8ea8d0e2d6ad1dccb6db8a67ff9180569545e11584071b1801",
+  "heldout_test_population_sha256": "1d98dd2072f99e2bfbdcc5baa46517d5d1bb80fdd113956b30139dc86607f6a8",
+  "standard_deviation": {
+    "convention": "sample standard deviation",
+    "ddof": 1
+  },
+  "stored_quantiles": {
+    "implementation": "numpy.percentile",
+    "numpy_version": "1.26.4",
+    "method": "linear",
+    "probabilities_percent": [
+      5,
+      25,
+      50,
+      75,
+      95
+    ]
+  },
+  "source_rows": {
+    "filename": "canonical_visual_feature_rows.csv",
+    "sha256": "b9769935527a58cf7c9e158a6d3ed0bcd33edaa37aa3dcc40b3ed273c453804a",
+    "row_count": 1485
+  },
+  "features": {
+    "shannon_entropy": {
+      "n": 1404,
+      "mean": 4.389554846156229,
+      "std": 1.7890988118165512,
+      "min": 0.11742080003023148,
+      "max": 7.794979095458984,
+      "p5": 1.4910389304161071,
+      "p25": 2.969773828983307,
+      "p50": 4.4382898807525635,
+      "p75": 5.8366429805755615,
+      "p95": 7.21002607345581
+    },
+    "edge_density": {
+      "n": 1404,
+      "mean": 0.0343384548818775,
+      "std": 0.01754329030770415,
+      "min": 0.0015093315972222222,
+      "max": 0.11573489728412256,
+      "p5": 0.011046005879815869,
+      "p25": 0.020361870659722222,
+      "p50": 0.03199175347222222,
+      "p75": 0.045598876210757186,
+      "p95": 0.06523539754756495
+    },
+    "feature_congestion": {
+      "n": 1404,
+      "mean": 19.006790676658692,
+      "std": 8.189593907116842,
+      "min": 2.4755895790211566,
+      "max": 53.55512874552973,
+      "p5": 7.603625943791407,
+      "p25": 12.67483959269794,
+      "p50": 18.176083891610638,
+      "p75": 24.108541212078414,
+      "p95": 33.89741977215474
+    },
+    "subband_entropy": {
+      "n": 1404,
+      "mean": 2.868863757649856,
+      "std": 0.7276300402038437,
+      "min": 0.5728002432300214,
+      "max": 4.4115989626836605,
+      "p5": 1.6248742686441817,
+      "p25": 2.3293571967635236,
+      "p50": 2.9674039919782165,
+      "p75": 3.4445441058878763,
+      "p95": 3.9262358578050205
+    },
+    "layout_symmetry": {
+      "n": 1404,
+      "mean": 0.3463548799740866,
+      "std": 0.21522990056459643,
+      "min": 0.0,
+      "max": 0.9607546599241814,
+      "p5": 0.05672899045844461,
+      "p25": 0.18297366658116224,
+      "p50": 0.30025537757797355,
+      "p75": 0.4769075865250253,
+      "p95": 0.7535029786371047
+    },
+    "chromatic_coherence": {
+      "n": 1404,
+      "mean": 0.40418667365868804,
+      "std": 0.13820147170481495,
+      "min": 0.05496358969360237,
+      "max": 0.8093024838039307,
+      "p5": 0.16085680984931172,
+      "p25": 0.31700012034111114,
+      "p50": 0.41250184214460345,
+      "p75": 0.4968055077444206,
+      "p95": 0.6289070130584423
+    },
+    "visual_hierarchy": {
+      "n": 1404,
+      "mean": 0.45441712026368264,
+      "std": 0.1678834427986184,
+      "min": 0.04687839592573505,
+      "max": 0.8116793990225616,
+      "p5": 0.17577347958420705,
+      "p25": 0.3153570115299273,
+      "p50": 0.48007344275255553,
+      "p75": 0.5916771469029076,
+      "p95": 0.6925282276875414
+    },
+    "interactive_element_density": {
+      "n": 1404,
+      "mean": 0.27149695594442347,
+      "std": 0.2072683191440066,
+      "min": 0.0,
+      "max": 1.6927083333333335,
+      "p5": 0.013200139979764028,
+      "p25": 0.12267026488777852,
+      "p50": 0.2387152777777778,
+      "p75": 0.3689236111111111,
+      "p95": 0.6618923611111112
+    }
+  }
+}

@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pipeline — Supervisor Presentation · 03.06.2026</title>
+<meta name="robots" content="noindex,nofollow">
+<title>HISTORICAL / SUPERSEDED — Pipeline Supervisor Presentation · 03.06.2026</title>
 <style>
   :root {
     --bg: #0f0f11;
@@ -25,6 +26,25 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size: 14px;
     line-height: 1.65;
+  }
+
+  .artifact-status {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    padding: 14px 24px;
+    background: #4a1717;
+    border-bottom: 2px solid var(--red);
+    color: #fff;
+    font-size: 13px;
+    line-height: 1.45;
+    text-align: center;
+  }
+  .artifact-status strong {
+    display: block;
+    font-size: 14px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
   }
 
   /* Slide container */
@@ -401,10 +421,18 @@
   @media print {
     body { background: white; color: black; }
     .section { page-break-inside: avoid; }
+    .artifact-status { position: static; }
   }
 </style>
 </head>
-<body>
+<body data-artifact-status="historical-superseded">
+<aside class="artifact-status" id="artifactStatus" role="alert">
+  <strong>Historical / Superseded Supervisor Deck — June 2026</strong>
+  Preserved only as development history. This is not the current methodology,
+  architecture, validation evidence, or claim basis. Current Stage 1 uses the
+  task-independent x19 boundary and an unvalidated layout-complexity proxy; it
+  does not ship a validated cognitive-load score.
+</aside>
 <div class="deck">
 
   <!-- ── Cover ────────────────────────────────── -->
@@ -592,11 +620,11 @@ Screenshot (PNG/JPG)<br>
 
       <div class="tl-item">
         <div class="tl-date">Phase 6 · Validierung</div>
-        <div class="tl-title">Zwei Validierungsscripts — gegen externe Ground Truth</div>
+        <div class="tl-title">Zwei historische Engineering-Vergleiche — keine unabhängige Validierung</div>
         <div class="tl-body">
           <strong>hceye_condition_comparison.py:</strong> Testet die Kernannahme H1 ("unter hoher kognitiver Last haben Nutzer weniger Fixationen"). Ergebnis: p = 2.55×10⁻²⁸, Cohen's d = 1.47 (large effect). Modellabweichung vom beobachteten Ratio: 0.6%.<br>
-          <strong>ueyes_saliency_validation.py:</strong> Validiert UMSI++ gegen den UEyes Human-Fixation Ground Truth (Jiang et al. CHI 2023, 62 Probanden, 1.980 UI-Screenshots). CC = 0.896, SIM = 0.806 — beide über dem publizierten SOTA-Bereich (CC: 0.40–0.70).<br>
-          <strong>Warum wichtig:</strong> Diese Ergebnisse zeigen, dass die Pipeline nicht "frei erfunden" ist, sondern auf Modellen basiert, die empirisch reproduzierbar validiert wurden.
+          <strong>ueyes_saliency_validation.py:</strong> Historischer deskriptiver Engineering-Vergleich der UMSI++-Ausgaben mit den bereitgestellten UEyes-Dichtekarten. Der damalige Lauf berichtete CC = 0.896 und SIM = 0.806. Das ist kein unabhängiger Benchmark oder Validierungsnachweis, kein SOTA-Überlegenheitsnachweis und keine Validierung des nachgelagerten Screenshot-Proxys.<br>
+          <strong>Einordnung:</strong> Diese historischen Ergebnisse dokumentieren interne Engineering-Prüfungen der verwendeten Komponenten; sie belegen keine End-to-End-Konstruktvalidität der Pipeline.
         </div>
       </div>
 
@@ -662,8 +690,8 @@ Screenshot (PNG/JPG)<br>
   <!-- ── 5. Validierung ─────────────────────── -->
   <div class="section">
     <div class="section-num">05 · Validierungsergebnisse</div>
-    <h2>Empirische Absicherung</h2>
-    <p class="section-intro">Zwei externe Validierungen gegen Human Ground Truth belegen, dass die Pipeline auf Modellen mit messbarer Güte basiert.</p>
+    <h2>Historische Engineering-Prüfungen</h2>
+    <p class="section-intro">Die folgenden älteren Komponentenvergleiche sind deskriptive Engineering-Prüfungen und keine unabhängige Validierung der Pipeline oder ihres Screenshot-Proxys.</p>
 
     <div class="val-grid">
       <div class="val-card">
@@ -678,12 +706,12 @@ Screenshot (PNG/JPG)<br>
         <div class="val-ref">Das et al. ETRA 2024 · Dual-Task-Paradigma</div>
       </div>
       <div class="val-card">
-        <h4>UMSI++ — Saliency vs. UEyes Ground Truth</h4>
+        <h4>UMSI++ — deskriptiver UEyes-Engineering-Vergleich</h4>
         <div class="val-stat">CC = 0.896</div>
         <div class="val-desc">
           <strong>SIM = 0.806</strong><br>
-          Validiert gegen UEyes Human-Fixation Ground Truth: 62 Probanden, 1.980 UI-Screenshots.<br>
-          SOTA-Bereich (publiziert): CC 0.40–0.70. Pipeline liegt deutlich darüber.
+          Historischer Vergleich mit bereitgestellten UEyes-Dichtekarten.<br>
+          Kein unabhängiger Benchmark oder Validierungsnachweis, kein SOTA-Überlegenheitsnachweis und keine Validierung des nachgelagerten Screenshot-Proxys.
         </div>
         <div class="val-ref">Jiang et al. CHI 2023 · Bylinskii et al. 2018 (Saliency Metrics)</div>
       </div>
