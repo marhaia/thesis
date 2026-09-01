@@ -138,11 +138,10 @@ _visual_cache = OrderedDict()     # versioned key -> visual results dict
 _visual_cache_max = 64            # max distinct images kept for visual features
 
 # Empirical GUI reference distribution (mean / std / percentiles per feature),
-# computed by build_feature_norms.py over 1,485 real GUI screenshots
-# (495 web + 495 mobile + 495 desktop). It lets the pipeline express each
-# feature value as a neutral z-score / percentile relative to the authorized
-# 1,485-image UEyes GUI reference subset. This is corpus-relative, not a claim
-# about a universal or population-level GUI norm.
+# computed over the official UEyes Train partition: 1,404 real GUI screenshots
+# (468 web + 468 mobile + 468 desktop). The complete official Test partition is
+# excluded from reference estimation and reserved for evaluation. The reference
+# is corpus-relative, not a universal or population-level GUI norm.
 # Loaded lazily once and cached for the process lifetime.
 _FEATURE_NORMS_PATH = Path(__file__).parent / "data" / "results" / "feature_norms.json"
 _feature_norms = None
@@ -281,8 +280,8 @@ def compare_to_reference(feature_values):
         except (TypeError, ValueError):
             continue
         z = (v - stats["mean"]) / stats["std"]
-        # Signed change relative to the authorized UEyes GUI reference-subset
-        # baseline; this is not a population-level GUI norm.
+        # Signed change relative to the official-Train UEyes GUI development
+        # reference baseline; this is not a population-level GUI norm.
         # Positive = this screen is above the reference mean, negative = below.
         # This keeps direction/sign visible, unlike a 0-100 % range mapping.
         mean = stats["mean"]
@@ -2406,8 +2405,8 @@ def cognitive_load():
             layout_proxy_value=stage1_score,
         )
 
-        # Per-feature comparison against the authorized 1,485-image UEyes GUI
-        # reference subset. The z-score/percentile is corpus-relative and does
+        # Per-feature comparison against the 1,404-image official-Train UEyes GUI
+        # development reference. The z-score/percentile is corpus-relative and does
         # not define a universal or population-level GUI norm.
         reference_input = dict(vis_results)
         if saliency_dict:

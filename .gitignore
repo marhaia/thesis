@@ -25,6 +25,7 @@ build/
 
 # Data & large files
 *.csv
+!stage1/data/results/ueyes_stimulus_selection_v1.csv
 *.parquet
 *.h5
 *.hdf5

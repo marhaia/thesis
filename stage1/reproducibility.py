@@ -188,7 +188,7 @@ def load_reference_pack_manifest() -> tuple[dict, str]:
     manifest, manifest_sha = _load_pinned_manifest(
         REFERENCE_MANIFEST_PATH,
         REFERENCE_MANIFEST_HASH_PATH,
-        "stage1-reference-pack-v1",
+        "stage1-reference-pack-v2",
     )
     reference_pack = manifest.get("reference_pack")
     if not isinstance(reference_pack, dict) or not reference_pack:

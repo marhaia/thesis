@@ -58,7 +58,7 @@ PRODUCTION_NORMS_PATH = os.path.join(
     ROOT, "stage1", "data", "results", "feature_norms.json"
 )
 EXPECTED_PRODUCTION_NORMS_SHA256 = (
-    "d17b3698c2e4b0016a091955e374203f3d6f2eb258c5de6a47a3dc0b6ba9736f"
+    "4aa326d920cbf936b57da2356dffff7a885d859ed1e8a1422377e0a7a98ed116"
 )
 REQUIRED_SALIENCY_KEYS = (
     "saliency_dispersion",

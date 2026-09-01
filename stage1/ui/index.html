@@ -1095,7 +1095,7 @@
         .feature-signal.warn { background: rgba(245,158,11,.15); color: var(--warning); }
         .feature-signal.high { background: rgba(249,115,22,.15); color: #f97316; }
         .feature-signal.crit { background: rgba(239,68,68,.15);  color: var(--danger); }
-        /* Corpus-relative comparison against the authorized UEyes GUI subset. */
+        /* Corpus-relative comparison against the official UEyes Train GUI subset. */
         .feature-ref {
             font-size: 11px;
             color: var(--text-dim);
@@ -3267,7 +3267,10 @@
                 const meta = data.reference_meta || {};
                 if (data.reference && Object.keys(data.reference).length && meta.num_images) {
                     const cats = (meta.categories_included || []).join(' + ');
-                    provEl.innerHTML = `<strong>Actual v8 measurements with method and implementation provenance.</strong> Reference position uses ${meta.num_images.toLocaleString()} GUI screenshots${cats ? ` (${cats})` : ''}; it is corpus-relative, not a universal norm.`;
+                    const split = meta.reference_partition === "Train"
+                        ? " from the official UEyes Train partition; the complete official Test partition is excluded"
+                        : "";
+                    provEl.innerHTML = `<strong>Actual v8 measurements with method and implementation provenance.</strong> Reference position uses ${meta.num_images.toLocaleString()} GUI screenshots${cats ? ` (${cats})` : ''}${split}; it is corpus-relative, not a universal norm.`;
                     provEl.style.display = '';
                 } else {
                     provEl.style.display = 'none';

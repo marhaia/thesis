@@ -53,7 +53,7 @@ def test_pinned_runtime_and_reference_manifests_validate_exact_artifact_bytes():
         "915cb746edf82da2e86840645815441e26cd590d5aae1e894e2dc9e729e72fde"
     )
     assert reference_sha == (
-        "301e471f73c32995623c36abc0a7ca422177d87c11e6eab70ff955705f88b771"
+        "2aa7d45a92158a3a26bfd4fc38ae79b33bd2fc81827eace55ad9198b7aba6987"
     )
     assert runtime["platform"] == {
         "operating_system": "macOS 26.3",
@@ -63,26 +63,43 @@ def test_pinned_runtime_and_reference_manifests_validate_exact_artifact_bytes():
     assert runtime["dependency_freeze"]["lock_file_sha256"] == (
         "319201eb160b44ec3d47b2e931e58f4d7ba657b2607bb2a91ea82f54eec57bf4"
     )
-    assert reference["reference_pack"]["feature_norms"]["num_images"] == 1485
+    feature_norms = reference["reference_pack"]["feature_norms"]
+    assert feature_norms["num_images"] == 1404
+    assert feature_norms["reference_partition"] == "Train"
+    assert feature_norms["evaluation_partition_excluded"] == "Test"
 
 
 def test_reference_pack_freezes_corpus_and_statistical_methods():
     manifest, _ = repro.load_reference_pack_manifest()
 
-    assert manifest["ueyes_corpus_provenance"] == {
-        "dataset": "UEyes",
-        "paper_doi": "https://doi.org/10.1145/3544548.3581096",
-        "dataset_record": "https://zenodo.org/records/8010312",
-        "image_types_csv_sha256": (
-            "fc22d679849862c0f0476b1d9c270a50383c62304c7635b87cb18a2559a25c68"
-        ),
-        "authorized_corpus_aggregate_sha256": (
-            "785c4e37e95ecd36903c05a280f4db3733d378328a8deec8fa4258c3bb67e200"
-        ),
-        "authorized_counts": {"desktop": 495, "mobile": 495, "web": 495},
-        "excluded_categories": ["poster"],
-        "is_subsample": False,
+    provenance = manifest["ueyes_corpus_provenance"]
+    assert provenance["dataset"] == "UEyes"
+    assert provenance["image_types_csv_sha256"] == (
+        "fc22d679849862c0f0476b1d9c270a50383c62304c7635b87cb18a2559a25c68"
+    )
+    assert provenance["full_authorized_counts"] == {
+        "desktop": 495,
+        "mobile": 495,
+        "web": 495,
     }
+    assert provenance["development_reference"] == {
+        "official_partition": "Train",
+        "counts": {"desktop": 468, "mobile": 468, "web": 468},
+        "total": 1404,
+        "population_sha256": (
+            "4c90612e1d228d8ea8d0e2d6ad1dccb6db8a67ff9180569545e11584071b1801"
+        ),
+    }
+    assert provenance["heldout_evaluation"] == {
+        "official_partition": "Test",
+        "counts": {"desktop": 27, "mobile": 27, "web": 27},
+        "total": 81,
+        "population_sha256": (
+            "1d98dd2072f99e2bfbdcc5baa46517d5d1bb80fdd113956b30139dc86607f6a8"
+        ),
+    }
+    assert provenance["excluded_categories"] == ["poster"]
+    assert provenance["is_subsample"] is False
     stats = manifest["statistical_conventions"]
     assert stats["standard_deviation"] == {
         "convention": "sample standard deviation",
@@ -98,7 +115,7 @@ def test_reference_pack_freezes_corpus_and_statistical_methods():
 def test_manifest_hash_mismatch_fails_closed(tmp_path):
     manifest = tmp_path / "manifest.json"
     manifest.write_text(
-        json.dumps({"schema_version": "stage1-reference-pack-v1"}),
+        json.dumps({"schema_version": "stage1-reference-pack-v2"}),
         encoding="utf-8",
     )
     hash_path = tmp_path / "manifest.sha256"
@@ -106,7 +123,7 @@ def test_manifest_hash_mismatch_fails_closed(tmp_path):
 
     with pytest.raises(repro.ReproducibilityError, match="SHA-256 mismatch"):
         repro._load_pinned_manifest(
-            manifest, hash_path, "stage1-reference-pack-v1"
+            manifest, hash_path, "stage1-reference-pack-v2"
         )
 
 
@@ -135,7 +152,7 @@ def test_study_metadata_exports_commit_checkpoint_norm_and_schema_ids(
         "e2272681d9d67a04e2dff396b6e95077bc19001f8f6d3593c307b9852e1c29e8"
     )
     assert metadata["feature_norms_sha256"] == (
-        "d17b3698c2e4b0016a091955e374203f3d6f2eb258c5de6a47a3dc0b6ba9736f"
+        "4aa326d920cbf936b57da2356dffff7a885d859ed1e8a1422377e0a7a98ed116"
     )
     assert metadata["schema_id"] == "stage1-study-export-v1"
     assert metadata["stage1_vector_schema"] == "stage1-x19-float32-v1"

@@ -1,5 +1,8 @@
 {
-  "schema_version": "canonical-visual-feature-norms-v1",
+  "schema_version": "canonical-visual-feature-norms-v2",
+  "analysis_domain": "canonical",
+  "canonical_long_side": 1280,
+  "canonical_analysis_version": "canonical-analysis-v1.1:long1280:both-dims-min16:area-down/linear-up",
   "feature_list": [
     "shannon_entropy",
     "edge_density",
@@ -10,275 +13,145 @@
     "visual_hierarchy",
     "interactive_element_density"
   ],
-  "analysis_domain": "canonical",
-  "canonical_long_side": 1280,
-  "canonical_analysis_version": "canonical-analysis-v1.1:long1280:both-dims-min16:area-down/linear-up",
-  "interpolation_behavior": "INTER_AREA when downscaling, INTER_LINEAR when upscaling (aspect preserved)",
-  "input_dimension_contract": {
-    "min_long_side_px": 16,
-    "min_short_side_px": 16
+  "includes_saliency": false,
+  "num_images": 1404,
+  "official_split_csv_sha256": "fc22d679849862c0f0476b1d9c270a50383c62304c7635b87cb18a2559a25c68",
+  "reference_partition": "Train",
+  "evaluation_partition": "Test",
+  "reference_category_counts": {
+    "desktop": 468,
+    "mobile": 468,
+    "web": 468
   },
-  "authorized_categories": [
-    "desktop",
-    "mobile",
-    "web"
-  ],
+  "reference_total": 1404,
+  "evaluation_category_counts": {
+    "desktop": 27,
+    "mobile": 27,
+    "web": 27
+  },
+  "evaluation_total": 81,
   "excluded_categories": [
     "poster"
   ],
-  "authorized_category_counts": {
-    "desktop": 495,
-    "mobile": 495,
-    "web": 495
+  "development_population_sha256": "4c90612e1d228d8ea8d0e2d6ad1dccb6db8a67ff9180569545e11584071b1801",
+  "heldout_test_population_sha256": "1d98dd2072f99e2bfbdcc5baa46517d5d1bb80fdd113956b30139dc86607f6a8",
+  "standard_deviation": {
+    "convention": "sample standard deviation",
+    "ddof": 1
   },
-  "authorized_total": 1485,
-  "image_types_csv_sha256": "fc22d679849862c0f0476b1d9c270a50383c62304c7635b87cb18a2559a25c68",
-  "image_types_csv_basename": "image_types.csv",
-  "authorized_corpus_aggregate_sha256": "785c4e37e95ecd36903c05a280f4db3733d378328a8deec8fa4258c3bb67e200",
-  "is_subsample": false,
-  "processed_count": 1485,
-  "processed_category_counts": {
-    "desktop": 495,
-    "mobile": 495,
-    "web": 495
-  },
-  "processed_subset_sha256": "785c4e37e95ecd36903c05a280f4db3733d378328a8deec8fa4258c3bb67e200",
-  "n_failed_images": 0,
-  "requested_limit": null,
-  "requested_selection_count": 1485,
-  "requested_selection_sha256": "785c4e37e95ecd36903c05a280f4db3733d378328a8deec8fa4258c3bb67e200",
-  "production_extractor_sha256": "6a1cdc1291436347a7433215b7a2a0cd85e85eb700d614e1599a59df6a2a708d",
-  "generator_sha256": "4150608b4f4c0aedd0a7d8a5b44d657c4e2f1a199019b5248e2bea9e4ccefc94",
-  "run_fingerprint": {
-    "schema_version": "canonical-visual-feature-norms-v1",
-    "feature_list": [
-      "shannon_entropy",
-      "edge_density",
-      "feature_congestion",
-      "subband_entropy",
-      "layout_symmetry",
-      "chromatic_coherence",
-      "visual_hierarchy",
-      "interactive_element_density"
-    ],
-    "analysis_domain": "canonical",
-    "canonical_long_side": 1280,
-    "canonical_analysis_version": "canonical-analysis-v1.1:long1280:both-dims-min16:area-down/linear-up",
-    "interpolation_contract": "INTER_AREA when downscaling, INTER_LINEAR when upscaling (aspect preserved)",
-    "min_input_dimension_contract": {
-      "min_long_side_px": 16,
-      "min_short_side_px": 16
-    },
-    "authorized_categories": [
-      "desktop",
-      "mobile",
-      "web"
-    ],
-    "excluded_categories": [
-      "poster"
-    ],
-    "authorized_counts": {
-      "desktop": 495,
-      "mobile": 495,
-      "web": 495
-    },
-    "image_types_csv_sha256": "fc22d679849862c0f0476b1d9c270a50383c62304c7635b87cb18a2559a25c68",
-    "authorized_corpus_aggregate_sha256": "785c4e37e95ecd36903c05a280f4db3733d378328a8deec8fa4258c3bb67e200",
-    "production_extractor_sha256": "6a1cdc1291436347a7433215b7a2a0cd85e85eb700d614e1599a59df6a2a708d",
-    "generator_sha256": "4150608b4f4c0aedd0a7d8a5b44d657c4e2f1a199019b5248e2bea9e4ccefc94",
-    "environment": {
-      "python_version": "3.9.6",
-      "numpy_version": "1.26.4",
-      "opencv_version": "4.10.0",
-      "scipy_version": "1.13.1",
-      "scikit_image_version": "0.24.0",
-      "pyrtools_version": "1.0.10",
-      "pillow_version": "11.3.0",
-      "platform": "macOS-26.3-arm64-arm-64bit",
-      "machine": "arm64"
-    }
-  },
-  "run_fingerprint_sha256": "8bdac4ef44519ec9d7f6fcb4754eefa6e6b5f47bc7caf054b8b2921e502ff951",
-  "environment": {
-    "python_version": "3.9.6",
+  "stored_quantiles": {
+    "implementation": "numpy.percentile",
     "numpy_version": "1.26.4",
-    "opencv_version": "4.10.0",
-    "scipy_version": "1.13.1",
-    "scikit_image_version": "0.24.0",
-    "pyrtools_version": "1.0.10",
-    "pillow_version": "11.3.0",
-    "platform": "macOS-26.3-arm64-arm-64bit",
-    "machine": "arm64"
+    "method": "linear",
+    "probabilities_percent": [
+      5,
+      25,
+      50,
+      75,
+      95
+    ]
   },
-  "runtime_current_invocation_seconds": 6174.005,
-  "runtime_cumulative_seconds": 6174.005,
-  "runtime_cumulative_is_lower_bound": true,
-  "recovered_from_interruption": true,
-  "invocation_count": 3,
-  "segments": [
-    {
-      "invocation_index": 0,
-      "started_at": "2026-07-29T12:23:56.779262+00:00",
-      "ended_at": null,
-      "elapsed_seconds": null,
-      "n_new_rows": 495,
-      "n_failed": 0,
-      "environment": {
-        "python_version": "3.9.6",
-        "numpy_version": "1.26.4",
-        "opencv_version": "4.10.0",
-        "scipy_version": "1.13.1",
-        "scikit_image_version": "0.24.0",
-        "pyrtools_version": "1.0.10",
-        "pillow_version": "11.3.0",
-        "platform": "macOS-26.3-arm64-arm-64bit",
-        "machine": "arm64"
-      },
-      "incomplete": true,
-      "status": "running"
-    },
-    {
-      "invocation_index": 1,
-      "started_at": "2026-07-29T14:11:38.883165+00:00",
-      "ended_at": null,
-      "elapsed_seconds": null,
-      "n_new_rows": 495,
-      "n_failed": 0,
-      "environment": {
-        "python_version": "3.9.6",
-        "numpy_version": "1.26.4",
-        "opencv_version": "4.10.0",
-        "scipy_version": "1.13.1",
-        "scikit_image_version": "0.24.0",
-        "pyrtools_version": "1.0.10",
-        "pillow_version": "11.3.0",
-        "platform": "macOS-26.3-arm64-arm-64bit",
-        "machine": "arm64"
-      },
-      "incomplete": true,
-      "status": "running"
-    },
-    {
-      "invocation_index": 2,
-      "started_at": "2026-07-29T16:33:40.647827+00:00",
-      "ended_at": "2026-07-29T18:16:34.672319+00:00",
-      "elapsed_seconds": 6174.005,
-      "n_new_rows": 495,
-      "n_failed": 0,
-      "environment": {
-        "python_version": "3.9.6",
-        "numpy_version": "1.26.4",
-        "opencv_version": "4.10.0",
-        "scipy_version": "1.13.1",
-        "scikit_image_version": "0.24.0",
-        "pyrtools_version": "1.0.10",
-        "pillow_version": "11.3.0",
-        "platform": "macOS-26.3-arm64-arm-64bit",
-        "machine": "arm64"
-      },
-      "incomplete": false,
-      "status": "completed"
-    }
-  ],
-  "runtime_note": "Observed on the environment above; not a universal benchmark. Cumulative time sums only exactly-measured checkpoint segments; if any interrupted segment could not be measured, runtime_cumulative_is_lower_bound is true. The current invocation is reported separately.",
-  "includes_saliency": false,
-  "num_images": 1485,
+  "source_rows": {
+    "filename": "canonical_visual_feature_rows.csv",
+    "sha256": "b9769935527a58cf7c9e158a6d3ed0bcd33edaa37aa3dcc40b3ed273c453804a",
+    "row_count": 1485
+  },
   "features": {
     "shannon_entropy": {
-      "n": 1485,
-      "mean": 4.375412715730643,
-      "std": 1.7841784082559624,
+      "n": 1404,
+      "mean": 4.389554846156229,
+      "std": 1.7890988118165512,
       "min": 0.11742080003023148,
       "max": 7.794979095458984,
-      "p5": 1.491139030456543,
-      "p25": 2.954683303833008,
-      "p50": 4.408384323120117,
-      "p75": 5.822672367095947,
-      "p95": 7.210007095336914
+      "p5": 1.4910389304161071,
+      "p25": 2.969773828983307,
+      "p50": 4.4382898807525635,
+      "p75": 5.8366429805755615,
+      "p95": 7.21002607345581
     },
     "edge_density": {
-      "n": 1485,
-      "mean": 0.034366159555079615,
-      "std": 0.017394050169450805,
+      "n": 1404,
+      "mean": 0.0343384548818775,
+      "std": 0.01754329030770415,
       "min": 0.0015093315972222222,
       "max": 0.11573489728412256,
-      "p5": 0.011046909749476714,
-      "p25": 0.020748697916666666,
-      "p50": 0.032197265625,
-      "p75": 0.04548475477430555,
-      "p95": 0.06487825520833332
+      "p5": 0.011046005879815869,
+      "p25": 0.020361870659722222,
+      "p50": 0.03199175347222222,
+      "p75": 0.045598876210757186,
+      "p95": 0.06523539754756495
     },
     "feature_congestion": {
-      "n": 1485,
-      "mean": 19.016236614787307,
-      "std": 8.138945188956248,
+      "n": 1404,
+      "mean": 19.006790676658692,
+      "std": 8.189593907116842,
       "min": 2.4755895790211566,
       "max": 53.55512874552973,
-      "p5": 7.645084761848682,
-      "p25": 12.705682225690609,
-      "p50": 18.191867834782833,
-      "p75": 24.093899899309594,
-      "p95": 33.88709903993353
+      "p5": 7.603625943791407,
+      "p25": 12.67483959269794,
+      "p50": 18.176083891610638,
+      "p75": 24.108541212078414,
+      "p95": 33.89741977215474
     },
     "subband_entropy": {
-      "n": 1485,
-      "mean": 2.871068379367045,
-      "std": 0.7265194840872654,
+      "n": 1404,
+      "mean": 2.868863757649856,
+      "std": 0.7276300402038437,
       "min": 0.5728002432300214,
       "max": 4.4115989626836605,
-      "p5": 1.622185319741541,
-      "p25": 2.3297171719359677,
-      "p50": 2.9700639882143185,
-      "p75": 3.444285729819996,
-      "p95": 3.9255654915764837
+      "p5": 1.6248742686441817,
+      "p25": 2.3293571967635236,
+      "p50": 2.9674039919782165,
+      "p75": 3.4445441058878763,
+      "p95": 3.9262358578050205
     },
     "layout_symmetry": {
-      "n": 1485,
-      "mean": 0.3454947900559891,
-      "std": 0.21480967715603785,
+      "n": 1404,
+      "mean": 0.3463548799740866,
+      "std": 0.21522990056459643,
       "min": 0.0,
       "max": 0.9607546599241814,
-      "p5": 0.05520260503530694,
-      "p25": 0.18224158924695694,
-      "p50": 0.29998452869125136,
-      "p75": 0.4785408596070463,
-      "p95": 0.7528615369777583
+      "p5": 0.05672899045844461,
+      "p25": 0.18297366658116224,
+      "p50": 0.30025537757797355,
+      "p75": 0.4769075865250253,
+      "p95": 0.7535029786371047
     },
     "chromatic_coherence": {
-      "n": 1485,
-      "mean": 0.404198275755047,
-      "std": 0.13953373009265102,
-      "min": 0.04266156122130067,
+      "n": 1404,
+      "mean": 0.40418667365868804,
+      "std": 0.13820147170481495,
+      "min": 0.05496358969360237,
       "max": 0.8093024838039307,
-      "p5": 0.15943635264247816,
-      "p25": 0.31693109037907463,
-      "p50": 0.4119504408047639,
-      "p75": 0.49873596260483183,
-      "p95": 0.6289069631480455
+      "p5": 0.16085680984931172,
+      "p25": 0.31700012034111114,
+      "p50": 0.41250184214460345,
+      "p75": 0.4968055077444206,
+      "p95": 0.6289070130584423
     },
     "visual_hierarchy": {
-      "n": 1485,
-      "mean": 0.45350699170250225,
-      "std": 0.16860447449513719,
+      "n": 1404,
+      "mean": 0.45441712026368264,
+      "std": 0.1678834427986184,
       "min": 0.04687839592573505,
       "max": 0.8116793990225616,
-      "p5": 0.17448550570514207,
-      "p25": 0.31245120191979703,
-      "p50": 0.47862731729526287,
-      "p75": 0.5910041564542484,
-      "p95": 0.6924603921232622
+      "p5": 0.17577347958420705,
+      "p25": 0.3153570115299273,
+      "p50": 0.48007344275255553,
+      "p75": 0.5916771469029076,
+      "p95": 0.6925282276875414
     },
     "interactive_element_density": {
-      "n": 1485,
-      "mean": 0.27133264255060385,
-      "std": 0.20736516899424867,
+      "n": 1404,
+      "mean": 0.27149695594442347,
+      "std": 0.2072683191440066,
       "min": 0.0,
       "max": 1.6927083333333335,
-      "p5": 0.013287969719402144,
-      "p25": 0.12171372930866603,
+      "p5": 0.013200139979764028,
+      "p25": 0.12267026488777852,
       "p50": 0.2387152777777778,
-      "p75": 0.36943671766342145,
-      "p95": 0.6650915574563158
+      "p75": 0.3689236111111111,
+      "p95": 0.6618923611111112
     }
   }
 }

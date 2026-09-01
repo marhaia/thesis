@@ -1,24 +1,59 @@
 {
-  "schema_version": "stage1-reference-pack-v1",
+  "schema_version": "stage1-reference-pack-v2",
   "reference_pack": {
     "feature_norms": {
       "path": "stage1/data/results/feature_norms.json",
-      "sha256": "d17b3698c2e4b0016a091955e374203f3d6f2eb258c5de6a47a3dc0b6ba9736f",
-      "num_images": 1485,
+      "sha256": "4aa326d920cbf936b57da2356dffff7a885d859ed1e8a1422377e0a7a98ed116",
+      "num_images": 1404,
+      "reference_partition": "Train",
+      "evaluation_partition_excluded": "Test",
       "categories_included": [
         "desktop",
         "mobile",
         "web"
       ],
+      "category_counts": {
+        "desktop": 468,
+        "mobile": 468,
+        "web": 468
+      },
       "categories_excluded": [
         "poster"
       ]
     },
     "canonical_visual_norms": {
       "path": "stage1/data/results/canonical_visual_feature_norms.json",
-      "sha256": "196081cc5890351d409386f8698ef7c108893f1dad35f05a84fffd3e48271cb6",
-      "schema_version": "canonical-visual-feature-norms-v1",
-      "analysis_version": "canonical-analysis-v1.1:long1280:both-dims-min16:area-down/linear-up"
+      "sha256": "39973bf1904891fae233b04daa138439c2f67194dddb9b970b40beb487fd88cb",
+      "schema_version": "canonical-visual-feature-norms-v2",
+      "analysis_version": "canonical-analysis-v1.1:long1280:both-dims-min16:area-down/linear-up",
+      "reference_partition": "Train",
+      "num_images": 1404
+    },
+    "development_saliency_norms": {
+      "path": "stage1/data/results/development_saliency_feature_norms.json",
+      "sha256": "45e11883895b9351efd1a136a8610039533e14b07cfea15dfe54eceb43291374",
+      "schema_version": "canonical-saliency-feature-norms-v2",
+      "analysis_domain": "native_input",
+      "reference_partition": "Train",
+      "num_images": 1404
+    },
+    "development_reference_manifest": {
+      "path": "stage1/data/results/development_reference_manifest.json",
+      "sha256": "efb4d659446f547b9f23f8dd5e36d3b1e2f0b1e84b156206c864ecb779bc5ba6",
+      "schema_version": "ueyes-development-reference-v1"
+    },
+    "stimulus_selection_manifest": {
+      "path": "stage1/data/results/ueyes_stimulus_selection_v1.csv",
+      "sha256": "153d7ee010b70c5ff733ff88eb5d15d27c4142da5ab6da2ef8e3ea92af393514",
+      "schema_version": "ueyes-heldout-study-candidates-v1",
+      "selected_images": 60,
+      "reserve_images": 21,
+      "manual_eligibility_review": "pending"
+    },
+    "reference_norm_drift_evidence": {
+      "path": "stage1/data/results/development_reference_norm_drift.json",
+      "sha256": "8c896a207991e4ca55409d940346b760eabbce6796f767d15ee3f8ae3a030a1b",
+      "schema_version": "ueyes-development-reference-drift-v1"
     },
     "hceye_coefficient_provenance": {
       "path": "hceye/hceye_coefficient_provenance.json",
@@ -37,24 +72,52 @@
     "paper_doi": "https://doi.org/10.1145/3544548.3581096",
     "dataset_record": "https://zenodo.org/records/8010312",
     "image_types_csv_sha256": "fc22d679849862c0f0476b1d9c270a50383c62304c7635b87cb18a2559a25c68",
-    "authorized_corpus_aggregate_sha256": "785c4e37e95ecd36903c05a280f4db3733d378328a8deec8fa4258c3bb67e200",
-    "authorized_counts": {
+    "full_authorized_corpus_aggregate_sha256": "785c4e37e95ecd36903c05a280f4db3733d378328a8deec8fa4258c3bb67e200",
+    "full_authorized_counts": {
       "desktop": 495,
       "mobile": 495,
       "web": 495
     },
+    "development_reference": {
+      "official_partition": "Train",
+      "counts": {
+        "desktop": 468,
+        "mobile": 468,
+        "web": 468
+      },
+      "total": 1404,
+      "population_sha256": "4c90612e1d228d8ea8d0e2d6ad1dccb6db8a67ff9180569545e11584071b1801"
+    },
+    "heldout_evaluation": {
+      "official_partition": "Test",
+      "counts": {
+        "desktop": 27,
+        "mobile": 27,
+        "web": 27
+      },
+      "total": 81,
+      "population_sha256": "1d98dd2072f99e2bfbdcc5baa46517d5d1bb80fdd113956b30139dc86607f6a8"
+    },
     "excluded_categories": [
       "poster"
     ],
+    "selection_basis": "official_ueyes_partition",
     "is_subsample": false
   },
   "saliency_norms_provenance": {
-    "schema_version": "canonical-saliency-feature-norms-v1",
+    "schema_version": "canonical-saliency-feature-norms-v2",
     "analysis_domain": "native_input",
-    "source_artifact_sha256": "12a8f8ce59c9d9bb9bd44853cacf5136819a63fc2a933e34f334bc57b7ad3925",
+    "reference_partition": "Train",
+    "processed_count": 1404,
+    "processed_category_counts": {
+      "desktop": 468,
+      "mobile": 468,
+      "web": 468
+    },
+    "source_artifact_sha256": "45e11883895b9351efd1a136a8610039533e14b07cfea15dfe54eceb43291374",
     "source_csv_sha256": "1f576987fa080bbc7c34062ce1dde86c41c16eaa1fd17be9e00adac4e6a01638",
     "source_run_identifier": "canonical_saliency_native_p9_a71b68f",
-    "exact_stat_matches": "50/50"
+    "reaggregation_tool_sha256": "c37ab05cd1b5e52ce8254cc1b2dd46fc44d3c806a6aed22031cce9c22cd59f5e"
   },
   "statistical_conventions": {
     "standard_deviation": {
@@ -90,8 +153,10 @@
   "stage1_schema_identifiers": {
     "study_export": "stage1-study-export-v1",
     "feature_vector": "stage1-x19-float32-v1",
-    "canonical_visual": "canonical-visual-feature-norms-v1",
-    "canonical_saliency": "canonical-saliency-feature-norms-v1"
+    "canonical_visual": "canonical-visual-feature-norms-v2",
+    "canonical_saliency": "canonical-saliency-feature-norms-v2",
+    "development_reference": "ueyes-development-reference-v1",
+    "stimulus_selection": "ueyes-heldout-study-candidates-v1"
   },
-  "claim_boundary": "The reference distributions are corpus-relative UEyes project references, not official or universal UMSI norms. Poster images are excluded and no semantic classification-head labels are asserted."
+  "claim_boundary": "The production reference distributions are corpus-relative UEyes development references computed only from the official Train partition. The complete official Test partition is excluded from reference estimation and reserved for evaluation. The selected images are held-out UEyes candidates, not an external dataset, and the reference values are not universal GUI or human cognitive-load norms."
 }

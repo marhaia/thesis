@@ -199,7 +199,8 @@ class HCEyeFeatureExtractor:
             lookup_path: Path to pre-computed per-image source-study ratios.
                         If None, uses the visual-feature-to-proxy mapping.
             feature_norms_path: Path to feature_norms.json (the empirical
-                        reference distribution over 1,485 GUI screenshots).
+                        reference distribution over 1,404 official-Train GUI
+                        screenshots; the UEyes Test partition is excluded).
                         Used to percentile-normalise each Stage-1 feature so
                         that no slot saturates. If None, the default location
                         stage1/data/results/feature_norms.json is used.

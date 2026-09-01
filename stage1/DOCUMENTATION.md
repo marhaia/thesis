@@ -5,7 +5,7 @@
 **Technical scope:** *Frozen Stage-1 Screenshot Pipeline + Qualitative Stage-2 v1 Scenario Proxy*
 **Author:** Hannah Mueller (Q682780)  
 **Module:** `stage1/visual_complexity.py` + `saliency/umsi_model.py`  
-**Version:** 3.2 (19.08.2026)
+**Version:** 3.3 (01.09.2026)
 
 > **Current P7 claim policy (authoritative):** A complete score-bearing
 > Stage-1 analysis exposes the task-independent float32 vector
@@ -58,6 +58,7 @@ override the current claim policy at the top of this document.
 | 11.08.2026 | 3.0 | Reconciled x19, task independence, canonical scale, HCEye/UMSI boundaries, simulated outputs, formats, and validation status |
 | 18.08.2026 | 3.1 | Established the qualitative, non-score-bearing Stage-2 v1 scenario boundary and excluded personality, ML, and numeric task/profile modifiers |
 | 19.08.2026 | 3.2 | Finalized English claim boundaries, source provenance, and release-facing documentation without changing score-bearing computation |
+| 01.09.2026 | 3.3 | Re-estimated production reference distributions from the 1,404 official UEyes Train GUI images and reserved the complete 81-image official Test GUI partition for held-out stimulus selection |
 
 ---
 
@@ -738,6 +739,15 @@ $0, 0.05, 0.25, 0.50, 0.75, 0.95, 1$. Repeated x-anchors are omitted and
 values outside the recorded minimum/maximum are clamped by interpolation.
 Missing or non-finite score-driving inputs fail closed.
 
+The anchors are corpus-relative development references estimated exclusively
+from the official UEyes Train partition (468 desktop + 468 mobile + 468 web =
+1,404 GUI images). All 81 GUI images in the official UEyes Test partition are
+excluded from these statistics and retained as a held-out stimulus-candidate
+pool. This prevents evaluation leakage; it does not turn the values into
+universal GUI norms or validated cognitive-load norms. The split, deterministic
+20-per-category candidate selection, hashes, and manual-review boundary are
+specified in `stage1/UEYES_DEVELOPMENT_REFERENCE.md`.
+
 Define the normalized inputs:
 
 $$
@@ -827,6 +837,11 @@ paper's benchmark metrics.
 **Current evidence boundary:**
 - repository tests and frozen fixtures establish production behavior,
   checkpoint identity, postprocessing policy, and project-reference parity;
+- production reference distributions use only the 1,404 official UEyes Train
+  GUI images; the complete 81-image official Test GUI partition is excluded
+  from all reference statistics;
+- the tracked 20-per-category Test selection is a deterministic candidate set
+  whose manual eligibility review is still pending, not a final study set;
 - local UEyes sample checks are engineering sanity checks, not an official
   benchmark or independent construct validation;
 - no end-to-end validation against new human data has been completed;

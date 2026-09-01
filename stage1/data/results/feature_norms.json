@@ -1,235 +1,231 @@
 {
   "features": {
-    "chromatic_coherence": {
-      "max": 0.8093024838039307,
-      "mean": 0.404198275755047,
-      "min": 0.04266156122130067,
-      "n": 1485,
-      "p25": 0.31693109037907463,
-      "p5": 0.15943635264247816,
-      "p50": 0.4119504408047639,
-      "p75": 0.49873596260483183,
-      "p95": 0.6289069631480455,
-      "std": 0.13953373009265102
+    "shannon_entropy": {
+      "n": 1404,
+      "mean": 4.389554846156229,
+      "std": 1.7890988118165512,
+      "min": 0.11742080003023148,
+      "max": 7.794979095458984,
+      "p5": 1.4910389304161071,
+      "p25": 2.969773828983307,
+      "p50": 4.4382898807525635,
+      "p75": 5.8366429805755615,
+      "p95": 7.21002607345581
     },
     "edge_density": {
-      "max": 0.11573489728412256,
-      "mean": 0.034366159555079615,
+      "n": 1404,
+      "mean": 0.0343384548818775,
+      "std": 0.01754329030770415,
       "min": 0.0015093315972222222,
-      "n": 1485,
-      "p25": 0.020748697916666666,
-      "p5": 0.011046909749476714,
-      "p50": 0.032197265625,
-      "p75": 0.04548475477430555,
-      "p95": 0.06487825520833332,
-      "std": 0.017394050169450805
+      "max": 0.11573489728412256,
+      "p5": 0.011046005879815869,
+      "p25": 0.020361870659722222,
+      "p50": 0.03199175347222222,
+      "p75": 0.045598876210757186,
+      "p95": 0.06523539754756495
     },
     "feature_congestion": {
-      "max": 53.55512874552973,
-      "mean": 19.016236614787307,
+      "n": 1404,
+      "mean": 19.006790676658692,
+      "std": 8.189593907116842,
       "min": 2.4755895790211566,
-      "n": 1485,
-      "p25": 12.705682225690609,
-      "p5": 7.645084761848682,
-      "p50": 18.191867834782833,
-      "p75": 24.093899899309594,
-      "p95": 33.88709903993353,
-      "std": 8.138945188956248
-    },
-    "interactive_element_density": {
-      "max": 1.6927083333333335,
-      "mean": 0.27133264255060385,
-      "min": 0.0,
-      "n": 1485,
-      "p25": 0.12171372930866603,
-      "p5": 0.013287969719402144,
-      "p50": 0.2387152777777778,
-      "p75": 0.36943671766342145,
-      "p95": 0.6650915574563158,
-      "std": 0.20736516899424867
-    },
-    "layout_symmetry": {
-      "max": 0.9607546599241814,
-      "mean": 0.3454947900559891,
-      "min": 0.0,
-      "n": 1485,
-      "p25": 0.18224158924695694,
-      "p5": 0.05520260503530694,
-      "p50": 0.29998452869125136,
-      "p75": 0.4785408596070463,
-      "p95": 0.7528615369777583,
-      "std": 0.21480967715603785
-    },
-    "saliency_center_bias": {
-      "max": 0.9136360413876711,
-      "mean": 0.36462064741751665,
-      "min": 0.009517900205380065,
-      "n": 1485,
-      "p25": 0.2463684593528021,
-      "p5": 0.08653331208642001,
-      "p50": 0.3560536754475167,
-      "p75": 0.4743757367758465,
-      "p95": 0.6648770447253757,
-      "std": 0.17200967933722938
-    },
-    "saliency_coverage": {
-      "max": 0.19084683641975309,
-      "mean": 0.04762530919365942,
-      "min": 0.006543402777777778,
-      "n": 1485,
-      "p25": 0.025720871505755225,
-      "p5": 0.012810770670572917,
-      "p50": 0.04001566276447793,
-      "p75": 0.06182243441358025,
-      "p95": 0.10822993827160493,
-      "std": 0.030584340418137127
-    },
-    "saliency_dispersion": {
-      "max": 0.6351435653977133,
-      "mean": 0.42322547772049374,
-      "min": 0.18297818835380092,
-      "n": 1485,
-      "p25": 0.37898493938312344,
-      "p5": 0.3038686371842552,
-      "p50": 0.42623627046736645,
-      "p75": 0.47004306096815596,
-      "p95": 0.5292129469371593,
-      "std": 0.06821835770786475
-    },
-    "saliency_entropy": {
-      "max": 0.8950510390197032,
-      "mean": 0.548919434685633,
-      "min": 0.1774593224299062,
-      "n": 1485,
-      "p25": 0.4638283396354751,
-      "p5": 0.3287804459871504,
-      "p50": 0.5472434781788105,
-      "p75": 0.6382754529054898,
-      "p95": 0.7596795601033705,
-      "std": 0.12959152303314417
-    },
-    "saliency_peak_count": {
-      "max": 16.0,
-      "mean": 5.390572390572391,
-      "min": 1.0,
-      "n": 1485,
-      "p25": 4.0,
-      "p5": 2.0,
-      "p50": 5.0,
-      "p75": 7.0,
-      "p95": 10.0,
-      "std": 2.4737800246088266
-    },
-    "shannon_entropy": {
-      "max": 7.794979095458984,
-      "mean": 4.375412715730643,
-      "min": 0.11742080003023148,
-      "n": 1485,
-      "p25": 2.954683303833008,
-      "p5": 1.491139030456543,
-      "p50": 4.408384323120117,
-      "p75": 5.822672367095947,
-      "p95": 7.210007095336914,
-      "std": 1.7841784082559624
+      "max": 53.55512874552973,
+      "p5": 7.603625943791407,
+      "p25": 12.67483959269794,
+      "p50": 18.176083891610638,
+      "p75": 24.108541212078414,
+      "p95": 33.89741977215474
     },
     "subband_entropy": {
-      "max": 4.4115989626836605,
-      "mean": 2.871068379367045,
+      "n": 1404,
+      "mean": 2.868863757649856,
+      "std": 0.7276300402038437,
       "min": 0.5728002432300214,
-      "n": 1485,
-      "p25": 2.3297171719359677,
-      "p5": 1.622185319741541,
-      "p50": 2.9700639882143185,
-      "p75": 3.444285729819996,
-      "p95": 3.9255654915764837,
-      "std": 0.7265194840872654
+      "max": 4.4115989626836605,
+      "p5": 1.6248742686441817,
+      "p25": 2.3293571967635236,
+      "p50": 2.9674039919782165,
+      "p75": 3.4445441058878763,
+      "p95": 3.9262358578050205
+    },
+    "layout_symmetry": {
+      "n": 1404,
+      "mean": 0.3463548799740866,
+      "std": 0.21522990056459643,
+      "min": 0.0,
+      "max": 0.9607546599241814,
+      "p5": 0.05672899045844461,
+      "p25": 0.18297366658116224,
+      "p50": 0.30025537757797355,
+      "p75": 0.4769075865250253,
+      "p95": 0.7535029786371047
+    },
+    "chromatic_coherence": {
+      "n": 1404,
+      "mean": 0.40418667365868804,
+      "std": 0.13820147170481495,
+      "min": 0.05496358969360237,
+      "max": 0.8093024838039307,
+      "p5": 0.16085680984931172,
+      "p25": 0.31700012034111114,
+      "p50": 0.41250184214460345,
+      "p75": 0.4968055077444206,
+      "p95": 0.6289070130584423
     },
     "visual_hierarchy": {
-      "max": 0.8116793990225616,
-      "mean": 0.45350699170250225,
+      "n": 1404,
+      "mean": 0.45441712026368264,
+      "std": 0.1678834427986184,
       "min": 0.04687839592573505,
-      "n": 1485,
-      "p25": 0.31245120191979703,
-      "p5": 0.17448550570514207,
-      "p50": 0.47862731729526287,
-      "p75": 0.5910041564542484,
-      "p95": 0.6924603921232622,
-      "std": 0.16860447449513719
+      "max": 0.8116793990225616,
+      "p5": 0.17577347958420705,
+      "p25": 0.3153570115299273,
+      "p50": 0.48007344275255553,
+      "p75": 0.5916771469029076,
+      "p95": 0.6925282276875414
+    },
+    "interactive_element_density": {
+      "n": 1404,
+      "mean": 0.27149695594442347,
+      "std": 0.2072683191440066,
+      "min": 0.0,
+      "max": 1.6927083333333335,
+      "p5": 0.013200139979764028,
+      "p25": 0.12267026488777852,
+      "p50": 0.2387152777777778,
+      "p75": 0.3689236111111111,
+      "p95": 0.6618923611111112
+    },
+    "saliency_dispersion": {
+      "n": 1404,
+      "mean": 0.42325095617134995,
+      "std": 0.06823455454633771,
+      "min": 0.2028030517484201,
+      "max": 0.6351435653977133,
+      "p5": 0.3043859137231996,
+      "p25": 0.37881770311759455,
+      "p50": 0.42580257003907607,
+      "p75": 0.4703218599001366,
+      "p95": 0.5293308623809347
+    },
+    "saliency_peak_count": {
+      "n": 1404,
+      "mean": 5.405982905982906,
+      "std": 2.484820594763513,
+      "min": 1.0,
+      "max": 16.0,
+      "p5": 2.0,
+      "p25": 4.0,
+      "p50": 5.0,
+      "p75": 7.0,
+      "p95": 10.0
+    },
+    "saliency_center_bias": {
+      "n": 1404,
+      "mean": 0.3645428008597956,
+      "std": 0.17272157846363104,
+      "min": 0.009517900205380065,
+      "max": 0.9136360413876711,
+      "p5": 0.08556394424419148,
+      "p25": 0.24596019670694272,
+      "p50": 0.3558074550268196,
+      "p75": 0.4744341861903398,
+      "p95": 0.6660694545708757
+    },
+    "saliency_entropy": {
+      "n": 1404,
+      "mean": 0.5494562631228445,
+      "std": 0.12971527735628816,
+      "min": 0.1774593224299062,
+      "max": 0.8950510390197032,
+      "p5": 0.3287461259930457,
+      "p25": 0.46367488057979234,
+      "p50": 0.5473040084073018,
+      "p75": 0.6395773585445557,
+      "p95": 0.7598423799007803
+    },
+    "saliency_coverage": {
+      "n": 1404,
+      "mean": 0.047781594053494796,
+      "std": 0.03058029513113833,
+      "min": 0.006543402777777778,
+      "max": 0.19084683641975309,
+      "p5": 0.012837420504734614,
+      "p25": 0.02585016034847039,
+      "p50": 0.040221234622181516,
+      "p75": 0.06184858832422663,
+      "p95": 0.1079110725308642
     }
   },
   "meta": {
-    "categories_excluded": [
-      "poster"
-    ],
+    "schema_version": "ueyes-development-reference-v1",
+    "source": "UEyes dataset (Jiang et al., CHI 2023; Zenodo 8010312)",
     "categories_included": [
       "desktop",
       "mobile",
       "web"
     ],
+    "categories_excluded": [
+      "poster"
+    ],
+    "reference_partition": "Train",
+    "evaluation_partition_excluded": "Test",
     "category_counts": {
-      "desktop": 495,
-      "mobile": 495,
-      "web": 495
+      "desktop": 468,
+      "mobile": 468,
+      "web": 468
     },
+    "num_images": 1404,
     "includes_saliency": true,
     "is_subsample": false,
-    "num_images": 1485,
-    "regenerated_note": "The eight visual-feature distributions (shannon_entropy, edge_density, feature_congestion, subband_entropy, layout_symmetry, chromatic_coherence, visual_hierarchy, interactive_element_density) are left exactly as found in the base feature_norms.json supplied to stage1/tools/promote_saliency_norms.py (byte-for-byte unchanged; this tool never recomputes or re-verifies them). All five saliency-feature distributions (saliency_dispersion, saliency_peak_count, saliency_center_bias, saliency_entropy, saliency_coverage) were independently verified on 1485 real, on-disk images (Desktop 495, Mobile 495, Web 495; Poster excluded) at NATIVE_INPUT and integrated from the validated saliency norms artifact (canonical_saliency_native_p9_a71b68f).",
-    "saliency_norms_provenance": {
-      "analysis_domain": "native_input",
-      "authorized_corpus_aggregate_sha256": "785c4e37e95ecd36903c05a280f4db3733d378328a8deec8fa4258c3bb67e200",
-      "feature_keys": [
-        "saliency_dispersion",
-        "saliency_peak_count",
-        "saliency_center_bias",
-        "saliency_entropy",
-        "saliency_coverage"
-      ],
-      "note": "All five saliency distributions were recomputed independently at native input resolution and integrated from the validated saliency norms artifact; they are corpus-relative reference distributions, not official or universal UMSI norms.",
+    "reference_population_note": "Development-reference distributions computed exclusively from the official UEyes Train partition. The complete official Test partition is excluded from all reference statistics and reserved for evaluation.",
+    "official_split_csv_sha256": "fc22d679849862c0f0476b1d9c270a50383c62304c7635b87cb18a2559a25c68",
+    "development_population_sha256": "4c90612e1d228d8ea8d0e2d6ad1dccb6db8a67ff9180569545e11584071b1801",
+    "heldout_test_population_sha256": "1d98dd2072f99e2bfbdcc5baa46517d5d1bb80fdd113956b30139dc86607f6a8",
+    "visual_norms_provenance": {
+      "source_artifact_filename": "canonical_visual_feature_norms.json",
+      "source_artifact_sha256": "39973bf1904891fae233b04daa138439c2f67194dddb9b970b40beb487fd88cb",
+      "source_csv_filename": "canonical_visual_feature_rows.csv",
+      "source_csv_sha256": "b9769935527a58cf7c9e158a6d3ed0bcd33edaa37aa3dcc40b3ed273c453804a",
+      "analysis_domain": "canonical",
+      "canonical_long_side": 1280,
+      "processed_count": 1404,
       "processed_category_counts": {
-        "desktop": 495,
-        "mobile": 495,
-        "web": 495
-      },
-      "processed_count": 1485,
-      "resolution_policy": "NATIVE_INPUT",
-      "schema_version": "canonical-saliency-feature-norms-v1",
-      "source_artifact_filename": "saliency_feature_norms.json",
-      "source_artifact_sha256": "12a8f8ce59c9d9bb9bd44853cacf5136819a63fc2a933e34f334bc57b7ad3925",
-      "source_csv_filename": "saliency_feature_rows.csv",
-      "source_csv_sha256": "1f576987fa080bbc7c34062ce1dde86c41c16eaa1fd17be9e00adac4e6a01638",
-      "source_run_identifier": "canonical_saliency_native_p9_a71b68f",
-      "standard_deviation": {
-        "convention": "sample standard deviation",
-        "ddof": 1
-      },
-      "validation": {
-        "corpus_identity_gate": "PASS",
-        "exact_stat_matches": "50/50",
-        "norms_math_gate": "PASS",
-        "tolerance_mismatches": 0
+        "desktop": 468,
+        "mobile": 468,
+        "web": 468
       }
     },
-    "source": "UEyes dataset (Jiang et al., CHI 2023; Zenodo 8010312)",
-    "visual_norms_provenance": {
-      "aggregate_sha256": "196081cc5890351d409386f8698ef7c108893f1dad35f05a84fffd3e48271cb6",
-      "analysis_domain": "canonical",
-      "authorized_corpus_aggregate_sha256": "785c4e37e95ecd36903c05a280f4db3733d378328a8deec8fa4258c3bb67e200",
-      "canonical_analysis_version": "canonical-analysis-v1.1:long1280:both-dims-min16:area-down/linear-up",
-      "canonical_long_side": 1280,
-      "csv_sha256": "b9769935527a58cf7c9e158a6d3ed0bcd33edaa37aa3dcc40b3ed273c453804a",
-      "n_failed_images": 0,
+    "saliency_norms_provenance": {
+      "source_artifact_filename": "development_saliency_feature_norms.json",
+      "source_artifact_sha256": "45e11883895b9351efd1a136a8610039533e14b07cfea15dfe54eceb43291374",
+      "source_csv_filename": "saliency_feature_rows.csv",
+      "source_csv_sha256": "1f576987fa080bbc7c34062ce1dde86c41c16eaa1fd17be9e00adac4e6a01638",
+      "analysis_domain": "native_input",
+      "resolution_policy": "NATIVE_INPUT",
+      "processed_count": 1404,
       "processed_category_counts": {
-        "desktop": 495,
-        "mobile": 495,
-        "web": 495
+        "desktop": 468,
+        "mobile": 468,
+        "web": 468
+      }
+    },
+    "stimulus_selection_provenance": {
+      "schema_version": "ueyes-heldout-study-candidates-v1",
+      "selection_manifest_filename": "ueyes_stimulus_selection_v1.csv",
+      "selection_manifest_sha256": "153d7ee010b70c5ff733ff88eb5d15d27c4142da5ab6da2ef8e3ea92af393514",
+      "selection_seed": "ueyes-heldout-study-v1",
+      "selected_category_counts": {
+        "desktop": 20,
+        "mobile": 20,
+        "web": 20
       },
-      "processed_count": 1485,
-      "run_fingerprint_sha256": "8bdac4ef44519ec9d7f6fcb4754eefa6e6b5f47bc7caf054b8b2921e502ff951",
-      "schema_version": "canonical-visual-feature-norms-v1",
-      "sidecar_sha256": "cf034d5041666b8ba9a9a662c86b8636b67bd4b4ae663fd1a29cb29b876ccdfc",
-      "source_artifact_filename": "canonical_visual_feature_norms.json",
-      "source_commit": "905e35297651f2c3e20986e6c17bd3f7547871a9"
+      "reserve_category_counts": {
+        "desktop": 7,
+        "mobile": 7,
+        "web": 7
+      },
+      "manual_eligibility_review": "pending"
     }
   }
 }

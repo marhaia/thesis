@@ -104,7 +104,11 @@ prediction in this repository.
   author-selected, uncalibrated inspection triggers. It never changes a score
   and does not validate one signal against another.
 - **Reference comparisons and reproducibility identity:** corpus-relative
-  feature comparisons plus source/checkpoint/norm/runtime hashes.
+  feature comparisons plus source/checkpoint/norm/runtime hashes. Production
+  references use only the 1,404 GUI images in the official UEyes Train
+  partition; all 81 official UEyes Test GUI images are excluded from reference
+  estimation and retained as the held-out stimulus-candidate pool. See
+  [`stage1/UEYES_DEVELOPMENT_REFERENCE.md`](stage1/UEYES_DEVELOPMENT_REFERENCE.md).
 
 ---
 
@@ -144,6 +148,7 @@ prediction in this repository.
 ├── stage2/            # Stage-2 v1 scenario proxy and cross-signal review
 ├── scripts/           # Reproducible analysis and evidence utilities
 ├── tests/             # Pytest unit, regression, contract, and smoke tests
+├── stage1/UEYES_DEVELOPMENT_REFERENCE.md # Train-only norms and Test candidates
 ├── REPRODUCIBILITY.md # Frozen runtime, artifacts, and replay procedure
 ├── AUDIT_TRAIL.md     # Technical-audit scope and release evidence policy
 └── requirements.txt
