@@ -105,9 +105,10 @@ prediction in this repository.
   and does not validate one signal against another.
 - **Reference comparisons and reproducibility identity:** corpus-relative
   feature comparisons plus source/checkpoint/norm/runtime hashes. Production
-  references use only the 1,404 GUI images in the official UEyes Train
-  partition; all 81 official UEyes Test GUI images are excluded from reference
-  estimation and retained as the held-out stimulus-candidate pool. See
+  references use 1,380 official UEyes Train GUI images after excluding the
+  24 Main/Practice study images from Train. All 81 UEyes Test images remain
+  held out (see `stage1/STUDY_ISOLATED_REFERENCE.md`). For the historical
+  1,404-image reference, see
   [`stage1/UEYES_DEVELOPMENT_REFERENCE.md`](stage1/UEYES_DEVELOPMENT_REFERENCE.md).
 
 ---

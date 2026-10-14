@@ -50,21 +50,21 @@ def test_pinned_runtime_and_reference_manifests_validate_exact_artifact_bytes():
     reference, reference_sha = repro.load_reference_pack_manifest()
 
     assert runtime_sha == (
-        "915cb746edf82da2e86840645815441e26cd590d5aae1e894e2dc9e729e72fde"
+        "846e84a3cd35dedd054e05df49fba1081114ff04a66f328a9b3bfb744f5abe02"
     )
     assert reference_sha == (
-        "2aa7d45a92158a3a26bfd4fc38ae79b33bd2fc81827eace55ad9198b7aba6987"
+        "00537e81365bde48e830e111de74bab16e6c54fccbfaf5dc7ebcfb6641f40581"
     )
     assert runtime["platform"] == {
-        "operating_system": "macOS 26.3",
+        "operating_system": "macOS 26.7.1",
         "machine": "arm64",
         "python": "3.9.6",
     }
     assert runtime["dependency_freeze"]["lock_file_sha256"] == (
-        "319201eb160b44ec3d47b2e931e58f4d7ba657b2607bb2a91ea82f54eec57bf4"
+        "2b63d08a8d692c018cff0d31c0d9fd31842f9ecdd352dede0a968e933933dd7f"
     )
     feature_norms = reference["reference_pack"]["feature_norms"]
-    assert feature_norms["num_images"] == 1404
+    assert feature_norms["num_images"] == 1380
     assert feature_norms["reference_partition"] == "Train"
     assert feature_norms["evaluation_partition_excluded"] == "Test"
 
@@ -84,10 +84,10 @@ def test_reference_pack_freezes_corpus_and_statistical_methods():
     }
     assert provenance["development_reference"] == {
         "official_partition": "Train",
-        "counts": {"desktop": 468, "mobile": 468, "web": 468},
-        "total": 1404,
+        "counts": {"desktop": 460, "mobile": 460, "web": 460},
+        "total": 1380,
         "population_sha256": (
-            "4c90612e1d228d8ea8d0e2d6ad1dccb6db8a67ff9180569545e11584071b1801"
+            "9ef889847f63be8fa2a41653e3a06d4aa992384594d814c57ca1a8f82000b923"
         ),
     }
     assert provenance["heldout_evaluation"] == {
@@ -99,7 +99,7 @@ def test_reference_pack_freezes_corpus_and_statistical_methods():
         ),
     }
     assert provenance["excluded_categories"] == ["poster"]
-    assert provenance["is_subsample"] is False
+    assert provenance["is_subsample"] is True
     stats = manifest["statistical_conventions"]
     assert stats["standard_deviation"] == {
         "convention": "sample standard deviation",
@@ -152,7 +152,7 @@ def test_study_metadata_exports_commit_checkpoint_norm_and_schema_ids(
         "e2272681d9d67a04e2dff396b6e95077bc19001f8f6d3593c307b9852e1c29e8"
     )
     assert metadata["feature_norms_sha256"] == (
-        "4aa326d920cbf936b57da2356dffff7a885d859ed1e8a1422377e0a7a98ed116"
+        "2e9861f04ea80ad03ac14d0a8f5c61522f8150b814dcb31de54a36042f340e3d"
     )
     assert metadata["schema_id"] == "stage1-study-export-v1"
     assert metadata["stage1_vector_schema"] == "stage1-x19-float32-v1"
@@ -190,7 +190,7 @@ def test_strict_runtime_verification_checks_all_locked_distributions(monkeypatch
     lock_path = ROOT / "stage1/environment/requirements-macos-arm64-python3.9.lock.txt"
     locked = repro._locked_distributions(lock_path)
     monkeypatch.setenv("STAGE1_RUNTIME_VERIFICATION", "strict")
-    monkeypatch.setattr(repro.platform, "mac_ver", lambda: ("26.3", (), ""))
+    monkeypatch.setattr(repro.platform, "mac_ver", lambda: ("26.7.1", (), ""))
     monkeypatch.setattr(repro.platform, "machine", lambda: "arm64")
     monkeypatch.setattr(repro.sys, "version_info", (3, 9, 6))
     monkeypatch.setattr(

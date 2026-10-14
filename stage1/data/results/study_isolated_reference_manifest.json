@@ -1,0 +1,67 @@
+{
+  "schema_version": "ueyes-study-isolated-reference-v1",
+  "status": "CANDIDATE__PENDING_STAGE1_RELEASE_REGRESSION",
+  "claim_boundary": "Study-specific UEyes GUI feature distribution, not a cognitive-load norm or independent UMSI++ model test.",
+  "reference_partition": "Train",
+  "reference_exclusion_policy": "final_study_Main_plus_Practice",
+  "original_train_total": 1404,
+  "reference_total": 1380,
+  "reference_counts": {
+    "desktop": 460,
+    "mobile": 460,
+    "web": 460
+  },
+  "heldout_test_total": 81,
+  "heldout_test_population_sha256": "1d98dd2072f99e2bfbdcc5baa46517d5d1bb80fdd113956b30139dc86607f6a8",
+  "study_stimuli_total": 75,
+  "study_train_excluded_count": 24,
+  "study_practice_train_excluded": 2,
+  "excluded_stimuli_per_category": {
+    "desktop": 8,
+    "mobile": 8,
+    "web": 8
+  },
+  "official_split_csv_sha256": "fc22d679849862c0f0476b1d9c270a50383c62304c7635b87cb18a2559a25c68",
+  "original_train_population_sha256": "4c90612e1d228d8ea8d0e2d6ad1dccb6db8a67ff9180569545e11584071b1801",
+  "reaggregation_script_sha256": "25c9ff91c3715af70a654d69d0b9ac816a2e3a1a64f719919152e969c44c5295",
+  "development_population_sha256": "9ef889847f63be8fa2a41653e3a06d4aa992384594d814c57ca1a8f82000b923",
+  "input_hashes": {
+    "visual_csv": "b9769935527a58cf7c9e158a6d3ed0bcd33edaa37aa3dcc40b3ed273c453804a",
+    "saliency_csv": "1f576987fa080bbc7c34062ce1dde86c41c16eaa1fd17be9e00adac4e6a01638",
+    "source_zip": "3d6f3c9312b0d20737251ab156183eaaaf2139f375fdff7542409790f6cac328",
+    "stimulus_zip": "6bbf0fcfdb32e00181a8a7c05a3c84a7fb95e018a1344e2e27ff6d48b8e6c154",
+    "stimulus_manifest": "e77faface786f339d28bf9683cf4b6b0981ce4abe3c7787f0bf48d40c21628e8",
+    "exclusions_json": "9f242728f59d8d13ebd4d6112c2ff21d50e4f43dbbf65016c99769bed49698b5"
+  },
+  "frozen_conventions": {
+    "numpy_target": "1.26.4",
+    "reaggregation_numpy_actual": "1.26.4",
+    "standard_deviation_ddof": 1,
+    "quantile_method": "linear",
+    "visual_domain": "canonical_long_side_1280",
+    "saliency_domain": "native_input"
+  },
+  "baseline_reproduction_max_absolute_error": 0.0,
+  "outputs": {
+    "canonical_visual_feature_norms.json": {
+      "sha256": "d56f0b7928ecdbf45ae78921ee6a5cc18d1a88964f8a3ce3cecd648636591f6d",
+      "bytes": 5231
+    },
+    "development_saliency_feature_norms.json": {
+      "sha256": "d2583496987074a882becd4655e05bc4fbf7258549fdd0933def557f09405b54",
+      "bytes": 3926
+    },
+    "feature_norms.json": {
+      "sha256": "2e9861f04ea80ad03ac14d0a8f5c61522f8150b814dcb31de54a36042f340e3d",
+      "bytes": 8059
+    },
+    "reference_norm_drift_1404_to_1380.json": {
+      "sha256": "b1f1153d1a4a48bb5a6b924f6b0af941f194b10789ed40dd642b7cc939429eb7",
+      "bytes": 22239
+    },
+    "study_stimulus_split_75.csv": {
+      "sha256": "b123d16e232598bcaa23e5a1cc05707d1317b97d9db569cc978347c257a95010",
+      "bytes": 10157
+    }
+  }
+}

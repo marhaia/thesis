@@ -138,10 +138,10 @@ _visual_cache = OrderedDict()     # versioned key -> visual results dict
 _visual_cache_max = 64            # max distinct images kept for visual features
 
 # Empirical GUI reference distribution (mean / std / percentiles per feature),
-# computed over the official UEyes Train partition: 1,404 real GUI screenshots
-# (468 web + 468 mobile + 468 desktop). The complete official Test partition is
-# excluded from reference estimation and reserved for evaluation. The reference
-# is corpus-relative, not a universal or population-level GUI norm.
+# computed from 1,380 UEyes GUI Train images (460/category) after excluding
+# the 24 final Main/Practice study stimuli from the original 1,404 Train images.
+# All 81 official UEyes Test images are also held out. The reference remains
+# corpus-relative, not a universal GUI or cognitive-load norm.
 # Loaded lazily once and cached for the process lifetime.
 _FEATURE_NORMS_PATH = Path(__file__).parent / "data" / "results" / "feature_norms.json"
 _feature_norms = None
@@ -2405,9 +2405,11 @@ def cognitive_load():
             layout_proxy_value=stage1_score,
         )
 
-        # Per-feature comparison against the 1,404-image official-Train UEyes GUI
-        # development reference. The z-score/percentile is corpus-relative and does
-        # not define a universal or population-level GUI norm.
+        # Per-feature comparison against the study-isolated 1,380-image
+        # official-Train UEyes GUI reference (the 24 final Main/Practice study
+        # images that originated in Train are excluded). The z-score/percentile
+        # is corpus-relative and does not define a universal or population-level
+        # GUI norm.
         reference_input = dict(vis_results)
         if saliency_dict:
             reference_input.update(saliency_dict)

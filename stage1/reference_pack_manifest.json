@@ -3,8 +3,8 @@
   "reference_pack": {
     "feature_norms": {
       "path": "stage1/data/results/feature_norms.json",
-      "sha256": "4aa326d920cbf936b57da2356dffff7a885d859ed1e8a1422377e0a7a98ed116",
-      "num_images": 1404,
+      "sha256": "2e9861f04ea80ad03ac14d0a8f5c61522f8150b814dcb31de54a36042f340e3d",
+      "num_images": 1380,
       "reference_partition": "Train",
       "evaluation_partition_excluded": "Test",
       "categories_included": [
@@ -13,34 +13,30 @@
         "web"
       ],
       "category_counts": {
-        "desktop": 468,
-        "mobile": 468,
-        "web": 468
+        "desktop": 460,
+        "mobile": 460,
+        "web": 460
       },
       "categories_excluded": [
         "poster"
-      ]
+      ],
+      "reference_selection_policy": "official_Train_minus_final_study_pool_2026-09-30"
     },
     "canonical_visual_norms": {
       "path": "stage1/data/results/canonical_visual_feature_norms.json",
-      "sha256": "39973bf1904891fae233b04daa138439c2f67194dddb9b970b40beb487fd88cb",
+      "sha256": "d56f0b7928ecdbf45ae78921ee6a5cc18d1a88964f8a3ce3cecd648636591f6d",
       "schema_version": "canonical-visual-feature-norms-v2",
       "analysis_version": "canonical-analysis-v1.1:long1280:both-dims-min16:area-down/linear-up",
       "reference_partition": "Train",
-      "num_images": 1404
+      "num_images": 1380
     },
     "development_saliency_norms": {
       "path": "stage1/data/results/development_saliency_feature_norms.json",
-      "sha256": "45e11883895b9351efd1a136a8610039533e14b07cfea15dfe54eceb43291374",
+      "sha256": "d2583496987074a882becd4655e05bc4fbf7258549fdd0933def557f09405b54",
       "schema_version": "canonical-saliency-feature-norms-v2",
       "analysis_domain": "native_input",
       "reference_partition": "Train",
-      "num_images": 1404
-    },
-    "development_reference_manifest": {
-      "path": "stage1/data/results/development_reference_manifest.json",
-      "sha256": "efb4d659446f547b9f23f8dd5e36d3b1e2f0b1e84b156206c864ecb779bc5ba6",
-      "schema_version": "ueyes-development-reference-v1"
+      "num_images": 1380
     },
     "stimulus_selection_manifest": {
       "path": "stage1/data/results/ueyes_stimulus_selection_v1.csv",
@@ -51,9 +47,9 @@
       "manual_eligibility_review": "pending"
     },
     "reference_norm_drift_evidence": {
-      "path": "stage1/data/results/development_reference_norm_drift.json",
-      "sha256": "8c896a207991e4ca55409d940346b760eabbce6796f767d15ee3f8ae3a030a1b",
-      "schema_version": "ueyes-development-reference-drift-v1"
+      "path": "stage1/data/results/reference_norm_drift_1404_to_1380.json",
+      "sha256": "b1f1153d1a4a48bb5a6b924f6b0af941f194b10789ed40dd642b7cc939429eb7",
+      "schema_version": "vicop-reference-drift-train1404-to-study1380-v1"
     },
     "hceye_coefficient_provenance": {
       "path": "hceye/hceye_coefficient_provenance.json",
@@ -65,6 +61,11 @@
       "sha256": "cd5acb981e6851de937583658a2d48f8f618d0df3a33737516e02fb06d92cd4b",
       "checkpoint_sha256": "f4290c3f11f18befbb47de50d81e4555ec8e7a63066c71c343a32fe32799e9fe",
       "checkpoint_bytes": 120093896
+    },
+    "study_isolated_reference_manifest": {
+      "path": "stage1/data/results/study_isolated_reference_manifest.json",
+      "sha256": "612626c02df5471f052038a234f4c77165bff9c16eee3e7147be446f87e35557",
+      "schema_version": "ueyes-study-isolated-reference-v1"
     }
   },
   "ueyes_corpus_provenance": {
@@ -81,12 +82,12 @@
     "development_reference": {
       "official_partition": "Train",
       "counts": {
-        "desktop": 468,
-        "mobile": 468,
-        "web": 468
+        "desktop": 460,
+        "mobile": 460,
+        "web": 460
       },
-      "total": 1404,
-      "population_sha256": "4c90612e1d228d8ea8d0e2d6ad1dccb6db8a67ff9180569545e11584071b1801"
+      "total": 1380,
+      "population_sha256": "9ef889847f63be8fa2a41653e3a06d4aa992384594d814c57ca1a8f82000b923"
     },
     "heldout_evaluation": {
       "official_partition": "Test",
@@ -101,8 +102,29 @@
     "excluded_categories": [
       "poster"
     ],
-    "selection_basis": "official_ueyes_partition",
-    "is_subsample": false
+    "selection_basis": "official_ueyes_Train_minus_frozen_final_study_pool_2026-09-30",
+    "is_subsample": true,
+    "official_train_before_study_exclusion": {
+      "counts": {
+        "desktop": 468,
+        "mobile": 468,
+        "web": 468
+      },
+      "total": 1404,
+      "population_sha256": "4c90612e1d228d8ea8d0e2d6ad1dccb6db8a67ff9180569545e11584071b1801"
+    },
+    "final_study_pool_exclusion": {
+      "study_images": 75,
+      "train_images_excluded": 24,
+      "train_practice_images_excluded": 2,
+      "exclusion_counts": {
+        "desktop": 8,
+        "mobile": 8,
+        "web": 8
+      },
+      "stimulus_manifest_sha256": "e77faface786f339d28bf9683cf4b6b0981ce4abe3c7787f0bf48d40c21628e8",
+      "exclusion_input_sha256": "9f242728f59d8d13ebd4d6112c2ff21d50e4f43dbbf65016c99769bed49698b5"
+    }
   },
   "saliency_norms_provenance": {
     "schema_version": "canonical-saliency-feature-norms-v2",
@@ -155,8 +177,9 @@
     "feature_vector": "stage1-x19-float32-v1",
     "canonical_visual": "canonical-visual-feature-norms-v2",
     "canonical_saliency": "canonical-saliency-feature-norms-v2",
-    "development_reference": "ueyes-development-reference-v1",
-    "stimulus_selection": "ueyes-heldout-study-candidates-v1"
+    "development_reference": "ueyes-study-isolated-reference-v1",
+    "stimulus_selection": "ueyes-heldout-study-candidates-v1",
+    "study_isolation": "vicop-study-stimulus-reference-exclusions-v1"
   },
-  "claim_boundary": "The production reference distributions are corpus-relative UEyes development references computed only from the official Train partition. The complete official Test partition is excluded from reference estimation and reserved for evaluation. The selected images are held-out UEyes candidates, not an external dataset, and the reference values are not universal GUI or human cognitive-load norms."
+  "claim_boundary": "Corpus-relative UEyes reference estimated from 1,380 official Train GUI images after exclusion of all 24 Main/Practice study stimuli that originated in Train. The 81 official Test images remain held out. This prevents overlap with normalization only; it does not establish UMSI++ model unseen-image independence, universal GUI norms, or validated human cognitive load."
 }

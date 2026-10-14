@@ -739,14 +739,17 @@ $0, 0.05, 0.25, 0.50, 0.75, 0.95, 1$. Repeated x-anchors are omitted and
 values outside the recorded minimum/maximum are clamped by interpolation.
 Missing or non-finite score-driving inputs fail closed.
 
-The anchors are corpus-relative development references estimated exclusively
-from the official UEyes Train partition (468 desktop + 468 mobile + 468 web =
-1,404 GUI images). All 81 GUI images in the official UEyes Test partition are
-excluded from these statistics and retained as a held-out stimulus-candidate
-pool. This prevents evaluation leakage; it does not turn the values into
-universal GUI norms or validated cognitive-load norms. The split, deterministic
-20-per-category candidate selection, hashes, and manual-review boundary are
-specified in `stage1/UEYES_DEVELOPMENT_REFERENCE.md`.
+The anchors are corpus-relative study references estimated from the official
+UEyes Train partition after excluding all 24 final Main/Practice study images
+that originated in Train (460 desktop + 460 mobile + 460 web = 1,380 GUI
+images). All 81 GUI images in the official UEyes Test partition are also
+excluded from these statistics. This prevents final-study overlap in reference
+normalization; it does not turn the values into universal GUI norms or validated
+cognitive-load norms, and it does not prove independence from the original
+UMSI++ model training. The exact exclusions, hashes, and claim boundary are
+specified in `stage1/STUDY_ISOLATED_REFERENCE.md`; the earlier 1,404-image
+reference is retained as historical evidence in
+`stage1/UEYES_DEVELOPMENT_REFERENCE.md`.
 
 Define the normalized inputs:
 
@@ -837,11 +840,12 @@ paper's benchmark metrics.
 **Current evidence boundary:**
 - repository tests and frozen fixtures establish production behavior,
   checkpoint identity, postprocessing policy, and project-reference parity;
-- production reference distributions use only the 1,404 official UEyes Train
-  GUI images; the complete 81-image official Test GUI partition is excluded
+- production reference distributions use 1,380 official UEyes Train GUI images
+  after excluding all 24 final Main/Practice study stimuli that originated in
+  Train; the complete 81-image official Test GUI partition is also excluded
   from all reference statistics;
-- the tracked 20-per-category Test selection is a deterministic candidate set
-  whose manual eligibility review is still pending, not a final study set;
+- the frozen final study set contains 75 images (72 main, 3 practice), and none
+  contributes to the active reference statistics;
 - local UEyes sample checks are engineering sanity checks, not an official
   benchmark or independent construct validation;
 - no end-to-end validation against new human data has been completed;

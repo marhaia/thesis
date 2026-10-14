@@ -1,3 +1,7 @@
+# Historical reference correction (September 2026)
+
+> **Historical:** This document describes the frozen 1,404-image Train-only reference. For the later 75-stimulus Main/Practice study, see `STUDY_ISOLATED_REFERENCE.md` (1,380-image reference). The original 1,404-image statistics and provenance are archived under `stage1/data/results/historical_train1404/`.
+
 # UEyes Development Reference and Held-Out Stimulus Candidates
 
 ## Purpose

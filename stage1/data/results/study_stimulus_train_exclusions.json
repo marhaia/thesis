@@ -1,0 +1,262 @@
+{
+  "schema_version": "vicop-study-stimulus-reference-exclusions-v1",
+  "status": "VERIFIED_EXCLUSION_SET__NOT_APPLIED_TO_PRODUCTION_NORMS",
+  "study_pool_zip_sha256": "6bbf0fcfdb32e00181a8a7c05a3c84a7fb95e018a1344e2e27ff6d48b8e6c154",
+  "study_pool_manifest_sha256": "e77faface786f339d28bf9683cf4b6b0981ce4abe3c7787f0bf48d40c21628e8",
+  "official_split_file_sha256": "fc22d679849862c0f0476b1d9c270a50383c62304c7635b87cb18a2559a25c68",
+  "source_reference_partition": "UEyes official Train",
+  "reference_count_before_exclusion": 1404,
+  "reference_count_after_exclusion": 1380,
+  "reference_per_category_after_exclusion": {
+    "desktop": 460,
+    "mobile": 460,
+    "web": 460
+  },
+  "study_pool_count": 75,
+  "study_train_excluded_count": 24,
+  "exclusions_include_practice": true,
+  "exclusions": [
+    {
+      "stimulus_id": "D21",
+      "role": "main",
+      "category": "desktop",
+      "original_ueyes_filename": "8675c8.png",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "41",
+      "image_sha256": "42af8bfe57bb7b878e4965e2a089913def04e2d17f4ce2d05b9341579e4800e0",
+      "packaged_path": "01_final_pool/main/desktop/D21.png"
+    },
+    {
+      "stimulus_id": "D23",
+      "role": "main",
+      "category": "desktop",
+      "original_ueyes_filename": "5062ba.png",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "7",
+      "image_sha256": "e8ce71923d71912d551b06e80fa904bc73557f3fdb7251fec438a8abd66375a3",
+      "packaged_path": "01_final_pool/main/desktop/D23.png"
+    },
+    {
+      "stimulus_id": "D24",
+      "role": "main",
+      "category": "desktop",
+      "original_ueyes_filename": "b2c74f.png",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "52",
+      "image_sha256": "0bfe3bcd8431114cffc26d7fcb53e4f9a4b41ae508b00a27accc648458317e9b",
+      "packaged_path": "01_final_pool/main/desktop/D24.png"
+    },
+    {
+      "stimulus_id": "D25",
+      "role": "main",
+      "category": "desktop",
+      "original_ueyes_filename": "f9e25e.png",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "13",
+      "image_sha256": "03d3f0a7b0afaa96bca86551efc047199319dd3995861cb88f1d3c370ccfee3f",
+      "packaged_path": "01_final_pool/main/desktop/D25.png"
+    },
+    {
+      "stimulus_id": "P-D01",
+      "role": "practice",
+      "category": "desktop",
+      "original_ueyes_filename": "22dd48.png",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "25",
+      "image_sha256": "c29a6d194b87f84d4e0f42a1b9688c8579f2c63c614e054211e8e329d882422b",
+      "packaged_path": "01_final_pool/practice/desktop/P-D01.png"
+    },
+    {
+      "stimulus_id": "R-D01",
+      "role": "main",
+      "category": "desktop",
+      "original_ueyes_filename": "0b777c.png",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "47",
+      "image_sha256": "fa1836a8a2e2f2a6d59eaa84d8ef4c7be4ae47f385d853469e887b1924f3fd8e",
+      "packaged_path": "01_final_pool/main/desktop/R-D01.png"
+    },
+    {
+      "stimulus_id": "R-D02",
+      "role": "main",
+      "category": "desktop",
+      "original_ueyes_filename": "147ff4.png",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "18",
+      "image_sha256": "19facc73ac21088677e1e98f9e9f04999643f6abf7ee682d8abc22be45cb03ac",
+      "packaged_path": "01_final_pool/main/desktop/R-D02.png"
+    },
+    {
+      "stimulus_id": "R-D04",
+      "role": "main",
+      "category": "desktop",
+      "original_ueyes_filename": "7d53b3.png",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "44",
+      "image_sha256": "182971bfd64ebffe7ea965bf16b40652a7a9b235b00034b0c4c08e705fe8ee8d",
+      "packaged_path": "01_final_pool/main/desktop/R-D04.png"
+    },
+    {
+      "stimulus_id": "M01",
+      "role": "main",
+      "category": "mobile",
+      "original_ueyes_filename": "757ade.jpg",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "5",
+      "image_sha256": "96923ac1e033dbe1af58287aec2a4067bfd51f461bfca4eda5f486ef53d59884",
+      "packaged_path": "01_final_pool/main/mobile/M01.jpg"
+    },
+    {
+      "stimulus_id": "M14",
+      "role": "main",
+      "category": "mobile",
+      "original_ueyes_filename": "217ab4.jpg",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "30",
+      "image_sha256": "d8d5c725c476eaa76b9f5da03f8d6c1865f663eda6dab8464fe3e9b69a17b3cf",
+      "packaged_path": "01_final_pool/main/mobile/M14.jpg"
+    },
+    {
+      "stimulus_id": "M21",
+      "role": "main",
+      "category": "mobile",
+      "original_ueyes_filename": "1dd09f.jpg",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "38",
+      "image_sha256": "308a721339f310213dd5d7363be926ca58e470512c790c8193a28ab5c9167643",
+      "packaged_path": "01_final_pool/main/mobile/M21.jpg"
+    },
+    {
+      "stimulus_id": "M22",
+      "role": "main",
+      "category": "mobile",
+      "original_ueyes_filename": "2ad467.jpg",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "49",
+      "image_sha256": "f62ee3ad3b19128d4f327a9b4c8034d76e4cdf0d4dcf90db6e29da90dde99409",
+      "packaged_path": "01_final_pool/main/mobile/M22.jpg"
+    },
+    {
+      "stimulus_id": "M23",
+      "role": "main",
+      "category": "mobile",
+      "original_ueyes_filename": "2ab8bb.jpg",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "28",
+      "image_sha256": "99ccf87db8fd7699355e547cd0154aab9701895e28b50d00f9db356cba96ffdb",
+      "packaged_path": "01_final_pool/main/mobile/M23.jpg"
+    },
+    {
+      "stimulus_id": "M25",
+      "role": "main",
+      "category": "mobile",
+      "original_ueyes_filename": "28422f.jpg",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "39",
+      "image_sha256": "7d5bb60f03c6e94df0ced9d44e7174296b974a58118bb6d2f20ee23c4f2f4953",
+      "packaged_path": "01_final_pool/main/mobile/M25.jpg"
+    },
+    {
+      "stimulus_id": "R-M03",
+      "role": "main",
+      "category": "mobile",
+      "original_ueyes_filename": "52658e.jpg",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "34",
+      "image_sha256": "d209af9d9c128b86dc19472cf885b2f8a50d3d43f4938fd633279e2c9bd22844",
+      "packaged_path": "01_final_pool/main/mobile/R-M03.jpg"
+    },
+    {
+      "stimulus_id": "R-M05",
+      "role": "main",
+      "category": "mobile",
+      "original_ueyes_filename": "dc705a.jpg",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "28",
+      "image_sha256": "4414fafd30b261541d1176d682cec4fc9398d7897c5e88ce42be27634515c520",
+      "packaged_path": "01_final_pool/main/mobile/R-M05.jpg"
+    },
+    {
+      "stimulus_id": "P-W05",
+      "role": "practice",
+      "category": "web",
+      "original_ueyes_filename": "9cb812.png",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "20",
+      "image_sha256": "5735faf6aef449bc3001fbb8c565c872d9ee04a4d0e71870870c289cc8d7f826",
+      "packaged_path": "01_final_pool/practice/web/P-W05.png"
+    },
+    {
+      "stimulus_id": "R-W02",
+      "role": "main",
+      "category": "web",
+      "original_ueyes_filename": "3ae6bb.png",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "15",
+      "image_sha256": "93ae6976ac7ae85fe40f21a6025838cd8b9baeac92dedaaee98868923e423a29",
+      "packaged_path": "01_final_pool/main/web/R-W02.png"
+    },
+    {
+      "stimulus_id": "R-W03",
+      "role": "main",
+      "category": "web",
+      "original_ueyes_filename": "53faa2.png",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "14",
+      "image_sha256": "04b317bbc06c9bca9e0fc20b1e10cdc4a7246473386520d3aee26b78c1d9cdce",
+      "packaged_path": "01_final_pool/main/web/R-W03.png"
+    },
+    {
+      "stimulus_id": "W21",
+      "role": "main",
+      "category": "web",
+      "original_ueyes_filename": "609262.png",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "18",
+      "image_sha256": "0c5ee03eff3bbc8f975c08d9f9e4ffb8e31ad6a51714d317d33b1b92519df756",
+      "packaged_path": "01_final_pool/main/web/W21.png"
+    },
+    {
+      "stimulus_id": "W22",
+      "role": "main",
+      "category": "web",
+      "original_ueyes_filename": "6428b2.png",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "32",
+      "image_sha256": "d71e6d7695da0a6f5c0d316c9f7f4b098f6fac46cbbd354ec5f98983a85efa56",
+      "packaged_path": "01_final_pool/main/web/W22.png"
+    },
+    {
+      "stimulus_id": "W23",
+      "role": "main",
+      "category": "web",
+      "original_ueyes_filename": "83ba29.png",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "48",
+      "image_sha256": "04dd7f325e86279c868a32e33c993719d37d16c6f697c3b0c1197da35dc99725",
+      "packaged_path": "01_final_pool/main/web/W23.png"
+    },
+    {
+      "stimulus_id": "W24",
+      "role": "main",
+      "category": "web",
+      "original_ueyes_filename": "95ce3a.png",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "14",
+      "image_sha256": "2d19dc2e2d41a15f0bd91da59c197566a1800899959c351f5670bc14ecd376b1",
+      "packaged_path": "01_final_pool/main/web/W24.png"
+    },
+    {
+      "stimulus_id": "W25",
+      "role": "main",
+      "category": "web",
+      "original_ueyes_filename": "b3e3d8.png",
+      "original_ueyes_split": "Train",
+      "original_ueyes_block": "52",
+      "image_sha256": "4a79309307a8d8c802b7800845fd5106f11431aa91ad16863ab8ae43b69431c1",
+      "packaged_path": "01_final_pool/main/web/W25.png"
+    }
+  ],
+  "unmodified_model_note": "This excludes stimuli from project empirical reference distributions only, not from pretraining of the fixed UMSI++ checkpoint.",
+  "required_to_finish": "Frozen canonical_visual_feature_rows.csv and saliency_feature_rows.csv (both 1,485 per-image values); verify SHA-256 against stage1/data/results/development_reference_manifest.json before recomputing. Update every norm artifact, manifest, SHA, count contract and regression test together."
+}

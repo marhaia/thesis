@@ -172,22 +172,22 @@ def test_production_reference_and_selection_artifacts_freeze_official_boundary()
         (RESULTS / "development_saliency_feature_norms.json").read_text()
     )
     manifest = json.loads(
-        (RESULTS / "development_reference_manifest.json").read_text()
+        (RESULTS / "study_isolated_reference_manifest.json").read_text()
     )
 
     assert feature_norms["meta"]["reference_partition"] == "Train"
     assert feature_norms["meta"]["evaluation_partition_excluded"] == "Test"
     assert feature_norms["meta"]["category_counts"] == {
-        "desktop": 468,
-        "mobile": 468,
-        "web": 468,
+        "desktop": 460,
+        "mobile": 460,
+        "web": 460,
     }
-    assert feature_norms["meta"]["num_images"] == 1404
-    assert all(block["n"] == 1404 for block in feature_norms["features"].values())
-    assert visual_norms["num_images"] == 1404
-    assert saliency_norms["num_images"] == 1404
-    assert manifest["reference_total"] == 1404
-    assert manifest["evaluation_total"] == 81
+    assert feature_norms["meta"]["num_images"] == 1380
+    assert all(block["n"] == 1380 for block in feature_norms["features"].values())
+    assert visual_norms["num_images"] == 1380
+    assert saliency_norms["num_images"] == 1380
+    assert manifest["reference_total"] == 1380
+    assert manifest["heldout_test_total"] == 81
 
     with (RESULTS / "ueyes_stimulus_selection_v1.csv").open(newline="") as source:
         selection = list(csv.DictReader(source))
@@ -207,7 +207,7 @@ def test_development_manifest_hashes_every_generated_artifact():
         (RESULTS / "development_reference_manifest.json").read_text()
     )
     for filename, identity in manifest["outputs"].items():
-        path = RESULTS / filename
+        path = RESULTS / "historical_train1404" / filename
         assert path.stat().st_size == identity["bytes"]
         assert m.sha256_file(path) == identity["sha256"]
 

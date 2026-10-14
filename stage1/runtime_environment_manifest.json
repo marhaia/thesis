@@ -1,14 +1,14 @@
 {
   "schema_version": "stage1-runtime-environment-v1",
-  "capture_date": "2026-08-11",
+  "capture_date": "2026-10-14",
   "platform": {
-    "operating_system": "macOS 26.3",
+    "operating_system": "macOS 26.7.1",
     "machine": "arm64",
     "python": "3.9.6"
   },
   "dependency_freeze": {
     "lock_file": "stage1/environment/requirements-macos-arm64-python3.9.lock.txt",
-    "lock_file_sha256": "319201eb160b44ec3d47b2e931e58f4d7ba657b2607bb2a91ea82f54eec57bf4",
+    "lock_file_sha256": "2b63d08a8d692c018cff0d31c0d9fd31842f9ecdd352dede0a968e933933dd7f",
     "capture_command": "python -m pip freeze",
     "requirements_file": "requirements.txt",
     "requirements_file_sha256": "1a55c1308d214345098645b4bdd44bc4b31475ec77a86d7c992625e2217a8052",

@@ -1,5 +1,6 @@
 # Python
 venv/
+.venv/
 __pycache__/
 *.py[cod]
 *.pyo
@@ -81,3 +82,8 @@ stage1/data/uploads/
 
 # Auto-push log
 planning/scripts/auto_push.log
+
+# Frozen study-isolation manifest and historical UEyes selection (no screenshot bytes)
+!stage1/data/results/study_stimulus_split_75.csv
+!stage1/data/results/historical_train1404/ueyes_stimulus_selection_v1.csv
+!stage1/data/results/study_scores_75_2026-10-14/vicop_study_scores_75.csv

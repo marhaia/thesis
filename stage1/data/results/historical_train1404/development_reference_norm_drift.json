@@ -1,0 +1,736 @@
+{
+  "schema_version": "ueyes-development-reference-drift-v1",
+  "comparison": "all-1485 reference versus official-Train-1404 reference",
+  "old_n": 1485,
+  "new_n": 1404,
+  "features": {
+    "chromatic_coherence": {
+      "mean": {
+        "old": 0.404198275755047,
+        "new": 0.40418667365868804,
+        "absolute_delta": -1.16020963589758e-05,
+        "relative_delta_percent": -0.0028703972913548307
+      },
+      "std": {
+        "old": 0.13953373009265102,
+        "new": 0.13820147170481495,
+        "absolute_delta": -0.0013322583878360716,
+        "relative_delta_percent": -0.9547930718625857
+      },
+      "min": {
+        "old": 0.04266156122130067,
+        "new": 0.05496358969360237,
+        "absolute_delta": 0.012302028472301697,
+        "relative_delta_percent": 28.83632975475676
+      },
+      "max": {
+        "old": 0.8093024838039307,
+        "new": 0.8093024838039307,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "p5": {
+        "old": 0.15943635264247816,
+        "new": 0.16085680984931172,
+        "absolute_delta": 0.0014204572068335641,
+        "relative_delta_percent": 0.890924298813341
+      },
+      "p25": {
+        "old": 0.31693109037907463,
+        "new": 0.31700012034111114,
+        "absolute_delta": 6.902996203650424e-05,
+        "relative_delta_percent": 0.021780747970777795
+      },
+      "p50": {
+        "old": 0.4119504408047639,
+        "new": 0.41250184214460345,
+        "absolute_delta": 0.0005514013398395523,
+        "relative_delta_percent": 0.13385137754977633
+      },
+      "p75": {
+        "old": 0.49873596260483183,
+        "new": 0.4968055077444206,
+        "absolute_delta": -0.0019304548604112126,
+        "relative_delta_percent": -0.38706951275955775
+      },
+      "p95": {
+        "old": 0.6289069631480455,
+        "new": 0.6289070130584423,
+        "absolute_delta": 4.9910396815455726e-08,
+        "relative_delta_percent": 7.93605409703609e-06
+      }
+    },
+    "edge_density": {
+      "mean": {
+        "old": 0.034366159555079615,
+        "new": 0.0343384548818775,
+        "absolute_delta": -2.7704673202115504e-05,
+        "relative_delta_percent": -0.08061614553617037
+      },
+      "std": {
+        "old": 0.017394050169450805,
+        "new": 0.01754329030770415,
+        "absolute_delta": 0.00014924013825334467,
+        "relative_delta_percent": 0.8579953305841058
+      },
+      "min": {
+        "old": 0.0015093315972222222,
+        "new": 0.0015093315972222222,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "max": {
+        "old": 0.11573489728412256,
+        "new": 0.11573489728412256,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "p5": {
+        "old": 0.011046909749476714,
+        "new": 0.011046005879815869,
+        "absolute_delta": -9.038696608450886e-07,
+        "relative_delta_percent": -0.008182104148066426
+      },
+      "p25": {
+        "old": 0.020748697916666666,
+        "new": 0.020361870659722222,
+        "absolute_delta": -0.0003868272569444442,
+        "relative_delta_percent": -1.8643447338144534
+      },
+      "p50": {
+        "old": 0.032197265625,
+        "new": 0.03199175347222222,
+        "absolute_delta": -0.00020551215277778145,
+        "relative_delta_percent": -0.638290701984981
+      },
+      "p75": {
+        "old": 0.04548475477430555,
+        "new": 0.045598876210757186,
+        "absolute_delta": 0.00011412143645163353,
+        "relative_delta_percent": 0.25090041051754997
+      },
+      "p95": {
+        "old": 0.06487825520833332,
+        "new": 0.06523539754756495,
+        "absolute_delta": 0.00035714233923163363,
+        "relative_delta_percent": 0.5504808014407889
+      }
+    },
+    "feature_congestion": {
+      "mean": {
+        "old": 19.016236614787307,
+        "new": 19.006790676658692,
+        "absolute_delta": -0.009445938128614273,
+        "relative_delta_percent": -0.04967301532874792
+      },
+      "std": {
+        "old": 8.138945188956248,
+        "new": 8.189593907116842,
+        "absolute_delta": 0.0506487181605948,
+        "relative_delta_percent": 0.6223007648376863
+      },
+      "min": {
+        "old": 2.4755895790211566,
+        "new": 2.4755895790211566,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "max": {
+        "old": 53.55512874552973,
+        "new": 53.55512874552973,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "p5": {
+        "old": 7.645084761848682,
+        "new": 7.603625943791407,
+        "absolute_delta": -0.041458818057274804,
+        "relative_delta_percent": -0.5422937658476598
+      },
+      "p25": {
+        "old": 12.705682225690609,
+        "new": 12.67483959269794,
+        "absolute_delta": -0.03084263299266965,
+        "relative_delta_percent": -0.24274676829479117
+      },
+      "p50": {
+        "old": 18.191867834782833,
+        "new": 18.176083891610638,
+        "absolute_delta": -0.015783943172195336,
+        "relative_delta_percent": -0.08676373045112197
+      },
+      "p75": {
+        "old": 24.093899899309594,
+        "new": 24.108541212078414,
+        "absolute_delta": 0.014641312768819859,
+        "relative_delta_percent": 0.06076771643447976
+      },
+      "p95": {
+        "old": 33.88709903993353,
+        "new": 33.89741977215474,
+        "absolute_delta": 0.010320732221209994,
+        "relative_delta_percent": 0.030456228221388163
+      }
+    },
+    "interactive_element_density": {
+      "mean": {
+        "old": 0.27133264255060385,
+        "new": 0.27149695594442347,
+        "absolute_delta": 0.00016431339381961507,
+        "relative_delta_percent": 0.060557916023307234
+      },
+      "std": {
+        "old": 0.20736516899424867,
+        "new": 0.2072683191440066,
+        "absolute_delta": -9.684985024208115e-05,
+        "relative_delta_percent": -0.046704974953998814
+      },
+      "min": {
+        "old": 0.0,
+        "new": 0.0,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": null
+      },
+      "max": {
+        "old": 1.6927083333333335,
+        "new": 1.6927083333333335,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "p5": {
+        "old": 0.013287969719402144,
+        "new": 0.013200139979764028,
+        "absolute_delta": -8.782973963811572e-05,
+        "relative_delta_percent": -0.6609718526817006
+      },
+      "p25": {
+        "old": 0.12171372930866603,
+        "new": 0.12267026488777852,
+        "absolute_delta": 0.0009565355791124885,
+        "relative_delta_percent": 0.7858896317988205
+      },
+      "p50": {
+        "old": 0.2387152777777778,
+        "new": 0.2387152777777778,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "p75": {
+        "old": 0.36943671766342145,
+        "new": 0.3689236111111111,
+        "absolute_delta": -0.0005131065523103495,
+        "relative_delta_percent": -0.13888888888890025
+      },
+      "p95": {
+        "old": 0.6650915574563158,
+        "new": 0.6618923611111112,
+        "absolute_delta": -0.0031991963452046024,
+        "relative_delta_percent": -0.48101593071488213
+      }
+    },
+    "layout_symmetry": {
+      "mean": {
+        "old": 0.3454947900559891,
+        "new": 0.3463548799740866,
+        "absolute_delta": 0.0008600899180974952,
+        "relative_delta_percent": 0.24894439593665463
+      },
+      "std": {
+        "old": 0.21480967715603785,
+        "new": 0.21522990056459643,
+        "absolute_delta": 0.0004202234085585732,
+        "relative_delta_percent": 0.1956259206391911
+      },
+      "min": {
+        "old": 0.0,
+        "new": 0.0,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": null
+      },
+      "max": {
+        "old": 0.9607546599241814,
+        "new": 0.9607546599241814,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "p5": {
+        "old": 0.05520260503530694,
+        "new": 0.05672899045844461,
+        "absolute_delta": 0.001526385423137669,
+        "relative_delta_percent": 2.7650604933615193
+      },
+      "p25": {
+        "old": 0.18224158924695694,
+        "new": 0.18297366658116224,
+        "absolute_delta": 0.0007320773342053,
+        "relative_delta_percent": 0.4017070621642004
+      },
+      "p50": {
+        "old": 0.29998452869125136,
+        "new": 0.30025537757797355,
+        "absolute_delta": 0.0002708488867221859,
+        "relative_delta_percent": 0.09028761846613352
+      },
+      "p75": {
+        "old": 0.4785408596070463,
+        "new": 0.4769075865250253,
+        "absolute_delta": -0.0016332730820209918,
+        "relative_delta_percent": -0.34130274337747324
+      },
+      "p95": {
+        "old": 0.7528615369777583,
+        "new": 0.7535029786371047,
+        "absolute_delta": 0.0006414416593464312,
+        "relative_delta_percent": 0.08520048213930488
+      }
+    },
+    "saliency_center_bias": {
+      "mean": {
+        "old": 0.36462064741751665,
+        "new": 0.3645428008597956,
+        "absolute_delta": -7.784655772102855e-05,
+        "relative_delta_percent": -0.02135001357503726
+      },
+      "std": {
+        "old": 0.17200967933722938,
+        "new": 0.17272157846363104,
+        "absolute_delta": 0.000711899126401655,
+        "relative_delta_percent": 0.4138715502201237
+      },
+      "min": {
+        "old": 0.009517900205380065,
+        "new": 0.009517900205380065,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "max": {
+        "old": 0.9136360413876711,
+        "new": 0.9136360413876711,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "p5": {
+        "old": 0.08653331208642001,
+        "new": 0.08556394424419148,
+        "absolute_delta": -0.0009693678422285357,
+        "relative_delta_percent": -1.1202250542085308
+      },
+      "p25": {
+        "old": 0.2463684593528021,
+        "new": 0.24596019670694272,
+        "absolute_delta": -0.0004082626458593863,
+        "relative_delta_percent": -0.16571222100908223
+      },
+      "p50": {
+        "old": 0.3560536754475167,
+        "new": 0.3558074550268196,
+        "absolute_delta": -0.0002462204206971075,
+        "relative_delta_percent": -0.06915261312430998
+      },
+      "p75": {
+        "old": 0.4743757367758465,
+        "new": 0.4744341861903398,
+        "absolute_delta": 5.8449414493289e-05,
+        "relative_delta_percent": 0.012321333061962168
+      },
+      "p95": {
+        "old": 0.6648770447253757,
+        "new": 0.6660694545708757,
+        "absolute_delta": 0.0011924098455000642,
+        "relative_delta_percent": 0.17934291083738402
+      }
+    },
+    "saliency_coverage": {
+      "mean": {
+        "old": 0.04762530919365942,
+        "new": 0.047781594053494796,
+        "absolute_delta": 0.0001562848598353761,
+        "relative_delta_percent": 0.3281550555396353
+      },
+      "std": {
+        "old": 0.030584340418137127,
+        "new": 0.03058029513113833,
+        "absolute_delta": -4.045286998797387e-06,
+        "relative_delta_percent": -0.01322666091042608
+      },
+      "min": {
+        "old": 0.006543402777777778,
+        "new": 0.006543402777777778,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "max": {
+        "old": 0.19084683641975309,
+        "new": 0.19084683641975309,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "p5": {
+        "old": 0.012810770670572917,
+        "new": 0.012837420504734614,
+        "absolute_delta": 2.664983416169643e-05,
+        "relative_delta_percent": 0.2080267834542745
+      },
+      "p25": {
+        "old": 0.025720871505755225,
+        "new": 0.02585016034847039,
+        "absolute_delta": 0.00012928884271516325,
+        "relative_delta_percent": 0.5026612052637252
+      },
+      "p50": {
+        "old": 0.04001566276447793,
+        "new": 0.040221234622181516,
+        "absolute_delta": 0.00020557185770358338,
+        "relative_delta_percent": 0.5137284840526753
+      },
+      "p75": {
+        "old": 0.06182243441358025,
+        "new": 0.06184858832422663,
+        "absolute_delta": 2.615391064637873e-05,
+        "relative_delta_percent": 0.04230488639676347
+      },
+      "p95": {
+        "old": 0.10822993827160493,
+        "new": 0.1079110725308642,
+        "absolute_delta": -0.00031886574074073415,
+        "relative_delta_percent": -0.2946187957167036
+      }
+    },
+    "saliency_dispersion": {
+      "mean": {
+        "old": 0.42322547772049374,
+        "new": 0.42325095617134995,
+        "absolute_delta": 2.5478450856208923e-05,
+        "relative_delta_percent": 0.006020065472768013
+      },
+      "std": {
+        "old": 0.06821835770786475,
+        "new": 0.06823455454633771,
+        "absolute_delta": 1.6196838472967712e-05,
+        "relative_delta_percent": 0.0237426391035802
+      },
+      "min": {
+        "old": 0.18297818835380092,
+        "new": 0.2028030517484201,
+        "absolute_delta": 0.01982486339461917,
+        "relative_delta_percent": 10.834550048274842
+      },
+      "max": {
+        "old": 0.6351435653977133,
+        "new": 0.6351435653977133,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "p5": {
+        "old": 0.3038686371842552,
+        "new": 0.3043859137231996,
+        "absolute_delta": 0.0005172765389444001,
+        "relative_delta_percent": 0.17023031522359508
+      },
+      "p25": {
+        "old": 0.37898493938312344,
+        "new": 0.37881770311759455,
+        "absolute_delta": -0.0001672362655288917,
+        "relative_delta_percent": -0.04412741725333555
+      },
+      "p50": {
+        "old": 0.42623627046736645,
+        "new": 0.42580257003907607,
+        "absolute_delta": -0.00043370042829038447,
+        "relative_delta_percent": -0.10175117847545767
+      },
+      "p75": {
+        "old": 0.47004306096815596,
+        "new": 0.4703218599001366,
+        "absolute_delta": 0.00027879893198062833,
+        "relative_delta_percent": 0.05931348745078403
+      },
+      "p95": {
+        "old": 0.5292129469371593,
+        "new": 0.5293308623809347,
+        "absolute_delta": 0.0001179154437754848,
+        "relative_delta_percent": 0.02228128477542454
+      }
+    },
+    "saliency_entropy": {
+      "mean": {
+        "old": 0.548919434685633,
+        "new": 0.5494562631228445,
+        "absolute_delta": 0.0005368284372114784,
+        "relative_delta_percent": 0.09779730927525292
+      },
+      "std": {
+        "old": 0.12959152303314417,
+        "new": 0.12971527735628816,
+        "absolute_delta": 0.0001237543231439875,
+        "relative_delta_percent": 0.09549569311901385
+      },
+      "min": {
+        "old": 0.1774593224299062,
+        "new": 0.1774593224299062,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "max": {
+        "old": 0.8950510390197032,
+        "new": 0.8950510390197032,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "p5": {
+        "old": 0.3287804459871504,
+        "new": 0.3287461259930457,
+        "absolute_delta": -3.431999410469233e-05,
+        "relative_delta_percent": -0.010438575202259336
+      },
+      "p25": {
+        "old": 0.4638283396354751,
+        "new": 0.46367488057979234,
+        "absolute_delta": -0.00015345905568275864,
+        "relative_delta_percent": -0.033085312510952404
+      },
+      "p50": {
+        "old": 0.5472434781788105,
+        "new": 0.5473040084073018,
+        "absolute_delta": 6.053022849128453e-05,
+        "relative_delta_percent": 0.011060931907809128
+      },
+      "p75": {
+        "old": 0.6382754529054898,
+        "new": 0.6395773585445557,
+        "absolute_delta": 0.0013019056390658479,
+        "relative_delta_percent": 0.20397238106830695
+      },
+      "p95": {
+        "old": 0.7596795601033705,
+        "new": 0.7598423799007803,
+        "absolute_delta": 0.0001628197974098411,
+        "relative_delta_percent": 0.02143269425172977
+      }
+    },
+    "saliency_peak_count": {
+      "mean": {
+        "old": 5.390572390572391,
+        "new": 5.405982905982906,
+        "absolute_delta": 0.015410515410515302,
+        "relative_delta_percent": 0.28587901792148934
+      },
+      "std": {
+        "old": 2.4737800246088266,
+        "new": 2.484820594763513,
+        "absolute_delta": 0.011040570154686513,
+        "relative_delta_percent": 0.44630363431090986
+      },
+      "min": {
+        "old": 1.0,
+        "new": 1.0,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "max": {
+        "old": 16.0,
+        "new": 16.0,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "p5": {
+        "old": 2.0,
+        "new": 2.0,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "p25": {
+        "old": 4.0,
+        "new": 4.0,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "p50": {
+        "old": 5.0,
+        "new": 5.0,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "p75": {
+        "old": 7.0,
+        "new": 7.0,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "p95": {
+        "old": 10.0,
+        "new": 10.0,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      }
+    },
+    "shannon_entropy": {
+      "mean": {
+        "old": 4.375412715730643,
+        "new": 4.389554846156229,
+        "absolute_delta": 0.01414213042558643,
+        "relative_delta_percent": 0.32321820464483564
+      },
+      "std": {
+        "old": 1.7841784082559624,
+        "new": 1.7890988118165512,
+        "absolute_delta": 0.00492040356058876,
+        "relative_delta_percent": 0.27577979521669377
+      },
+      "min": {
+        "old": 0.11742080003023148,
+        "new": 0.11742080003023148,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "max": {
+        "old": 7.794979095458984,
+        "new": 7.794979095458984,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "p5": {
+        "old": 1.491139030456543,
+        "new": 1.4910389304161071,
+        "absolute_delta": -0.00010010004043592424,
+        "relative_delta_percent": -0.0067129917728246
+      },
+      "p25": {
+        "old": 2.954683303833008,
+        "new": 2.969773828983307,
+        "absolute_delta": 0.015090525150299072,
+        "relative_delta_percent": 0.5107324067768162
+      },
+      "p50": {
+        "old": 4.408384323120117,
+        "new": 4.4382898807525635,
+        "absolute_delta": 0.02990555763244629,
+        "relative_delta_percent": 0.6783790940278107
+      },
+      "p75": {
+        "old": 5.822672367095947,
+        "new": 5.8366429805755615,
+        "absolute_delta": 0.013970613479614258,
+        "relative_delta_percent": 0.23993473441099844
+      },
+      "p95": {
+        "old": 7.210007095336914,
+        "new": 7.21002607345581,
+        "absolute_delta": 1.8978118895951468e-05,
+        "relative_delta_percent": 0.000263219143129909
+      }
+    },
+    "subband_entropy": {
+      "mean": {
+        "old": 2.871068379367045,
+        "new": 2.868863757649856,
+        "absolute_delta": -0.002204621717189159,
+        "relative_delta_percent": -0.07678750297389955
+      },
+      "std": {
+        "old": 0.7265194840872654,
+        "new": 0.7276300402038437,
+        "absolute_delta": 0.0011105561165782873,
+        "relative_delta_percent": 0.1528597843419838
+      },
+      "min": {
+        "old": 0.5728002432300214,
+        "new": 0.5728002432300214,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "max": {
+        "old": 4.4115989626836605,
+        "new": 4.4115989626836605,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "p5": {
+        "old": 1.622185319741541,
+        "new": 1.6248742686441817,
+        "absolute_delta": 0.0026889489026407087,
+        "relative_delta_percent": 0.16576089488154983
+      },
+      "p25": {
+        "old": 2.3297171719359677,
+        "new": 2.3293571967635236,
+        "absolute_delta": -0.0003599751724441269,
+        "relative_delta_percent": -0.015451453797929978
+      },
+      "p50": {
+        "old": 2.9700639882143185,
+        "new": 2.9674039919782165,
+        "absolute_delta": -0.0026599962361020246,
+        "relative_delta_percent": -0.08956023326963017
+      },
+      "p75": {
+        "old": 3.444285729819996,
+        "new": 3.4445441058878763,
+        "absolute_delta": 0.0002583760678804836,
+        "relative_delta_percent": 0.007501586341792462
+      },
+      "p95": {
+        "old": 3.9255654915764837,
+        "new": 3.9262358578050205,
+        "absolute_delta": 0.0006703662285367784,
+        "relative_delta_percent": 0.017076934010533177
+      }
+    },
+    "visual_hierarchy": {
+      "mean": {
+        "old": 0.45350699170250225,
+        "new": 0.45441712026368264,
+        "absolute_delta": 0.00091012856118039,
+        "relative_delta_percent": 0.20068677613187244
+      },
+      "std": {
+        "old": 0.16860447449513719,
+        "new": 0.1678834427986184,
+        "absolute_delta": -0.000721031696518798,
+        "relative_delta_percent": -0.42764683361923095
+      },
+      "min": {
+        "old": 0.04687839592573505,
+        "new": 0.04687839592573505,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "max": {
+        "old": 0.8116793990225616,
+        "new": 0.8116793990225616,
+        "absolute_delta": 0.0,
+        "relative_delta_percent": 0.0
+      },
+      "p5": {
+        "old": 0.17448550570514207,
+        "new": 0.17577347958420705,
+        "absolute_delta": 0.0012879738790649853,
+        "relative_delta_percent": 0.7381552260515521
+      },
+      "p25": {
+        "old": 0.31245120191979703,
+        "new": 0.3153570115299273,
+        "absolute_delta": 0.002905809610130261,
+        "relative_delta_percent": 0.930004298999673
+      },
+      "p50": {
+        "old": 0.47862731729526287,
+        "new": 0.48007344275255553,
+        "absolute_delta": 0.0014461254572926685,
+        "relative_delta_percent": 0.3021401840297721
+      },
+      "p75": {
+        "old": 0.5910041564542484,
+        "new": 0.5916771469029076,
+        "absolute_delta": 0.0006729904486592053,
+        "relative_delta_percent": 0.1138723715069682
+      },
+      "p95": {
+        "old": 0.6924603921232622,
+        "new": 0.6925282276875414,
+        "absolute_delta": 6.783556427925053e-05,
+        "relative_delta_percent": 0.009796309659134321
+      }
+    }
+  }
+}

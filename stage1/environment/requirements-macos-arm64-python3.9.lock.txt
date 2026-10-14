@@ -1,5 +1,5 @@
 # P6 environment freeze captured from the validated Stage-1 runtime.
-# Platform: macOS 26.3, arm64; Python 3.9.6.
+# Platform: macOS 26.7.1, arm64; Python 3.9.6.
 # Generated with: python -m pip freeze
 absl-py==2.3.1
 astunparse==1.6.3

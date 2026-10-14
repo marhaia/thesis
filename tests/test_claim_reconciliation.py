@@ -659,7 +659,7 @@ def test_active_reference_claims_are_complete_and_corpus_relative():
     assert "Jokinen, Wang, Sarcar, Oulasvirta &amp; Ren (2020)" not in UI
     assert "Aalto Interface Metrics (AIM)" in UI
     assert "Silpasuwanchai" not in UI
-    assert "1,404-image official-Train UEyes GUI" in APP_SOURCE
+    assert "study-isolated 1,380-image" in APP_SOURCE
     assert "typical GUI" not in APP_SOURCE
     assert "typical GUI" not in UI
 

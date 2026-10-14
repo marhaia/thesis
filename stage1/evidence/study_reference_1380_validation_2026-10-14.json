@@ -1,0 +1,136 @@
+{
+  "schema_version": "vicop-study-validation-v1",
+  "date": "2026-10-14",
+  "status": "PASS_WITH_WARNINGS",
+  "source": {
+    "working_tree": "/Users/Q682780/Thesis_G_study_reference_1380",
+    "branch": "fix/study-reference-isolation-1380",
+    "base_commit": "9220c45597f58075164839b0458966d9b554d204",
+    "tree_state_at_export": "dirty",
+    "commit_push_merge_tag_performed_during_validation": false
+  },
+  "inputs": {
+    "stimulus_zip_sha256": "6bbf0fcfdb32e00181a8a7c05a3c84a7fb95e018a1344e2e27ff6d48b8e6c154",
+    "stimulus_manifest_sha256": "e77faface786f339d28bf9683cf4b6b0981ce4abe3c7787f0bf48d40c21628e8",
+    "reference_source_rows_zip_sha256": "3d6f3c9312b0d20737251ab156183eaaaf2139f375fdff7542409790f6cac328",
+    "official_ueyes_split_csv_sha256": "fc22d679849862c0f0476b1d9c270a50383c62304c7635b87cb18a2559a25c68",
+    "reference_population_sha256": "9ef889847f63be8fa2a41653e3a06d4aa992384594d814c57ca1a8f82000b923",
+    "reference_num_images": 1380
+  },
+  "runtime": {
+    "status": "PASS",
+    "python": "3.9.6",
+    "operating_system": "macOS 26.7.1",
+    "machine": "arm64",
+    "locked_distributions": 97,
+    "verification_mode": "strict",
+    "runtime_manifest_sha256": "846e84a3cd35dedd054e05df49fba1081114ff04a66f328a9b3bfb744f5abe02",
+    "lockfile_sha256": "2b63d08a8d692c018cff0d31c0d9fd31842f9ecdd352dede0a968e933933dd7f",
+    "warning": "pip check reports grpcio 1.80.0 as unsupported because of its internal wheel metadata tag; the installed extension is universal x86_64/arm64, imports successfully, and real inference passed."
+  },
+  "models": {
+    "umsi_checkpoint_sha256": "f4290c3f11f18befbb47de50d81e4555ec8e7a63066c71c343a32fe32799e9fe",
+    "easyocr_version": "1.7.2",
+    "easyocr_detector_sha256": "4a5efbfb48b4081100544e75e1e2b57f8de3d84f213004b14b85fd4b3748db17",
+    "easyocr_recognizer_sha256": "e2272681d9d67a04e2dff396b6e95077bc19001f8f6d3593c307b9852e1c29e8"
+  },
+  "reference": {
+    "status": "PASS",
+    "baseline_features": 13,
+    "statistics_per_feature": 10,
+    "baseline_max_absolute_error": 0.0,
+    "study_stimuli_verified": 75,
+    "original_test_stimuli": 51,
+    "original_train_stimuli_excluded": 24,
+    "remaining_by_category": {
+      "desktop": 460,
+      "mobile": 460,
+      "web": 460
+    },
+    "study_overlap": 0,
+    "feature_norms_sha256": "2e9861f04ea80ad03ac14d0a8f5c61522f8150b814dcb31de54a36042f340e3d",
+    "reference_pack_manifest_sha256": "00537e81365bde48e830e111de74bab16e6c54fccbfaf5dc7ebcfb6641f40581"
+  },
+  "tests": {
+    "targeted": {
+      "status": "PASS",
+      "passed": 147,
+      "warnings": 14
+    },
+    "full_strict": {
+      "status": "PASS",
+      "passed": 641,
+      "skipped": 1,
+      "warnings": 23,
+      "elapsed_seconds": 333.70
+    },
+    "conditional_full_corpus_test": {
+      "status": "PASS",
+      "passed": 1,
+      "details": "The one conditionally skipped test was rerun with UEYES_TYPES_CSV and UEYES_IMAGES_DIR."
+    }
+  },
+  "export": {
+    "status": "PASS",
+    "created_at_utc": "2026-10-14T09:45:07.471916Z",
+    "elapsed_seconds": 1072.890179542,
+    "counts": {
+      "total": 75,
+      "main": 72,
+      "practice": 3,
+      "desktop": 25,
+      "mobile": 25,
+      "web": 25
+    },
+    "vector_schema": "v8+s5+h6=x19 float32",
+    "all_values_finite": true,
+    "text_density_source": "real EasyOCR",
+    "score_rows_sha256": "f70cd6164d2e53c556d5862a43716f4ba9544ba94d8521f0f28f9ff7f80c8ae3",
+    "layout_index": {
+      "status": "experimental",
+      "minimum": 10.686704516410828,
+      "maximum": 65.03403782844543,
+      "mean": 39.827088594436646
+    },
+    "outputs": {
+      "vicop_study_scores_75.csv": "2ae770692c02007b5308d46eeb2e4e803b4d11712caaba4d44ee60ab236adcba",
+      "vicop_study_scores_75.json": "25f728a674d4e1e83396ad753f5946750b39ee7ff90af210e58f7ab6e6bd8955",
+      "vicop_study_scores_75_manifest.json": "faecc6da7f133147b13141e515e9a534ec7f3e37de061d24600a56950521e370",
+      "SHA256SUMS": "19e59db2da592558b64dea0cd2059efc13914e075b7b9b112afdf0a2deca9ea2"
+    },
+    "checksum_verification": "PASS",
+    "invalid_zip_fail_closed": "PASS_NO_OUTPUT_CREATED"
+  },
+  "clean_room": {
+    "status": "PASS_WITH_LIMITATIONS",
+    "classification": "filesystem-isolated deterministic replay",
+    "fresh_checkout": true,
+    "base_commit": "9220c45597f58075164839b0458966d9b554d204",
+    "tracked_patch_sha256": "c225ffbca8dfa45f8c670e427deea551d62fa48525f910a4c30b7cba0d088198",
+    "untracked_source_artifact_count": 18,
+    "untracked_hash_list_sha256": "55ad7f13308c9d953b5c51b0a778bebff29202232d836aa420b272a6b7c7cdb8",
+    "reference_artifacts_rebuilt": 7,
+    "reference_artifacts_byte_identical": true,
+    "real_api_exact_match_stimuli": [
+      "M01",
+      "W17",
+      "D22"
+    ],
+    "shared_dependencies": [
+      "same Mac and operating system",
+      "same cloned frozen Python environment",
+      "same model bytes",
+      "same source ZIPs and official split CSV",
+      "same candidate source patch"
+    ],
+    "not_reproduced": [
+      "raw-pixel re-extraction of every v8/s5 reference row",
+      "UMSI++ training",
+      "EasyOCR model creation",
+      "full 75-screen inference on a second machine"
+    ]
+  },
+  "claim_boundary": "Project-specific v8+s5+h6=x19 descriptors and experimental layout index; not a validated human cognitive-load measure.",
+  "unresolved_failures": [],
+  "blocked": []
+}

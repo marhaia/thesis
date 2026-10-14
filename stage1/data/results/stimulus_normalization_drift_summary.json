@@ -1,0 +1,75 @@
+{
+  "schema_version": "vicop-study-stimulus-reference-percentile-drift-v1",
+  "caveat": "Changes in 13 corpus-relative percentiles for 75 study stimuli; NOT recomputed HCEye h6 or final layout index J; does not establish cognitive-load validity.",
+  "num_stimuli": 75,
+  "comparisons": 975,
+  "summary_by_feature": {
+    "shannon_entropy": {
+      "max_abs_percentile_point_change": 0.4829552469099241,
+      "mean_abs_percentile_point_change": 0.2740632978162332,
+      "mean_signed_percentile_point_change": -0.2740632978162332
+    },
+    "edge_density": {
+      "max_abs_percentile_point_change": 0.5482278655009338,
+      "mean_abs_percentile_point_change": 0.3051342310323144,
+      "mean_signed_percentile_point_change": -0.27705878136795675
+    },
+    "feature_congestion": {
+      "max_abs_percentile_point_change": 0.37816708550475653,
+      "mean_abs_percentile_point_change": 0.18781377669593277,
+      "mean_signed_percentile_point_change": -0.18774883591750283
+    },
+    "subband_entropy": {
+      "max_abs_percentile_point_change": 0.4304553553661066,
+      "mean_abs_percentile_point_change": 0.19045294214606723,
+      "mean_signed_percentile_point_change": -0.18862991254513703
+    },
+    "layout_symmetry": {
+      "max_abs_percentile_point_change": 0.11788892228332948,
+      "mean_abs_percentile_point_change": 0.038760253204968655,
+      "mean_signed_percentile_point_change": -0.00452479196039727
+    },
+    "chromatic_coherence": {
+      "max_abs_percentile_point_change": 0.2655905473756661,
+      "mean_abs_percentile_point_change": 0.08409246947867828,
+      "mean_signed_percentile_point_change": -0.036135558680283515
+    },
+    "visual_hierarchy": {
+      "max_abs_percentile_point_change": 0.47777559320438456,
+      "mean_abs_percentile_point_change": 0.26588297465244004,
+      "mean_signed_percentile_point_change": 0.26588297465244004
+    },
+    "interactive_element_density": {
+      "max_abs_percentile_point_change": 0.2812402181495486,
+      "mean_abs_percentile_point_change": 0.06038059864035502,
+      "mean_signed_percentile_point_change": -0.06038059864035502
+    },
+    "saliency_dispersion": {
+      "max_abs_percentile_point_change": 0.1621430440417555,
+      "mean_abs_percentile_point_change": 0.08168903610976579,
+      "mean_signed_percentile_point_change": -0.08168903610976579
+    },
+    "saliency_peak_count": {
+      "max_abs_percentile_point_change": 0.0,
+      "mean_abs_percentile_point_change": 0.0,
+      "mean_signed_percentile_point_change": 0.0
+    },
+    "saliency_center_bias": {
+      "max_abs_percentile_point_change": 0.18619739564702087,
+      "mean_abs_percentile_point_change": 0.07455523224433004,
+      "mean_signed_percentile_point_change": 0.07397981294150573
+    },
+    "saliency_entropy": {
+      "max_abs_percentile_point_change": 0.12478335181174316,
+      "mean_abs_percentile_point_change": 0.03184228543695588,
+      "mean_signed_percentile_point_change": 0.017738391312404466
+    },
+    "saliency_coverage": {
+      "max_abs_percentile_point_change": 0.3349873394385696,
+      "mean_abs_percentile_point_change": 0.0988154459844172,
+      "mean_signed_percentile_point_change": 0.0988154459844172
+    }
+  },
+  "overall_max_abs_percentile_point_change": 0.5482278655009338,
+  "overall_mean_abs_percentile_point_change": 0.1302678879571122
+}

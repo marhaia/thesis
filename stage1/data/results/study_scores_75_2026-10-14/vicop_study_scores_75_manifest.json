@@ -1,0 +1,66 @@
+{
+  "schema_version": "vicop-study-score-export-manifest-v1",
+  "status": "PASS",
+  "created_at_utc": "2026-10-14T09:45:07.471916Z",
+  "score_rows_sha256": "f70cd6164d2e53c556d5862a43716f4ba9544ba94d8521f0f28f9ff7f80c8ae3",
+  "counts": {
+    "total": 75,
+    "main": 72,
+    "practice": 3,
+    "by_platform": {
+      "desktop": 25,
+      "mobile": 25,
+      "web": 25
+    }
+  },
+  "inputs": {
+    "stimulus_zip": "/Users/Q682780/Downloads/Stimulus_Pool_Final_75_2026-09-30.zip",
+    "stimulus_zip_sha256": "6bbf0fcfdb32e00181a8a7c05a3c84a7fb95e018a1344e2e27ff6d48b8e6c154",
+    "stimulus_manifest_sha256": "e77faface786f339d28bf9683cf4b6b0981ce4abe3c7787f0bf48d40c21628e8",
+    "study_split_csv_sha256": "b123d16e232598bcaa23e5a1cc05707d1317b97d9db569cc978347c257a95010",
+    "reference_population_sha256": "9ef889847f63be8fa2a41653e3a06d4aa992384594d814c57ca1a8f82000b923",
+    "reference_num_images": 1380
+  },
+  "reproducibility": {
+    "schema_id": "stage1-study-export-v1",
+    "source": {
+      "commit": "9220c45597f58075164839b0458966d9b554d204",
+      "tree_state": "dirty",
+      "source": "git"
+    },
+    "runtime_environment_manifest_sha256": "846e84a3cd35dedd054e05df49fba1081114ff04a66f328a9b3bfb744f5abe02",
+    "runtime_environment_schema": "stage1-runtime-environment-v1",
+    "runtime_verification": {
+      "status": "verified",
+      "mode": "strict",
+      "locked_distributions": 97,
+      "platform": {
+        "operating_system": "macOS 26.7.1",
+        "machine": "arm64",
+        "python": "3.9.6"
+      }
+    },
+    "reference_pack_manifest_sha256": "00537e81365bde48e830e111de74bab16e6c54fccbfaf5dc7ebcfb6641f40581",
+    "feature_norms_sha256": "2e9861f04ea80ad03ac14d0a8f5c61522f8150b814dcb31de54a36042f340e3d",
+    "umsi_checkpoint_sha256": "f4290c3f11f18befbb47de50d81e4555ec8e7a63066c71c343a32fe32799e9fe",
+    "easyocr_model_identity_sha256": "21d11f44eb07a1e5390dde542d197113c8f5c42246de0c688554a750ebf3c405",
+    "easyocr_detector_sha256": "4a5efbfb48b4081100544e75e1e2b57f8de3d84f213004b14b85fd4b3748db17",
+    "easyocr_recognizer_sha256": "e2272681d9d67a04e2dff396b6e95077bc19001f8f6d3593c307b9852e1c29e8",
+    "layout_ocr_identity": "cf28778a2b170435b7d583f1ce601eb17a713d1736c86a576d1300568f997df7",
+    "stage1_vector_schema": "stage1-x19-float32-v1",
+    "visual_norms_schema": "canonical-visual-feature-norms-v2",
+    "saliency_norms_schema": "canonical-saliency-feature-norms-v2",
+    "saliency_cache_identity": "2c83144d579878c5bc093eabe4445ad8840638dd993f220f62f414fa02862206",
+    "visual_cache_identity": "a420c070dddd167660fc12f1f6774005d50a74067a17e4c50593b44cf8a5ee13"
+  },
+  "outputs": {
+    "vicop_study_scores_75.csv": {
+      "bytes": 141070,
+      "sha256": "2ae770692c02007b5308d46eeb2e4e803b4d11712caaba4d44ee60ab236adcba"
+    },
+    "vicop_study_scores_75.json": {
+      "bytes": 773896,
+      "sha256": "25f728a674d4e1e83396ad753f5946750b39ee7ff90af210e58f7ab6e6bd8955"
+    }
+  }
+}

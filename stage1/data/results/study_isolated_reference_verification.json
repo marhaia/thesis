@@ -1,0 +1,50 @@
+{
+  "schema_version": "vicop-study-isolation-verification-v1",
+  "production_state": "CANDIDATE_ONLY__NO_PRODUCTION_MUTATION",
+  "official_split_sha256": "fc22d679849862c0f0476b1d9c270a50383c62304c7635b87cb18a2559a25c68",
+  "source_zip_sha256": "3d6f3c9312b0d20737251ab156183eaaaf2139f375fdff7542409790f6cac328",
+  "source_visual_csv_sha256": "b9769935527a58cf7c9e158a6d3ed0bcd33edaa37aa3dcc40b3ed273c453804a",
+  "source_saliency_csv_sha256": "1f576987fa080bbc7c34062ce1dde86c41c16eaa1fd17be9e00adac4e6a01638",
+  "source_visual_provenance_sha256": "cf034d5041666b8ba9a9a662c86b8636b67bd4b4ae663fd1a29cb29b876ccdfc",
+  "source_saliency_provenance_sha256": "788fdb9a80cee9c1404e29ad2af75ff00c09ac6e1778cd5c28c492abdc245159",
+  "source_visual_fingerprint_sha256": "8bdac4ef44519ec9d7f6fcb4754eefa6e6b5f47bc7caf054b8b2921e502ff951",
+  "source_saliency_fingerprint_sha256": "9894d243a2e1bf56d88de597842a78f8f9dcc9680810f5842298924b3cc4b6ff",
+  "final_stimulus_zip_sha256": "6bbf0fcfdb32e00181a8a7c05a3c84a7fb95e018a1344e2e27ff6d48b8e6c154",
+  "final_stimulus_manifest_sha256": "e77faface786f339d28bf9683cf4b6b0981ce4abe3c7787f0bf48d40c21628e8",
+  "study_exclusion_manifest_sha256": "9f242728f59d8d13ebd4d6112c2ff21d50e4f43dbbf65016c99769bed49698b5",
+  "original_train_population_sha256": "4c90612e1d228d8ea8d0e2d6ad1dccb6db8a67ff9180569545e11584071b1801",
+  "new_development_population_sha256": "9ef889847f63be8fa2a41653e3a06d4aa992384594d814c57ca1a8f82000b923",
+  "official_test_population_sha256": "1d98dd2072f99e2bfbdcc5baa46517d5d1bb80fdd113956b30139dc86607f6a8",
+  "baseline_reproduction": {
+    "features_verified": 13,
+    "statistics_per_feature": 10,
+    "max_absolute_error": 0.0,
+    "tolerance": 1e-12
+  },
+  "official_corpus": {
+    "GUI_authorized": 1485,
+    "Train": 1404,
+    "Test": 81
+  },
+  "final_stimuli": {
+    "total": 75,
+    "main": 72,
+    "practice": 3,
+    "official_Test": 51,
+    "official_Train_excluded": 24,
+    "Train_main": 22,
+    "Train_practice": 2
+  },
+  "new_reference": {
+    "total": 1380,
+    "counts": {
+      "desktop": 460,
+      "mobile": 460,
+      "web": 460
+    },
+    "overlap_with_final_stimuli": 0
+  },
+  "model_checkpoint_sha256_unchanged": "f4290c3f11f18befbb47de50d81e4555ec8e7a63066c71c343a32fe32799e9fe",
+  "analysis_limitation": "Only reference statistics were recalculated. HCEye intermediate heuristics, Stage-1 x19 and final layout-index regression on real screenshots not yet run; separate frozen runtime release verification required.",
+  "numpy_reaggregate_version": "1.26.4"
+}
